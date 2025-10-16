@@ -1,0 +1,60 @@
+{
+  "4600146": {
+    "name": "Halibut Bank",
+    "observation_time": "2025-10-16T18:05:00+00:00",
+    "wave_height_sig": 0.8,
+    "wave_period_peak": 3.8,
+    "wave_direction_peak": 117.0,
+    "wind_speed": 14.4,
+    "wind_gust": 16.5,
+    "wind_direction": 103.0,
+    "air_temp": 10.5,
+    "sea_temp": 11.6,
+    "pressure": 1021.7,
+    "wind_direction_cardinal": "ESE",
+    "wave_direction_peak_cardinal": "ESE"
+  },
+  "4600303": {
+    "name": "Southern Georgia Strait",
+    "observation_time": "2025-10-16T18:20:00+00:00",
+    "wave_height_sig": 0.4,
+    "wave_height_peak": 0.6,
+    "wave_period_peak": 2.9,
+    "wind_speed": 11.3,
+    "wind_gust": 14.0,
+    "wind_direction": 113.0,
+    "air_temp": 10.2,
+    "sea_temp": 11.5,
+    "pressure": 1021.9,
+    "wind_direction_cardinal": "ESE"
+  },
+  "4600304": {
+    "name": "English Bay",
+    "observation_time": "2025-10-16T18:20:00+00:00",
+    "wave_height_sig": 0.4,
+    "wave_height_peak": 0.6,
+    "wave_period_peak": 2.3,
+    "wind_speed": 12.9,
+    "wind_gust": 15.8,
+    "wind_direction": 109.0,
+    "air_temp": 10.7,
+    "sea_temp": 10.8,
+    "pressure": 1022.0,
+    "wind_direction_cardinal": "ESE"
+  },
+  "4600131": {
+    "name": "Sentry Shoal",
+    "observation_time": "2025-10-16T18:05:00+00:00",
+    "wave_height_sig": 0.2,
+    "wave_period_peak": 2.5,
+    "wave_direction_peak": 81.0,
+    "wind_speed": 2.3,
+    "wind_gust": 3.3,
+    "wind_direction": 292.0,
+    "air_temp": 9.7,
+    "sea_temp": 10.6,
+    "pressure": 1021.6,
+    "wind_direction_cardinal": "WNW",
+    "wave_direction_peak_cardinal": "E"
+  }
+}

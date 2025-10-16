@@ -1,21 +1,13 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
 .venv/
 venv/
-ENV/
-env/
 
-# Data files
-*.xml
-*.json
-*.sqlite
-*.db
-data/
-site/
+# Real data files (don't commit)
+site/data/
+data/buoy/
+storm_surge/
 
 # Logs
 *.log
@@ -31,10 +23,11 @@ site/
 
 # OS
 .DS_Store
-Thumbs.db
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
+
+# Allow example data
+!examples/
+!examples/*.json
