@@ -10,4 +10,8 @@
 
 # Export latest snapshot to JSON for website (SQLite source)
 * * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/sqlite_to_json.py >> /home/keelando/envcan_wave/json_export.log 2>&1
-*/15 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_24hr_timeseries.py >> /home/keelando/envcan_wave/timeseries_export.log 2>&1
+*/5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_24hr_timeseries.py >> /home/keelando/envcan_wave/timeseries_export.log 2>&1
+
+# Storm Surge Forecast - runs every 6 hours (GeoMet updates every 6h)
+0 */6 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_storm_surge.py >> /home/keelando/envcan_wave/storm_surge.log 2>&1
+
