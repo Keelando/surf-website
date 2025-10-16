@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Data files
+*.xml
+*.json
+*.sqlite
+*.db
+data/
+site/
+
+# Logs
+*.log
+
+# Environment/credentials
+*.env
+.config/
+
+# Cache
+.cache/
+*.lock
+/tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

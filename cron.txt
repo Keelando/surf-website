@@ -1,0 +1,13 @@
+# m h  dom mon dow   command
+# parse xmls
+* * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/buoy_to_influx_sqlite.py >> /home/keelando/envcan_wave/parser.log 2>&1
+
+# purge data older than 2 days
+0 * * * * find /home/keelando/envcan_wave/data/buoy -name "*.xml" -mtime +2 -delete
+
+#every minute push latest data over mqtt
+* * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/influx_to_mqtt.py >> /home/keelando/envcan_wave/mqtt.log 2>&1
+
+# Export latest snapshot to JSON for website (SQLite source)
+* * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/sqlite_to_json.py >> /home/keelando/envcan_wave/json_export.log 2>&1
+*/15 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_24hr_timeseries.py >> /home/keelando/envcan_wave/timeseries_export.log 2>&1
