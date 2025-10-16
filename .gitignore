@@ -31,3 +31,13 @@ storm_surge/
 # Allow example data
 !examples/
 !examples/*.json
+
+# Generated data files (don't commit)
+site/data/
+data/
+storm_surge/
+
+# JSON data files (but keep examples and requirements.txt)
+*.json
+!examples/*.json
+!requirements.txt
