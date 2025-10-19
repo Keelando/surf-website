@@ -15,6 +15,7 @@ BUOYS = {
     "4600303": {"name": "Southern Georgia Strait", "location": "Southern Strait"},
     "4600304": {"name": "English Bay", "location": "Vancouver Harbor"},
     "4600131": {"name": "Sentry Shoal", "location": "Northern Strait of Georgia"},
+    "46087": {"name": "Neah Bay", "location": "Cape Flattery, WA"}
 }
 
 # All available metrics for timeseries
@@ -24,6 +25,12 @@ ALL_METRICS = {
     "wave_period_avg": {"name": "Average Wave Period", "unit": "s"},
     "wave_period_peak": {"name": "Peak Wave Period", "unit": "s"},
     "wave_direction_peak": {"name": "Peak Wave Direction", "unit": "°"},
+    "swell_height": {"name": "Swell Height", "unit": "m"},           # 👈 NEW
+    "swell_period": {"name": "Swell Period", "unit": "s"},           # 👈 NEW
+    "swell_direction": {"name": "Swell Direction", "unit": "°"},     # 👈 NEW
+    "wind_wave_height": {"name": "Wind Wave Height", "unit": "m"},   # 👈 NEW
+    "wind_wave_period": {"name": "Wind Wave Period", "unit": "s"},   # 👈 NEW
+    "wind_wave_direction": {"name": "Wind Wave Direction", "unit": "°"}, # 👈 NEW
     "wind_speed": {"name": "Wind Speed", "unit": "kt"},
     "wind_gust": {"name": "Wind Gust", "unit": "kt"},
     "wind_direction": {"name": "Wind Direction", "unit": "°"},
@@ -40,6 +47,16 @@ def kmh_to_knots(kmh):
         return round(float(kmh) * 0.539957, 1)
     except (TypeError, ValueError):
         return None
+
+def downsample_to_hourly(timeseries_data):
+    """Keep only data points at the top of each hour for high-frequency NOAA data."""
+    hourly = []
+    for point in timeseries_data:
+        time_obj = datetime.fromisoformat(point['time'])
+        # Only keep if it's at the top of the hour (:00)
+        if time_obj.minute == 0:
+            hourly.append(point)
+    return hourly
 
 def safe_json_write(path: Path, data: dict):
     """Atomic write: temp file + rename to avoid partial writes."""
@@ -115,7 +132,7 @@ def query_and_export_timeseries():
                           AND observation_time % 3600 = 0
                         ORDER BY observation_time ASC
                         """
-                    else:  # Halibut Bank, Sentry Shoal - keep all data
+                    else:  # Halibut Bank, Sentry Shoal, Neah Bay - keep all data initially
                         sql = f"""
                         SELECT observation_time, {metric_key}
                         FROM buoy_observation
@@ -143,6 +160,11 @@ def query_and_export_timeseries():
                                 "time": datetime.fromtimestamp(row["observation_time"], tz=timezone.utc).isoformat(),
                                 "value": value
                             })
+                        
+                        # Downsample Neah Bay's high-frequency wind/temp data to hourly
+                        # Keep wave data at native frequency (~30 min)
+                        if buoy_id == "46087" and metric_key in ['wind_speed', 'wind_gust', 'wind_direction', 'air_temp', 'sea_temp']:
+                            timeseries = downsample_to_hourly(timeseries)
                         
                         buoy_data["timeseries"][metric_key] = {
                             "name": metric_info["name"],

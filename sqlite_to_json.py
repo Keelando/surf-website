@@ -14,6 +14,7 @@ BUOYS = {
     "4600303": {"name": "Southern Georgia Strait", "location": "Southern Strait"},
     "4600304": {"name": "English Bay", "location": "Vancouver Harbor"},
     "4600131": {"name": "Sentry Shoal", "location": "Northern Strait of Georgia"},
+    "46087": {"name": "Neah Bay", "location": "Cape Flattery, WA"}
 }
 
 # Non-wave fields (updated every 10 min)
@@ -23,7 +24,9 @@ REALTIME_FIELDS = ["wind_speed", "wind_gust", "wind_direction", "air_temp", "sea
 WAVE_FIELDS = [
     "wave_height_sig", "wave_height_peak",
     "wave_period_sig", "wave_period_avg", "wave_period_peak",
-    "wave_direction_avg", "wave_direction_peak"
+    "wave_direction_avg", "wave_direction_peak",
+    "swell_height", "swell_period", "swell_direction",           # 👈 NEW
+    "wind_wave_height", "wind_wave_period", "wind_wave_direction" # 👈 NEW
 ]
 
 DIRS_16 = ['N','NNE','NE','ENE','E','ESE','SE','SSE',
@@ -144,6 +147,18 @@ def query_and_export():
                 cardinal = degrees_to_cardinal(buoy_json['wave_direction_peak'])
                 if cardinal:
                     buoy_json["wave_direction_peak_cardinal"] = cardinal
+
+            # Add cardinal for swell direction
+            if 'swell_direction' in buoy_json and buoy_json['swell_direction'] is not None:
+                cardinal = degrees_to_cardinal(buoy_json['swell_direction'])
+                if cardinal:
+                    buoy_json["swell_direction_cardinal"] = cardinal
+
+            # Add cardinal for wind wave direction
+            if 'wind_wave_direction' in buoy_json and buoy_json['wind_wave_direction'] is not None:
+                cardinal = degrees_to_cardinal(buoy_json['wind_wave_direction'])
+                if cardinal:
+                    buoy_json["wind_wave_direction_cardinal"] = cardinal
 
             latest_json[buoy_id] = buoy_json
             
