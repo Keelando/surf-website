@@ -13,12 +13,12 @@ OUT_PATH = Path("~/site/data/latest_buoy_v2.json").expanduser()
 FRESHNESS_WINDOW = 2 * 3600  # 2 hours in seconds
 
 BUOYS = {
-    "4600146": {"name": "Halibut Bank", "location": "Off Vancouver"},
-    "4600303": {"name": "Southern Georgia Strait", "location": "Southern Strait"},
-    "4600304": {"name": "English Bay", "location": "Vancouver Harbor"},
+    "4600146": {"name": "Halibut Bank", "location": "Center Strait of Georgia"},
+    "4600303": {"name": "Southern Georgia Strait", "location": "Southern Strait of Georgia"},
+    "4600304": {"name": "English Bay", "location": "South of Bowen Island"},
     "4600131": {"name": "Sentry Shoal", "location": "Northern Strait of Georgia"},
     "46087": {"name": "Neah Bay", "location": "Cape Flattery, WA"},
-    "46088": {"name": "New Dungeness (Hein Bank)", "location": "Strait of Juan de Fuca"}  # ← NEW
+    "46088": {"name": "New Dungeness (Hein Bank)", "location": "Strait of Juan de Fuca, East"}  # ← NEW
 }
 
 # Fields to query individually (each gets most recent non-null value within 2 hours)

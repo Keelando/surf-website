@@ -41,3 +41,5 @@ storm_surge/
 *.json
 !examples/*.json
 !requirements.txt
+*.log
+git_backup.log

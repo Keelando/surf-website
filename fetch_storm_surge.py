@@ -9,16 +9,14 @@ import json
 import re
 import warnings
 import time
-import os
 from owslib.wms import WebMapService
 
 # Configuration
 TESTING = False  # Set to True for verbose output and progress tracking
 
 STATIONS = {
-    "Crescent_Beach_Channel": {"lat": 49.0536, "lon": -122.8969, "name": "Crescent Beach Channel"},
     "Point_Atkinson": {"lat": 49.337, "lon": -123.253, "name": "Point Atkinson"},
-    "Crescent_Pile": {"lat": 49.0122, "lon": -122.9411, "name": "Crescent Pile"}
+    "Crescent_Beach_Channel": {"lat": 49.0536, "lon": -122.8969, "name": "Crescent Beach Channel"}
 }
 
 OUTPUT_DIR = Path("~/site/data/storm_surge").expanduser()
@@ -26,42 +24,51 @@ LOCKFILE = Path("/tmp/storm_surge_fetch.lock")
 WMS_URL = "https://geo.weather.gc.ca/geomet?SERVICE=WMS&REQUEST=GetCapabilities&layer=GDSPS_15km_StormSurge"
 LAYER = "GDSPS_15km_StormSurge"
 
+# Rate limiting
+FETCH_DELAY = 0.5  # seconds between requests
+
+
 def acquire_lock():
     """Simple file-based lock to prevent concurrent runs."""
     if LOCKFILE.exists():
-        if time.time() - LOCKFILE.stat().st_mtime > 300:
+        age = time.time() - LOCKFILE.stat().st_mtime
+        if age > 300:  # 5 minutes
             print("⚠️  Removing stale lock file")
             LOCKFILE.unlink()
         else:
-            print("⚠️  Another instance is running, exiting")
+            print(f"⚠️  Another instance is running (lock age: {age:.0f}s), exiting")
             return False
     LOCKFILE.touch()
     return True
 
+
 def release_lock():
+    """Remove lock file."""
     if LOCKFILE.exists():
         LOCKFILE.unlink()
 
+
 def get_bounding_box(lat, lon, offset=0.25):
-    """Create bounding box around point."""
+    """Create bounding box around point (lon_min, lat_min, lon_max, lat_max)."""
     return (lon - offset, lat - offset, lon + offset, lat + offset)
+
 
 def get_time_parameters(wms, layer):
     """Extract temporal information from GeoMet metadata."""
     time_dim = wms[layer].dimensions["time"]["values"][0]
-    start_time, end_time, interval = time_dim.split("/")
+    start_str, end_str, interval_str = time_dim.split("/")
     
     iso_format = "%Y-%m-%dT%H:%M:%SZ"
-    start_time = datetime.strptime(start_time, iso_format)
-    end_time = datetime.strptime(end_time, iso_format)
-    interval_hours = int(re.sub(r"\D", "", interval))
+    start_time = datetime.strptime(start_str, iso_format)
+    end_time = datetime.strptime(end_str, iso_format)
+    interval_hours = int(re.sub(r"\D", "", interval_str))
     
     return start_time, end_time, interval_hours
+
 
 def fetch_pixel_value(wms, layer, bbox, timestamp):
     """Fetch storm surge value for specific location and time."""
     try:
-        # Format timestamp as YYYY-MM-DDTHH:MM:SSZ (exactly as WMS expects)
         time_str = timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
         
         response = wms.getfeatureinfo(
@@ -79,7 +86,7 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
         
         text = response.read().decode("utf-8")
         
-        # In testing mode, show raw response for first few requests
+        # Debug output for testing mode
         if TESTING and not hasattr(fetch_pixel_value, '_debug_count'):
             fetch_pixel_value._debug_count = 0
         
@@ -88,12 +95,12 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
             print(f"    {text[:200]}")
             fetch_pixel_value._debug_count += 1
         
+        # Extract value from response
         match = re.search(r"value_0\s+=\s+'(-?\d+\.?\d*)'", text)
-        
         if match:
             return float(match.group(1))
         
-        # If no match, check if there's useful info in the response
+        # Check for "no feature" response
         if TESTING and "no feature" in text.lower():
             if not hasattr(fetch_pixel_value, '_no_feature_warned'):
                 print(f"    ⚠️  'No feature' response - coordinates may be outside model domain")
@@ -102,6 +109,7 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
         return None
         
     except Exception as e:
+        # Only log errors in testing mode or first occurrence
         if TESTING or not hasattr(fetch_pixel_value, '_error_count'):
             print(f"    ⚠️  Error fetching data for {timestamp}: {e}")
             if not hasattr(fetch_pixel_value, '_error_count'):
@@ -109,13 +117,15 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
             fetch_pixel_value._error_count += 1
         return None
 
+
 def fetch_station_forecast(wms, layer, station_id, station_info, time_list):
     """Fetch complete forecast for a station."""
     print(f"\n📍 Fetching {station_info['name']}...")
     
     if TESTING:
         print(f"    Total timesteps to fetch: {len(time_list)}")
-        print(f"    Estimated time: ~{len(time_list) * 0.6:.0f} seconds ({len(time_list) * 0.6 / 60:.1f} minutes)")
+        print(f"    Estimated time: ~{len(time_list) * FETCH_DELAY:.0f} seconds "
+              f"({len(time_list) * FETCH_DELAY / 60:.1f} minutes)")
     
     bbox = get_bounding_box(station_info['lat'], station_info['lon'])
     forecast_data = {}
@@ -131,23 +141,24 @@ def fetch_station_forecast(wms, layer, station_id, station_info, time_list):
             successful += 1
         else:
             failed += 1
-            
+        
         # Progress indicator
         if TESTING:
             if idx % 10 == 0 or idx == len(time_list):
                 progress = (idx / len(time_list)) * 100
-                print(f"    Progress: {idx}/{len(time_list)} ({progress:.1f}%) - Success: {successful}, Failed: {failed}")
+                print(f"    Progress: {idx}/{len(time_list)} ({progress:.1f}%) - "
+                      f"Success: {successful}, Failed: {failed}")
         elif idx % 50 == 0:
-            # Even in non-verbose mode, show some progress for long fetches
             print(f"    Progress: {idx}/{len(time_list)}...")
-            
-        time.sleep(0.5)  # Rate limiting
+        
+        time.sleep(FETCH_DELAY)  # Rate limiting
     
     print(f"    ✅ Retrieved {successful}/{len(time_list)} forecasts (Failed: {failed})")
     return forecast_data
 
+
 def save_forecast(station_id, forecast_data, station_info):
-    """Save forecast data to JSON file."""
+    """Save forecast data to JSON file with atomic write."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     
     output_file = OUTPUT_DIR / f"{station_id}.json"
@@ -164,12 +175,13 @@ def save_forecast(station_id, forecast_data, station_info):
         "unit": "meters"
     }
     
-    # Atomic write
+    # Atomic write (temp file + rename)
     tmp_file = output_file.with_suffix(".json.tmp")
     tmp_file.write_text(json.dumps(output_data, indent=2))
     tmp_file.replace(output_file)
     
     print(f"    💾 Saved to {output_file}")
+
 
 def create_combined_forecast():
     """Combine all station forecasts into single file."""
@@ -178,16 +190,16 @@ def create_combined_forecast():
         "stations": {}
     }
     
-    for station_file in OUTPUT_DIR.glob("*.json"):
+    for station_file in sorted(OUTPUT_DIR.glob("*.json")):
         if station_file.name == "combined_forecast.json":
             continue
-            
+        
         try:
             station_data = json.loads(station_file.read_text())
             station_id = station_data["station_id"]
             combined["stations"][station_id] = station_data
         except Exception as e:
-            print(f"⚠️  Error reading {station_file}: {e}")
+            print(f"⚠️  Error reading {station_file.name}: {e}")
     
     combined_file = OUTPUT_DIR / "combined_forecast.json"
     tmp_file = combined_file.with_suffix(".json.tmp")
@@ -195,6 +207,8 @@ def create_combined_forecast():
     tmp_file.replace(combined_file)
     
     print(f"\n✅ Created combined forecast: {combined_file}")
+    print(f"📊 Contains {len(combined['stations'])} stations")
+
 
 def main():
     if TESTING:
@@ -218,7 +232,8 @@ def main():
         
         # Get time parameters
         start_time, end_time, interval = get_time_parameters(wms, LAYER)
-        print(f"📅 Forecast period: {start_time} to {end_time}")
+        print(f"📅 Forecast period: {start_time.strftime('%Y-%m-%d %H:%M')} to "
+              f"{end_time.strftime('%Y-%m-%d %H:%M')} UTC")
         print(f"⏱️  Interval: {interval} hours")
         
         # Build time list
@@ -228,13 +243,14 @@ def main():
         
         print(f"📊 Total timesteps: {len(time_list)}")
         
+        # Estimate total time
+        total_minutes = len(time_list) * len(STATIONS) * FETCH_DELAY / 60
+        
         if TESTING:
-            print(f"\n⏰ Estimated total time: ~{len(time_list) * len(STATIONS) * 0.6 / 60:.1f} minutes")
-            print(f"   ({len(time_list)} timesteps × {len(STATIONS)} stations × 0.5s + overhead)")
-        else:
-            total_minutes = len(time_list) * len(STATIONS) * 0.6 / 60
-            if total_minutes > 5:
-                print(f"⏰ This will take approximately {total_minutes:.0f} minutes to complete...")
+            print(f"\n⏰ Estimated total time: ~{total_minutes:.1f} minutes")
+            print(f"   ({len(time_list)} timesteps × {len(STATIONS)} stations × {FETCH_DELAY}s)")
+        elif total_minutes > 5:
+            print(f"⏰ This will take approximately {total_minutes:.0f} minutes to complete...")
         
         # Fetch data for each station
         for station_id, station_info in STATIONS.items():
@@ -247,7 +263,7 @@ def main():
                     save_forecast(station_id, forecast_data, station_info)
                 else:
                     print(f"    ❌ No data retrieved for {station_id}")
-                    
+            
             except Exception as e:
                 print(f"    ❌ Error processing {station_id}: {e}")
         
@@ -256,13 +272,15 @@ def main():
         
         print("\n✅ Storm surge forecast update complete!")
         return 0
-        
+    
     except Exception as e:
         print(f"\n❌ Fatal error: {e}")
         return 1
-        
+    
     finally:
         release_lock()
 
+
 if __name__ == "__main__":
     exit(main())
+
