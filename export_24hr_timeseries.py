@@ -15,7 +15,8 @@ BUOYS = {
     "4600303": {"name": "Southern Georgia Strait", "location": "Southern Strait"},
     "4600304": {"name": "English Bay", "location": "Vancouver Harbor"},
     "4600131": {"name": "Sentry Shoal", "location": "Northern Strait of Georgia"},
-    "46087": {"name": "Neah Bay", "location": "Cape Flattery, WA"}
+    "46087": {"name": "Neah Bay", "location": "Cape Flattery, WA"},
+    "46088": {"name": "New Dungeness", "location": "Strait of Juan de Fuca"}  # ← NEW
 }
 
 # All available metrics for timeseries
@@ -25,12 +26,12 @@ ALL_METRICS = {
     "wave_period_avg": {"name": "Average Wave Period", "unit": "s"},
     "wave_period_peak": {"name": "Peak Wave Period", "unit": "s"},
     "wave_direction_peak": {"name": "Peak Wave Direction", "unit": "°"},
-    "swell_height": {"name": "Swell Height", "unit": "m"},           # 👈 NEW
-    "swell_period": {"name": "Swell Period", "unit": "s"},           # 👈 NEW
-    "swell_direction": {"name": "Swell Direction", "unit": "°"},     # 👈 NEW
-    "wind_wave_height": {"name": "Wind Wave Height", "unit": "m"},   # 👈 NEW
-    "wind_wave_period": {"name": "Wind Wave Period", "unit": "s"},   # 👈 NEW
-    "wind_wave_direction": {"name": "Wind Wave Direction", "unit": "°"}, # 👈 NEW
+    "swell_height": {"name": "Swell Height", "unit": "m"},
+    "swell_period": {"name": "Swell Period", "unit": "s"},
+    "swell_direction": {"name": "Swell Direction", "unit": "°"},
+    "wind_wave_height": {"name": "Wind Wave Height", "unit": "m"},
+    "wind_wave_period": {"name": "Wind Wave Period", "unit": "s"},
+    "wind_wave_direction": {"name": "Wind Wave Direction", "unit": "°"},
     "wind_speed": {"name": "Wind Speed", "unit": "kt"},
     "wind_gust": {"name": "Wind Gust", "unit": "kt"},
     "wind_direction": {"name": "Wind Direction", "unit": "°"},
@@ -132,7 +133,7 @@ def query_and_export_timeseries():
                           AND observation_time % 3600 = 0
                         ORDER BY observation_time ASC
                         """
-                    else:  # Halibut Bank, Sentry Shoal, Neah Bay - keep all data initially
+                    else:  # Halibut Bank, Sentry Shoal, Neah Bay, New Dungeness - keep all data initially
                         sql = f"""
                         SELECT observation_time, {metric_key}
                         FROM buoy_observation
@@ -161,9 +162,9 @@ def query_and_export_timeseries():
                                 "value": value
                             })
                         
-                        # Downsample Neah Bay's high-frequency wind/temp data to hourly
-                        # Keep wave data at native frequency (~30 min)
-                        if buoy_id == "46087" and metric_key in ['wind_speed', 'wind_gust', 'wind_direction', 'air_temp', 'sea_temp']:
+                        # Downsample NOAA buoys' high-frequency wind/temp data to hourly
+                        # Keep wave data at native frequency (~30 min for NOAA)
+                        if buoy_id in ["46087", "46088"] and metric_key in ['wind_speed', 'wind_gust', 'wind_direction', 'air_temp', 'sea_temp']:
                             timeseries = downsample_to_hourly(timeseries)
                         
                         buoy_data["timeseries"][metric_key] = {

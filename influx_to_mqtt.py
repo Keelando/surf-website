@@ -80,7 +80,6 @@ def publish_discovery(buoy_id, metric_key, metric_info):
         "state_topic": f"buoy/{buoy_id}/{metric_key}",
         "json_attributes_topic": f"buoy/{buoy_id}/{metric_key}/attributes",
         "icon": metric_info["icon"],
-        "state_class": "measurement",
         "device": {
             "identifiers": [f"buoy_{buoy_id}"],
             "name": buoy_name,
@@ -88,6 +87,10 @@ def publish_discovery(buoy_id, metric_key, metric_info):
             "manufacturer": "Environment Canada"
         }
     }
+
+    # Only set state_class if numeric
+    if not metric_key.endswith("_cardinal"):
+        config["state_class"] = "measurement"
     
     if metric_info["unit"]:
         config["unit_of_measurement"] = metric_info["unit"]
