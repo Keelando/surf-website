@@ -17,3 +17,9 @@
 
 # Fetch NOAA buoy data every 5 minutes (NOAA updates hourly)
 5,25,45 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_noaa_buoy.py >> /home/keelando/envcan_wave/noaa.log 2>&1
+
+# Auto-backup git repo at 11 PM nightly
+3 23 * * * cd /home/keelando/envcan_wave && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/envcan_wave/git_backup.log 2>&1
+
+# Auto-backup website frontend at 11 PM nightly
+4 23 * * * cd /home/keelando/site && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/site/git_backup.log 2>&1
