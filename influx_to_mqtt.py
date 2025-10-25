@@ -23,7 +23,7 @@ influx = InfluxDBClient(
 )
 
 # MQTT configuration from .env file
-mqtt_client = mqtt.Client()
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqtt_client.username_pw_set(creds["MQTT_USER"], creds["MQTT_PASS"])
 mqtt_client.connect(creds["MQTT_HOST"], int(creds["MQTT_PORT"]), 60)
 
@@ -192,11 +192,11 @@ def query_and_publish():
         latest_json[buoy_id] = buoy_json
         print(f"Published {buoy_id} data")
 
-    # --- NEW: write buoy data to JSON for the website ---
-    out_path = Path("~/site/data/latest_buoy.json").expanduser()
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(latest_json, indent=2))
-    print(f"✅ Wrote JSON snapshot to {out_path}")
+    # --- OLD: write buoy data to JSON for the website ---
+    #out_path = Path("~/site/data/latest_buoy.json").expanduser()
+    #out_path.parent.mkdir(parents=True, exist_ok=True)
+    #out_path.write_text(json.dumps(latest_json, indent=2))
+    #print(f"✅ Wrote JSON snapshot to {out_path}")
 
 query_and_publish()
 mqtt_client.disconnect()

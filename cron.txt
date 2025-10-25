@@ -1,4 +1,6 @@
-# m h  dom mon dow   command
+# system telemetry over mqtt to haos
+*/2 * * * * /home/keelando/.sys-venv/bin/python /home/keelando/sys_stats_mqtt.py
+
 # parse xmls
 * * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/buoy_to_influx_sqlite.py >> /home/keelando/envcan_wave/parser.log 2>&1
 
@@ -23,3 +25,9 @@
 
 # Auto-backup website frontend at 11 PM nightly
 4 23 * * * cd /home/keelando/site && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/site/git_backup.log 2>&1
+
+# purge week old logs
+0 0 * * * find /home/keelando/envcan_wave -name "*.log" -type f -mtime +7 -delete
+
+#fetch tide data and store in sqlite
+*/30 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py >> /home/keelando/envcan_wave/tide.log 2>&1
