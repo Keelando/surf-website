@@ -2,6 +2,7 @@
 """
 Storm Surge Forecast Fetcher for Surf Server
 Fetches GDSPS data from Environment Canada GeoMet WMS
+Stores 12Z run to database for hindcast analysis
 """
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
@@ -9,6 +10,7 @@ import json
 import re
 import warnings
 import time
+import sqlite3
 from owslib.wms import WebMapService
 
 # Configuration
@@ -23,6 +25,10 @@ OUTPUT_DIR = Path("~/site/data/storm_surge").expanduser()
 LOCKFILE = Path("/tmp/storm_surge_fetch.lock")
 WMS_URL = "https://geo.weather.gc.ca/geomet?SERVICE=WMS&REQUEST=GetCapabilities&layer=GDSPS_15km_StormSurge"
 LAYER = "GDSPS_15km_StormSurge"
+
+# Database configuration
+DB_PATH = Path("~/.local/share/storm_surge_forecast.sqlite").expanduser()
+DB_RETENTION_DAYS = 11
 
 # Rate limiting
 FETCH_DELAY = 0.5  # seconds between requests
@@ -46,6 +52,71 @@ def release_lock():
     """Remove lock file."""
     if LOCKFILE.exists():
         LOCKFILE.unlink()
+
+
+def ensure_db_schema(conn):
+    """Create forecast storage table if it doesn't exist."""
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS forecast_archive (
+            station_id TEXT NOT NULL,
+            forecast_run_time TEXT NOT NULL,
+            valid_time TEXT NOT NULL,
+            surge_value REAL NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (station_id, forecast_run_time, valid_time)
+        )
+    """)
+    
+    # Index for efficient queries
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_forecast_station_time
+        ON forecast_archive(station_id, forecast_run_time DESC)
+    """)
+    conn.commit()
+
+
+def store_forecast_to_db(forecast_run_time, all_station_data):
+    """Store complete forecast to database (12Z run only)."""
+    try:
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(DB_PATH)
+        ensure_db_schema(conn)
+        cur = conn.cursor()
+        
+        forecast_date = forecast_run_time.date().isoformat()
+        stored_count = 0
+        
+        for station_id, forecast_data in all_station_data.items():
+            for time_str, surge_value in forecast_data.items():
+                try:
+                    cur.execute("""
+                        INSERT OR REPLACE INTO forecast_archive
+                        (station_id, forecast_run_time, valid_time, surge_value)
+                        VALUES (?, ?, ?, ?)
+                    """, (station_id, forecast_date, time_str, surge_value))
+                    stored_count += 1
+                except Exception as e:
+                    print(f"⚠️  DB insert error for {station_id} {time_str}: {e}")
+        
+        conn.commit()
+        
+        # Purge old data
+        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=DB_RETENTION_DAYS)).date().isoformat()
+        cur.execute("DELETE FROM forecast_archive WHERE forecast_run_time < ?", (cutoff_date,))
+        deleted = cur.rowcount
+        conn.commit()
+        conn.close()
+        
+        print(f"\n💾 Stored {stored_count} forecast points to database")
+        if deleted > 0:
+            print(f"🗑️  Purged {deleted} old records (before {cutoff_date})")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Database storage error: {e}")
+        return False
 
 
 def get_bounding_box(lat, lon, offset=0.25):
@@ -253,6 +324,7 @@ def main():
             print(f"⏰ This will take approximately {total_minutes:.0f} minutes to complete...")
         
         # Fetch data for each station
+        all_forecasts = {}
         for station_id, station_info in STATIONS.items():
             try:
                 forecast_data = fetch_station_forecast(
@@ -261,6 +333,7 @@ def main():
                 
                 if forecast_data:
                     save_forecast(station_id, forecast_data, station_info)
+                    all_forecasts[station_id] = forecast_data
                 else:
                     print(f"    ❌ No data retrieved for {station_id}")
             
@@ -269,6 +342,14 @@ def main():
         
         # Create combined forecast
         create_combined_forecast()
+        
+        # Store to database if this is the 12Z run (hour 13)
+        current_hour = datetime.now(timezone.utc).hour
+        if current_hour == 13:
+            print("\n🎯 This is the 12Z run - storing to database for hindcast...")
+            store_forecast_to_db(start_time, all_forecasts)
+        else:
+            print(f"\n⏭️  Skipping database storage (hour={current_hour}, not 12Z run)")
         
         print("\n✅ Storm surge forecast update complete!")
         return 0
@@ -283,4 +364,3 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
-
