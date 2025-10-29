@@ -20,6 +20,19 @@
 # Fetch NOAA buoy data every 5 minutes (NOAA updates hourly)
 5,25,45 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_noaa_buoy.py >> /home/keelando/envcan_wave/noaa.log 2>&1
 
+# ========== TIDE DATA - NEW SCHEDULE ==========
+
+# Fetch tide observations every 30 minutes (15-min downsampled, 11-day retention)
+*/30 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py --observations >> /home/keelando/envcan_wave/tide_obs.log 2>&1
+
+# Fetch tide predictions daily at 12:05 AM and 12:05 PM (current day only, 3-day retention)
+5 0 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py --predictions >> /home/keelando/envcan_wave/tide_pred.log 2>&1
+
+# Export tide JSON data every 5 minutes (current conditions, timeseries, high/low events)
+*/5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_tide_json.py --all >> /home/keelando/envcan_wave/tide_export.log 2>&1
+
+# ========== END TIDE DATA ==========
+
 # Auto-backup git repo at 11 PM nightly
 3 23 * * * cd /home/keelando/envcan_wave && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/envcan_wave/git_backup.log 2>&1
 
@@ -28,6 +41,3 @@
 
 # purge week old logs
 0 0 * * * find /home/keelando/envcan_wave -name "*.log" -type f -mtime +7 -delete
-
-#fetch tide data and store in sqlite
-*/30 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py >> /home/keelando/envcan_wave/tide.log 2>&1
