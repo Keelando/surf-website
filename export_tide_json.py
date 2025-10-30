@@ -2,43 +2,33 @@
 """
 Export tide data from SQLite to JSON for website display.
 
-Outputs three types of data:
-1. Current tide levels (latest observation per station)
-2. Tide graph time series (observations + predictions, 15-min intervals)
-3. High/Low tide events (discrete events with timestamps)
-
-Usage:
-  export_tide_json.py --current         # Export current conditions only
-  export_tide_json.py --timeseries      # Export graph data only
-  export_tide_json.py --highlow         # Export high/low events only
-  export_tide_json.py --all             # Export everything (default)
-  export_tide_json.py --hours 48        # Set timeseries lookback (default 24)
+Outputs three JSON files:
+1. tide-latest.json - Current conditions (observation + prediction)
+2. tide-timeseries.json - Calendar day timeseries for charts (15-min intervals)
+3. tide-hi-low.json - High/low events for text display
 """
 
 import sqlite3
 import json
-import argparse
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 
-# ========== Configuration ==========
+# ---------- Config ----------
 DB_PATH = Path("~/.local/share/buoy_data.sqlite").expanduser()
 STATION_FILE = Path("~/envcan_wave/tide_stations.json").expanduser()
 
 # Output paths
-CURRENT_OUT = Path("~/site/data/tide_current.json").expanduser()
-TIMESERIES_OUT = Path("~/site/data/tide_timeseries.json").expanduser()
-HIGHLOW_OUT = Path("~/site/data/tide_highlow.json").expanduser()
+LATEST_OUT = Path("~/site/data/tide-latest.json").expanduser()
+TIMESERIES_OUT = Path("~/site/data/tide-timeseries.json").expanduser()
+HIGHLOW_OUT = Path("~/site/data/tide-hi-low.json").expanduser()
 
-
-# ========== Utility Functions ==========
 
 def load_station_metadata():
     """Load station names and metadata from external JSON file."""
     if not STATION_FILE.exists():
-        print(f"??  Station file not found: {STATION_FILE}")
+        print(f"WARNING: Station file not found: {STATION_FILE}")
         return {}
-    
     with open(STATION_FILE, "r") as f:
         return json.load(f)
 
@@ -51,392 +41,391 @@ def safe_json_write(path: Path, data: dict):
     tmp.replace(path)
 
 
-# ========== Export Functions ==========
-
-def export_current_levels(conn, station_metadata):
+def downsample_to_15min(rows):
     """
-    Export the most recent tide reading for each station.
-    Only includes stations with observation data (wlo series).
+    Downsample to 15-minute intervals.
+    Only keeps readings at :00, :15, :30, :45 minutes.
+    """
+    downsampled = []
+    for row in rows:
+        ts = row[0]
+        dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+        if dt.minute in (0, 15, 30, 45) and dt.second == 0:
+            downsampled.append(row)
+    return downsampled
+
+
+def export_latest(conn, station_metadata):
+    """
+    Export current tide conditions - both observation and prediction.
     """
     cur = conn.cursor()
+    now = datetime.now(timezone.utc)
+    now_timestamp = int(now.timestamp())
     
-    # Get latest reading per station (observations only)
-    query = """
-    SELECT 
-        station_id,
-        station_name,
-        timestamp_utc,
-        water_level,
-        quality,
-        series_code
-    FROM tide_observation
-    WHERE (station_id, timestamp_utc) IN (
-        SELECT station_id, MAX(timestamp_utc)
-        FROM tide_observation
-        WHERE series_code = 'wlo'
-        GROUP BY station_id
-    )
-    ORDER BY station_name
-    """
+    latest_data = {}
     
-    cur.execute(query)
-    rows = cur.fetchall()
+    # Get all stations
+    cur.execute("SELECT DISTINCT station_name, station_id FROM tide_observation")
+    stations = cur.fetchall()
     
-    current_data = {}
-    observation_count = 0
-    
-    for row in rows:
-        station_id, station_name, timestamp_utc, water_level, quality, series_code = row
-        
-        # Get metadata from external file
+    for station_name, station_id in stations:
         metadata = station_metadata.get(station_name, {})
-        
-        # Calculate staleness
-        now_ts = datetime.now(timezone.utc).timestamp()
-        age_minutes = (now_ts - timestamp_utc) / 60
-        is_stale = age_minutes > 120  # >2 hours old
-        
-        current_data[station_name] = {
+        station_data = {
             "station_id": station_id,
             "name": metadata.get("name", station_name.replace("_", " ").title()),
-            "location": metadata.get("location", ""),
-            "observation_time": datetime.fromtimestamp(timestamp_utc, tz=timezone.utc).isoformat(),
-            "water_level": round(water_level, 3) if water_level is not None else None,
-            "quality": quality,
-            "series_code": series_code,
-            "stale": is_stale,
-            "age_minutes": round(age_minutes, 1)
+            "location": metadata.get("location", "")
         }
-        observation_count += 1
+        
+        # Get latest observation (wlo)
+        cur.execute("""
+            SELECT timestamp_utc, water_level, quality
+            FROM tide_observation
+            WHERE station_id = ? AND series_code = 'wlo'
+            ORDER BY timestamp_utc DESC
+            LIMIT 1
+        """, (station_id,))
+        
+        obs_row = cur.fetchone()
+        if obs_row:
+            obs_time, obs_value, obs_quality = obs_row
+            age_minutes = (now_timestamp - obs_time) / 60
+            station_data["observation"] = {
+                "time": datetime.fromtimestamp(obs_time, tz=timezone.utc).isoformat(),
+                "value": round(obs_value, 3) if obs_value is not None else None,
+                "quality": obs_quality,
+                "age_minutes": round(age_minutes, 1),
+                "stale": age_minutes > 120
+            }
+        
+        # Get current prediction (wlp) - closest to now
+        cur.execute("""
+            SELECT timestamp_utc, water_level
+            FROM tide_observation
+            WHERE station_id = ? 
+              AND series_code = 'wlp'
+              AND timestamp_utc >= ?
+              AND timestamp_utc <= ?
+            ORDER BY ABS(timestamp_utc - ?)
+            LIMIT 1
+        """, (station_id, now_timestamp - 1800, now_timestamp + 1800, now_timestamp))
+        
+        pred_row = cur.fetchone()
+        if pred_row:
+            pred_time, pred_value = pred_row
+            station_data["prediction_now"] = {
+                "time": datetime.fromtimestamp(pred_time, tz=timezone.utc).isoformat(),
+                "value": round(pred_value, 3) if pred_value is not None else None
+            }
+        
+        # Only add if we have at least one data point
+        if "observation" in station_data or "prediction_now" in station_data:
+            latest_data[station_name] = station_data
     
-    # Add metadata
     output = {
         "_meta": {
-            "generated_utc": datetime.now(timezone.utc).isoformat(),
-            "station_count": observation_count,
-            "type": "current_conditions",
-            "units": "meters"
+            "generated_utc": now.isoformat(),
+            "type": "current_conditions"
         },
-        "stations": current_data
+        "stations": latest_data
     }
     
-    safe_json_write(CURRENT_OUT, output)
-    print(f"? Exported current levels for {observation_count} stations ? {CURRENT_OUT}")
-    
-    return observation_count
+    safe_json_write(LATEST_OUT, output)
+    print(f"OK: Exported latest conditions for {len(latest_data)} stations")
+    return len(latest_data)
 
 
-def export_timeseries(conn, station_metadata, hours_back=24):
+def export_timeseries(conn, station_metadata):
     """
-    Export time series data for all stations (observations + predictions).
-    All data is already at 15-minute intervals from the database.
-    
-    Includes:
-      - wlo (observations) - historical data
-      - wlp (predictions) - today's predictions
-    
-    Args:
-        conn: SQLite connection
-        station_metadata: Dict of station metadata
-        hours_back: Number of hours to look back (default 24)
+    Export timeseries data for charts - today's calendar day +/- 2 hours.
+    Downsampled to 15-minute intervals.
+    Includes both predictions and observations separately.
     """
     cur = conn.cursor()
     
-    now = datetime.now(timezone.utc)
-    cutoff = now - timedelta(hours=hours_back)
-    cutoff_timestamp = int(cutoff.timestamp())
+    # Get Pacific timezone
+    pacific = ZoneInfo('America/Vancouver')
+    now_pacific = datetime.now(pacific)
     
-    # Get all stations that have either observations or predictions
-    cur.execute("""
-    SELECT DISTINCT station_name, station_id
-    FROM tide_observation
-    WHERE series_code IN ('wlo', 'wlp')
-    ORDER BY station_name
-    """)
+    # Today's calendar day in Pacific time
+    day_start = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end = day_start + timedelta(days=1)
     
+    # Add 2-hour padding
+    query_start = day_start - timedelta(hours=2)
+    query_end = day_end + timedelta(hours=2)
+    
+    # Convert to UTC timestamps
+    start_ts = int(query_start.astimezone(timezone.utc).timestamp())
+    end_ts = int(query_end.astimezone(timezone.utc).timestamp())
+    
+    # Get all stations
+    cur.execute("SELECT DISTINCT station_name, station_id FROM tide_observation")
     stations = cur.fetchall()
     
     timeseries_data = {}
-    total_points = 0
     
     for station_name, station_id in stations:
         metadata = station_metadata.get(station_name, {})
         
-        # Query both observations and predictions
-        query = """
-        SELECT timestamp_utc, water_level, quality, series_code
-        FROM tide_observation
-        WHERE station_id = ?
-          AND series_code IN ('wlo', 'wlp')
-          AND timestamp_utc >= ?
-          AND water_level IS NOT NULL
-        ORDER BY timestamp_utc ASC
-        """
-        
-        cur.execute(query, (station_id, cutoff_timestamp))
-        rows = cur.fetchall()
-        
-        if not rows:
-            continue
-        
-        # Build time series array
-        series = []
-        for timestamp_utc, water_level, quality, series_code in rows:
-            series.append({
-                "time": datetime.fromtimestamp(timestamp_utc, tz=timezone.utc).isoformat(),
-                "value": round(water_level, 3),
-                "quality": quality,
-                "type": "observed" if series_code == "wlo" else "predicted"
-            })
-        
-        timeseries_data[station_name] = {
+        station_data = {
             "station_id": station_id,
             "name": metadata.get("name", station_name.replace("_", " ").title()),
             "location": metadata.get("location", ""),
-            "data": series
+            "predictions": [],
+            "observations": []
         }
         
-        total_points += len(series)
-        print(f"  ?? {station_name}: {len(series)} points")
+        # Get predictions (wlp)
+        cur.execute("""
+            SELECT timestamp_utc, water_level
+            FROM tide_observation
+            WHERE station_id = ?
+              AND series_code = 'wlp'
+              AND timestamp_utc >= ?
+              AND timestamp_utc <= ?
+              AND water_level IS NOT NULL
+            ORDER BY timestamp_utc ASC
+        """, (station_id, start_ts, end_ts))
+        
+        pred_rows = cur.fetchall()
+        pred_downsampled = downsample_to_15min(pred_rows)
+        
+        for ts, val in pred_downsampled:
+            station_data["predictions"].append({
+                "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+                "value": round(val, 3)
+            })
+        
+        # Get observations (wlo)
+        cur.execute("""
+            SELECT timestamp_utc, water_level, quality
+            FROM tide_observation
+            WHERE station_id = ?
+              AND series_code = 'wlo'
+              AND timestamp_utc >= ?
+              AND timestamp_utc <= ?
+              AND water_level IS NOT NULL
+            ORDER BY timestamp_utc ASC
+        """, (station_id, start_ts, end_ts))
+        
+        obs_rows = cur.fetchall()
+        obs_downsampled = downsample_to_15min(obs_rows)
+        
+        for ts, val, quality in obs_downsampled:
+            station_data["observations"].append({
+                "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+                "value": round(val, 3),
+                "quality": quality
+            })
+        
+        # Add station if it has any data
+        if station_data["predictions"] or station_data["observations"]:
+            station_data["has_observations"] = len(station_data["observations"]) > 0
+            timeseries_data[station_name] = station_data
+            pred_orig = len(pred_rows)
+            pred_down = len(station_data["predictions"])
+            obs_orig = len(obs_rows)
+            obs_down = len(station_data["observations"])
+            print(f"  {station_name}: {pred_down} predictions (from {pred_orig}), {obs_down} observations (from {obs_orig})")
     
-    # Determine actual data time range
-    data_start = None
-    data_end = None
-    for station_data in timeseries_data.values():
-        if station_data["data"]:
-            first_time = station_data["data"][0]["time"]
-            last_time = station_data["data"][-1]["time"]
-            if data_start is None or first_time < data_start:
-                data_start = first_time
-            if data_end is None or last_time > data_end:
-                data_end = last_time
-    
-    # Build output
     output = {
         "_meta": {
-            "generated_utc": now.isoformat(),
-            "query_start": cutoff.isoformat(),
-            "query_end": now.isoformat(),
-            "data_start": data_start,
-            "data_end": data_end,
-            "hours_back": hours_back,
-            "station_count": len(timeseries_data),
-            "total_points": total_points,
+            "generated_utc": datetime.now(timezone.utc).isoformat(),
             "type": "timeseries",
-            "units": "meters",
-            "interval": "15 minutes",
-            "includes": "observations + current day predictions"
+            "calendar_day": day_start.strftime("%Y-%m-%d"),
+            "query_start": query_start.isoformat(),
+            "query_end": query_end.isoformat(),
+            "timezone": "America/Vancouver",
+            "padding_hours": 2,
+            "interval": "15 minutes"
         },
         "stations": timeseries_data
     }
     
     safe_json_write(TIMESERIES_OUT, output)
-    print(f"\n? Exported {hours_back}h timeseries ? {TIMESERIES_OUT}")
-    print(f"?? Stations: {len(timeseries_data)} | Total points: {total_points}")
-    
-    return len(timeseries_data), total_points
+    print(f"OK: Exported timeseries for {len(timeseries_data)} stations (15-min intervals)")
+    return len(timeseries_data)
 
 
-def export_highlow_events(conn, station_metadata, days_forward=3):
+def export_highlow(conn, station_metadata):
     """
-    Export high/low tide predictions for next N days.
-    These are discrete events with original timestamps preserved.
-    
-    Args:
-        conn: SQLite connection
-        station_metadata: Dict of station metadata
-        days_forward: Number of days to look forward (default 3)
+    Export high/low tide events for text display.
+    Uses wlp-hilo if available, otherwise computes from wlp predictions.
+    24h + 2h window centered on now.
     """
     cur = conn.cursor()
-    
-    now = datetime.now(timezone.utc)
-    future = now + timedelta(days=days_forward)
-    future_timestamp = int(future.timestamp())
-    now_timestamp = int(now.timestamp())
-    
-    # Get all stations with high/low predictions
-    cur.execute("""
-    SELECT DISTINCT station_name, station_id
-    FROM tide_observation
-    WHERE series_code = 'wlp-hilo'
-    ORDER BY station_name
-    """)
-    
+
+    pacific = ZoneInfo('America/Vancouver')
+    now_pacific = datetime.now(pacific)
+
+    # Query window: 12 hours before now to 14 hours after now (26 hour window)
+    query_start = now_pacific - timedelta(hours=12)
+    query_end = now_pacific + timedelta(hours=14)
+
+    # Convert to UTC timestamps
+    start_ts = int(query_start.astimezone(timezone.utc).timestamp())
+    end_ts = int(query_end.astimezone(timezone.utc).timestamp())
+
+    # Get all stations
+    cur.execute("SELECT DISTINCT station_name, station_id FROM tide_observation")
     stations = cur.fetchall()
-    
+
     highlow_data = {}
-    total_events = 0
-    
+
     for station_name, station_id in stations:
         metadata = station_metadata.get(station_name, {})
-        
-        # Query high/low events
-        query = """
-        SELECT timestamp_utc, water_level, event_type
-        FROM tide_observation
-        WHERE station_id = ?
-          AND series_code = 'wlp-hilo'
-          AND timestamp_utc >= ?
-          AND timestamp_utc <= ?
-          AND water_level IS NOT NULL
-        ORDER BY timestamp_utc ASC
-        """
-        
-        cur.execute(query, (station_id, now_timestamp, future_timestamp))
-        rows = cur.fetchall()
-        
-        if not rows:
-            continue
-        
-        # Build events array
-        events = []
-        for timestamp_utc, water_level, event_type in rows:
-            events.append({
-                "time": datetime.fromtimestamp(timestamp_utc, tz=timezone.utc).isoformat(),
-                "water_level": round(water_level, 3),
-                "type": event_type  # 'high' or 'low'
-            })
-        
-        highlow_data[station_name] = {
-            "station_id": station_id,
-            "name": metadata.get("name", station_name.replace("_", " ").title()),
-            "location": metadata.get("location", ""),
-            "events": events
-        }
-        
-        total_events += len(events)
-        print(f"  ?? {station_name}: {len(events)} events")
-    
-    # Determine actual data time range
-    data_start = None
-    data_end = None
-    for station_data in highlow_data.values():
-        if station_data["events"]:
-            first_time = station_data["events"][0]["time"]
-            last_time = station_data["events"][-1]["time"]
-            if data_start is None or first_time < data_start:
-                data_start = first_time
-            if data_end is None or last_time > data_end:
-                data_end = last_time
-    
-    # Build output
+
+        # First try wlp-hilo data (pre-calculated high/low events)
+        cur.execute("""
+            SELECT timestamp_utc, water_level
+            FROM tide_observation
+            WHERE station_id = ?
+              AND series_code = 'wlp-hilo'
+              AND timestamp_utc >= ?
+              AND timestamp_utc <= ?
+              AND water_level IS NOT NULL
+            ORDER BY timestamp_utc ASC
+        """, (station_id, start_ts, end_ts))
+
+        hilo_rows = cur.fetchall()
+
+        if hilo_rows and len(hilo_rows) >= 2:
+            # Use pre-calculated high/low data
+            events = []
+            for i, (ts, val) in enumerate(hilo_rows):
+                dt_utc = datetime.fromtimestamp(ts, tz=timezone.utc)
+                dt_pacific = dt_utc.astimezone(pacific)
+
+                # Determine type by comparing with neighbors
+                event_type = "unknown"
+                if i > 0 and i < len(hilo_rows) - 1:
+                    prev_val = hilo_rows[i-1][1]
+                    next_val = hilo_rows[i+1][1]
+                    if val > prev_val and val > next_val:
+                        event_type = "high"
+                    elif val < prev_val and val < next_val:
+                        event_type = "low"
+                elif i == 0 and len(hilo_rows) > 1:
+                    next_val = hilo_rows[i+1][1]
+                    event_type = "high" if val > next_val else "low"
+                elif i == len(hilo_rows) - 1 and len(hilo_rows) > 1:
+                    prev_val = hilo_rows[i-1][1]
+                    event_type = "high" if val > prev_val else "low"
+
+                events.append({
+                    "time": dt_utc.isoformat(),
+                    "time_pacific": dt_pacific.isoformat(),
+                    "type": event_type,
+                    "value": round(val, 3),
+                    "time_display": dt_pacific.strftime("%I:%M %p").lstrip('0'),
+                    "date": dt_pacific.strftime("%Y-%m-%d")
+                })
+
+            highlow_data[station_name] = {
+                "station_id": station_id,
+                "name": metadata.get("name", station_name.replace("_", " ").title()),
+                "location": metadata.get("location", ""),
+                "events": events
+            }
+            print(f"  {station_name}: {len(events)} high/low events (from wlp-hilo)")
+        else:
+            # Fallback: calculate from wlp predictions
+            cur.execute("""
+                SELECT timestamp_utc, water_level
+                FROM tide_observation
+                WHERE station_id = ?
+                  AND series_code = 'wlp'
+                  AND timestamp_utc >= ?
+                  AND timestamp_utc <= ?
+                  AND water_level IS NOT NULL
+                ORDER BY timestamp_utc ASC
+            """, (station_id, start_ts, end_ts))
+
+            wlp_rows = cur.fetchall()
+            if len(wlp_rows) < 3:  # Need at least 3 points to find extrema
+                continue
+
+            # Find local extrema (highs and lows)
+            events = []
+            for i in range(1, len(wlp_rows) - 1):
+                prev_val = wlp_rows[i-1][1]
+                curr_val = wlp_rows[i][1]
+                next_val = wlp_rows[i+1][1]
+
+                # Check if current point is a local maximum or minimum
+                is_high = curr_val > prev_val and curr_val > next_val
+                is_low = curr_val < prev_val and curr_val < next_val
+
+                if is_high or is_low:
+                    ts = wlp_rows[i][0]
+                    dt_utc = datetime.fromtimestamp(ts, tz=timezone.utc)
+                    dt_pacific = dt_utc.astimezone(pacific)
+
+                    events.append({
+                        "time": dt_utc.isoformat(),
+                        "time_pacific": dt_pacific.isoformat(),
+                        "type": "high" if is_high else "low",
+                        "value": round(curr_val, 3),
+                        "time_display": dt_pacific.strftime("%I:%M %p").lstrip('0'),
+                        "date": dt_pacific.strftime("%Y-%m-%d")
+                    })
+
+            if events:
+                highlow_data[station_name] = {
+                    "station_id": station_id,
+                    "name": metadata.get("name", station_name.replace("_", " ").title()),
+                    "location": metadata.get("location", ""),
+                    "events": events
+                }
+                print(f"  {station_name}: {len(events)} high/low events (computed from {len(wlp_rows)} wlp predictions)")
+
     output = {
         "_meta": {
-            "generated_utc": now.isoformat(),
-            "query_start": now.isoformat(),
-            "query_end": future.isoformat(),
-            "data_start": data_start,
-            "data_end": data_end,
-            "days_forward": days_forward,
-            "station_count": len(highlow_data),
-            "total_events": total_events,
+            "generated_utc": datetime.now(timezone.utc).isoformat(),
             "type": "highlow_events",
-            "units": "meters",
-            "event_types": ["high", "low"]
+            "query_start": query_start.isoformat(),
+            "query_end": query_end.isoformat(),
+            "timezone": "America/Vancouver",
+            "window": "12h before to 14h after now"
         },
         "stations": highlow_data
     }
-    
+
     safe_json_write(HIGHLOW_OUT, output)
-    print(f"\n? Exported high/low events ? {HIGHLOW_OUT}")
-    print(f"?? Stations: {len(highlow_data)} | Total events: {total_events}")
-    
-    return len(highlow_data), total_events
+    print(f"OK: Exported high/low events for {len(highlow_data)} stations")
+    return len(highlow_data)
 
-
-# ========== Main Execution ==========
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Export tide data from SQLite to JSON for website",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s --all                    # Export everything (default)
-  %(prog)s --current                # Export current conditions only
-  %(prog)s --timeseries --hours 48  # Export 48h of graph data
-  %(prog)s --highlow --days 3       # Export 3 days of high/low events
-        """
-    )
-    parser.add_argument(
-        "--current",
-        action="store_true",
-        help="Export current tide levels"
-    )
-    parser.add_argument(
-        "--timeseries",
-        action="store_true",
-        help="Export time series graph data"
-    )
-    parser.add_argument(
-        "--highlow",
-        action="store_true",
-        help="Export high/low tide events"
-    )
-    parser.add_argument(
-        "--all",
-        action="store_true",
-        help="Export all data types (default)"
-    )
-    parser.add_argument(
-        "--hours",
-        type=int,
-        default=24,
-        help="Hours of timeseries data to export (default: 24)"
-    )
-    parser.add_argument(
-        "--days",
-        type=int,
-        default=3,
-        help="Days of high/low events to export (default: 3)"
-    )
-    
-    args = parser.parse_args()
-    
-    # Default to all if no specific options
-    if not (args.current or args.timeseries or args.highlow or args.all):
-        args.all = True
-    
-    # Validate database exists
     if not DB_PATH.exists():
-        print(f"? Database not found: {DB_PATH}")
+        print(f"ERROR: Database not found: {DB_PATH}")
         return 1
     
-    # Load station metadata
     station_metadata = load_station_metadata()
     
-    print("?? Tide Data Export")
+    print("Tide Data Export")
     print("=" * 70)
     
     try:
         with sqlite3.connect(DB_PATH, timeout=10) as conn:
-            # Enable WAL mode for safe concurrent reads
             conn.execute("PRAGMA journal_mode=WAL;")
             
-            # Export current conditions
-            if args.current or args.all:
-                print("\n?? Exporting current conditions...")
-                export_current_levels(conn, station_metadata)
-            
-            # Export timeseries
-            if args.timeseries or args.all:
-                print(f"\n?? Exporting {args.hours}h timeseries (15-min intervals)...")
-                export_timeseries(conn, station_metadata, args.hours)
-            
-            # Export high/low events
-            if args.highlow or args.all:
-                print(f"\n?? Exporting {args.days} days of high/low events...")
-                export_highlow_events(conn, station_metadata, args.days)
+            export_latest(conn, station_metadata)
+            export_timeseries(conn, station_metadata)
+            export_highlow(conn, station_metadata)
         
-        print("\n" + "=" * 70)
-        print("? Export complete!")
+        print("=" * 70)
+        print("Export complete!")
         return 0
         
     except sqlite3.OperationalError as e:
-        print(f"? Database error: {e}")
+        print(f"Database error: {e}")
         return 1
     except Exception as e:
-        print(f"? Unexpected error: {e}")
+        print(f"Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
         return 1
 
 
