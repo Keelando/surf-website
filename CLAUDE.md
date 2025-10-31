@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Real-time marine weather monitoring system for the Salish Sea region (Strait of Georgia, English Bay, Neah Bay). Collects data from Environment Canada and NOAA buoys, stores in SQLite, publishes to MQTT/Home Assistant, and exports JSON for static website rendering.
+Real-time marine weather monitoring system for the Salish Sea region (Strait of Georgia, English Bay, Neah Bay). Collects data from:
+- **Wave Buoys**: Environment Canada and NOAA buoys for wave/wind/temperature data
+- **Tide Stations**: DFO IWLS (Integrated Water Level System) for tide observations and predictions
+
+All data stored in SQLite, published to MQTT/Home Assistant, and exported as JSON for static website rendering.
 
 **Live site:** https://halibutbank.ca
 
@@ -13,22 +17,30 @@ Real-time marine weather monitoring system for the Salish Sea region (Strait of 
 ### Data Flow Pipeline
 
 ```
-Environment Canada XML feeds → buoy_to_influx_sqlite.py → SQLite Database
+Environment Canada XML feeds → buoy_to_influx_sqlite.py → Buoy SQLite (buoy_data.sqlite)
 NOAA text/spectral feeds     → fetch_noaa_buoy.py       →      ↓
-                                                         ├→ sqlite_to_json.py → ~/site/data/*.json (website)
-                                                         ├→ export_24hr_timeseries.py → 24h charts
-                                                         └→ influx_to_mqtt.py → Home Assistant
+                                                         ├→ sqlite_to_json.py → ~/site/data/latest_buoy_v2.json
+                                                         ├→ export_24hr_timeseries.py → ~/site/data/timeseries_*.json
+                                                         └→ influx_to_mqtt.py → Home Assistant (MQTT)
+
+DFO IWLS Tide API           → tide_to_sqlite.py        → Tide SQLite (tide_data.sqlite)
+                                                         └→ export_tide_json.py → ~/site/data/tide-*.json
 ```
 
 ### Key Design Principles
 
-1. **SQLite as primary persistence**: Single source of truth at `~/.local/share/buoy_data.sqlite`
+1. **Separate SQLite databases**:
+   - `~/.local/share/buoy_data.sqlite` - Wave buoy data
+   - `~/.local/share/tide_data.sqlite` - Tide station data (NEW)
 2. **InfluxDB as optional sink**: Soft dependency (code works without it)
 3. **Per-field freshness**: Each metric (wave height, wind speed, etc.) independently queries for most recent non-null value within 2-hour window
-4. **Deduplication**: Unique index on `(buoy_id, observation_time)` prevents duplicate records
+4. **Deduplication**: Primary keys on timestamps prevent duplicate records
 5. **Unit conversions**: Wind stored as km/h internally, displayed as knots; NOAA m/s → km/h on ingest
+6. **Tide data separation**: Observations (dynamic, every 30 min) vs predictions/high-low (static, once daily)
 
-### Database Schema
+### Buoy Database Schema
+
+**Database:** `~/.local/share/buoy_data.sqlite`
 
 **Table:** `buoy_observation`
 
@@ -64,6 +76,71 @@ CREATE UNIQUE INDEX uniq_buoy_ts ON buoy_observation(buoy_id, observation_time);
 - `46087` - Neah Bay (includes spectral wave separation: swell vs wind waves)
 - `46088` - New Dungeness (Hein Bank)
 
+## Tide Stations (DFO IWLS)
+
+**Monitored stations:**
+- `point_atkinson` - Point Atkinson (7795)
+- `vancouver` - Vancouver (7735)
+- `kitsilano` - Kitsilano (8525)
+- `vancouver_harbour` - Vancouver Harbour (8074)
+- `tsawwassen` - Tsawwassen (7786)
+- `whiterock` - White Rock / Crescent Beach (8408)
+- `new_westminster` - New Westminster (7654)
+- `campbell_river` - Campbell River (8074)
+- `nanaimo` - Nanaimo (7917)
+
+**Data sources:**
+- **Observations (wlo)**: Real-time water levels from DFO sensors (6-minute intervals)
+- **Predictions (wlp)**: Astronomical tide forecasts based on harmonic constituents (1-minute intervals)
+- **High/Low Events (wlp-hilo)**: Pre-calculated high and low tide times from DFO
+
+### Tide Database Schema
+
+**Database:** `~/.local/share/tide_data.sqlite` (separate from buoy data)
+
+**Design rationale:** Tide data is separated into three tables based on update frequency:
+- **Observations** change every 6 minutes → fetched every 30 minutes
+- **Predictions** are static astronomical calculations → fetched once daily
+- **High/Low events** are static extrema → fetched once daily
+
+**Table:** `tide_observation`
+```sql
+CREATE TABLE tide_observation (
+    station_id TEXT NOT NULL,           -- DFO station ID (e.g., '5cebf1de3d0f4a073c4bb94c')
+    station_name TEXT NOT NULL,         -- Internal key (e.g., 'point_atkinson')
+    observation_time INTEGER NOT NULL,  -- Unix timestamp (UTC)
+    water_level REAL,                   -- meters
+    quality TEXT,                       -- QC flag code from DFO
+    recorded_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (station_id, observation_time)
+);
+```
+
+**Table:** `tide_prediction`
+```sql
+CREATE TABLE tide_prediction (
+    station_id TEXT NOT NULL,           -- DFO station ID
+    station_name TEXT NOT NULL,         -- Internal key
+    prediction_time INTEGER NOT NULL,   -- Unix timestamp (UTC)
+    water_level REAL,                   -- meters
+    recorded_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (station_id, prediction_time)
+);
+```
+
+**Table:** `tide_highlow`
+```sql
+CREATE TABLE tide_highlow (
+    station_id TEXT NOT NULL,           -- DFO station ID
+    station_name TEXT NOT NULL,         -- Internal key
+    event_time INTEGER NOT NULL,        -- Unix timestamp (UTC)
+    water_level REAL,                   -- meters
+    event_type TEXT,                    -- 'high' or 'low' (computed from wlp-hilo data)
+    recorded_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (station_id, event_time)
+);
+```
+
 ## Development Commands
 
 ### Setup
@@ -98,8 +175,14 @@ python3 influx_to_mqtt.py
 # Fetch storm surge forecast from GeoMet
 python3 fetch_storm_surge.py
 
-# Fetch tide data from NOAA
-python3 tide_to_sqlite.py
+# Fetch tide data from DFO IWLS (supports separate flags)
+python3 tide_to_sqlite.py --all              # All data types
+python3 tide_to_sqlite.py --observations     # Just observations (wlo)
+python3 tide_to_sqlite.py --predictions      # Just predictions (wlp)
+python3 tide_to_sqlite.py --highlow          # Just high/low events (wlp-hilo)
+
+# Export tide JSON files (latest, timeseries, high/low)
+python3 export_tide_json.py
 ```
 
 ### Database Inspection
@@ -120,6 +203,34 @@ sqlite3 ~/.local/share/buoy_data.sqlite "
   FROM buoy_observation
   WHERE buoy_id='46087'
   ORDER BY observation_time DESC LIMIT 10;"
+
+# Check tide database table counts
+sqlite3 ~/.local/share/tide_data.sqlite "
+  SELECT 'tide_observation' as table_name, COUNT(*) as count FROM tide_observation
+  UNION ALL
+  SELECT 'tide_prediction', COUNT(*) FROM tide_prediction
+  UNION ALL
+  SELECT 'tide_highlow', COUNT(*) FROM tide_highlow;"
+
+# Check latest tide observations per station
+sqlite3 ~/.local/share/tide_data.sqlite "
+  SELECT station_name, datetime(observation_time, 'unixepoch') AS last_obs,
+         water_level, quality,
+         (strftime('%s','now') - observation_time)/60.0 AS minutes_ago
+  FROM tide_observation
+  WHERE observation_time IN (
+    SELECT MAX(observation_time) FROM tide_observation GROUP BY station_id
+  )
+  ORDER BY station_name;"
+
+# Check today's high/low tide events
+sqlite3 ~/.local/share/tide_data.sqlite "
+  SELECT station_name, datetime(event_time, 'unixepoch', 'localtime') AS event_time,
+         event_type, water_level
+  FROM tide_highlow
+  WHERE event_time >= strftime('%s', 'now', 'start of day')
+    AND event_time < strftime('%s', 'now', '+1 day', 'start of day')
+  ORDER BY station_name, event_time;"
 ```
 
 ### Log Monitoring
@@ -132,10 +243,18 @@ tail -f ~/envcan_wave/*.log
 
 Production system runs on cron (see `cron.txt`):
 
-- **Every minute**: Parse EC XMLs, export JSON, push MQTT
-- **Every 5 min**: Export 24h timeseries
-- **Every 20 min**: Fetch NOAA data (5,25,45 min)
-- **Every 30 min**: Fetch tide data
+**Buoy data:**
+- **Every minute**: Parse EC XMLs, export buoy JSON, push MQTT
+- **Every 5 min**: Export 24h buoy timeseries
+- **Every 20 min**: Fetch NOAA buoy data (5,25,45 min)
+
+**Tide data:**
+- **Every minute**: Export tide JSON (latest, timeseries, high/low)
+- **Every 30 min**: Fetch tide observations (real-time water levels)
+- **Daily 12:10 AM**: Fetch tide predictions (48-hour astronomical forecasts)
+- **Daily 12:15 AM**: Fetch tide high/low events (48-hour extrema)
+
+**Maintenance:**
 - **Every 6 hours**: Fetch storm surge forecast (1,7,13,19h)
 - **Hourly**: Purge XML files older than 2 days
 - **Daily 11 PM**: Auto-commit and push to git
@@ -159,6 +278,41 @@ MQTT_PASS=your_password
 ```
 
 **Security:** Never commit `.env` files. Use `chmod 600` on credentials.
+
+### Caddy Web Server Configuration
+
+**Location:** `/etc/caddy/Caddyfile`
+
+The website is served using Caddy on port 8090. Cache headers are configured to:
+- **Cache images** (banner, etc.) for 1 month to improve load times
+- **No cache** for HTML/CSS/JS/JSON to allow immediate updates during development
+
+```caddy
+:8090 {
+    root * /home/keelando/site
+    file_server
+
+    # Cache images for 1 month (includes banner)
+    @images {
+        path *.jpg *.jpeg *.png *.gif *.webp *.svg
+    }
+    header @images Cache-Control "public, max-age=2592000, immutable"
+
+    # No caching for everything else (HTML/CSS/JS/data)
+    @nocache {
+        not path *.jpg *.jpeg *.png *.gif *.webp *.svg
+    }
+    header @nocache Cache-Control "no-store, no-cache, must-revalidate"
+
+    # Enable compression
+    encode gzip zstd
+}
+```
+
+**Reload Caddy after changes:**
+```bash
+sudo caddy reload --config /etc/caddy/Caddyfile
+```
 
 ## Adding a New Buoy
 
@@ -223,9 +377,30 @@ MQTT_PASS=your_password
 - Runs every 6 hours (aligned with GeoMet updates)
 
 ### tide_to_sqlite.py
-- Fetches NOAA tide predictions for configured stations
-- Stores in SQLite for local querying
-- Runs every 30 minutes
+- Fetches DFO IWLS tide data via API for configured stations
+- **Separate database**: Writes to `~/.local/share/tide_data.sqlite` (not buoy_data.sqlite)
+- **Three separate tables** with distinct update schedules:
+  - `tide_observation` (wlo series) - Real-time water levels, 2-hour window
+  - `tide_prediction` (wlp series) - Astronomical forecasts, 48-hour window
+  - `tide_highlow` (wlp-hilo series) - High/low events, 48-hour window
+- **Command-line flags**:
+  - `--observations` - Fetch only observations (runs every 30 min via cron)
+  - `--predictions` - Fetch only predictions (runs daily at 12:10 AM via cron)
+  - `--highlow` - Fetch only high/low events (runs daily at 12:15 AM via cron)
+  - `--all` - Fetch all data types (for manual testing)
+- **Event type detection**: Compares wlp-hilo values with neighbors to classify as 'high' or 'low'
+- **Rate limiting**: 2.1 second delay between station requests
+
+### export_tide_json.py
+- **Source database**: Reads from `~/.local/share/tide_data.sqlite`
+- Exports three JSON files for tide page:
+  - `tide-latest.json` - Current observation and prediction per station
+  - `tide-timeseries.json` - Calendar day ±2 hours (observations + predictions)
+  - `tide-hi-low.json` - 26-hour window of high/low events (12h before to 14h after)
+- **Downsampling**: Observations to 15-minute intervals (:00, :15, :30, :45)
+- **Timezone conversion**: All exports include Pacific time for display
+- **Atomic writes**: Uses temp files to prevent partial JSON writes
+- Runs every minute via cron
 
 ## Important Data Handling Notes
 
@@ -244,6 +419,19 @@ MQTT_PASS=your_password
 - Always parse as `datetime(..., tzinfo=timezone.utc)`
 - SQLite stores Unix epoch integers
 - JSON exports use ISO 8601 format
+
+### Tide Data Architecture
+- **Separate database rationale**: Tide data has different update frequencies than buoy data
+  - Observations: Dynamic, updated every 6 minutes by DFO sensors
+  - Predictions: Static, astronomical calculations don't change
+  - High/low events: Static, extrema calculated once per day
+- **Fetch optimization**: Only observations fetched frequently (every 30 min), predictions/high-low fetched once daily
+- **Primary keys**: Prevent duplicates on (station_id, timestamp) without needing IGNORE logic
+- **DFO API series codes**:
+  - `wlo` - Water Level Observations (real-time sensor data)
+  - `wlp` - Water Level Predictions (1-minute interval astronomical forecasts)
+  - `wlp-hilo` - Water Level Prediction High/Low (extrema only)
+- **Station metadata**: Station names and display info stored in `tide_stations.json`
 
 ## Testing Changes
 
@@ -268,3 +456,83 @@ Expected - only NOAA stations provide swell/wind wave separation.
 
 ### Wind direction shows as null
 NOAA may report `MM` (missing) for calm conditions or sensor failures. This is handled correctly.
+
+### Missing tide predictions or high/low events
+- Check if tide database exists: `ls -lh ~/.local/share/tide_data.sqlite`
+- Verify prediction fetch ran: `tail tide_pred.log` and `tail tide_highlow.log`
+- Predictions/high-low only fetch once daily (12:10 AM / 12:15 AM), so missing data may indicate:
+  - Script hasn't run yet today
+  - API error during fetch (check logs)
+  - Empty query window (predictions use 48-hour window centered on now)
+
+### Tide export shows "0 stations" for high/low
+- High/low events use a 26-hour query window (12h before to 14h after current time)
+- If predictions are stale (fetched >12 hours ago), they fall outside export window
+- Solution: Manually run `python3 tide_to_sqlite.py --highlow` to refresh data
+
+## Frontend Structure
+
+### Tides Page (~/site/tides.html)
+
+The tide monitoring page displays real-time water levels and predictions for DFO stations.
+
+**Key features:**
+- **Station selector dropdown** - Lists all monitored stations alphabetically
+- **Auto-loads Point Atkinson** - Default station loads automatically on page load
+- **Three data displays:**
+  1. Current observation (latest water level from DFO sensor)
+  2. Current prediction (astronomical tide forecast for now)
+  3. Today's high/low tides (table showing predicted highs and lows)
+- **28-hour tide chart** - ECharts visualization showing:
+  - Tide predictions as smooth blue line
+  - Actual observations as green scatter points
+  - Interactive tooltips with Pacific time formatting
+  - Responsive grid layout (10% margins, containLabel: true)
+- **Auto-refresh** - Reloads data every 5 minutes
+- **Responsive design** - Works on mobile, tablet, and desktop
+
+**JavaScript file:** `~/site/assets/js/tides.js`
+
+Key functions:
+- `loadTideData()` - Fetches all three JSON files (latest, timeseries, high/low)
+- `populateStationDropdown()` - Builds station selector, sets Point Atkinson as default
+- `displayStation()` - Renders all components for selected station
+- `displayTideChart()` - Initializes and renders ECharts tide chart
+- Chart shows section first, then renders chart to ensure proper width measurement
+
+**Chart styling:** Chart container uses consistent 1200px max-width across site:
+- Border, shadow, and overflow styling in `nav-tide-styles.css`
+- Grid uses percentage-based margins (10% left/right) for responsive width
+- hideOverlap prevents x-axis label crowding
+- Responsive font sizes (9px mobile, 10px desktop)
+
+**Data sources:**
+- `~/site/data/tide-latest.json` - Current conditions
+- `~/site/data/tide-timeseries.json` - 28-hour rolling window
+- `~/site/data/tide-hi-low.json` - Today's high/low events
+
+### Chart Max-Width Standards
+
+All chart-containing sections use **1200px max-width** for consistency:
+
+**index.html:**
+- `#charts-section` - Buoy charts
+- `#wave-height-table-section` - Wave summary table
+- `#storm-surge-section` - Storm surge forecasts
+
+**tides.html:**
+- `.tide-main-content` - Tide page main container
+
+**CSS implementation:**
+```css
+#charts-section,
+#storm-surge-section,
+#wave-height-table-section,
+.tide-main-content {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+```
+
+All inline styles have been moved to CSS files for maintainability.

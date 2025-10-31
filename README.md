@@ -14,24 +14,33 @@ A real-time, open-source wave and weather monitoring system for the **Salish Sea
 
 ## Overview
 
-This system collects, processes, and displays marine weather data from 5 buoys:
-- **Environment Canada** – Halibut Bank, English Bay, Southern Georgia Strait, Sentry Shoal  
-- **NOAA** – Neah Bay (includes enhanced spectral wave analysis)
+This system collects, processes, and displays marine weather data from:
+- **5 Wave Buoys** – Halibut Bank, English Bay, Southern Georgia Strait, Sentry Shoal (EC), Neah Bay & New Dungeness (NOAA)
+- **10 Tide Stations** – Point Atkinson, Vancouver, Kitsilano, Tsawwassen, White Rock, New Westminster, Campbell River, Nanaimo, and more (DFO IWLS)
 
 ### Key Features
-- 🔁 Automated XML + text feed collection  
-- 💾 SQLite database for local persistence (auto schema management)  
-- 📡 MQTT integration with Home Assistant (auto-discovery)  
-- 🧩 JSON outputs for static website rendering  
-- 📊 24-hour interactive charts (ECharts)  
-- ⚙️ Smart deduplication and update scheduling  
-- 🌊 NOAA “swell vs wind wave” separation  
+- 🔁 Automated XML + text feed collection
+- 💾 SQLite database for local persistence (auto schema management)
+- 📡 MQTT integration with Home Assistant (auto-discovery)
+- 🧩 JSON outputs for static website rendering
+- 📊 24-hour interactive charts (ECharts)
+- 🌊 Real-time tide predictions and observations
+- ⚙️ Smart deduplication and update scheduling
+- 🌊 NOAA "swell vs wind wave" separation  
 
 ---
 
 ## 🏗️ System Architecture
 
-Environment Canada XML → buoy_to_influx_sqlite.py → SQLite Database NOAA 5-day feeds      → fetch_noaa_buoy.py       →      ↓ sqlite_to_json.py export_24hr_timeseries.py influx_to_mqtt.py ↓ ~/site/data/*.json Home Assistant (MQTT)
+```
+Environment Canada XML → buoy_to_influx_sqlite.py → SQLite Database (buoy_data.sqlite)
+NOAA 5-day feeds       → fetch_noaa_buoy.py       →      ↓
+DFO IWLS Tides         → tide_to_sqlite.py        →      ↓
+                                                   ├→ sqlite_to_json.py → ~/site/data/latest_buoy_v2.json
+                                                   ├→ export_24hr_timeseries.py → timeseries_*.json
+                                                   ├→ export_tide_json.py → tide-*.json
+                                                   └→ influx_to_mqtt.py → Home Assistant (MQTT)
+```
 
 ### Hardware Setup
 - **Home Assistant Server** (Lenovo M715Q): Runs InfluxDB + MQTT broker  
@@ -124,6 +133,12 @@ Add to crontab (crontab -e):
 # Fetch storm surge forecast every 6 hours (GeoMet updates every 6h)
 30 1,7,13,19 * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_storm_surge.py >> $HOME/envcan_wave/storm_surge.log 2>&1
 
+# Fetch tide data every 30 minutes (DFO IWLS)
+*/30 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/tide_to_sqlite.py >> $HOME/envcan_wave/tide.log 2>&1
+
+# Export tide JSON every minute
+* * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_tide_json.py >> $HOME/envcan_wave/tide_export.log 2>&1
+
 # Cleanup old XML files (keep 2 days)
 0 * * * * find $HOME/envcan_wave/data/buoy -name "*.xml" -mtime +2 -delete
 
@@ -177,39 +192,39 @@ CREATE INDEX idx_buoy_time ON buoy_observation(buoy_id, observation_time DESC);
 
 📊 Web Interface
 
-Main Page (index.html)
+### Buoys Page (index.html)
 
 Displays current conditions for all buoys with:
+- Real-time wind speed/direction
+- Wave height/period/direction
+- Air/sea temperature
+- Atmospheric pressure
+- Data staleness warnings (>3 hours old)
+- Source badges (Environment Canada vs NOAA)
 
-Real-time wind speed/direction
+**Neah Bay Special Features:**
+- Displays swell (ocean waves) prominently
+- Collapsible detailed view with wind waves + combined metrics
 
-Wave height/period/direction
+**Interactive Charts:**
+- 24-hour wave height comparison (all buoys)
+- Per-buoy wave, wind, and temperature timeseries
+- Storm surge forecasts (GeoMet GDSPS)
+- Responsive design for mobile and desktop
 
-Air/sea temperature
+### Tides Page (tides.html)
 
-Atmospheric pressure
-
-Data staleness warnings (>3 hours old)
-
-Source badges (Environment Canada vs NOAA)
-
-
-Neah Bay Special Features:
-
-Displays swell (ocean waves) prominently
-
-Collapsible detailed view with wind waves + combined metrics
-
-
-Charts Page (charts.html)
-
-Interactive 24-hour timeseries using ECharts
-
-Separate charts for waves, wind, and temperature
-
-Buoy comparison chart (all EC buoys)
-
-Responsive design for mobile and desktop
+Real-time tide monitoring for 10+ DFO stations:
+- **Current observation** - Latest water level measurement
+- **Current prediction** - Astronomical tide forecast (now)
+- **High/Low table** - Today's predicted high and low tides
+- **28-hour chart** - ECharts visualization showing:
+  - Tide predictions (blue line)
+  - Actual observations (green dots)
+  - Interactive tooltips with Pacific time
+- **Auto-loads Point Atkinson** as default station
+- Station selector dropdown for all monitored locations
+- Auto-refreshes every 5 minutes
 
 
 
@@ -217,14 +232,16 @@ Responsive design for mobile and desktop
 
 🧠 Key Scripts
 
-Script	Purpose
-
-buoy_to_influx_sqlite.py	Parse EC XML → SQLite; optional InfluxDB sync
-fetch_noaa_buoy.py	Download + merge NOAA data (met + spectral)
-sqlite_to_json.py	Export latest readings for website display
-export_24hr_timeseries.py	Export rolling 24-hour timeseries
-influx_to_mqtt.py	Publish MQTT topics for Home Assistant
-fetch_storm_surge.py	Fetch GeoMet GDSPS storm surge forecasts
+| Script | Purpose |
+|--------|---------|
+| `buoy_to_influx_sqlite.py` | Parse EC XML → SQLite; optional InfluxDB sync |
+| `fetch_noaa_buoy.py` | Download + merge NOAA data (met + spectral) |
+| `tide_to_sqlite.py` | Fetch DFO IWLS tide data (observations + predictions) |
+| `sqlite_to_json.py` | Export latest buoy readings for website display |
+| `export_24hr_timeseries.py` | Export rolling 24-hour buoy timeseries |
+| `export_tide_json.py` | Export tide data (latest, timeseries, high/low) |
+| `influx_to_mqtt.py` | Publish MQTT topics for Home Assistant |
+| `fetch_storm_surge.py` | Fetch GeoMet GDSPS storm surge forecasts |
 
 
 

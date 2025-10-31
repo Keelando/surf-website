@@ -20,16 +20,19 @@
 # Fetch NOAA buoy data every 5 minutes (NOAA updates hourly)
 5,25,45 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_noaa_buoy.py >> /home/keelando/envcan_wave/noaa.log 2>&1
 
-# ========== TIDE DATA - NEW SCHEDULE ==========
+# ========== TIDE DATA ==========
 
-# Fetch tide observations every 30 minutes (15-min downsampled, 11-day retention)
+# Fetch tide observations every 30 minutes (real-time water levels)
 */30 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py --observations >> /home/keelando/envcan_wave/tide_obs.log 2>&1
 
-# Fetch tide predictions daily at 12:05 AM and 12:05 PM (current day only, 3-day retention)
-5 0 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py --predictions >> /home/keelando/envcan_wave/tide_pred.log 2>&1
+# Fetch tide predictions once daily at 12:10 AM (astronomical forecasts, 48-hour window)
+10 0 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py --predictions >> /home/keelando/envcan_wave/tide_pred.log 2>&1
 
-# Export tide JSON data every 5 minutes (current conditions, timeseries, high/low events)
-*/5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_tide_json.py --all >> /home/keelando/envcan_wave/tide_export.log 2>&1
+# Fetch high/low events once daily at 12:15 AM (tide extrema, 48-hour window)
+15 0 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py --highlow >> /home/keelando/envcan_wave/tide_highlow.log 2>&1
+
+# Export tide JSON data every minute (latest conditions, timeseries, high/low events)
+* * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_tide_json.py >> /home/keelando/envcan_wave/tide_export.log 2>&1
 
 # ========== END TIDE DATA ==========
 
