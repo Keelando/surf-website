@@ -12,6 +12,30 @@ All data stored in SQLite, published to MQTT/Home Assistant, and exported as JSO
 
 **Live site:** https://halibutbank.ca
 
+## Station Registry (NEW - 2025-11-01)
+
+**Master station metadata:** `~/envcan_wave/stations.json`
+
+Unified registry containing all monitored stations with coordinates, data types, and metadata. This replaces hardcoded station lists scattered across multiple scripts.
+
+**Key files:**
+- `stations.json` - Master metadata (6 buoys + 8 tide stations)
+- `stations.py` - Python module for accessing station data
+- `validate_stations.py` - Validation script for data integrity
+
+**Web integration:**
+- `~/site/data/stations.json` - Web-accessible copy (must be chmod 644)
+- `~/site/assets/js/stations-map.js` - Leaflet map displaying all stations
+- Map appears on index.html between buoy cards and charts section
+
+**Usage:**
+```python
+from stations import get_all_buoys, get_tide_station
+
+BUOYS = get_all_buoys()
+point_atk = get_tide_station("point_atkinson")
+```
+
 ## Core Architecture
 
 ### Data Flow Pipeline
@@ -67,27 +91,34 @@ CREATE UNIQUE INDEX uniq_buoy_ts ON buoy_observation(buoy_id, observation_time);
 ## Monitored Buoys
 
 **Environment Canada (EC):**
-- `4600146` - Halibut Bank
-- `4600303` - Southern Georgia Strait
-- `4600304` - English Bay
-- `4600131` - Sentry Shoal
+- `4600146` - Halibut Bank (49.337°N, 123.731°W)
+- `4600303` - Southern Georgia Strait (49.03°N, 123.43°W)
+- `4600304` - English Bay (49.3°N, 123.36°W)
+- `4600131` - Sentry Shoal (49.917°N, 124.917°W)
 
 **NOAA:**
-- `46087` - Neah Bay (includes spectral wave separation: swell vs wind waves)
-- `46088` - New Dungeness (Hein Bank)
+- `46087` - Neah Bay (48.495°N, 124.728°W) - includes spectral wave separation: swell vs wind waves
+- `46088` - New Dungeness / Hein Bank (48.333°N, 123.167°W)
+
+**Note:** All station metadata maintained in `stations.json`. See Station Registry section above.
 
 ## Tide Stations (DFO IWLS)
 
-**Monitored stations:**
-- `point_atkinson` - Point Atkinson (7795)
-- `vancouver` - Vancouver (7735)
-- `kitsilano` - Kitsilano (8525)
-- `vancouver_harbour` - Vancouver Harbour (8074)
-- `tsawwassen` - Tsawwassen (7786)
-- `whiterock` - White Rock / Crescent Beach (8408)
-- `new_westminster` - New Westminster (7654)
-- `campbell_river` - Campbell River (8074)
-- `nanaimo` - Nanaimo (7917)
+**Monitored stations (8 total):**
+
+**Permanent (with real-time observations):**
+- `point_atkinson` - Point Atkinson (07795)
+- `kitsilano` - Kitsilano (07707)
+- `new_westminster` - New Westminster (07654)
+- `campbell_river` - Campbell River (08074)
+
+**Temporary (predictions only):**
+- `tsawwassen` - Tsawwassen (07590)
+- `whiterock` - White Rock (07577)
+- `crescent_pile` - Crescent Beach (07579)
+- `nanaimo` - Nanoose Bay (07930) - Nanaimo area
+
+**Note:** All station metadata maintained in `stations.json`. See Station Registry section above.
 
 **Data sources:**
 - **Observations (wlo)**: Real-time water levels from DFO sensors (6-minute intervals)
