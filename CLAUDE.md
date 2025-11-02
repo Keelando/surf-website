@@ -280,10 +280,10 @@ Production system runs on cron (see `cron.txt`):
 - **Every 20 min**: Fetch NOAA buoy data (5,25,45 min)
 
 **Tide data:**
-- **Every minute**: Export tide JSON (latest, timeseries, high/low)
+- **Every 5 min**: Export tide JSON (latest, timeseries, high/low)
 - **Every 30 min**: Fetch tide observations (real-time water levels)
-- **Daily 12:10 AM**: Fetch tide predictions (48-hour astronomical forecasts)
-- **Daily 12:15 AM**: Fetch tide high/low events (48-hour extrema)
+- **Daily 12:05 AM**: Fetch tide predictions (48-hour astronomical forecasts)
+- **Twice daily (12:10 AM & 12:10 PM)**: Fetch tide high/low events (48-hour extrema, redundancy)
 
 **Maintenance:**
 - **Every 6 hours**: Fetch storm surge forecast (1,7,13,19h)
@@ -456,7 +456,7 @@ sudo caddy reload --config /etc/caddy/Caddyfile
   - Observations: Dynamic, updated every 6 minutes by DFO sensors
   - Predictions: Static, astronomical calculations don't change
   - High/low events: Static, extrema calculated once per day
-- **Fetch optimization**: Only observations fetched frequently (every 30 min), predictions/high-low fetched once daily
+- **Fetch optimization**: Only observations fetched frequently (every 30 min), predictions fetched once daily, high/low fetched twice daily for redundancy
 - **Primary keys**: Prevent duplicates on (station_id, timestamp) without needing IGNORE logic
 - **DFO API series codes**:
   - `wlo` - Water Level Observations (real-time sensor data)
@@ -567,3 +567,59 @@ All chart-containing sections use **1200px max-width** for consistency:
 ```
 
 All inline styles have been moved to CSS files for maintainability.
+
+### UI/UX Enhancements (2025-11-02)
+
+**Directional Arrows on Buoy Cards:**
+- Added visual directional arrows for all wind and wave directions
+- Helper function `getDirectionalArrow(degrees, arrowType)` in `main.js`
+- Wind uses `↓` arrow, waves use `➤` arrow
+- CSS transforms rotate arrows to match actual direction (e.g., 270° = west)
+- Styling in `style-v2.css` with `.direction-arrow` class
+
+**Navigation Links (Card → Map/Charts):**
+- Each buoy card now has two navigation buttons:
+  - `📍 View Location` - Scrolls to map and centers on selected buoy
+  - `📊 View Charts` - Scrolls to charts section and selects that buoy
+- Functions in `main.js`:
+  - `scrollToMap(buoyId)` - Smooth scroll + map centering + popup
+  - `scrollToCharts(buoyId)` - Smooth scroll to buoy selector dropdown + auto-select
+- Map integration in `stations-map.js`:
+  - `centerMapOnBuoy(buoyId)` - Centers map with animation, opens marker popup
+  - Global function accessible via `window.centerMapOnBuoy`
+  - Stores buoy markers in `buoyMarkers{}` object for easy lookup
+- Pulse animation provides visual feedback when scrolling
+- Chart button disabled if no data available (grayed out)
+- Button styling in `style-v2.css` with `.buoy-nav-links` classes
+
+**Tide Page Improvements:**
+- Reduced excessive padding by ~38-50% across all components:
+  - Tide selector: 2rem → 1rem
+  - Card padding: 2rem → 1.25rem
+  - Data groups: 2rem → 1.25rem margins/padding
+  - Tide values: 1rem → 0.5rem padding
+- Added station metadata display below station name:
+  - Color-coded badge: Green for permanent stations, orange for prediction-only
+  - DFO station code (e.g., "07795")
+  - Precise coordinates (e.g., "49.3375°N, 123.2536°W")
+  - Descriptive location (e.g., "West Vancouver")
+- Loads metadata from `stations.json` for consistency with map
+- Styling in `nav-tide-styles.css` with `.station-metadata` classes
+- Mobile responsive: metadata items stack vertically on small screens
+
+**Wave Breaking Threshold Annotations:**
+- Added explanatory note below wave comparison chart
+- Explains the two reference lines:
+  - 0.7m (orange) - Small wind-driven waves may begin to break on exposed sandy beaches
+  - 1.2m (red) - Moderate waves begin breaking on exposed sandy beaches
+- Styled info box in `index.html` matches site design language
+
+**Files Modified:**
+- `~/site/assets/js/main.js` - Arrows, navigation functions, chart scroll fix
+- `~/site/assets/js/stations-map.js` - Map centering function, marker storage
+- `~/site/assets/js/tides.js` - Metadata display, stations.json integration
+- `~/site/assets/css/style-v2.css` - Arrow styles, nav buttons, pulse animation
+- `~/site/assets/css/stations-map.css` - Enhanced marker styles (for future use)
+- `~/site/assets/css/nav-tide-styles.css` - Reduced padding, metadata styles
+- `~/site/tides.html` - Added metadata container div
+- `~/site/index.html` - Wave threshold explanation, scroll alignment fix
