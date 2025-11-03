@@ -345,6 +345,55 @@ The website is served using Caddy on port 8090. Cache headers are configured to:
 sudo caddy reload --config /etc/caddy/Caddyfile
 ```
 
+### Browser Cache Busting (IMPORTANT!)
+
+**Problem:** Even though Caddy is configured with `Cache-Control: no-store, no-cache`, browsers (especially Firefox) can still aggressively cache CSS and JS files, causing stale styles/behavior to persist after updates.
+
+**Solution:** CSS files are versioned in their filenames (e.g., `style-v3.css`) to force browsers to treat them as completely new resources.
+
+**Current Implementation (as of 2025-11-03):**
+
+**CSS files:**
+- `~/site/assets/css/style-v3.css` - Main site styles
+- `~/site/assets/css/nav-tide-styles-v3.css` - Navigation and tide page styles
+- `~/site/assets/css/stations-map-v3.css` - Map component styles
+
+**HTML references:**
+```html
+<!-- index.html and tides.html -->
+<link rel="stylesheet" href="/assets/css/style-v3.css" />
+<link rel="stylesheet" href="/assets/css/nav-tide-styles-v3.css" />
+<link rel="stylesheet" href="/assets/css/stations-map-v3.css" />
+```
+
+**When to increment versions:**
+- After making CSS changes that don't appear in browser
+- When users report visual inconsistencies vs expected behavior
+- After any significant UI/UX changes
+
+**How to bust cache:**
+1. Rename CSS files: `mv style-v3.css style-v4.css` (increment version number)
+2. Update HTML files (`index.html`, `tides.html`) to reference new filenames
+3. Optional: Delete old versioned files once confirmed working
+
+**Example workflow:**
+```bash
+cd ~/site/assets/css
+mv style-v3.css style-v4.css
+mv nav-tide-styles-v3.css nav-tide-styles-v4.css
+mv stations-map-v3.css stations-map-v4.css
+
+# Then update both HTML files to reference v4 instead of v3
+```
+
+**Why this matters:**
+- Saves hours of debugging "phantom" issues caused by stale CSS
+- Prevents user confusion when site appears broken due to mixed old/new assets
+- Much more reliable than query parameters or asking users to hard-refresh (Ctrl+Shift+R)
+- Browser sees a completely new file path = guaranteed cache bust
+
+**Note:** JS files don't currently use versioning since they're loaded dynamically and cache less aggressively, but can be versioned the same way if needed.
+
 ## Adding a New Buoy
 
 1. Add to `BUOYS` dictionary in all scripts that reference it:
@@ -444,6 +493,15 @@ sudo caddy reload --config /etc/caddy/Caddyfile
 - **Swell** (SwH/SwP/SwD): Long-period ocean waves from distant storms
 - **Wind waves** (WWH/WWP/WWD): Short-period locally-generated waves
 - Only available for stations with spectral buoys (46087, 46088)
+
+### Meteorological Direction Convention
+- **Wind and wave directions indicate WHERE they are COMING FROM, not where they're going**
+- Example: "West wind" (270°) = wind blowing FROM the west TO the east
+- Example: "Northwest waves" (315°) = waves coming FROM the northwest TO the southeast
+- **Frontend display arrows** (`~/site/assets/js/main.js:getDirectionalArrow()`):
+  - Wind arrow (↓): rotation = `degrees` (arrow points in the direction wind is blowing TO)
+  - Wave arrow (➤): rotation = `degrees + 90` (compensates for arrow naturally pointing east)
+- This convention applies to all directional data: wind_direction, wave_direction_peak, swell_direction, wind_wave_direction
 
 ### Timestamp Handling
 - NOAA provides UTC timestamps without timezone info
