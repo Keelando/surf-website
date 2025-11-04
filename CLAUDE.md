@@ -41,15 +41,125 @@ point_atk = get_tide_station("point_atkinson")
 ### Data Flow Pipeline
 
 ```
-Environment Canada XML feeds → buoy_to_influx_sqlite.py → Buoy SQLite (buoy_data.sqlite)
-NOAA text/spectral feeds     → fetch_noaa_buoy.py       →      ↓
+sr3 (Sarracenia) subscribe  → Environment Canada XMLs  → buoy_to_influx_sqlite.py → Buoy SQLite (buoy_data.sqlite)
+NOAA text/spectral feeds    → fetch_noaa_buoy.py       →      ↓
                                                          ├→ sqlite_to_json.py → ~/site/data/latest_buoy_v2.json
                                                          ├→ export_24hr_timeseries.py → ~/site/data/timeseries_*.json
                                                          └→ influx_to_mqtt.py → Home Assistant (MQTT)
 
 DFO IWLS Tide API           → tide_to_sqlite.py        → Tide SQLite (tide_data.sqlite)
                                                          └→ export_tide_json.py → ~/site/data/tide-*.json
+
+sr3 (Marine Forecast)       → EC Marine Forecast XMLs  → parse_marine_forecast.py → ~/site/data/marine_forecast.json
 ```
+
+### Sarracenia (sr3) - XML File Subscriber
+
+**Critical infrastructure:** sr3 subscribes to Environment Canada's AMQP broker and automatically downloads XML files for buoy observations and marine forecasts. **Two separate subscriptions run continuously:**
+
+1. **Buoy observations** (`bc_buoys.conf`) - Downloads SWOB-ML XMLs every hour for 4 buoys
+2. **Marine forecasts** (`marine_forecast.conf`) - Downloads marine weather forecast XMLs 2-4 times daily
+
+#### Buoy Observation Subscription
+
+**Configuration:** `~/.config/sr3/subscribe/bc_buoys.conf`
+
+```conf
+broker amqps://dd.weather.gc.ca
+topicPrefix v02.post
+
+directory /home/keelando/envcan_wave/data/buoy
+
+instances 1
+batch 50
+logLevel info
+
+# Subscribe to specific buoy IDs
+subtopic *.WXO-DD.observations.swob-ml.marine.moored-buoys.*.4600146.#  # Halibut Bank
+subtopic *.WXO-DD.observations.swob-ml.marine.moored-buoys.*.4600303.#  # Southern Strait
+subtopic *.WXO-DD.observations.swob-ml.marine.moored-buoys.*.4600304.#  # English Bay
+subtopic *.WXO-DD.observations.swob-ml.marine.moored-buoys.*.4600131.#  # Sentry Shoal
+```
+
+**How it works:**
+1. Connects to Environment Canada's public AMQP broker (no authentication required)
+2. Subscribes to SWOB-ML (Standard Weather Observation - Markup Language) topics for specified buoys
+3. Downloads XML files to `~/envcan_wave/data/buoy/` as they're published (approximately hourly)
+4. Runs as a long-lived daemon process via `sr3 foreground subscribe/bc_buoys`
+
+**Commands:**
+```bash
+# Check if sr3 is running
+ps aux | grep sr3
+
+# View recent downloads
+ls -lth ~/envcan_wave/data/buoy/*.xml | head
+
+# Monitor sr3 logs
+tail -f ~/.cache/sr3/log/subscribe_bc_buoys_*.log
+
+# Start sr3 manually (if not running)
+source .venv/bin/activate
+sr3 start subscribe/bc_buoys  # starts as daemon
+# OR
+sr3 foreground subscribe/bc_buoys  # runs in foreground
+
+# Stop sr3
+sr3 stop subscribe/bc_buoys
+
+# Check sr3 status
+sr3 status
+```
+
+**Log location:** `~/.cache/sr3/log/`
+
+**Note:** Without sr3 running, no new XML files are downloaded and `buoy_to_influx_sqlite.py` will only parse existing files. The sr3 process typically runs continuously as a daemon and should be monitored for unexpected stops.
+
+#### Marine Forecast Subscription
+
+**Configuration:** `~/.config/sr3/subscribe/marine_forecast.conf`
+
+```conf
+broker amqps://dd.weather.gc.ca
+topicPrefix v02.post
+
+directory /home/keelando/envcan_wave/data/marine_forecast
+
+instances 1
+batch 50
+logLevel info
+
+# Marine weather forecasts for Strait of Georgia
+# m0000028 covers BOTH north and south of Nanaimo zones
+subtopic *.WXO-DD.marine_weather.*.*.m0000028.#
+```
+
+**What it downloads:**
+- Marine weather forecast XMLs for Strait of Georgia (covers both north and south zones)
+- Updates 2-4 times daily (typically at 05h, 11h, 18h UTC)
+- Files include warnings, wind/weather forecasts, and extended outlook
+
+**Zones covered in m0000028:**
+- **Strait of Georgia - north of Nanaimo** (internal key: `strait_georgia_north`)
+- **Strait of Georgia - south of Nanaimo** (internal key: `strait_georgia_south`)
+
+**Commands:**
+```bash
+# Check marine forecast subscription status
+sr3 status | grep marine_forecast
+
+# View recent marine forecast downloads
+ls -lth ~/envcan_wave/data/marine_forecast/*.xml | head
+
+# Monitor marine forecast logs
+tail -f ~/.cache/sr3/log/subscribe_marine_forecast_*.log
+
+# Start/stop marine forecast subscription
+sr3 start subscribe/marine_forecast
+sr3 stop subscribe/marine_forecast
+```
+
+**Log location:** `~/.cache/sr3/log/subscribe_marine_forecast_*.log`
 
 ### Key Design Principles
 
@@ -172,6 +282,93 @@ CREATE TABLE tide_highlow (
 );
 ```
 
+## Marine Weather Forecasts (NEW - 2025-11-04)
+
+**Source:** Environment Canada Marine Weather Forecasts (via Sarracenia/AMQP)
+
+Real-time marine weather forecasts for Strait of Georgia zones, including wind warnings, detailed wind/weather forecasts, and extended outlook.
+
+### Monitored Zones
+
+| Zone | Internal Key | Coverage | Nearby Buoys |
+|------|--------------|----------|--------------|
+| Strait of Georgia - north of Nanaimo | `strait_georgia_north` | North of Nanaimo to Campbell River | Sentry Shoal (4600131) |
+| Strait of Georgia - south of Nanaimo | `strait_georgia_south` | Vancouver to Nanaimo | Halibut Bank (4600146)<br>English Bay (4600304)<br>Southern Strait (4600303) |
+
+**Note:** Both zones are contained in a single XML file (`m0000028_en.xml`) from Environment Canada.
+
+### Data Structure
+
+**Output file:** `~/site/data/marine_forecast.json`
+
+```json
+{
+  "file": "20251104T182841.418Z_MSC_MarineWeather_m0000028_en.xml",
+  "generated_utc": "2025-11-04T18:25:00+00:00",
+  "region": "Pacific Coast",
+  "sub_region": "Georgia Basin",
+  "area": "Strait of Georgia",
+  "locations": {
+    "strait_georgia_north": {
+      "zone_name": "Strait of Georgia - north of Nanaimo",
+      "warnings": [
+        {
+          "location": "...",
+          "type": "Gale warning",
+          "status": "IN EFFECT",
+          "category": "marine",
+          "issued_utc": "2025-11-04T18:30:00+00:00"
+        }
+      ],
+      "issued_utc": "2025-11-04T18:30:00+00:00",
+      "forecast": {
+        "period": "Today Tonight and Wednesday.",
+        "wind": "Wind southeast 10 to 15 knots...",
+        "weather": "Showers beginning this evening..."
+      }
+    },
+    "strait_georgia_south": { ... }
+  },
+  "extended_forecast": [
+    {"period": "Thursday", "forecast": "Wind southeast 15 to 25 knots..."},
+    {"period": "Friday", "forecast": "..."},
+    {"period": "Saturday", "forecast": "..."}
+  ]
+}
+```
+
+### Warning Types
+
+Marine warnings by severity (wind speed):
+
+- **Strong Wind Warning**: 20-33 knots
+- **Gale Warning**: 34-47 knots
+- **Storm Warning**: 48+ knots
+
+### Update Schedule
+
+- **Frequency**: 2-4 times daily
+- **Typical update times**: 05h, 11h, 18h UTC (09:00 PM, 03:00 AM, 10:00 AM PST)
+- **More frequent updates** occur when warnings are issued or conditions change rapidly
+
+### Parser Script
+
+**File:** `parse_marine_forecast.py`
+
+**Functions:**
+- Parses latest XML from `~/envcan_wave/data/marine_forecast/`
+- Extracts warnings, regular forecast, extended forecast
+- Handles both zones (north and south) from single XML
+- Writes JSON directly to `~/site/data/marine_forecast.json`
+
+**Run manually:**
+```bash
+source .venv/bin/activate
+python3 parse_marine_forecast.py
+```
+
+**Logs:** `~/envcan_wave/marine_forecast.log`
+
 ## Development Commands
 
 ### Setup
@@ -180,7 +377,12 @@ CREATE TABLE tide_highlow (
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+# Start sr3 to begin downloading Environment Canada XML files
+sr3 start subscribe/bc_buoys
 ```
+
+**Important:** Ensure sr3 is running to automatically download Environment Canada buoy XML files. Without it, `buoy_to_influx_sqlite.py` will only parse existing files in `data/buoy/`.
 
 ### Manual Script Execution
 
@@ -284,6 +486,9 @@ Production system runs on cron (see `cron.txt`):
 - **Every 30 min**: Fetch tide observations (real-time water levels)
 - **Daily 12:05 AM**: Fetch tide predictions (48-hour astronomical forecasts)
 - **Twice daily (12:10 AM & 12:10 PM)**: Fetch tide high/low events (48-hour extrema, redundancy)
+
+**Marine forecasts:**
+- **Every 30 min**: Parse marine forecast XMLs (updated 2-4x daily by sr3)
 
 **Maintenance:**
 - **Every 6 hours**: Fetch storm surge forecast (1,7,13,19h)
@@ -396,20 +601,28 @@ mv stations-map-v3.css stations-map-v4.css
 
 ## Adding a New Buoy
 
-1. Add to `BUOYS` dictionary in all scripts that reference it:
+1. **If adding an Environment Canada buoy**, update sr3 subscription config:
+   - Edit `~/.config/sr3/subscribe/bc_buoys.conf`
+   - Add new `subtopic` line with the buoy ID:
+     ```conf
+     subtopic *.WXO-DD.observations.swob-ml.marine.moored-buoys.*.BUOY_ID.#
+     ```
+   - Restart sr3: `sr3 stop subscribe/bc_buoys && sr3 start subscribe/bc_buoys`
+
+2. Add to `BUOYS` dictionary in all scripts that reference it:
    - `buoy_to_influx_sqlite.py` (if EC source)
    - `fetch_noaa_buoy.py` (if NOAA source)
    - `sqlite_to_json.py`
    - `export_24hr_timeseries.py`
    - `influx_to_mqtt.py`
 
-2. If new field mappings are needed, update `FIELD_MAP_*` dictionaries in relevant scripts
+3. If new field mappings are needed, update `FIELD_MAP_*` dictionaries in relevant scripts
 
-3. Update frontend JavaScript (not in this repo):
+4. Update frontend JavaScript (not in this repo):
    - `~/site/assets/js/main.js` - buoy display order
    - `~/site/assets/js/charts.js` - chart configurations
 
-4. Test the pipeline:
+5. Test the pipeline:
    ```bash
    python3 fetch_noaa_buoy.py  # or buoy_to_influx_sqlite.py
    sqlite3 ~/.local/share/buoy_data.sqlite "SELECT * FROM buoy_observation WHERE buoy_id='NEW_ID' LIMIT 5;"
@@ -481,6 +694,19 @@ mv stations-map-v3.css stations-map-v4.css
 - **Timezone conversion**: All exports include Pacific time for display
 - **Atomic writes**: Uses temp files to prevent partial JSON writes
 - Runs every minute via cron
+
+### parse_marine_forecast.py
+- Parses Environment Canada marine forecast XMLs from `~/envcan_wave/data/marine_forecast/`
+- Downloads provided by sr3 subscription (`subscribe/marine_forecast`)
+- Extracts forecast data for both Strait of Georgia zones (north and south) from single XML
+- **Data extracted**:
+  - Warnings (Gale, Strong Wind, Storm) with status and issued times
+  - Regular forecast (Today/Tonight/Tomorrow) - wind, weather, period
+  - Extended forecast (named days: Thursday, Friday, Saturday)
+  - Wave forecasts (if present in XML)
+- Writes directly to `~/site/data/marine_forecast.json` for website consumption
+- Uses zone mapping to normalize location names to internal keys
+- Runs every 30 minutes via cron (forecasts update 2-4x daily)
 
 ## Important Data Handling Notes
 
@@ -681,3 +907,229 @@ All inline styles have been moved to CSS files for maintainability.
 - `~/site/assets/css/nav-tide-styles.css` - Reduced padding, metadata styles
 - `~/site/tides.html` - Added metadata container div
 - `~/site/index.html` - Wave threshold explanation, scroll alignment fix
+
+### Marine Forecasts Page & Warning Banners (2025-11-04)
+
+**Major new feature:** Integrated Environment Canada marine weather forecasts with dismissible warning banners across all pages.
+
+#### Forecasts Page (~/site/forecasts.html)
+
+**New dedicated page** displaying marine weather forecasts for Strait of Georgia zones.
+
+**URL:** `/forecasts.html`
+
+**Features:**
+- Displays both forecast zones (north and south of Nanaimo)
+- Warning cards with severity-based styling (Storm/Gale/Strong Wind)
+- Current forecast (Today/Tonight/Tomorrow) with wind and weather details
+- Extended forecast (Thursday, Friday, Saturday) in responsive grid
+- Wave forecast (when present in data)
+- Auto-refresh every 5 minutes
+- Smooth scroll to zone sections via URL hash (`#strait_georgia_north`)
+- Zone highlight effect (blue glow for 2 seconds) when navigating from warnings
+
+**JavaScript:** `~/site/assets/js/forecasts.js` (7.0 KB)
+- `loadForecasts()` - Fetches marine_forecast.json and renders all zones
+- `displayForecasts()` - Builds zone cards with warnings, forecast, extended outlook
+- `renderZoneForecast()` - Creates HTML for individual zone
+- `renderExtendedForecast()` - Renders 3-day outlook in grid layout
+- `scrollToZoneIfNeeded()` - Smooth scrolls to zone anchor on page load
+- `formatTimestamp()` - Converts UTC to Pacific time for display
+
+**Data source:** `~/site/data/marine_forecast.json` (updated every 30 min by backend)
+
+#### Warning Banner System
+
+**Dismissible warning banners** appear at top of all pages (Buoys, Tides, Forecasts) when marine warnings are active.
+
+**Features:**
+- ✅ Severity-based color coding (Storm=red, Gale=orange, Strong Wind=amber)
+- ✅ Click X to dismiss for 24 hours
+- ✅ Dismissal persists across all pages (localStorage)
+- ✅ Auto-expires after 24 hours
+- ✅ Smooth fade-out animation when dismissed
+- ✅ "View Forecast →" link scrolls to relevant zone on forecasts page
+- ✅ Mobile-optimized compact layout (50% smaller on mobile)
+- ✅ Automatic sorting by severity
+
+**JavaScript:** `~/site/assets/js/warning-banner.js` (4.3 KB)
+- `displayWarningBanners()` - Fetches forecast data, filters dismissed, renders banners
+- `dismissWarning(warningId)` - Saves to localStorage, fades out banner
+- `isWarningDismissed(warningId)` - Checks localStorage, auto-cleans expired
+- `getWarningId(warning)` - Generates unique ID: `{zone}_{type}_{issued_utc}`
+- `collectActiveWarnings()` - Extracts warnings from forecast data, sorts by severity
+- `createWarningBanner()` - Builds HTML with zone-specific forecast link
+
+**CSS:** `~/site/assets/css/warning-banner-v3.css` (3.4 KB)
+- Severity classes: `.warning-storm`, `.warning-gale`, `.warning-strong-wind`
+- Gradient backgrounds with white text
+- Dismiss button styling (absolute positioned on mobile)
+- Mobile responsive: 50% height reduction on small screens
+- Subtle pulse animation
+- Smooth transitions
+
+**State Management (localStorage):**
+- **Key:** `dismissed_marine_warnings`
+- **Value:** JSON object mapping warning IDs to dismiss timestamps
+- **Expiry:** 24 hours (auto-deleted by code)
+- **Scope:** Per-browser, per-device (not synced)
+- **Privacy:** Client-side only, never sent to server
+
+**Example localStorage data:**
+```json
+{
+  "strait_georgia_north_Gale warning_2025-11-04T18:30:00+00:00": 1730747282341,
+  "strait_georgia_south_Strong wind warning_2025-11-04T18:30:00+00:00": 1730750123456
+}
+```
+
+#### Navigation Updates
+
+**All pages now have 3-tab navigation:**
+```
+[Buoys] [Tides] [Forecasts]
+```
+
+**Updated files:**
+- `~/site/index.html` - Added Forecasts link, warning banner container
+- `~/site/tides.html` - Added Forecasts link, warning banner container
+- `~/site/forecasts.html` - Full navigation with active state
+
+#### Mobile UX Improvements
+
+**Warning banners optimized for mobile:**
+- Desktop: Full-size with clear spacing
+- Tablet (≤768px): 33% less padding, smaller fonts
+- Small Mobile (≤480px): 47% less padding, ultra-compact layout
+
+**Space savings:**
+- Before: ~80-90px height on mobile
+- After: ~40-50px height (50% reduction)
+
+**Responsive adjustments:**
+- Padding: `0.75rem → 0.4rem` (mobile)
+- Font: `0.95rem → 0.75rem` (mobile)
+- Dismiss button: Positioned absolutely in corner
+- Link text: Shortened on small screens
+- Tight line-height for compact display
+
+#### Scroll-to-Zone Functionality
+
+**Smart navigation from warning banners to forecasts:**
+- Warning links include zone anchor: `/forecasts.html#strait_georgia_north`
+- Forecasts page auto-scrolls to zone on load
+- Blue highlight effect (2 seconds) shows where you landed
+- Smooth scroll behavior (`scroll-behavior: smooth`)
+
+**User flow:**
+1. User sees warning banner on any page
+2. Clicks "View Forecast →"
+3. Navigates to forecasts.html
+4. Smoothly scrolls to relevant zone section
+5. Section briefly highlighted with blue glow
+
+#### Files Created (5)
+
+**Frontend:**
+- `~/site/forecasts.html` (5.2 KB) - Forecasts page
+- `~/site/assets/js/forecasts.js` (7.0 KB) - Forecast rendering logic
+- `~/site/assets/js/warning-banner.js` (4.3 KB) - Warning banner module
+- `~/site/assets/css/warning-banner-v3.css` (3.4 KB) - Warning styles
+
+**Documentation:**
+- `~/site/FRAMEWORK_DISCUSSION.md` - Framework evaluation (Alpine.js, HTMX, SvelteKit)
+- `~/site/BROWSER_STATE_EXPLAINED.md` - Complete localStorage guide
+- `~/site/STATE_QUICK_REFERENCE.md` - Quick reference card
+- `~/site/DISMISSIBLE_WARNINGS_SUMMARY.md` - Technical implementation details
+- `~/site/MOBILE_UX_IMPROVEMENTS.md` - Mobile optimization summary
+
+#### Framework Decision (2025-11-04)
+
+**Evaluated frameworks for state management and component reuse:**
+- **Alpine.js** - Lightweight reactivity (15 KB)
+- **HTMX** - HTML-over-wire, solves duplication
+- **SvelteKit/Astro** - Full component framework
+
+**Decision:** Stay vanilla JavaScript + localStorage
+- Current size: 3 pages (may grow to 5-7)
+- Simple static site deployment
+- No build step needed
+- Easy to maintain
+- Fast and lightweight
+
+**Revisit when:**
+- Site grows to 10+ pages
+- Need complex user interactions
+- Want component-based architecture
+
+**See:** `~/site/FRAMEWORK_DISCUSSION.md` for complete evaluation
+
+#### Data Flow: Warnings
+
+```
+Environment Canada Marine Forecast (2-4x daily)
+    ↓ (via sr3 AMQP subscription)
+XML download (m0000028_en.xml)
+    ↓ (every 30 min)
+parse_marine_forecast.py
+    ↓
+~/site/data/marine_forecast.json
+    ↓ (page load)
+warning-banner.js + forecasts.js
+    ↓
+User sees warnings/forecasts
+    ↓ (user clicks X)
+localStorage (24-hour expiry)
+    ↓ (subsequent page loads)
+Warnings stay dismissed across all pages
+```
+
+#### Key Technical Details
+
+**Warning ID Format:**
+```javascript
+`${zone_key}_${warning_type}_${issued_utc}`
+// Example: "strait_georgia_north_Gale warning_2025-11-04T18:30:00+00:00"
+```
+
+**Why this format?**
+- Different zones = different warnings
+- Same zone can have multiple types
+- New warning issued = new ID (reappears even if old one dismissed)
+
+**24-Hour Expiry Logic:**
+```javascript
+const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000;
+const elapsed = Date.now() - dismissedTime;
+if (elapsed > DISMISS_DURATION_MS) {
+  // Expired - show warning again
+}
+```
+
+**Browser Compatibility:**
+- localStorage API (all modern browsers)
+- CSS flexbox, gradients, transitions
+- ES6 JavaScript (template literals, arrow functions)
+- Smooth scroll CSS property
+
+#### Testing & Debugging
+
+**View localStorage (Browser DevTools):**
+1. F12 → Application tab (Chrome) or Storage tab (Firefox)
+2. Local Storage → halibutbank.ca
+3. See `dismissed_marine_warnings`
+
+**Test dismissal:**
+```javascript
+// Browser console
+localStorage.getItem('dismissed_marine_warnings')
+localStorage.removeItem('dismissed_marine_warnings') // Clear
+```
+
+**Simulate 24-hour expiry:**
+```javascript
+let d = JSON.parse(localStorage.getItem('dismissed_marine_warnings'));
+d[Object.keys(d)[0]] = Date.now() - (25 * 60 * 60 * 1000);
+localStorage.setItem('dismissed_marine_warnings', JSON.stringify(d));
+// Refresh - warning reappears
+```
