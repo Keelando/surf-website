@@ -2,41 +2,60 @@
 
 ## Upcoming Tasks
 
-### 🗺️ Interactive Map of Stations & Buoys
+_(Currently no major tasks pending - system is stable and feature-complete)_
 
-**Goal:** Add a Leaflet.js embedded map showing all monitored stations and buoys
+---
 
-**Implementation plan:**
-- Add new page: `~/site/map.html` or embed on index/tides page
-- Use Leaflet.js for interactive map
-- Plot markers for:
-  - **Wave Buoys** (5 total):
-    - Environment Canada: Halibut Bank, English Bay, Southern Georgia Strait, Sentry Shoal
-    - NOAA: Neah Bay (46087), New Dungeness (46088)
-  - **Tide Stations** (8+ total) - coordinates already available in `/home/keelando/envcan_wave/tide_stations.json`
-    - Point Atkinson (49.3375, -123.253583)
-    - Kitsilano (49.276583, -123.13936)
-    - Tsawwassen (49.00677, -123.12933)
-    - White Rock (49.016667, -122.8)
-    - Crescent Beach (49.033333, -122.883333)
-    - New Westminster (49.2, -122.91)
-    - Campbell River (50.042, -125.247)
-    - Rose Harbour (52.1552, -131.0909)
+## Completed (2025-11-05)
 
-**Data sources:**
-- Tide stations: `~/envcan_wave/tide_stations.json` (has lat/lon already)
-- Buoy coordinates: Need to gather from EC/NOAA sources
-  - Could scrape from NOAA NDBC station pages
-  - Or add to a `buoy_stations.json` file
+✅ **Warning banner improvements**
+  - Variable dismiss durations by severity (Storm: 12h, Gale: 12h, Strong Wind: 6h)
+  - Dismissal feedback toast messages
+  - Enhanced visual hierarchy (border thickness by severity)
+  - Mobile sticky positioning
+  - Improved accessibility (ARIA labels, roles, live regions)
 
-**Features to consider:**
-- Color-coded markers (EC buoys, NOAA buoys, DFO tide stations)
-- Popups showing station name and current conditions
-- Click to navigate to relevant data on site
-- Zoom to Salish Sea region by default
-- Responsive design for mobile
+✅ **Documentation reorganization**
+  - Split 1135-line CLAUDE.md into focused docs (71% reduction)
+  - Created `docs/` subdirectories following industry standards
+  - Created COMMANDS.md, DEPLOYMENT.md, TROUBLESHOOTING.md, ARCHITECTURE_DETAILED.md
+  - Created FRONTEND_CHANGELOG.md
+  - Updated all cross-references
 
-**Priority:** Medium (nice-to-have enhancement)
+---
+
+## Completed (2025-11-04)
+
+✅ **Marine forecasts & warning banners**
+  - Created dedicated forecasts page (`~/site/forecasts.html`)
+  - Dismissible warning banners across all pages
+  - localStorage-based state management (24h expiry)
+  - Severity-based color coding (Storm/Gale/Strong Wind)
+  - Mobile-optimized compact layout (50% height reduction)
+  - Smooth scroll-to-zone navigation
+  - Framework evaluation (decided to stay vanilla JS)
+
+---
+
+## Completed (2025-11-02)
+
+✅ **UI/UX enhancements**
+  - Directional arrows on buoy cards (wind/wave directions)
+  - Navigation links (card → map/charts)
+  - Tide page padding reduction (38-50%)
+  - Station metadata display (badges, coordinates, DFO codes)
+  - Wave breaking threshold annotations
+
+---
+
+## Completed (2025-11-01)
+
+✅ **Station registry system**
+  - Created master `stations.json` with all station metadata
+  - Unified buoy and tide station data
+  - Interactive Leaflet map embedded on index.html
+  - Color-coded markers (EC buoys, NOAA buoys, DFO tides)
+  - Click markers to center map and view details
 
 ---
 
