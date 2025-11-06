@@ -2,7 +2,7 @@
 """
 Storm Surge Forecast Fetcher for Surf Server
 Fetches GDSPS data from Environment Canada GeoMet WMS
-Stores 00Z run to database for hindcast analysis
+Stores 18Z run to database for hindcast analysis (closest to noon Pacific)
 """
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
@@ -81,7 +81,7 @@ def ensure_db_schema(conn):
 
 
 def store_forecast_to_db(forecast_run_time, all_station_data):
-    """Store complete forecast to database (00Z run only)."""
+    """Store complete forecast to database (18Z run only - closest to noon Pacific)."""
     try:
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(DB_PATH)
@@ -347,13 +347,13 @@ def main():
         # Create combined forecast
         create_combined_forecast()
         
-        # Store to database if this is the 00Z run (hour 1)
+        # Store to database if this is the 18Z run (hour 19)
         current_hour = datetime.now(timezone.utc).hour
-        if current_hour == 1:
-            print("\n🎯 This is the 00Z run - storing to database for hindcast...")
+        if current_hour == 19:
+            print("\n🎯 This is the 18Z run - storing to database for hindcast...")
             store_forecast_to_db(start_time, all_forecasts)
         else:
-            print(f"\n⏭️  Skipping database storage (hour={current_hour}, not 00Z run)")
+            print(f"\n⏭️  Skipping database storage (hour={current_hour}, not 18Z run)")
         
         print("\n✅ Storm surge forecast update complete!")
         return 0
