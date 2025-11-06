@@ -18,7 +18,10 @@ BUOYS = {
     "4600304": {"name": "English Bay", "location": "South of Bowen Island"},
     "4600131": {"name": "Sentry Shoal", "location": "Northern Strait of Georgia"},
     "46087": {"name": "Neah Bay", "location": "Cape Flattery, WA"},
-    "46088": {"name": "New Dungeness (Hein Bank)", "location": "Strait of Juan de Fuca, East"}  # ← NEW
+    "46088": {"name": "New Dungeness (Hein Bank)", "location": "Strait of Juan de Fuca, East"},
+    "CRPILE": {"name": "Crescent Pile", "location": "Crescent Beach, Surrey"},
+    "CRCHAN": {"name": "Crescent Channel", "location": "Boundary Bay Channel"},
+    "COLEB": {"name": "Colebrook", "location": "Colebrook Pump House"},
 }
 
 # Fields to query individually (each gets most recent non-null value within 2 hours)
