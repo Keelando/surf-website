@@ -2,7 +2,7 @@
 """
 Storm Surge Forecast Fetcher for Surf Server
 Fetches GDSPS data from Environment Canada GeoMet WMS
-Stores 12Z run to database for hindcast analysis
+Stores 18Z run to database for hindcast analysis (closest to noon Pacific)
 """
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
@@ -81,16 +81,16 @@ def ensure_db_schema(conn):
 
 
 def store_forecast_to_db(forecast_run_time, all_station_data):
-    """Store complete forecast to database (12Z run only)."""
+    """Store complete forecast to database (18Z run only - closest to noon Pacific)."""
     try:
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(DB_PATH)
         ensure_db_schema(conn)
         cur = conn.cursor()
-        
-        forecast_date = forecast_run_time.date().isoformat()
+
+        forecast_timestamp = forecast_run_time.isoformat()
         stored_count = 0
-        
+
         for station_id, forecast_data in all_station_data.items():
             for time_str, surge_value in forecast_data.items():
                 try:
@@ -98,23 +98,23 @@ def store_forecast_to_db(forecast_run_time, all_station_data):
                         INSERT OR REPLACE INTO forecast_archive
                         (station_id, forecast_run_time, valid_time, surge_value)
                         VALUES (?, ?, ?, ?)
-                    """, (station_id, forecast_date, time_str, surge_value))
+                    """, (station_id, forecast_timestamp, time_str, surge_value))
                     stored_count += 1
                 except Exception as e:
                     print(f"⚠️  DB insert error for {station_id} {time_str}: {e}")
-        
+
         conn.commit()
-        
+
         # Purge old data
-        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=DB_RETENTION_DAYS)).date().isoformat()
-        cur.execute("DELETE FROM forecast_archive WHERE forecast_run_time < ?", (cutoff_date,))
+        cutoff_timestamp = (datetime.now(timezone.utc) - timedelta(days=DB_RETENTION_DAYS)).isoformat()
+        cur.execute("DELETE FROM forecast_archive WHERE forecast_run_time < ?", (cutoff_timestamp,))
         deleted = cur.rowcount
         conn.commit()
         conn.close()
         
         print(f"\n💾 Stored {stored_count} forecast points to database")
         if deleted > 0:
-            print(f"🗑️  Purged {deleted} old records (before {cutoff_date})")
+            print(f"🗑️  Purged {deleted} old records (before {cutoff_timestamp})")
         
         return True
         
@@ -347,13 +347,13 @@ def main():
         # Create combined forecast
         create_combined_forecast()
         
-        # Store to database if this is the 12Z run (hour 13)
+        # Store to database if this is the 18Z run (hour 19)
         current_hour = datetime.now(timezone.utc).hour
-        if current_hour == 13:
-            print("\n🎯 This is the 12Z run - storing to database for hindcast...")
+        if current_hour == 19:
+            print("\n🎯 This is the 18Z run - storing to database for hindcast...")
             store_forecast_to_db(start_time, all_forecasts)
         else:
-            print(f"\n⏭️  Skipping database storage (hour={current_hour}, not 12Z run)")
+            print(f"\n⏭️  Skipping database storage (hour={current_hour}, not 18Z run)")
         
         print("\n✅ Storm surge forecast update complete!")
         return 0

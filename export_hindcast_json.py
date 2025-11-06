@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Export Storm Surge Hindcast Data
-Exports +48h predictions for charting (what was predicted 2 days in advance)
+Exports 38-61 hour predictions for charting (full Pacific calendar day predicted 2 days in advance)
 """
 from pathlib import Path
 import sqlite3
@@ -27,7 +27,7 @@ def export_hindcast():
     
     if not DB_PATH.exists():
         print(f"❌ Database not found: {DB_PATH}")
-        print("   Run fetch_storm_surge.py at 13:30 UTC to start collecting data")
+        print("   Run fetch_storm_surge.py at 19:30 UTC to start collecting data")
         return False
     
     try:
@@ -47,15 +47,15 @@ def export_hindcast():
         
         if not stats or stats["days"] == 0:
             print("⚠️  No forecast data in database yet")
-            print("   First data will be available after 13:30 UTC run")
+            print("   First data will be available after 19:30 UTC run")
             return False
         
         print(f"📊 Found {stats['days']} days of forecasts ({stats['oldest']} to {stats['newest']})")
         
         hindcast_data = {
             "generated_utc": datetime.now(timezone.utc).isoformat(),
-            "description": "Storm surge predictions made 48 hours in advance",
-            "forecast_horizon_hours": 48,
+            "description": "Storm surge predictions for full Pacific calendar days made 2 days in advance (18Z run, hours 38-61 PST)",
+            "forecast_horizon_hours": "38-61",
             "max_days_back": MAX_DAYS_BACK,
             "actual_days_available": stats["days"],
             "stations": {}
@@ -65,24 +65,25 @@ def export_hindcast():
         for station_id, station_info in STATIONS.items():
             print(f"\n📍 Processing {station_info['name']}...")
             
-            # Query: Get all forecasts and filter for +48h predictions
-            # We want rows where valid_time ≈ forecast_run_time + 48 hours
+            # Query: Get all forecasts and filter for hours 38-61 (full Pacific calendar day)
+            # 18Z run on Tuesday → hours 38-61 = all of Thursday PST (00:00-23:00 Pacific)
+            # Note: This uses PST offset (UTC-8). PDT would be 37-60.
             cur.execute("""
-                SELECT 
+                SELECT
                     forecast_run_time,
                     valid_time,
                     surge_value,
                     ROUND((julianday(valid_time) - julianday(forecast_run_time)) * 24, 1) as hours_ahead
                 FROM forecast_archive
                 WHERE station_id = ?
-                  AND hours_ahead BETWEEN 46 AND 50
+                  AND hours_ahead BETWEEN 38 AND 61
                 ORDER BY valid_time ASC
             """, (station_id,))
             
             rows = cur.fetchall()
             
             if not rows:
-                print(f"   ⚠️  No +48h predictions found")
+                print(f"   ⚠️  No 38-61h predictions found")
                 continue
             
             # Build hindcast series
@@ -134,7 +135,7 @@ def export_hindcast():
 
 
 def main():
-    print("🌊 Storm Surge Hindcast Export (+48h)")
+    print("🌊 Storm Surge Hindcast Export (38-61h / 2-day ahead Pacific)")
     print("=" * 50)
     
     success = export_hindcast()

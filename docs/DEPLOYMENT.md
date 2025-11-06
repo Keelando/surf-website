@@ -42,11 +42,20 @@ Production system runs on cron. See `cron.txt` for the actual crontab file.
 */30 * * * * cd /home/keelando/envcan_wave && source .venv/bin/activate && python3 parse_marine_forecast.py >> ~/envcan_wave/marine_forecast.log 2>&1
 ```
 
+### Storm Surge Forecasts
+
+```bash
+# Every 6 hours at :30 (1:30, 7:30, 13:30, 19:30 UTC): Fetch storm surge forecast
+# 19:30 run stores 18Z forecast to database for hindcast analysis (closest to noon Pacific)
+30 1,7,13,19 * * * cd /home/keelando/envcan_wave && source .venv/bin/activate && python3 fetch_storm_surge.py >> ~/envcan_wave/storm_surge.log 2>&1
+
+# Daily 2 PM UTC: Export hindcast data (hours 38-61 / full Pacific calendar day 2 days ahead)
+0 14 * * * cd /home/keelando/envcan_wave && source .venv/bin/activate && python3 export_hindcast_json.py >> ~/envcan_wave/hindcast_export.log 2>&1
+```
+
 ### Maintenance
 
 ```bash
-# Every 6 hours (1, 7, 13, 19h): Fetch storm surge forecast
-0 1,7,13,19 * * * cd /home/keelando/envcan_wave && source .venv/bin/activate && python3 fetch_storm_surge.py >> ~/envcan_wave/storm_surge.log 2>&1
 
 # Hourly: Purge XML files older than 2 days
 0 * * * * find /home/keelando/envcan_wave/data/buoy -name "*.xml" -mtime +2 -delete
