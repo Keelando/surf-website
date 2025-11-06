@@ -139,7 +139,7 @@
       "lat": 49.0122,
       "lon": -122.9411,
       "source": "Surrey FlowWorks",
-      "type": "wave_buoy",
+      "type": "pile_mounted_wave_station",
       "flowworks_site_id": 20182,
       "update_frequency_minutes": 10,
       "data_types": [
@@ -172,7 +172,7 @@
       "lat": 49.0536,
       "lon": -122.8969,
       "source": "Surrey FlowWorks",
-      "type": "wave_buoy",
+      "type": "pile_mounted_wave_station",
       "flowworks_site_id": 20183,
       "update_frequency_minutes": 10,
       "data_types": [
@@ -198,7 +198,7 @@
       "lat": 49.0858,
       "lon": -122.845,
       "source": "Surrey FlowWorks",
-      "type": "weather_station",
+      "type": "wind_monitoring_station",
       "flowworks_site_id": 18507,
       "update_frequency_minutes": 10,
       "data_types": [
@@ -213,7 +213,7 @@
         "wind_gust": 1427,
         "air_temp": 1439
       },
-      "note": "Wind station only - no wave data"
+      "note": "Wind monitoring station - no wave data"
     }
   },
   "tides": {
