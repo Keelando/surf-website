@@ -202,8 +202,12 @@ ps aux | grep sr3                   # Check process status
 **Source:** Environment Canada GDSPS (Global Deterministic Surge and Prediction System) via GeoMet WMS
 
 **Stations monitored:**
-- Point Atkinson (49.337°N, -123.253°W)
-- Crescent Beach Channel (49.0536°N, -122.8969°W)
+- Point Atkinson (49.338°N, -123.254°W) - Tide observations available
+- Crescent Beach Channel (49.054°N, -122.897°W) - Tide predictions available
+- Campbell River (50.042°N, -125.247°W) - Tide observations available
+- Neah Bay (48.495°N, -124.728°W) - NOAA buoy 46087 location
+- New Dungeness (48.333°N, -123.167°W) - NOAA buoy 46088 location
+- Tofino (49.15°N, -125.9°W) - Open Pacific coast
 
 **Model details:**
 - 15 km horizontal resolution
@@ -217,9 +221,8 @@ ps aux | grep sr3                   # Check process status
 3. `export_hindcast_json.py` - Export +48h predictions (daily)
 
 **Outputs:**
-- `~/site/data/storm_surge/Point_Atkinson.json` - Individual station forecasts
-- `~/site/data/storm_surge/Crescent_Beach_Channel.json`
-- `~/site/data/storm_surge/combined_forecast.json` - All stations
+- `~/site/data/storm_surge/<station_id>.json` - Individual station forecasts (6 files)
+- `~/site/data/storm_surge/combined_forecast.json` - All stations combined
 - `~/site/data/storm_surge/hindcast.json` - Historical +48h predictions
 
 **Units:** Meters (above/below predicted tide)

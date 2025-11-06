@@ -29,8 +29,12 @@ This system fetches storm surge forecasts from Environment Canada's GeoMet WMS s
 - Runs automatically via cron every 6 hours
 
 **Stations monitored:**
-- Point Atkinson (49.337°N, -123.253°W)
-- Crescent Beach Channel (49.0536°N, -122.8969°W)
+- Point Atkinson (49.338°N, -123.254°W) - Inner Strait, tide observations
+- Crescent Beach Channel (49.054°N, -122.897°W) - Boundary Bay, tide predictions
+- Campbell River (50.042°N, -125.247°W) - Discovery Passage, tide observations
+- Neah Bay (48.495°N, -124.728°W) - Pacific entrance, NOAA buoy location
+- New Dungeness (48.333°N, -123.167°W) - Strait of Juan de Fuca, NOAA buoy location
+- Tofino (49.15°N, -125.9°W) - Open Pacific coast
 
 **Data source:** GDSPS 15km resolution model via Environment Canada GeoMet
 
@@ -140,8 +144,12 @@ TESTING = False  # Set to True for detailed progress
 
 # Stations to monitor
 STATIONS = {
-    "Point_Atkinson": {"lat": 49.337, "lon": -123.253, "name": "Point Atkinson"},
-    "Crescent_Beach_Channel": {"lat": 49.0536, "lon": -122.8969, "name": "Crescent Beach Channel"}
+    "Point_Atkinson": {"lat": 49.3375, "lon": -123.253583, "name": "Point Atkinson"},
+    "Crescent_Beach_Channel": {"lat": 49.0536, "lon": -122.8969, "name": "Crescent Beach Channel"},
+    "Campbell_River": {"lat": 50.042, "lon": -125.247, "name": "Campbell River"},
+    "Neah_Bay": {"lat": 48.495, "lon": -124.728, "name": "Neah Bay"},
+    "New_Dungeness": {"lat": 48.333, "lon": -123.167, "name": "New Dungeness"},
+    "Tofino": {"lat": 49.15, "lon": -125.9, "name": "Tofino"}
 }
 
 # Output directory for JSON files
