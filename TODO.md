@@ -2,7 +2,13 @@
 
 ## Upcoming Tasks
 
-_(Currently no major tasks pending - system is stable and feature-complete)_
+### Documentation Improvements
+
+**Storm Surge Forecast Setup Guide**
+- Create comprehensive documentation for getting storm surge forecasts running
+- Improve upon Environment Canada's incomplete documentation
+- Include setup steps, dependencies, API details, and troubleshooting
+- Target audience: developers wanting to run the system on their own computer
 
 ---
 
