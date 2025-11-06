@@ -77,28 +77,28 @@ class FlowWorksAPI:
         """Get JWT token from FlowWorks API v2."""
         url = f"{self.base_url}/authenticate"
         payload = {"username": self.username, "password": self.password}
-        
+
         try:
             response = requests.post(url, json=payload, timeout=15)
             response.raise_for_status()
             data = response.json()
-            
-            if data.get("ResultCode") == 0:
-                resources = data.get("Resources", {})
-                self.token = resources.get("token")
-                expires_str = resources.get("expires")
-                
+
+            # Handle actual API response format: Token and Expires (capital T)
+            if "Token" in data:
+                self.token = data.get("Token")
+                expires_str = data.get("Expires")
+
                 if expires_str:
                     self.token_expiry = datetime.fromisoformat(
                         expires_str.replace("Z", "+00:00")
                     )
-                
+
                 print(f"✅ Authenticated - expires {self.token_expiry}")
                 return True
             else:
-                print(f"❌ Auth failed: {data.get('ResultMessage')}")
+                print(f"❌ Auth failed: {data}")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Auth error: {e}")
             return False
@@ -126,28 +126,29 @@ class FlowWorksAPI:
     def get_channel_data(self, site_id, channel_id, hours=2):
         """Fetch data from specific channel (last N hours)."""
         url = f"{self.base_url}/sites/{site_id}/channels/{channel_id}/data"
-        
+
         end = datetime.now(timezone.utc)
         start = end - timedelta(hours=hours)
-        
+
         params = {
             "startDateFilter": start.strftime("%Y-%m-%dT%H:%M:%S"),
             "endDateFilter": end.strftime("%Y-%m-%dT%H:%M:%S")
         }
-        
+
         try:
             response = requests.get(
                 url, headers=self._get_headers(), params=params, timeout=15
             )
             response.raise_for_status()
             data = response.json()
-            
+
+            # API returns Resources array directly
             if data.get("ResultCode") == 0:
                 return data.get("Resources", [])
             else:
                 print(f"⚠️  API error: {data.get('ResultMessage')}")
                 return []
-                
+
         except Exception as e:
             print(f"❌ Fetch error: {e}")
             return []
@@ -185,20 +186,20 @@ def ms_to_kmh(ms):
 def parse_data_point(point):
     """Extract timestamp and value from FlowWorks data point."""
     timestamp_str = point.get("DataTime")
-    value = point.get("Value")
-    
-    if not timestamp_str or value is None:
+    value_str = point.get("DataValue")  # API uses DataValue not Value
+
+    if not timestamp_str or value_str is None:
         return None, None
-    
+
     try:
         # Parse ISO timestamp
         dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-        
+
         # Round to 10-minute intervals (matching v1 behavior)
         if dt.minute % 10 != 0 or dt.second != 0:
             return None, None
-        
-        return dt, float(value)
+
+        return dt, float(value_str)
     except (ValueError, TypeError):
         return None, None
 
