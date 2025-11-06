@@ -17,8 +17,9 @@ from owslib.wms import WebMapService
 TESTING = False  # Set to True for verbose output and progress tracking
 
 STATIONS = {
-    "Point_Atkinson": {"lat": 49.337, "lon": -123.253, "name": "Point Atkinson"},
-    "Crescent_Beach_Channel": {"lat": 49.0536, "lon": -122.8969, "name": "Crescent Beach Channel"}
+    "Point_Atkinson": {"lat": 49.3375, "lon": -123.253583, "name": "Point Atkinson"},
+    "Crescent_Beach_Channel": {"lat": 49.0536, "lon": -122.8969, "name": "Crescent Beach Channel"},
+    "Campbell_River": {"lat": 50.042, "lon": -125.247, "name": "Campbell River"}
 }
 
 OUTPUT_DIR = Path("~/site/data/storm_surge").expanduser()
