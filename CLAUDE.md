@@ -52,7 +52,7 @@ sr3 (Marine) → EC Marine XMLs → parse_marine_forecast.py → marine_forecast
 | `export_tide_json.py` | Export tide JSONs | Every 5 min |
 | `parse_marine_forecast.py` | Parse marine forecast XMLs | Every 30 min |
 | `fetch_storm_surge.py` | Fetch GDSPS surge forecasts | Every 6 hours |
-| `export_hindcast_json.py` | Export +48h hindcast data | Daily |
+| `export_hindcast_json.py` | Export hindcast data (48-71h) | Daily |
 
 **See `docs/COMMANDS.md` for detailed usage.**
 
@@ -217,8 +217,8 @@ ps aux | grep sr3                   # Check process status
 
 **Data pipeline:**
 1. `fetch_storm_surge.py` - Fetch forecasts from GeoMet WMS (every 6 hours)
-2. Store 12Z run to `~/.local/share/storm_surge_forecast.sqlite` for hindcast analysis
-3. `export_hindcast_json.py` - Export +48h predictions (daily)
+2. Store 00Z run to `~/.local/share/storm_surge_forecast.sqlite` for hindcast analysis
+3. `export_hindcast_json.py` - Export 48-71h predictions (full calendar day 2 days ahead, daily)
 
 **Outputs:**
 - `~/site/data/storm_surge/<station_id>.json` - Individual station forecasts (6 files)
