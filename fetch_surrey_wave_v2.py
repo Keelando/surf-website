@@ -278,8 +278,8 @@ def fetch_and_store(api, station_key, station_config, conn, hours=2):
         
         if inserted > 0:
             print(f"  ✅ {field_name}: {inserted} points")
-        
-        time.sleep(0.5)  # Rate limiting
+
+        time.sleep(1.0)  # Rate limiting - increased to reduce API load
     
     return total_inserted
 
