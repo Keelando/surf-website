@@ -51,6 +51,8 @@ sr3 (Marine) → EC Marine XMLs → parse_marine_forecast.py → marine_forecast
 | `tide_to_sqlite.py` | Fetch DFO tide data | Obs: 30min, Pred: daily |
 | `export_tide_json.py` | Export tide JSONs | Every 5 min |
 | `parse_marine_forecast.py` | Parse marine forecast XMLs | Every 30 min |
+| `fetch_storm_surge.py` | Fetch GDSPS surge forecasts | Every 6 hours |
+| `export_hindcast_json.py` | Export +48h hindcast data | Daily |
 
 **See `docs/COMMANDS.md` for detailed usage.**
 
@@ -195,6 +197,44 @@ ps aux | grep sr3                   # Check process status
 
 ---
 
+## Storm Surge Forecasts
+
+**Source:** Environment Canada GDSPS (Global Deterministic Surge and Prediction System) via GeoMet WMS
+
+**Stations monitored:**
+- Point Atkinson (49.337°N, -123.253°W)
+- Crescent Beach Channel (49.0536°N, -122.8969°W)
+
+**Model details:**
+- 15 km horizontal resolution
+- Updates 4x daily (00Z, 06Z, 12Z, 18Z)
+- 10-day hourly forecasts
+- Storm surge = water level anomaly above astronomical tide
+
+**Data pipeline:**
+1. `fetch_storm_surge.py` - Fetch forecasts from GeoMet WMS (every 6 hours)
+2. Store 12Z run to `~/.local/share/storm_surge_forecast.sqlite` for hindcast analysis
+3. `export_hindcast_json.py` - Export +48h predictions (daily)
+
+**Outputs:**
+- `~/site/data/storm_surge/Point_Atkinson.json` - Individual station forecasts
+- `~/site/data/storm_surge/Crescent_Beach_Channel.json`
+- `~/site/data/storm_surge/combined_forecast.json` - All stations
+- `~/site/data/storm_surge/hindcast.json` - Historical +48h predictions
+
+**Units:** Meters (above/below predicted tide)
+
+**Typical ranges:**
+- Normal: -0.1 to +0.1 m
+- Moderate weather: -0.2 to +0.2 m
+- Storm surge event: +0.5 m or higher
+
+**Total water level = Astronomical tide + Storm surge**
+
+**See `docs/STORM_SURGE_SETUP.md` for complete setup guide.**
+
+---
+
 ## Getting Started
 
 ```bash
@@ -301,6 +341,7 @@ When modifying data processing logic:
 - `docs/DEPLOYMENT.md` - Cron schedules, config files, server setup
 - `docs/TROUBLESHOOTING.md` - Debugging guide, common issues
 - `docs/ARCHITECTURE_DETAILED.md` - Full database schemas, script details
+- `docs/STORM_SURGE_SETUP.md` - Storm surge forecast setup guide (GDSPS/GeoMet)
 
 **Frontend docs (`~/site/`):**
 - `docs/FRONTEND_CHANGELOG.md` - UI/UX changes, feature history
