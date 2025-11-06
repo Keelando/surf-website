@@ -2,13 +2,18 @@
 
 ## Upcoming Tasks
 
-### Documentation Improvements
+(No pending tasks)
 
-**Storm Surge Forecast Setup Guide**
-- Create comprehensive documentation for getting storm surge forecasts running
-- Improve upon Environment Canada's incomplete documentation
-- Include setup steps, dependencies, API details, and troubleshooting
-- Target audience: developers wanting to run the system on their own computer
+---
+
+## Completed (2025-11-06)
+
+✅ **Storm Surge Forecast Setup Guide**
+  - Created comprehensive documentation (`docs/STORM_SURGE_SETUP.md`)
+  - Improves upon Environment Canada's incomplete documentation
+  - Includes prerequisites, installation, configuration, automation
+  - Detailed troubleshooting and verification procedures
+  - Explains GDSPS model, WMS queries, and hindcast analysis
 
 ---
 
