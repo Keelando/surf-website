@@ -135,7 +135,7 @@
     "CRPILE": {
       "id": "CRPILE",
       "name": "Crescent Pile",
-      "location": "Crescent Beach, Surrey",
+      "location": "Boundary Bay",
       "lat": 49.0122,
       "lon": -122.9411,
       "source": "Surrey FlowWorks",
@@ -168,7 +168,7 @@
     "CRCHAN": {
       "id": "CRCHAN",
       "name": "Crescent Channel",
-      "location": "Boundary Bay Channel Marker",
+      "location": "Boundary Bay",
       "lat": 49.0536,
       "lon": -122.8969,
       "source": "Surrey FlowWorks",
@@ -194,7 +194,7 @@
     "COLEB": {
       "id": "COLEB",
       "name": "Colebrook",
-      "location": "Colebrook Pump House",
+      "location": "Boundary Bay (Land)",
       "lat": 49.0858,
       "lon": -122.845,
       "source": "Surrey FlowWorks",
