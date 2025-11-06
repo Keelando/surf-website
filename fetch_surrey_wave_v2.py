@@ -5,13 +5,14 @@ Based on v1 implementation - migrated to v2 API with JWT auth.
 
 Stations:
 - Crescent Pile (20182): Full wave + wind + temp
-- Crescent Channel (20183): Wind + radar wave + temp  
+- Crescent Channel (20183): Wind + radar wave + temp
 - Colebrook (18507): Wind + temp only
 """
 
 import requests
 import sqlite3
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 import time
 
@@ -192,8 +193,15 @@ def parse_data_point(point):
         return None, None
 
     try:
-        # Parse ISO timestamp
-        dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+        # Parse ISO timestamp - Surrey API returns Pacific time (no TZ indicator)
+        # Parse as naive datetime first
+        dt_naive = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+
+        # If timestamp has no timezone, assume Pacific time
+        if dt_naive.tzinfo is None:
+            dt = dt_naive.replace(tzinfo=ZoneInfo("America/Vancouver"))
+        else:
+            dt = dt_naive
 
         # Round to 10-minute intervals (matching v1 behavior)
         if dt.minute % 10 != 0 or dt.second != 0:
@@ -289,11 +297,11 @@ def main():
     conn = sqlite3.connect(SQLITE_PATH)
     ensure_columns(conn)
     
-    # Fetch each station
+    # Fetch each station (use 24 hours to handle Surrey's reporting delays)
     total = 0
     for station_key, station_config in STATIONS.items():
         try:
-            count = fetch_and_store(api, station_key, station_config, conn, hours=2)
+            count = fetch_and_store(api, station_key, station_config, conn, hours=24)
             total += count
         except Exception as e:
             print(f"  ❌ Error: {e}")
