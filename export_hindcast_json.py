@@ -14,8 +14,9 @@ OUTPUT_PATH = Path("~/site/data/storm_surge/hindcast.json").expanduser()
 MAX_DAYS_BACK = 10
 
 STATIONS = {
-    "Point_Atkinson": {"name": "Point Atkinson", "lat": 49.337, "lon": -123.253},
-    "Crescent_Beach_Channel": {"name": "Crescent Beach Channel", "lat": 49.0536, "lon": -122.8969}
+    "Point_Atkinson": {"name": "Point Atkinson", "lat": 49.3375, "lon": -123.253583},
+    "Crescent_Beach_Channel": {"name": "Crescent Beach Channel", "lat": 49.0536, "lon": -122.8969},
+    "Campbell_River": {"name": "Campbell River", "lat": 50.042, "lon": -125.247}
 }
 
 def export_hindcast():
