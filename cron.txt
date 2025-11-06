@@ -17,6 +17,9 @@
 # Storm Surge Forecast - runs every 6 hours (GeoMet updates every 6h)
 30 1,7,13,19 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_storm_surge.py >> /home/keelando/envcan_wave/storm_surge.log 2>&1
 
+# Export hindcast data (48-hour predictions) - runs daily after 12Z data collection
+0 14 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_hindcast_json.py >> /home/keelando/envcan_wave/hindcast_export.log 2>&1
+
 # Fetch NOAA buoy data every 5 minutes (NOAA updates hourly)
 5,25,45 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_noaa_buoy.py >> /home/keelando/envcan_wave/noaa.log 2>&1
 
