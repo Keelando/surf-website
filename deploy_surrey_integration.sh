@@ -33,17 +33,17 @@ echo "   ✅ Done"
 echo ""
 
 # 2. Update stations.json
-echo "2️⃣  Updating stations.json..."
+echo "2️⃣  Updating stations.json (now includes Surrey stations)..."
 if [ -f "$ENVCAN_DIR/stations.json" ]; then
     echo "   📦 Backing up existing stations.json..."
     cp -v "$ENVCAN_DIR/stations.json" "$ENVCAN_DIR/stations.json.backup.$(date +%Y%m%d-%H%M%S)"
 fi
-cp -v "$SCRIPT_DIR/stations_updated.json" "$ENVCAN_DIR/stations.json"
+cp -v "$SCRIPT_DIR/stations.json" "$ENVCAN_DIR/stations.json"
 echo "   ✅ Done"
 echo ""
 
 # 3. Backup and update export scripts
-echo "3️⃣  Updating export scripts..."
+echo "3️⃣  Updating export scripts (now include Surrey stations)..."
 for script in sqlite_to_json.py export_24hr_timeseries.py; do
     if [ -f "$ENVCAN_DIR/$script" ]; then
         echo "   📦 Backing up $script..."
@@ -51,12 +51,6 @@ for script in sqlite_to_json.py export_24hr_timeseries.py; do
     fi
     cp -v "$SCRIPT_DIR/$script" "$ENVCAN_DIR/"
 done
-echo "   ✅ Done"
-echo ""
-
-# 4. Copy helper script
-echo "4️⃣  Copying helper script..."
-cp -v "$SCRIPT_DIR/update_exports_for_surrey.py" "$ENVCAN_DIR/"
 echo "   ✅ Done"
 echo ""
 
