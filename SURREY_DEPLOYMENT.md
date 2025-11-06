@@ -61,7 +61,7 @@ python3 fetch_surrey_wave_v2.py
 
 **If authentication fails:**
 - Check that you're in production environment (not behind proxy)
-- Verify credentials are still valid: `surreyrain / surreyrain`
+- Verify credentials are still valid: abcdefg
 - Contact coastal@surrey.ca if credentials changed
 
 ### 3. Verify Data in SQLite
