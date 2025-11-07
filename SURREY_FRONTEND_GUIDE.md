@@ -20,7 +20,7 @@ Find the buoy display order array and add Surrey stations:
 const buoyOrder = [
   "4600146",  // Halibut Bank
   "4600304",  // English Bay
-  "CRPILE",   // ← Crescent Pile (NEW)
+  "CRPILE",   // ← Crescent Beach Ocean (NEW)
   "CRCHAN",   // ← Crescent Channel (NEW)
   "4600303",  // Southern Georgia Strait
   "4600131",  // Sentry Shoal
@@ -40,7 +40,7 @@ const buoyOrder = [
 <select id="buoy-selector" class="buoy-select">
   <option value="4600146">Halibut Bank</option>
   <option value="4600304">English Bay</option>
-  <option value="CRPILE">Crescent Pile</option>  <!-- NEW -->
+  <option value="CRPILE">Crescent Beach Ocean</option>  <!-- NEW -->
   <option value="CRCHAN">Crescent Channel</option>  <!-- NEW -->
   <option value="4600303">Southern Georgia Strait</option>
   <option value="4600131">Sentry Shoal</option>
@@ -58,7 +58,7 @@ Surrey stations are in `stations.json` with full metadata:
 // Available metadata for each Surrey station:
 {
   "id": "CRPILE",
-  "name": "Crescent Pile",
+  "name": "Crescent Beach Ocean",
   "location": "Crescent Beach, Surrey",
   "lat": 49.0122,
   "lon": -122.9411,
@@ -74,7 +74,7 @@ Use this for:
 
 ### 4. Data Fields
 
-**CRPILE (Crescent Pile) - Full suite:**
+**CRPILE (Crescent Beach Ocean) - Full suite:**
 - `wave_height_sig` - Significant wave height (m)
 - `wave_height_peak` - Peak wave height (m)
 - `wave_period_avg` - Average wave period (s)
@@ -102,7 +102,7 @@ If you have a map view, add Surrey station markers:
 const surreyStations = [
   {
     id: "CRPILE",
-    name: "Crescent Pile",
+    name: "Crescent Beach Ocean",
     lat: 49.0122,
     lon: -122.9411,
     type: "wave_buoy"
@@ -134,7 +134,7 @@ Surrey stations appear in the same format as other buoys:
 ```json
 {
   "CRPILE": {
-    "name": "Crescent Pile",
+    "name": "Crescent Beach Ocean",
     "observation_time": "2025-11-05T23:30:00+00:00",
     "wave_height_sig": 0.8,
     "wave_period_avg": 3.2,

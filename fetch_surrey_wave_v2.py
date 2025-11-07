@@ -4,7 +4,7 @@ Fetch Surrey FlowWorks wave/wind data (API v2) and store to SQLite.
 Based on v1 implementation - migrated to v2 API with JWT auth.
 
 Stations:
-- Crescent Pile (20182): Full wave + wind + temp
+- Crescent Beach Ocean (20182): Full wave + wind + temp
 - Crescent Channel (20183): Wind + radar wave + temp
 - Colebrook (18507): Wind + temp only
 """
@@ -26,7 +26,7 @@ SQLITE_PATH = Path("~/.local/share/buoy_data.sqlite").expanduser()
 STATIONS = {
     "crescentpile": {
         "site_id": 20182,
-        "name": "Crescent Pile",
+        "name": "Crescent Beach Ocean",
         "buoy_id": "CRPILE",  # Short ID for database
         "channels": {
             "wind_speed": 1810,

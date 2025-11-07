@@ -8,7 +8,7 @@ from pathlib import Path
 
 # Surrey stations to add
 SURREY_STATIONS = {
-    "CRPILE": {"name": "Crescent Pile", "location": "Crescent Beach, Surrey"},
+    "CRPILE": {"name": "Crescent Beach Ocean", "location": "Crescent Beach, Surrey"},
     "CRCHAN": {"name": "Crescent Channel", "location": "Boundary Bay Channel"},
     "COLEB": {"name": "Colebrook", "location": "Colebrook Pump House"},
 }
