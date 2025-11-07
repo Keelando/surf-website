@@ -71,6 +71,26 @@ def ensure_db():
         )
     """)
 
+    # Create tide_offset table (observed storm surge = observed - predicted)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS tide_offset (
+            station_id TEXT NOT NULL,
+            station_name TEXT NOT NULL,
+            observation_time INTEGER NOT NULL,
+            observed_level REAL,
+            predicted_level REAL,
+            offset REAL,
+            calculated_at TEXT DEFAULT (datetime('now')),
+            PRIMARY KEY (station_id, observation_time)
+        )
+    """)
+
+    # Index for efficient offset queries
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tide_offset_time
+        ON tide_offset(station_id, observation_time DESC)
+    """)
+
     cur.execute("PRAGMA journal_mode=WAL;")
     conn.commit()
     return conn
@@ -210,10 +230,10 @@ def main():
             print("  WARNING: no timeSeries metadata")
             continue
 
-        # Fetch observations (wlo) - last 2 hours
+        # Fetch observations (wlo) - last 11 days
         if args.observations or args.all:
             if "wlo" in codes:
-                start = now - datetime.timedelta(hours=2)
+                start = now - datetime.timedelta(days=11)
                 url = f"{BASE_URL}/{sid}/data"
                 params = {
                     "time-series-code": "wlo",
@@ -228,11 +248,11 @@ def main():
                         total_added += added
                         print(f"  OK: observations added {added} rows")
 
-        # Fetch predictions (wlp) - 48-hour window
+        # Fetch predictions (wlp) - 11-day historical + 1 day ahead
         if args.predictions or args.all:
             if "wlp" in codes:
-                start = now - datetime.timedelta(hours=12)
-                end = now + datetime.timedelta(hours=36)
+                start = now - datetime.timedelta(days=11)
+                end = now + datetime.timedelta(hours=24)
                 url = f"{BASE_URL}/{sid}/data"
                 params = {
                     "time-series-code": "wlp",
@@ -267,6 +287,25 @@ def main():
                         print(f"  OK: high/low events added {added} rows")
 
         time.sleep(2.1)  # Rate limiting
+
+    # Purge old data (keep 11 days)
+    print("=" * 70)
+    print("Purging data older than 11 days...")
+    cutoff_timestamp = int((now - datetime.timedelta(days=11)).timestamp())
+
+    cur.execute("DELETE FROM tide_observation WHERE observation_time < ?", (cutoff_timestamp,))
+    obs_deleted = cur.rowcount
+
+    cur.execute("DELETE FROM tide_prediction WHERE prediction_time < ?", (cutoff_timestamp,))
+    pred_deleted = cur.rowcount
+
+    cur.execute("DELETE FROM tide_highlow WHERE event_time < ?", (cutoff_timestamp,))
+    hl_deleted = cur.rowcount
+
+    if obs_deleted > 0 or pred_deleted > 0 or hl_deleted > 0:
+        print(f"  Deleted: {obs_deleted} observations, {pred_deleted} predictions, {hl_deleted} high/low events")
+    else:
+        print("  No old data to purge")
 
     conn.commit()
     conn.close()
