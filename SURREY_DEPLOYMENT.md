@@ -12,7 +12,7 @@ This guide covers deploying the Surrey FlowWorks v2 integration to your producti
 - `export_24hr_timeseries.py` - Updated 24h timeseries exporter
 
 ### New Surrey Stations
-1. **CRPILE** (Crescent Pile) - Full wave + wind + temp
+1. **CRPILE** (Crescent Beach Ocean) - Full wave + wind + temp
 2. **CRCHAN** (Crescent Channel) - Wind + radar wave
 3. **COLEB** (Colebrook) - Wind only
 
@@ -51,7 +51,7 @@ python3 fetch_surrey_wave_v2.py
 ======================================================================
 ✅ Authenticated - expires 2025-XX-XX XX:XX:XX+00:00
 
-📡 Fetching Crescent Pile...
+📡 Fetching Crescent Beach Ocean...
   ✅ wind_speed: 12 points
   ✅ wind_direction: 12 points
   ✅ wind_gust: 12 points
@@ -78,7 +78,7 @@ FROM buoy_observation
 WHERE buoy_id IN ('CRPILE', 'CRCHAN', 'COLEB')
 GROUP BY buoy_id;
 
--- Check sample data for Crescent Pile
+-- Check sample data for Crescent Beach Ocean
 SELECT datetime(observation_time, 'unixepoch') as time,
        wave_height_sig, wind_speed, wind_direction, air_temp
 FROM buoy_observation
@@ -139,7 +139,7 @@ If you want Surrey stations to appear on the website in a specific order, update
 const order = [
   "4600146", // Halibut Bank
   "4600304", // English Bay
-  "CRPILE",  // Crescent Pile ← NEW!
+  "CRPILE",  // Crescent Beach Ocean ← NEW!
   "CRCHAN",  // Crescent Channel ← NEW!
   "4600303", // Southern Georgia Strait
   "4600131", // Sentry Shoal
@@ -151,7 +151,7 @@ const order = [
 **File: `~/site/assets/js/charts.js`**
 ```html
 <!-- Add to buoy selector dropdown -->
-<option value="CRPILE">Crescent Pile</option>
+<option value="CRPILE">Crescent Beach Ocean</option>
 <option value="CRCHAN">Crescent Channel</option>
 <option value="COLEB">Colebrook</option>
 ```
@@ -325,7 +325,7 @@ sqlite3 ~/.local/share/buoy_data.sqlite \
 Once deployed, you'll have:
 - ✅ 3 new data sources covering Boundary Bay / Crescent Beach area
 - ✅ 10-minute update frequency (fetched every 20min, data updates every 10min)
-- ✅ Full wave, wind, and temperature data for Crescent Pile
+- ✅ Full wave, wind, and temperature data for Crescent Beach Ocean
 - ✅ Unified integration with existing buoy pipeline
 - ✅ Auto-export to website with no frontend changes required
 

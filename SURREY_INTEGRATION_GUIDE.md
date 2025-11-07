@@ -6,7 +6,7 @@ Integrate Surrey's FlowWorks wave and wind stations into your existing pipeline 
 ## What You're Getting
 
 ### 3 New Stations:
-1. **Crescent Pile (CRPILE)** - Full wave + wind + temp
+1. **Crescent Beach Ocean (CRPILE)** - Full wave + wind + temp
    - Location: 49.0122°N, -122.9411°W (500m offshore)
    - Data: Wave height/period, wind, air/sea temp
    - Update: Every 10 minutes
@@ -60,7 +60,7 @@ Expected output:
 ======================================================================
 ✅ Authenticated - expires 2025-02-04 15:30:00+00:00
 
-📡 Fetching Crescent Pile...
+📡 Fetching Crescent Beach Ocean...
   ✅ wind_speed: 12 points
   ✅ wind_direction: 12 points
   ✅ wind_gust: 12 points
@@ -137,7 +137,7 @@ Add:
 const order = [
   "4600146", // Halibut Bank
   "4600304", // English Bay
-  "CRPILE",  // Crescent Pile (NEW!)
+  "CRPILE",  // Crescent Beach Ocean (NEW!)
   "CRCHAN",  // Crescent Channel (NEW!)
   "4600303", // Southern Georgia Strait
   "4600131", // Sentry Shoal
@@ -147,7 +147,7 @@ const order = [
 
 ### Add to charts.js buoy selector:
 ```html
-<option value="CRPILE">Crescent Pile</option>
+<option value="CRPILE">Crescent Beach Ocean</option>
 <option value="CRCHAN">Crescent Channel</option>
 <option value="COLEB">Colebrook</option>
 ```
