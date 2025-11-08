@@ -154,23 +154,27 @@ def combine_predictions(station_tide_id, station_surge_id, surge_forecasts, star
     """
     Combine astronomical tide predictions with storm surge forecasts.
 
-    Returns: list of {time, astronomical_tide, storm_surge, total_water_level}
+    Returns: dict with:
+        - forecast: list of {time, astronomical_tide, storm_surge, total_water_level}
+        - peak: dict with peak total water level info
     """
     # Load tide predictions
     tide_predictions = load_tide_predictions(station_tide_id, start_ts, end_ts, tide_db)
 
     if not tide_predictions:
         print(f"  ⚠️  No tide predictions found for {station_tide_id}")
-        return []
+        return None
 
     if station_surge_id not in surge_forecasts:
         print(f"  ⚠️  No storm surge forecast for {station_surge_id}")
-        return []
+        return None
 
     surge_data = surge_forecasts[station_surge_id]
 
     # Combine tide + surge
     combined = []
+    peak_total = None
+    peak_entry = None
 
     for tide_ts, tide_level in sorted(tide_predictions.items()):
         # Interpolate surge at this timestamp
@@ -181,14 +185,29 @@ def combine_predictions(station_tide_id, station_surge_id, surge_forecasts, star
 
             dt = datetime.fromtimestamp(tide_ts, tz=timezone.utc)
 
-            combined.append({
+            entry = {
                 "time": dt.isoformat(),
                 "astronomical_tide_m": round(tide_level, 3),
                 "storm_surge_m": round(surge_value, 3),
                 "total_water_level_m": round(total_level, 3)
-            })
+            }
+            combined.append(entry)
 
-    return combined
+            # Track peak
+            if peak_total is None or total_level > peak_total:
+                peak_total = total_level
+                peak_entry = {
+                    "time": dt.isoformat(),
+                    "astronomical_tide_m": round(tide_level, 3),
+                    "storm_surge_m": round(surge_value, 3),
+                    "total_water_level_m": round(total_level, 3),
+                    "description": f"Peak occurs at {dt.astimezone(ZoneInfo('America/Vancouver')).strftime('%Y-%m-%d %I:%M %p PST')}"
+                }
+
+    return {
+        "forecast": combined,
+        "peak": peak_entry
+    }
 
 
 def export_combined_water_level(tide_db, surge_dir, output_file):
@@ -226,15 +245,18 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
     for tide_station, surge_station in STATION_MAPPING.items():
         print(f"📍 {tide_station} + {surge_station}")
 
-        combined = combine_predictions(tide_station, surge_station, surge_forecasts, start_ts, end_ts, tide_db)
+        result = combine_predictions(tide_station, surge_station, surge_forecasts, start_ts, end_ts, tide_db)
 
-        if combined:
+        if result and result["forecast"]:
             combined_data[tide_station] = {
                 "tide_station_id": tide_station,
                 "surge_station_id": surge_station,
-                "forecast": combined
+                "forecast": result["forecast"],
+                "peak": result["peak"]
             }
-            print(f"  ✅ {len(combined)} combined predictions")
+            print(f"  ✅ {len(result['forecast'])} combined predictions")
+            if result["peak"]:
+                print(f"  🔝 Peak: {result['peak']['total_water_level_m']}m at {result['peak']['description']}")
         else:
             print(f"  ⚠️  No data")
 
@@ -248,7 +270,17 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
             "forecast_end": day_after_tomorrow_end.isoformat(),
             "timezone": "America/Vancouver",
             "forecast_days": 2,
-            "units": "meters"
+            "units": "meters",
+            "data_sources": {
+                "astronomical_tide": "DFO IWLS (Integrated Water Level System)",
+                "storm_surge": "Environment Canada GDSPS (Global Deterministic Storm Surge Prediction System)"
+            },
+            "important_notes": {
+                "wave_effects_not_included": "These predictions do NOT include wave setup, wave runup, or wave overtopping effects. During storms with large waves, actual water levels at the shore can be significantly higher due to breaking waves pushing water inland (wave setup ~0.2-0.5m, wave runup ~1-3m+ depending on location and wave height).",
+                "what_is_storm_surge": "Storm surge is the static elevation of water level caused by meteorological forcing (wind stress and atmospheric pressure). GDSPS predicts this component using ocean circulation models driven by weather forecasts.",
+                "total_flooding_risk": "For complete coastal flooding assessment, wave effects must be added separately. Wave runup is often the dominant factor during major storms on exposed coasts.",
+                "inland_vs_exposed": "Wave effects are minimal in protected areas (e.g., Vancouver Harbour) but can dominate on exposed outer coasts (e.g., Tofino, Neah Bay)."
+            }
         },
         "stations": combined_data
     }
