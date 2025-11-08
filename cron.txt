@@ -1,3 +1,19 @@
+# =============================================================================
+# CRON SCHEDULE FOR MARINE WEATHER MONITORING SYSTEM
+# =============================================================================
+#
+# ⚠️  IMPORTANT: After pulling updates, you must manually update your crontab!
+#
+#     Run: crontab -e
+#     Then copy/paste the relevant lines from this file
+#
+# Recent changes:
+# - 2025-11-08: Added combined water level export (runs after storm surge)
+# - 2025-11-08: Extended tide predictions from 48h to 3 days
+# - 2025-11-08: Added observed storm surge calculation
+#
+# =============================================================================
+
 # system telemetry over mqtt to haos
 */2 * * * * /home/keelando/.sys-venv/bin/python /home/keelando/sys_stats_mqtt.py
 
@@ -29,7 +45,8 @@
 # Fetch tide observations every 30 minutes (real-time water levels)
 */30 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py --observations >> /home/keelando/envcan_wave/tide_obs.log 2>&1
 
-# Fetch tide predictions once daily at 12:10 AM (astronomical forecasts, 48-hour window)
+# Fetch tide predictions once daily at 12:10 AM (astronomical forecasts, 3-day window)
+# NOTE: Extended to 3 days (was 48h) to support 2-day combined water level forecasts
 10 0 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py --predictions >> /home/keelando/envcan_wave/tide_pred.log 2>&1
 
 # Fetch high/low events once daily at 12:15 AM (tide extrema, 48-hour window)
@@ -37,6 +54,18 @@
 
 # Export tide JSON data every minute (latest conditions, timeseries, high/low events)
 * * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_tide_json.py >> /home/keelando/envcan_wave/tide_export.log 2>&1
+
+# Calculate observed storm surge (tide offset = observed - predicted) every hour
+5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/calculate_storm_surge_observed.py >> /home/keelando/envcan_wave/tide_offset.log 2>&1
+
+# ========== COMBINED WATER LEVEL (NEW) ==========
+
+# Export combined water level predictions (astronomical tide + storm surge)
+# Runs 10 minutes after storm surge fetch to ensure latest data is available
+# Produces 2-day forecast for frontend display
+40 1,7,13,19 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_combined_water_level.py >> /home/keelando/envcan_wave/combined_water_level.log 2>&1
+
+# ========== END COMBINED WATER LEVEL ==========
 
 # ========== END TIDE DATA ==========
 
