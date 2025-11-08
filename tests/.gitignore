@@ -1,0 +1,7 @@
+# Ignore generated test databases (binary files)
+databases/*.sqlite
+databases/*.sqlite-shm
+databases/*.sqlite-wal
+
+# Keep the directory structure
+!databases/.gitkeep
