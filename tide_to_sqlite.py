@@ -248,11 +248,12 @@ def main():
                         total_added += added
                         print(f"  OK: observations added {added} rows")
 
-        # Fetch predictions (wlp) - 11-day historical + 1 day ahead
+        # Fetch predictions (wlp) - 11-day historical + 3 days ahead
+        # Extended to 3 days to ensure full 2 calendar days ahead coverage
         if args.predictions or args.all:
             if "wlp" in codes:
                 start = now - datetime.timedelta(days=11)
-                end = now + datetime.timedelta(hours=24)
+                end = now + datetime.timedelta(days=3)
                 url = f"{BASE_URL}/{sid}/data"
                 params = {
                     "time-series-code": "wlp",
