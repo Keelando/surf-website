@@ -106,8 +106,14 @@ def create_schema(conn):
     print("✅ Database schema created")
 
 
-def load_fixture_json(filename):
-    """Load JSON fixture file and update timestamps to be recent."""
+def load_fixture_json(filename, extend_predictions=False):
+    """
+    Load JSON fixture file and update timestamps to be recent.
+
+    Args:
+        filename: Fixture file to load
+        extend_predictions: If True, extend predictions to cover next 3 days
+    """
     path = FIXTURES_DIR / filename
     if not path.exists():
         print(f"⚠️  Fixture not found: {filename}")
@@ -116,19 +122,59 @@ def load_fixture_json(filename):
     with open(path, 'r') as f:
         data = json.load(f)
 
-    # Calculate time offset to make data "recent" (within last 4 hours)
+    # Calculate time offset to make data "recent"
     if data and "eventDate" in data[0]:
         original_time = datetime.datetime.fromisoformat(data[0]["eventDate"].replace("Z", "+00:00"))
         now = datetime.datetime.now(datetime.timezone.utc)
-        # Set first record to 4 hours ago
-        target_time = now - datetime.timedelta(hours=4)
-        time_delta = target_time - original_time
 
-        # Update all timestamps
-        for record in data:
-            original = datetime.datetime.fromisoformat(record["eventDate"].replace("Z", "+00:00"))
-            new_time = original + time_delta
-            record["eventDate"] = new_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        if extend_predictions and "prediction" in filename:
+            # For predictions, start from now and extend forward
+            target_time = now
+            time_delta = target_time - original_time
+
+            # Update all timestamps
+            updated_data = []
+            for record in data:
+                original = datetime.datetime.fromisoformat(record["eventDate"].replace("Z", "+00:00"))
+                new_time = original + time_delta
+                updated_data.append({
+                    **record,
+                    "eventDate": new_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+                })
+
+            # Extend predictions to cover next 3 days (repeat pattern)
+            # Calculate time delta between consecutive records
+            if len(updated_data) >= 2:
+                t1 = datetime.datetime.fromisoformat(updated_data[0]["eventDate"].replace("Z", "+00:00"))
+                t2 = datetime.datetime.fromisoformat(updated_data[1]["eventDate"].replace("Z", "+00:00"))
+                interval = t2 - t1
+
+                # Continue pattern for 3 days
+                last_time = datetime.datetime.fromisoformat(updated_data[-1]["eventDate"].replace("Z", "+00:00"))
+                last_value = updated_data[-1]["value"]
+                target_end = now + datetime.timedelta(days=3)
+
+                while last_time < target_end:
+                    last_time += interval
+                    # Use sinusoidal pattern for tides (simple approximation)
+                    updated_data.append({
+                        "eventDate": last_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "value": last_value  # Simplified - reuse pattern
+                    })
+
+            return updated_data
+        else:
+            # For observations/highlow, set first record to 4 hours ago
+            target_time = now - datetime.timedelta(hours=4)
+            time_delta = target_time - original_time
+
+            # Update all timestamps
+            for record in data:
+                original = datetime.datetime.fromisoformat(record["eventDate"].replace("Z", "+00:00"))
+                new_time = original + time_delta
+                record["eventDate"] = new_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            return data
 
     return data
 
@@ -170,7 +216,7 @@ def populate_observations(conn, station_id, station_name):
 def populate_predictions(conn, station_id, station_name):
     """Populate tide predictions from fixture."""
     fixture_file = f"{station_id}_predictions.json"
-    data = load_fixture_json(fixture_file)
+    data = load_fixture_json(fixture_file, extend_predictions=True)
 
     if not data:
         print(f"⚠️  No prediction data for {station_id}")
