@@ -16,8 +16,10 @@ import time
 import argparse
 from pathlib import Path
 
+# Use script directory for stations.json, expanduser for database
+SCRIPT_DIR = Path(__file__).parent
 DB_PATH = Path("~/.local/share/tide_data.sqlite").expanduser()
-STATION_FILE = Path("~/envcan_wave/tide_stations.json").expanduser()
+STATION_FILE = SCRIPT_DIR / "stations.json"
 BASE_URL = "https://api-iwls.dfo-mpo.gc.ca/api/v1/stations"
 HEADERS = {"User-Agent": "keelan_w@hotmail.com"}
 
@@ -26,7 +28,9 @@ def load_stations():
         raise FileNotFoundError(f"Missing {STATION_FILE}")
     with open(STATION_FILE, "r") as f:
         data = json.load(f)
-    return {k: v["id"] for k, v in data.items()}
+    # Extract tide stations from unified stations.json
+    tides = data.get("tides", {})
+    return {k: v["id"] for k, v in tides.items()}
 
 def ensure_db():
     """Create database and tables if they don't exist."""
@@ -248,11 +252,12 @@ def main():
                         total_added += added
                         print(f"  OK: observations added {added} rows")
 
-        # Fetch predictions (wlp) - 11-day historical + 3 days ahead
+        # Fetch predictions (wlp) - current time + 3 days ahead
         # Extended to 3 days to ensure full 2 calendar days ahead coverage
+        # Note: DFO API rejects requests with 'from' dates in the past for predictions
         if args.predictions or args.all:
             if "wlp" in codes:
-                start = now - datetime.timedelta(days=11)
+                start = now
                 end = now + datetime.timedelta(days=3)
                 url = f"{BASE_URL}/{sid}/data"
                 params = {
