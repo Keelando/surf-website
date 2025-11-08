@@ -14,9 +14,11 @@ This script:
 import sqlite3
 import datetime
 import time
+import argparse
 from pathlib import Path
 
 DB_PATH = Path("~/.local/share/tide_data.sqlite").expanduser()
+TEST_DB_PATH = Path(__file__).parent / "tests" / "databases" / "tide_data_test.sqlite"
 RETENTION_DAYS = 11
 
 # Only stations with real-time observations (PERMANENT stations)
@@ -149,16 +151,29 @@ def print_summary(conn):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Calculate observed storm surge from tide data")
+    parser.add_argument('--test-mode', action='store_true',
+                       help='Use test database instead of production database')
+    args = parser.parse_args()
+
+    # Select database path
+    db_path = TEST_DB_PATH if args.test_mode else DB_PATH
+
     start_time = time.time()
 
     print("🌊 Storm Surge Observed Calculator")
+    if args.test_mode:
+        print("   [TEST MODE - Using test database]")
     print("=" * 70)
 
-    if not DB_PATH.exists():
-        print(f"❌ Database not found: {DB_PATH}")
+    if not db_path.exists():
+        print(f"❌ Database not found: {db_path}")
+        if args.test_mode:
+            print(f"   Run: python3 tests/create_test_tide_database.py")
         return 1
 
-    conn = sqlite3.connect(DB_PATH)
+    print(f"📁 Database: {db_path}")
+    conn = sqlite3.connect(db_path)
 
     try:
         # Calculate offsets
