@@ -65,9 +65,10 @@ def export_hindcast():
         for station_id, station_info in STATIONS.items():
             print(f"\n📍 Processing {station_info['name']}...")
             
-            # Query: Get all forecasts and filter for hours 38-61 (full Pacific calendar day)
-            # 18Z run on Tuesday → hours 38-61 = all of Thursday PST (00:00-23:00 Pacific)
-            # Note: This uses PST offset (UTC-8). PDT would be 37-60.
+            # Query: Get all forecasts and filter for hours 38-61 FROM 18Z RUN
+            # 18Z run on Nov 7 → hours 38-61 = all of Nov 9 PST (00:00-23:00 Pacific, 2 days ahead)
+            # Since forecast_run_time is stored as date-only, we must add 18 hours to account for 18Z
+            # Hours 38-61 from 18Z = Hours 56-79 from midnight = (38+18) to (61+18)
             cur.execute("""
                 SELECT
                     forecast_run_time,
@@ -76,7 +77,7 @@ def export_hindcast():
                     ROUND((julianday(valid_time) - julianday(forecast_run_time)) * 24, 1) as hours_ahead
                 FROM forecast_archive
                 WHERE station_id = ?
-                  AND hours_ahead BETWEEN 38 AND 61
+                  AND hours_ahead BETWEEN 56 AND 79
                 ORDER BY valid_time ASC
             """, (station_id,))
             
