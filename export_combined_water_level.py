@@ -91,7 +91,7 @@ def load_tide_predictions(station_id, start_ts, end_ts, tide_db):
     cur.execute("""
         SELECT prediction_time, water_level
         FROM tide_prediction
-        WHERE station_id = ?
+        WHERE station_name = ?
           AND prediction_time >= ?
           AND prediction_time <= ?
           AND water_level IS NOT NULL
