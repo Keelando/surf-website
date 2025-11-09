@@ -211,6 +211,24 @@ Remove some observation records to test interpolation logic
 
 ## Future Enhancements
 
+### Storm Surge Test Fixtures (✅ AVAILABLE)
+
+**Location:** `tests/fixtures/storm_surge/`
+
+**Files:**
+- `hindcast.json` - Clean hindcast data (no duplicates)
+- `hindcast_with_duplicates.json` - Test data with pre-Nov-7 duplicates (mimics production)
+- `Point_Atkinson.json` - Individual station forecast
+- `Campbell_River.json` - Individual station forecast
+- `Crescent_Beach_Channel.json` - Individual station forecast
+
+**Test scripts:**
+- `setup_offline_test.sh` - Copy fixtures to `~/site/data/storm_surge/`
+- `validate_hindcast_timestamps.py` - Validate timestamp format and calendar alignment
+- `diagnose_hindcast_duplicates.py` - Detect duplicate data across stations
+
+**See:** `tests/NEXT_STEPS.md` for usage guide
+
 ### TODO: Additional Fixtures Needed
 
 1. **EC Buoy XMLs** (`tests/fixtures/ec_buoy/`)
@@ -227,11 +245,6 @@ Remove some observation records to test interpolation logic
 3. **Marine Forecast XMLs** (`tests/fixtures/marine_forecast/`)
    - Strait of Georgia north/south zones
    - Various warning types
-
-4. **Storm Surge Forecasts** (`tests/fixtures/storm_surge/`)
-   - GDSPS WMS GetFeatureInfo responses
-   - Multiple forecast runs
-   - 10-day hourly data
 
 ### TODO: Test Mode Support
 
