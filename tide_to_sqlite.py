@@ -234,10 +234,25 @@ def main():
             print("  WARNING: no timeSeries metadata")
             continue
 
-        # Fetch observations (wlo) - last 11 days
+        # Fetch observations (wlo) - incremental fetch since last observation
+        # Note: DFO IWLS API restricts observation queries to maximum 7-day window
+        # Strategy: Only fetch new observations since last stored observation (they don't change!)
         if args.observations or args.all:
             if "wlo" in codes:
-                start = now - datetime.timedelta(days=11)
+                # Check for most recent observation in database
+                cur.execute("""
+                    SELECT MAX(observation_time) FROM tide_observation WHERE station_id = ?
+                """, (key,))
+                last_obs = cur.fetchone()[0]
+
+                if last_obs:
+                    # Fetch only new data since last observation
+                    start = datetime.datetime.fromtimestamp(last_obs, datetime.timezone.utc)
+                else:
+                    # Bootstrap: fetch last 6 hours on first run (avoid hitting API hard)
+                    # Full 10-day history will accumulate over time
+                    start = now - datetime.timedelta(hours=6)
+
                 url = f"{BASE_URL}/{sid}/data"
                 params = {
                     "time-series-code": "wlo",
@@ -294,10 +309,10 @@ def main():
 
         time.sleep(2.1)  # Rate limiting
 
-    # Purge old data (keep 11 days)
+    # Purge old data (keep 10 days for analysis/validation)
     print("=" * 70)
-    print("Purging data older than 11 days...")
-    cutoff_timestamp = int((now - datetime.timedelta(days=11)).timestamp())
+    print("Purging data older than 10 days...")
+    cutoff_timestamp = int((now - datetime.timedelta(days=10)).timestamp())
 
     cur.execute("DELETE FROM tide_observation WHERE observation_time < ?", (cutoff_timestamp,))
     obs_deleted = cur.rowcount

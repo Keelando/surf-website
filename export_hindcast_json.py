@@ -89,10 +89,14 @@ def export_hindcast():
             # Build hindcast series
             hindcast_series = []
             for row in rows:
+                # Normalize forecast_date to just date (no time) for consistency
+                forecast_datetime = datetime.fromisoformat(row["forecast_run_time"].replace('Z', '+00:00') if 'T' in row["forecast_run_time"] else row["forecast_run_time"] + 'T00:00:00+00:00')
+                forecast_date_str = forecast_datetime.strftime('%Y-%m-%d')
+
                 hindcast_series.append({
                     "time": row["valid_time"],
                     "value": round(row["surge_value"], 3),
-                    "forecast_date": row["forecast_run_time"],
+                    "forecast_date": forecast_date_str,
                     "hours_ahead": row["hours_ahead"]
                 })
             
