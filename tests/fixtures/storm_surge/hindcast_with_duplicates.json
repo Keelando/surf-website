@@ -1,0 +1,73 @@
+{
+  "generated_utc": "2024-11-09T12:00:00Z",
+  "description": "Storm surge predictions - TEST DATA with duplicates before Nov 7",
+  "forecast_horizon_hours": "38-61",
+  "max_days_back": 10,
+  "actual_days_available": 7,
+  "stations": {
+    "Point_Atkinson": {
+      "station_id": "Point_Atkinson",
+      "station_name": "Point Atkinson",
+      "location": {
+        "lat": 49.3375,
+        "lon": -123.253583
+      },
+      "hindcast": [
+        {"time": "2024-11-01T08:00:00Z", "value": 0.045, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 38.0},
+        {"time": "2024-11-01T09:00:00Z", "value": 0.048, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 39.0},
+        {"time": "2024-11-01T10:00:00Z", "value": 0.052, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 40.0},
+        {"time": "2024-11-07T08:00:00Z", "value": 0.065, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 38.0},
+        {"time": "2024-11-07T09:00:00Z", "value": 0.068, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 39.0},
+        {"time": "2024-11-07T10:00:00Z", "value": 0.071, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 40.0}
+      ]
+    },
+    "Campbell_River": {
+      "station_id": "Campbell_River",
+      "station_name": "Campbell River",
+      "location": {
+        "lat": 50.042,
+        "lon": -125.247
+      },
+      "hindcast": [
+        {"time": "2024-11-01T08:00:00Z", "value": 0.045, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 38.0},
+        {"time": "2024-11-01T09:00:00Z", "value": 0.048, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 39.0},
+        {"time": "2024-11-01T10:00:00Z", "value": 0.052, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 40.0},
+        {"time": "2024-11-07T08:00:00Z", "value": 0.085, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 38.0},
+        {"time": "2024-11-07T09:00:00Z", "value": 0.088, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 39.0},
+        {"time": "2024-11-07T10:00:00Z", "value": 0.091, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 40.0}
+      ]
+    },
+    "Crescent_Beach_Channel": {
+      "station_id": "Crescent_Beach_Channel",
+      "station_name": "Crescent Beach Channel",
+      "location": {
+        "lat": 49.0536,
+        "lon": -122.8969
+      },
+      "hindcast": [
+        {"time": "2024-11-01T08:00:00Z", "value": 0.045, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 38.0},
+        {"time": "2024-11-01T09:00:00Z", "value": 0.048, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 39.0},
+        {"time": "2024-11-01T10:00:00Z", "value": 0.052, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 40.0},
+        {"time": "2024-11-07T08:00:00Z", "value": 0.055, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 38.0},
+        {"time": "2024-11-07T09:00:00Z", "value": 0.058, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 39.0},
+        {"time": "2024-11-07T10:00:00Z", "value": 0.061, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 40.0}
+      ]
+    },
+    "Neah_Bay": {
+      "station_id": "Neah_Bay",
+      "station_name": "Neah Bay",
+      "location": {
+        "lat": 48.495,
+        "lon": -124.728
+      },
+      "hindcast": [
+        {"time": "2024-11-01T08:00:00Z", "value": 0.045, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 38.0},
+        {"time": "2024-11-01T09:00:00Z", "value": 0.048, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 39.0},
+        {"time": "2024-11-01T10:00:00Z", "value": 0.052, "forecast_date": "2024-10-30T18:00:00Z", "hours_ahead": 40.0},
+        {"time": "2024-11-07T08:00:00Z", "value": 0.095, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 38.0},
+        {"time": "2024-11-07T09:00:00Z", "value": 0.098, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 39.0},
+        {"time": "2024-11-07T10:00:00Z", "value": 0.101, "forecast_date": "2024-11-05T18:00:00Z", "hours_ahead": 40.0}
+      ]
+    }
+  }
+}
