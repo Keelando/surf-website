@@ -115,11 +115,27 @@ def detect_available_codes(station_id):
     return [ts["code"] for ts in meta.get("timeSeries", [])]
 
 def insert_observations(cur, station_key, station_id, data):
-    """Insert observation data (wlo series) into tide_observation table."""
+    """
+    Insert observation data (wlo series) into tide_observation table.
+
+    CRITICAL: Downsamples to 5-minute intervals on insert.
+    - DFO API returns 1-minute resolution (10,080 points per 7 days)
+    - We store 5-minute resolution (2,016 points per 7 days = 80% reduction)
+    - Tides change slowly; 5-min is sufficient for analysis and offset calculations
+    - Frontend exports further downsample to 15-min for chart display
+
+    DO NOT REMOVE THIS DOWNSAMPLING without updating database strategy!
+    """
     added = 0
     for row in data:
         try:
             ts = datetime.datetime.fromisoformat(row["eventDate"].replace("Z", "+00:00"))
+
+            # Downsample: Only store observations at 5-minute intervals
+            # Keep readings at :00, :05, :10, :15, :20, :25, :30, :35, :40, :45, :50, :55
+            if ts.minute % 5 != 0 or ts.second != 0:
+                continue  # Skip this observation
+
             timestamp = int(ts.timestamp())
             water_level = row.get("value")
             qc = row.get("qcFlagCode")

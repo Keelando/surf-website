@@ -6,6 +6,11 @@ Outputs three JSON files:
 1. tide-latest.json - Current conditions (observation + prediction)
 2. tide-timeseries.json - Calendar day timeseries for charts (15-min intervals)
 3. tide-hi-low.json - High/low events for text display
+
+IMPORTANT: Two-stage downsampling strategy (DO NOT REMOVE):
+1. Database stores 5-minute intervals (tide_to_sqlite.py)
+2. This export further downsamples to 15-minute intervals (downsample_to_15min)
+See function documentation for rationale.
 """
 
 import sqlite3
@@ -43,8 +48,20 @@ def safe_json_write(path: Path, data: dict):
 
 def downsample_to_15min(rows):
     """
-    Downsample to 15-minute intervals.
+    Downsample from 5-minute DB data to 15-minute frontend data.
     Only keeps readings at :00, :15, :30, :45 minutes.
+
+    CRITICAL: DO NOT REMOVE THIS DOWNSAMPLING!
+    Two-stage downsampling strategy:
+    1. Database: 5-minute intervals (from 1-min API data)
+       - 2,016 points per 7 days
+       - Good for analysis and storm surge offset calculations
+    2. Frontend: 15-minute intervals (from 5-min DB data)
+       - 672 points per 7 days
+       - Smaller JSON files, faster page loads
+       - Still very smooth for tide charts
+
+    Tides change slowly - 15-minute resolution is excellent for visualization.
     """
     downsampled = []
     for row in rows:
