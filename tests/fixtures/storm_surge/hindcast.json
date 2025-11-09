@@ -1,0 +1,111 @@
+{
+  "generated_utc": "2024-01-17T12:00:00Z",
+  "description": "Storm surge predictions for full Pacific calendar days made 2 days in advance (18Z run, hours 38-61 PST)",
+  "forecast_horizon_hours": "38-61",
+  "max_days_back": 10,
+  "actual_days_available": 5,
+  "stations": {
+    "Point_Atkinson": {
+      "station_id": "Point_Atkinson",
+      "station_name": "Point Atkinson",
+      "location": {
+        "lat": 49.3375,
+        "lon": -123.253583
+      },
+      "hindcast": [
+        {"time": "2024-01-13T08:00:00Z", "value": 0.045, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 38.0},
+        {"time": "2024-01-13T09:00:00Z", "value": 0.048, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 39.0},
+        {"time": "2024-01-13T10:00:00Z", "value": 0.052, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 40.0},
+        {"time": "2024-01-13T11:00:00Z", "value": 0.055, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 41.0},
+        {"time": "2024-01-13T12:00:00Z", "value": 0.058, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 42.0},
+        {"time": "2024-01-13T13:00:00Z", "value": 0.061, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 43.0},
+        {"time": "2024-01-13T14:00:00Z", "value": 0.064, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 44.0},
+        {"time": "2024-01-13T15:00:00Z", "value": 0.067, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 45.0},
+        {"time": "2024-01-13T16:00:00Z", "value": 0.070, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 46.0},
+        {"time": "2024-01-13T17:00:00Z", "value": 0.073, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 47.0},
+        {"time": "2024-01-13T18:00:00Z", "value": 0.076, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 48.0},
+        {"time": "2024-01-13T19:00:00Z", "value": 0.079, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 49.0},
+        {"time": "2024-01-13T20:00:00Z", "value": 0.082, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 50.0},
+        {"time": "2024-01-13T21:00:00Z", "value": 0.085, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 51.0},
+        {"time": "2024-01-13T22:00:00Z", "value": 0.088, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 52.0},
+        {"time": "2024-01-13T23:00:00Z", "value": 0.091, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 53.0},
+        {"time": "2024-01-14T00:00:00Z", "value": 0.094, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 54.0},
+        {"time": "2024-01-14T01:00:00Z", "value": 0.097, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 55.0},
+        {"time": "2024-01-14T02:00:00Z", "value": 0.100, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 56.0},
+        {"time": "2024-01-14T03:00:00Z", "value": 0.103, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 57.0},
+        {"time": "2024-01-14T04:00:00Z", "value": 0.106, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 58.0},
+        {"time": "2024-01-14T05:00:00Z", "value": 0.109, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 59.0},
+        {"time": "2024-01-14T06:00:00Z", "value": 0.112, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 60.0},
+        {"time": "2024-01-14T07:00:00Z", "value": 0.115, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 61.0}
+      ]
+    },
+    "Campbell_River": {
+      "station_id": "Campbell_River",
+      "station_name": "Campbell River",
+      "location": {
+        "lat": 50.042,
+        "lon": -125.247
+      },
+      "hindcast": [
+        {"time": "2024-01-13T08:00:00Z", "value": 0.035, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 38.0},
+        {"time": "2024-01-13T09:00:00Z", "value": 0.038, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 39.0},
+        {"time": "2024-01-13T10:00:00Z", "value": 0.041, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 40.0},
+        {"time": "2024-01-13T11:00:00Z", "value": 0.044, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 41.0},
+        {"time": "2024-01-13T12:00:00Z", "value": 0.047, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 42.0},
+        {"time": "2024-01-13T13:00:00Z", "value": 0.050, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 43.0},
+        {"time": "2024-01-13T14:00:00Z", "value": 0.053, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 44.0},
+        {"time": "2024-01-13T15:00:00Z", "value": 0.056, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 45.0},
+        {"time": "2024-01-13T16:00:00Z", "value": 0.059, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 46.0},
+        {"time": "2024-01-13T17:00:00Z", "value": 0.062, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 47.0},
+        {"time": "2024-01-13T18:00:00Z", "value": 0.065, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 48.0},
+        {"time": "2024-01-13T19:00:00Z", "value": 0.068, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 49.0},
+        {"time": "2024-01-13T20:00:00Z", "value": 0.071, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 50.0},
+        {"time": "2024-01-13T21:00:00Z", "value": 0.074, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 51.0},
+        {"time": "2024-01-13T22:00:00Z", "value": 0.077, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 52.0},
+        {"time": "2024-01-13T23:00:00Z", "value": 0.080, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 53.0},
+        {"time": "2024-01-14T00:00:00Z", "value": 0.083, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 54.0},
+        {"time": "2024-01-14T01:00:00Z", "value": 0.086, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 55.0},
+        {"time": "2024-01-14T02:00:00Z", "value": 0.089, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 56.0},
+        {"time": "2024-01-14T03:00:00Z", "value": 0.092, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 57.0},
+        {"time": "2024-01-14T04:00:00Z", "value": 0.095, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 58.0},
+        {"time": "2024-01-14T05:00:00Z", "value": 0.098, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 59.0},
+        {"time": "2024-01-14T06:00:00Z", "value": 0.101, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 60.0},
+        {"time": "2024-01-14T07:00:00Z", "value": 0.104, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 61.0}
+      ]
+    },
+    "Crescent_Beach_Channel": {
+      "station_id": "Crescent_Beach_Channel",
+      "station_name": "Crescent Beach Channel",
+      "location": {
+        "lat": 49.0536,
+        "lon": -122.8969
+      },
+      "hindcast": [
+        {"time": "2024-01-13T08:00:00Z", "value": 0.025, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 38.0},
+        {"time": "2024-01-13T09:00:00Z", "value": 0.028, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 39.0},
+        {"time": "2024-01-13T10:00:00Z", "value": 0.031, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 40.0},
+        {"time": "2024-01-13T11:00:00Z", "value": 0.034, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 41.0},
+        {"time": "2024-01-13T12:00:00Z", "value": 0.037, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 42.0},
+        {"time": "2024-01-13T13:00:00Z", "value": 0.040, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 43.0},
+        {"time": "2024-01-13T14:00:00Z", "value": 0.043, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 44.0},
+        {"time": "2024-01-13T15:00:00Z", "value": 0.046, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 45.0},
+        {"time": "2024-01-13T16:00:00Z", "value": 0.049, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 46.0},
+        {"time": "2024-01-13T17:00:00Z", "value": 0.052, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 47.0},
+        {"time": "2024-01-13T18:00:00Z", "value": 0.055, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 48.0},
+        {"time": "2024-01-13T19:00:00Z", "value": 0.058, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 49.0},
+        {"time": "2024-01-13T20:00:00Z", "value": 0.061, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 50.0},
+        {"time": "2024-01-13T21:00:00Z", "value": 0.064, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 51.0},
+        {"time": "2024-01-13T22:00:00Z", "value": 0.067, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 52.0},
+        {"time": "2024-01-13T23:00:00Z", "value": 0.070, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 53.0},
+        {"time": "2024-01-14T00:00:00Z", "value": 0.073, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 54.0},
+        {"time": "2024-01-14T01:00:00Z", "value": 0.076, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 55.0},
+        {"time": "2024-01-14T02:00:00Z", "value": 0.079, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 56.0},
+        {"time": "2024-01-14T03:00:00Z", "value": 0.082, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 57.0},
+        {"time": "2024-01-14T04:00:00Z", "value": 0.085, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 58.0},
+        {"time": "2024-01-14T05:00:00Z", "value": 0.088, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 59.0},
+        {"time": "2024-01-14T06:00:00Z", "value": 0.091, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 60.0},
+        {"time": "2024-01-14T07:00:00Z", "value": 0.094, "forecast_date": "2024-01-11T18:00:00Z", "hours_ahead": 61.0}
+      ]
+    }
+  }
+}
