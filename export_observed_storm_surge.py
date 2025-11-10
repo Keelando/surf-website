@@ -73,6 +73,9 @@ def calculate_observed_surge(observations, predictions):
 
     Returns list of dicts with time, observed_surge, observation, prediction.
     Only includes times where both observation and prediction exist.
+
+    IMPORTANT: Downsamples to 15-minute intervals for efficient JSON output.
+    Database stores 5-minute data, but we export at 15-minute intervals to reduce file size.
     """
     # Build prediction lookup (timestamp -> water_level)
     pred_dict = {int(row[0]): float(row[1]) for row in predictions}
@@ -82,6 +85,12 @@ def calculate_observed_surge(observations, predictions):
         obs_time = int(obs_row[0])
         obs_level = float(obs_row[1])
         quality = obs_row[2]
+
+        # Downsample: Only include at 15-minute intervals
+        # Keep readings at :00, :15, :30, :45
+        dt = datetime.fromtimestamp(obs_time, tz=timezone.utc)
+        if dt.minute % 15 != 0 or dt.second != 0:
+            continue
 
         # Find matching prediction (exact match or closest within 5 minutes)
         pred_level = None
@@ -94,7 +103,7 @@ def calculate_observed_surge(observations, predictions):
         if pred_level is not None:
             surge = obs_level - pred_level
             surge_data.append({
-                "time": datetime.fromtimestamp(obs_time, tz=timezone.utc).isoformat(),
+                "time": dt.isoformat(),
                 "observed_surge_m": round(surge, 4),
                 "observation_m": round(obs_level, 3),
                 "prediction_m": round(pred_level, 3),
