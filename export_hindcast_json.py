@@ -19,7 +19,7 @@ STATIONS = {
     "Campbell_River": {"name": "Campbell River", "lat": 50.042, "lon": -125.247},
     "Neah_Bay": {"name": "Neah Bay", "lat": 48.495, "lon": -124.728},
     "New_Dungeness": {"name": "New Dungeness", "lat": 48.333, "lon": -123.167},
-    "Tofino": {"name": "Tofino", "lat": 49.15, "lon": -125.9}
+    "Tofino": {"name": "Tofino", "lat": 49.154, "lon": -125.913}  # Updated to match DFO tide station
 }
 
 def export_hindcast():
