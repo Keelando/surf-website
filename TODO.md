@@ -2,7 +2,39 @@
 
 ## Upcoming Tasks
 
-(No pending tasks)
+### Storm Surge & Tides
+
+- **Find tide measurement station near Tofino**
+  - Research DFO IWLS stations in Tofino/Ucluelet area
+  - Add tide station to `tide_stations.json`
+  - Add corresponding GDSPS storm surge location
+  - Enable hindcast validation for west coast exposure
+  - Priority: Compare exposed ocean coast vs protected inland waters
+
+### Tides Page Enhancements
+
+- **Fix ECharts "connect nulls" issue in tide charts**
+  - Chart is connecting lines across data gaps when it shouldn't
+  - ECharts needs explicit null values at gap timestamps to avoid connecting
+  - Need to inject null entries in time series where data is missing
+  - Affects all chart pages (buoys, tides, storm surge)
+  - Reference: ECharts connectNulls option + data array structure
+
+---
+
+## Completed (2025-11-09)
+
+✅ **Combined water level forecasts (tide + storm surge)**
+  - Created `export_combined_water_level.py` to merge astronomical tide predictions with storm surge forecasts
+  - Exports to `~/site/data/combined-water-level.json` (1.5MB covering next 2 days)
+  - Added multi-series ECharts visualization on tides.html:
+    - Astronomical Tide (blue solid line)
+    - Observations (green dots, today only)
+    - Storm Surge (orange dashed line)
+    - Total Water Level (purple bold line - tide + surge)
+  - Implemented day navigation (today, tomorrow, +2 days) with arrow buttons
+  - Automated via cron (every 5 min + after storm surge updates)
+  - Stations: Point Atkinson, Campbell River, Crescent Beach
 
 ---
 
