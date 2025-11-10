@@ -22,7 +22,7 @@ STATIONS = {
     "Campbell_River": {"lat": 50.042, "lon": -125.247, "name": "Campbell River"},
     "Neah_Bay": {"lat": 48.495, "lon": -124.728, "name": "Neah Bay"},
     "New_Dungeness": {"lat": 48.333, "lon": -123.167, "name": "New Dungeness"},
-    "Tofino": {"lat": 49.15, "lon": -125.9, "name": "Tofino"}
+    "Tofino": {"lat": 49.154, "lon": -125.913, "name": "Tofino"}  # Updated to match DFO tide station
 }
 
 OUTPUT_DIR = Path("~/site/data/storm_surge").expanduser()
