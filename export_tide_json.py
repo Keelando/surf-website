@@ -136,9 +136,39 @@ def export_latest(conn, station_metadata):
         pred_row = cur.fetchone()
         if pred_row:
             pred_time, pred_value = pred_row
+
+            # Calculate tide trend (rising/falling/slack) by comparing with predictions 15 min before/after
+            trend = None
+            if pred_value is not None:
+                # Get prediction 15 minutes before
+                cur.execute("""
+                    SELECT water_level FROM tide_prediction
+                    WHERE station_id = ? AND prediction_time = ?
+                """, (station_id, pred_time - 900))
+                before_row = cur.fetchone()
+
+                # Get prediction 15 minutes after
+                cur.execute("""
+                    SELECT water_level FROM tide_prediction
+                    WHERE station_id = ? AND prediction_time = ?
+                """, (station_id, pred_time + 900))
+                after_row = cur.fetchone()
+
+                if before_row and after_row:
+                    before_value, after_value = before_row[0], after_row[0]
+                    # Calculate rate of change (m per 15 min)
+                    rate = after_value - before_value
+                    if abs(rate) < 0.01:  # Less than 1cm change = slack
+                        trend = 'slack'
+                    elif rate > 0:
+                        trend = 'rising'
+                    else:
+                        trend = 'falling'
+
             station_data["prediction_now"] = {
                 "time": datetime.fromtimestamp(pred_time, tz=timezone.utc).isoformat(),
-                "value": round(pred_value, 3) if pred_value is not None else None
+                "value": round(pred_value, 3) if pred_value is not None else None,
+                "trend": trend
             }
 
         # Only add if we have at least one data point
