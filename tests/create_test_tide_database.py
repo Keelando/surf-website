@@ -364,18 +364,21 @@ def main():
         create_schema(conn)
 
         # Populate data for each test station
-        for station_id, info in TEST_STATIONS.items():
-            station_name = info["name"]
-            print(f"\n📍 {station_name} ({station_id})")
+        # Note: Real DB schema has station_id = DFO ID, station_name = friendly name
+        # For testing we use friendly name as both (simpler fixtures)
+        for station_key, info in TEST_STATIONS.items():
+            display_name = info["name"]
+            print(f"\n📍 {display_name} ({station_key})")
 
             if info["has_observations"]:
-                obs_count = populate_observations(conn, station_id, station_name)
+                # Insert with: station_id = fake DFO ID, station_name = friendly name (lowercase)
+                obs_count = populate_observations(conn, station_key, station_key)
                 print(f"   ✅ {obs_count} observations")
 
-            pred_count = populate_predictions(conn, station_id, station_name)
+            pred_count = populate_predictions(conn, station_key, station_key)
             print(f"   ✅ {pred_count} predictions")
 
-            hl_count = populate_highlow(conn, station_id, station_name)
+            hl_count = populate_highlow(conn, station_key, station_key)
             print(f"   ✅ {hl_count} high/low events")
 
         # Print summary

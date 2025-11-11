@@ -19,7 +19,7 @@ STATIONS = {
     "Campbell_River": {"name": "Campbell River", "lat": 50.042, "lon": -125.247},
     "Neah_Bay": {"name": "Neah Bay", "lat": 48.495, "lon": -124.728},
     "New_Dungeness": {"name": "New Dungeness", "lat": 48.333, "lon": -123.167},
-    "Tofino": {"name": "Tofino", "lat": 49.15, "lon": -125.9}
+    "Tofino": {"name": "Tofino", "lat": 49.154, "lon": -125.913}  # Updated to match DFO tide station
 }
 
 def export_hindcast():
@@ -65,9 +65,10 @@ def export_hindcast():
         for station_id, station_info in STATIONS.items():
             print(f"\n📍 Processing {station_info['name']}...")
             
-            # Query: Get all forecasts and filter for hours 38-61 (full Pacific calendar day)
-            # 18Z run on Tuesday → hours 38-61 = all of Thursday PST (00:00-23:00 Pacific)
-            # Note: This uses PST offset (UTC-8). PDT would be 37-60.
+            # Query: Get all forecasts and filter for hours 38-61 FROM 18Z RUN
+            # 18Z run on Nov 7 → hours 38-61 = all of Nov 9 PST (00:00-23:00 Pacific, 2 days ahead)
+            # Since forecast_run_time is stored as date-only, we must add 18 hours to account for 18Z
+            # Hours 38-61 from 18Z = Hours 56-79 from midnight = (38+18) to (61+18)
             cur.execute("""
                 SELECT
                     forecast_run_time,
@@ -76,7 +77,7 @@ def export_hindcast():
                     ROUND((julianday(valid_time) - julianday(forecast_run_time)) * 24, 1) as hours_ahead
                 FROM forecast_archive
                 WHERE station_id = ?
-                  AND hours_ahead BETWEEN 38 AND 61
+                  AND hours_ahead BETWEEN 56 AND 79
                 ORDER BY valid_time ASC
             """, (station_id,))
             
@@ -89,10 +90,14 @@ def export_hindcast():
             # Build hindcast series
             hindcast_series = []
             for row in rows:
+                # Normalize forecast_date to just date (no time) for consistency
+                forecast_datetime = datetime.fromisoformat(row["forecast_run_time"].replace('Z', '+00:00') if 'T' in row["forecast_run_time"] else row["forecast_run_time"] + 'T00:00:00+00:00')
+                forecast_date_str = forecast_datetime.strftime('%Y-%m-%d')
+
                 hindcast_series.append({
                     "time": row["valid_time"],
                     "value": round(row["surge_value"], 3),
-                    "forecast_date": row["forecast_run_time"],
+                    "forecast_date": forecast_date_str,
                     "hours_ahead": row["hours_ahead"]
                 })
             

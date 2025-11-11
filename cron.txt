@@ -8,6 +8,7 @@
 #     Then copy/paste the relevant lines from this file
 #
 # Recent changes:
+# - 2025-11-09: Added observed storm surge export for hindcast validation
 # - 2025-11-08: Added combined water level export (runs after storm surge)
 # - 2025-11-08: Extended tide predictions from 48h to 3 days
 # - 2025-11-08: Added observed storm surge calculation
@@ -57,6 +58,9 @@
 
 # Calculate observed storm surge (tide offset = observed - predicted) every hour
 5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/calculate_storm_surge_observed.py >> /home/keelando/envcan_wave/tide_offset.log 2>&1
+
+# Export observed storm surge for hindcast comparison every 5 minutes
+*/5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_observed_storm_surge.py >> /home/keelando/envcan_wave/observed_surge_export.log 2>&1
 
 # ========== COMBINED WATER LEVEL (NEW) ==========
 

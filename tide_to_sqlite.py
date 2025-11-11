@@ -115,11 +115,27 @@ def detect_available_codes(station_id):
     return [ts["code"] for ts in meta.get("timeSeries", [])]
 
 def insert_observations(cur, station_key, station_id, data):
-    """Insert observation data (wlo series) into tide_observation table."""
+    """
+    Insert observation data (wlo series) into tide_observation table.
+
+    CRITICAL: Downsamples to 5-minute intervals on insert.
+    - DFO API returns 1-minute resolution (10,080 points per 7 days)
+    - We store 5-minute resolution (2,016 points per 7 days = 80% reduction)
+    - Tides change slowly; 5-min is sufficient for analysis and offset calculations
+    - Frontend exports further downsample to 15-min for chart display
+
+    DO NOT REMOVE THIS DOWNSAMPLING without updating database strategy!
+    """
     added = 0
     for row in data:
         try:
             ts = datetime.datetime.fromisoformat(row["eventDate"].replace("Z", "+00:00"))
+
+            # Downsample: Only store observations at 5-minute intervals
+            # Keep readings at :00, :05, :10, :15, :20, :25, :30, :35, :40, :45, :50, :55
+            if ts.minute % 5 != 0 or ts.second != 0:
+                continue  # Skip this observation
+
             timestamp = int(ts.timestamp())
             water_level = row.get("value")
             qc = row.get("qcFlagCode")
@@ -234,10 +250,25 @@ def main():
             print("  WARNING: no timeSeries metadata")
             continue
 
-        # Fetch observations (wlo) - last 11 days
+        # Fetch observations (wlo) - incremental fetch since last observation
+        # Note: DFO IWLS API restricts observation queries to maximum 7-day window
+        # Strategy: Only fetch new observations since last stored observation (they don't change!)
         if args.observations or args.all:
             if "wlo" in codes:
-                start = now - datetime.timedelta(days=11)
+                # Check for most recent observation in database
+                cur.execute("""
+                    SELECT MAX(observation_time) FROM tide_observation WHERE station_id = ?
+                """, (key,))
+                last_obs = cur.fetchone()[0]
+
+                if last_obs:
+                    # Fetch only new data since last observation
+                    start = datetime.datetime.fromtimestamp(last_obs, datetime.timezone.utc)
+                else:
+                    # Bootstrap: fetch last 6 hours on first run (avoid hitting API hard)
+                    # Full 10-day history will accumulate over time
+                    start = now - datetime.timedelta(hours=6)
+
                 url = f"{BASE_URL}/{sid}/data"
                 params = {
                     "time-series-code": "wlo",
@@ -294,10 +325,10 @@ def main():
 
         time.sleep(2.1)  # Rate limiting
 
-    # Purge old data (keep 11 days)
+    # Purge old data (keep 10 days for analysis/validation)
     print("=" * 70)
-    print("Purging data older than 11 days...")
-    cutoff_timestamp = int((now - datetime.timedelta(days=11)).timestamp())
+    print("Purging data older than 10 days...")
+    cutoff_timestamp = int((now - datetime.timedelta(days=10)).timestamp())
 
     cur.execute("DELETE FROM tide_observation WHERE observation_time < ?", (cutoff_timestamp,))
     obs_deleted = cur.rowcount

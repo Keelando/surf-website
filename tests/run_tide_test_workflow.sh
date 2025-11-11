@@ -10,12 +10,12 @@ echo ""
 
 # Step 1: Generate test database
 echo "Step 1: Generating test database..."
-python3 tests/create_test_tide_database.py
+python3 create_test_tide_database.py
 echo ""
 
 # Step 2: Calculate tide offsets
 echo "Step 2: Calculating tide offsets (observed storm surge)..."
-python3 calculate_storm_surge_observed.py --test-mode
+python3 ../calculate_storm_surge_observed.py --test-mode
 echo ""
 
 echo "======================================================================"
