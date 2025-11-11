@@ -207,7 +207,7 @@ ps aux | grep sr3                   # Check process status
 - Campbell River (50.042°N, -125.247°W) - Tide observations available
 - Neah Bay (48.495°N, -124.728°W) - NOAA buoy 46087 location
 - New Dungeness (48.333°N, -123.167°W) - NOAA buoy 46088 location
-- Tofino (49.15°N, -125.9°W) - Open Pacific coast
+- Tofino (49.154°N, -125.913°W) - Open Pacific coast
 
 **Model details:**
 - 15 km horizontal resolution
