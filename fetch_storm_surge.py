@@ -22,7 +22,7 @@ STATIONS = {
     "Campbell_River": {"lat": 50.042, "lon": -125.247, "name": "Campbell River"},
     "Neah_Bay": {"lat": 48.495, "lon": -124.728, "name": "Neah Bay"},
     "New_Dungeness": {"lat": 48.333, "lon": -123.167, "name": "New Dungeness"},
-    "Tofino": {"lat": 49.15, "lon": -125.9, "name": "Tofino"}
+    "Tofino": {"lat": 49.154, "lon": -125.913, "name": "Tofino"}  # Updated to match DFO tide station
 }
 
 OUTPUT_DIR = Path("~/site/data/storm_surge").expanduser()
@@ -88,7 +88,9 @@ def store_forecast_to_db(forecast_run_time, all_station_data):
         ensure_db_schema(conn)
         cur = conn.cursor()
 
-        forecast_timestamp = forecast_run_time.isoformat()
+        # Store only date (YYYY-MM-DD) for forecast_run_time consistency
+        # This prevents format issues in hindcast export and frontend display
+        forecast_date = forecast_run_time.strftime('%Y-%m-%d')
         stored_count = 0
 
         for station_id, forecast_data in all_station_data.items():
@@ -98,16 +100,16 @@ def store_forecast_to_db(forecast_run_time, all_station_data):
                         INSERT OR REPLACE INTO forecast_archive
                         (station_id, forecast_run_time, valid_time, surge_value)
                         VALUES (?, ?, ?, ?)
-                    """, (station_id, forecast_timestamp, time_str, surge_value))
+                    """, (station_id, forecast_date, time_str, surge_value))
                     stored_count += 1
                 except Exception as e:
                     print(f"⚠️  DB insert error for {station_id} {time_str}: {e}")
 
         conn.commit()
 
-        # Purge old data
-        cutoff_timestamp = (datetime.now(timezone.utc) - timedelta(days=DB_RETENTION_DAYS)).isoformat()
-        cur.execute("DELETE FROM forecast_archive WHERE forecast_run_time < ?", (cutoff_timestamp,))
+        # Purge old data (compare date strings YYYY-MM-DD)
+        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=DB_RETENTION_DAYS)).strftime('%Y-%m-%d')
+        cur.execute("DELETE FROM forecast_archive WHERE forecast_run_time < ?", (cutoff_date,))
         deleted = cur.rowcount
         conn.commit()
         conn.close()

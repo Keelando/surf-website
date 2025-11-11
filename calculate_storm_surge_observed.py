@@ -5,7 +5,7 @@ Calculate observed storm surge from tide observations and predictions.
 Storm surge (observed) = Observed water level - Predicted water level
 
 This script:
-1. Queries tide observations for last 11 days
+1. Queries tide observations (accumulated incrementally up to 10 days)
 2. Queries tide predictions for matching time periods
 3. Calculates offset (observed - predicted) = actual storm surge
 4. Stores to tide_offset table for validation against GDSPS forecasts
@@ -19,7 +19,7 @@ from pathlib import Path
 
 DB_PATH = Path("~/.local/share/tide_data.sqlite").expanduser()
 TEST_DB_PATH = Path(__file__).parent / "tests" / "databases" / "tide_data_test.sqlite"
-RETENTION_DAYS = 11
+RETENTION_DAYS = 10
 
 # Only stations with real-time observations (PERMANENT stations)
 STATIONS_WITH_OBS = {
@@ -42,17 +42,18 @@ def calculate_offsets(conn):
     cur = conn.cursor()
     total_calculated = 0
 
-    for station_id, station_name in STATIONS_WITH_OBS.items():
-        print(f"\n📍 Processing {station_name}...")
+    for station_key, station_display_name in STATIONS_WITH_OBS.items():
+        print(f"\n📍 Processing {station_display_name}...")
 
         # Get all observations for this station (last 11 days)
+        # Note: Query by station_name (friendly name), not station_id (DFO ID)
         cur.execute("""
             SELECT observation_time, water_level
             FROM tide_observation
-            WHERE station_id = ?
+            WHERE station_name = ?
             AND water_level IS NOT NULL
             ORDER BY observation_time ASC
-        """, (station_id,))
+        """, (station_key,))
 
         observations = cur.fetchall()
         if not observations:
@@ -72,12 +73,12 @@ def calculate_offsets(conn):
             cur.execute("""
                 SELECT prediction_time, water_level
                 FROM tide_prediction
-                WHERE station_id = ?
+                WHERE station_name = ?
                 AND prediction_time BETWEEN ? AND ?
                 AND water_level IS NOT NULL
                 ORDER BY ABS(prediction_time - ?) ASC
                 LIMIT 1
-            """, (station_id, time_window_start, time_window_end, obs_time))
+            """, (station_key, time_window_start, time_window_end, obs_time))
 
             pred_result = cur.fetchone()
 
@@ -91,7 +92,7 @@ def calculate_offsets(conn):
                     (station_id, station_name, observation_time,
                      observed_level, predicted_level, offset)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, (station_id, station_name, obs_time,
+                """, (station_key, station_display_name, obs_time,
                       obs_level, pred_level, offset))
 
                 matched += 1

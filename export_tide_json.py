@@ -6,6 +6,11 @@ Outputs three JSON files:
 1. tide-latest.json - Current conditions (observation + prediction)
 2. tide-timeseries.json - Calendar day timeseries for charts (15-min intervals)
 3. tide-hi-low.json - High/low events for text display
+
+IMPORTANT: Two-stage downsampling strategy (DO NOT REMOVE):
+1. Database stores 5-minute intervals (tide_to_sqlite.py)
+2. This export further downsamples to 15-minute intervals (downsample_to_15min)
+See function documentation for rationale.
 """
 
 import sqlite3
@@ -43,8 +48,20 @@ def safe_json_write(path: Path, data: dict):
 
 def downsample_to_15min(rows):
     """
-    Downsample to 15-minute intervals.
+    Downsample from 5-minute DB data to 15-minute frontend data.
     Only keeps readings at :00, :15, :30, :45 minutes.
+
+    CRITICAL: DO NOT REMOVE THIS DOWNSAMPLING!
+    Two-stage downsampling strategy:
+    1. Database: 5-minute intervals (from 1-min API data)
+       - 2,016 points per 7 days
+       - Good for analysis and storm surge offset calculations
+    2. Frontend: 15-minute intervals (from 5-min DB data)
+       - 672 points per 7 days
+       - Smaller JSON files, faster page loads
+       - Still very smooth for tide charts
+
+    Tides change slowly - 15-minute resolution is excellent for visualization.
     """
     downsampled = []
     for row in rows:
@@ -119,9 +136,39 @@ def export_latest(conn, station_metadata):
         pred_row = cur.fetchone()
         if pred_row:
             pred_time, pred_value = pred_row
+
+            # Calculate tide trend (rising/falling/slack) by comparing with predictions 15 min before/after
+            trend = None
+            if pred_value is not None:
+                # Get prediction 15 minutes before
+                cur.execute("""
+                    SELECT water_level FROM tide_prediction
+                    WHERE station_id = ? AND prediction_time = ?
+                """, (station_id, pred_time - 900))
+                before_row = cur.fetchone()
+
+                # Get prediction 15 minutes after
+                cur.execute("""
+                    SELECT water_level FROM tide_prediction
+                    WHERE station_id = ? AND prediction_time = ?
+                """, (station_id, pred_time + 900))
+                after_row = cur.fetchone()
+
+                if before_row and after_row:
+                    before_value, after_value = before_row[0], after_row[0]
+                    # Calculate rate of change (m per 15 min)
+                    rate = after_value - before_value
+                    if abs(rate) < 0.01:  # Less than 1cm change = slack
+                        trend = 'slack'
+                    elif rate > 0:
+                        trend = 'rising'
+                    else:
+                        trend = 'falling'
+
             station_data["prediction_now"] = {
                 "time": datetime.fromtimestamp(pred_time, tz=timezone.utc).isoformat(),
-                "value": round(pred_value, 3) if pred_value is not None else None
+                "value": round(pred_value, 3) if pred_value is not None else None,
+                "trend": trend
             }
 
         # Only add if we have at least one data point

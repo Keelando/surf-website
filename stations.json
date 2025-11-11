@@ -352,6 +352,74 @@
         "water_level_predicted",
         "high_low_events"
       ]
+    },
+    "tofino": {
+      "id": "5cebf1e23d0f4a073c4bc07c",
+      "code": "08615",
+      "name": "Tofino",
+      "location": "Clayoquot Sound",
+      "lat": 49.154,
+      "lon": -125.913,
+      "source": "DFO IWLS",
+      "type": "TEMPORARY",
+      "series": ["wlo", "wlp", "wlp-hilo"],
+      "update_frequency_minutes": 6,
+      "data_types": [
+        "water_level_observed",
+        "water_level_predicted",
+        "high_low_events"
+      ]
+    },
+    "ucluelet": {
+      "id": "5cebf1e23d0f4a073c4bc075",
+      "code": "08595",
+      "name": "Ucluelet",
+      "location": "Barkley Sound",
+      "lat": 48.947,
+      "lon": -125.552,
+      "source": "DFO IWLS",
+      "type": "TEMPORARY",
+      "series": ["wlo", "wlp", "wlp-hilo"],
+      "update_frequency_minutes": 6,
+      "data_types": [
+        "water_level_observed",
+        "water_level_predicted",
+        "high_low_events"
+      ]
+    },
+    "port_renfrew": {
+      "id": "5cebf1e23d0f4a073c4bc060",
+      "code": "08525",
+      "name": "Port Renfrew",
+      "location": "Juan de Fuca Strait",
+      "lat": 48.555,
+      "lon": -124.421,
+      "source": "DFO IWLS",
+      "type": "TEMPORARY",
+      "series": ["wlo", "wlp", "wlp-hilo"],
+      "update_frequency_minutes": 6,
+      "data_types": [
+        "water_level_observed",
+        "water_level_predicted",
+        "high_low_events"
+      ]
+    },
+    "victoria_harbor": {
+      "id": "5cebf1df3d0f4a073c4bbd1e",
+      "code": "07120",
+      "name": "Victoria Harbor",
+      "location": "Victoria",
+      "lat": 48.424666,
+      "lon": -123.3707,
+      "source": "DFO IWLS",
+      "type": "TEMPORARY",
+      "series": ["wlo", "wlp", "wlp-hilo"],
+      "update_frequency_minutes": 6,
+      "data_types": [
+        "water_level_observed",
+        "water_level_predicted",
+        "high_low_events"
+      ]
     }
   },
   "_metadata": {

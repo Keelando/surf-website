@@ -34,7 +34,7 @@ This system fetches storm surge forecasts from Environment Canada's GeoMet WMS s
 - Campbell River (50.042°N, -125.247°W) - Discovery Passage, tide observations
 - Neah Bay (48.495°N, -124.728°W) - Pacific entrance, NOAA buoy location
 - New Dungeness (48.333°N, -123.167°W) - Strait of Juan de Fuca, NOAA buoy location
-- Tofino (49.15°N, -125.9°W) - Open Pacific coast
+- Tofino (49.154°N, -125.913°W) - Open Pacific coast
 
 **Data source:** GDSPS 15km resolution model via Environment Canada GeoMet
 
@@ -149,7 +149,7 @@ STATIONS = {
     "Campbell_River": {"lat": 50.042, "lon": -125.247, "name": "Campbell River"},
     "Neah_Bay": {"lat": 48.495, "lon": -124.728, "name": "Neah Bay"},
     "New_Dungeness": {"lat": 48.333, "lon": -123.167, "name": "New Dungeness"},
-    "Tofino": {"lat": 49.15, "lon": -125.9, "name": "Tofino"}
+    "Tofino": {"lat": 49.154, "lon": -125.913, "name": "Tofino"}
 }
 
 # Output directory for JSON files

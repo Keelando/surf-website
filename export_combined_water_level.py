@@ -39,7 +39,8 @@ STATION_MAPPING = {
     "campbell_river": "Campbell_River",
     # Crescent Beach has predictions but not observations in tide_stations.json
     # Using crescent_pile as the tide station key
-    "crescent_pile": "Crescent_Beach_Channel"
+    "crescent_pile": "Crescent_Beach_Channel",
+    "tofino": "Tofino"
 }
 
 
@@ -91,7 +92,7 @@ def load_tide_predictions(station_id, start_ts, end_ts, tide_db):
     cur.execute("""
         SELECT prediction_time, water_level
         FROM tide_prediction
-        WHERE station_id = ?
+        WHERE station_name = ?
           AND prediction_time >= ?
           AND prediction_time <= ?
           AND water_level IS NOT NULL
@@ -157,6 +158,9 @@ def combine_predictions(station_tide_id, station_surge_id, surge_forecasts, star
     Returns: dict with:
         - forecast: list of {time, astronomical_tide, storm_surge, total_water_level}
         - peak: dict with peak total water level info
+
+    IMPORTANT: Downsamples to 15-minute intervals for efficient frontend rendering.
+    Database stores 5-minute data, but we export at 15-minute intervals to reduce file size.
     """
     # Load tide predictions
     tide_predictions = load_tide_predictions(station_tide_id, start_ts, end_ts, tide_db)
@@ -177,23 +181,15 @@ def combine_predictions(station_tide_id, station_surge_id, surge_forecasts, star
     peak_entry = None
 
     for tide_ts, tide_level in sorted(tide_predictions.items()):
+        dt = datetime.fromtimestamp(tide_ts, tz=timezone.utc)
+
         # Interpolate surge at this timestamp
         surge_value = interpolate_surge(surge_data, tide_ts)
 
         if surge_value is not None:
             total_level = tide_level + surge_value
 
-            dt = datetime.fromtimestamp(tide_ts, tz=timezone.utc)
-
-            entry = {
-                "time": dt.isoformat(),
-                "astronomical_tide_m": round(tide_level, 3),
-                "storm_surge_m": round(surge_value, 3),
-                "total_water_level_m": round(total_level, 3)
-            }
-            combined.append(entry)
-
-            # Track peak
+            # Track peak (check all data points, not just downsampled)
             if peak_total is None or total_level > peak_total:
                 peak_total = total_level
                 peak_entry = {
@@ -204,10 +200,114 @@ def combine_predictions(station_tide_id, station_surge_id, surge_forecasts, star
                     "description": f"Peak occurs at {dt.astimezone(ZoneInfo('America/Vancouver')).strftime('%Y-%m-%d %I:%M %p PST')}"
                 }
 
+            # Downsample output: Only include at 15-minute intervals
+            # Keep readings at :00, :15, :30, :45
+            if dt.minute % 15 == 0 and dt.second == 0:
+                entry = {
+                    "time": dt.isoformat(),
+                    "astronomical_tide_m": round(tide_level, 3),
+                    "storm_surge_m": round(surge_value, 3),
+                    "total_water_level_m": round(total_level, 3)
+                }
+                combined.append(entry)
+
     return {
         "forecast": combined,
         "peak": peak_entry
     }
+
+
+def update_latest_with_surge(surge_dir):
+    """
+    Update tide-latest.json with current storm surge info.
+    Adds surge and total water level to current conditions.
+    """
+    latest_tide_file = Path("~/site/data/tide-latest.json").expanduser()
+
+    if not latest_tide_file.exists():
+        print(f"⚠️  tide-latest.json not found: {latest_tide_file}")
+        return
+
+    # Load existing tide latest
+    with open(latest_tide_file) as f:
+        tide_latest = json.load(f)
+
+    # Load storm surge data
+    combined_file = surge_dir / "combined_forecast.json"
+    if not combined_file.exists():
+        print("⚠️  No storm surge data for latest update")
+        return
+
+    with open(combined_file) as f:
+        surge_data = json.load(f)
+
+    surge_stations = surge_data.get("stations", {})
+    if not surge_stations:
+        return
+
+    now = datetime.now(timezone.utc)
+    updated_count = 0
+
+    # Station mapping: tide station key -> storm surge station key
+    station_mapping = {
+        "point_atkinson": "Point_Atkinson",
+        "campbell_river": "Campbell_River",
+        "crescent_pile": "Crescent_Beach_Channel",
+        "tofino": "Tofino"
+    }
+
+    # Update each matching station
+    for tide_station, surge_station in station_mapping.items():
+        if tide_station not in tide_latest.get("stations", {}):
+            continue
+
+        if surge_station not in surge_stations:
+            continue
+
+        surge_forecast = surge_stations[surge_station].get("forecast", {})
+        if not surge_forecast:
+            continue
+
+        # Find current storm surge (closest to now)
+        closest_surge = None
+        min_diff = float('inf')
+
+        for iso_time, surge_value in surge_forecast.items():
+            dt = datetime.fromisoformat(iso_time.replace('Z', '+00:00'))
+            diff = abs((dt - now).total_seconds())
+            if diff < min_diff:
+                min_diff = diff
+                closest_surge = surge_value
+
+        if closest_surge is None:
+            continue
+
+        station_data = tide_latest["stations"][tide_station]
+
+        # Add surge to prediction_now
+        if "prediction_now" in station_data:
+            tide_value = station_data["prediction_now"]["value"]
+            station_data["prediction_now"]["surge"] = round(closest_surge, 3)
+            station_data["prediction_now"]["total_water_level"] = round(tide_value + closest_surge, 3)
+
+        # Add surge to observation if available
+        if "observation" in station_data:
+            tide_value = station_data["observation"]["value"]
+            station_data["observation"]["surge"] = round(closest_surge, 3)
+            station_data["observation"]["total_water_level"] = round(tide_value + closest_surge, 3)
+
+        updated_count += 1
+
+    if updated_count > 0:
+        # Update metadata
+        tide_latest["_meta"]["updated_with_surge"] = datetime.now(timezone.utc).isoformat()
+
+        # Write updated file (atomic write)
+        tmp = latest_tide_file.with_suffix(latest_tide_file.suffix + ".tmp")
+        tmp.write_text(json.dumps(tide_latest, indent=2, sort_keys=True))
+        tmp.replace(latest_tide_file)
+
+        print(f"✅ Updated {updated_count} stations in tide-latest.json with surge data")
 
 
 def export_combined_water_level(tide_db, surge_dir, output_file):
@@ -215,20 +315,20 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
     print("🌊 Combined Water Level Forecast Export")
     print("=" * 70)
 
-    # Determine time range: next 2 full calendar days (Pacific time)
+    # Determine time range: current day + next 2 full calendar days (Pacific time)
     pacific = ZoneInfo('America/Vancouver')
     now_pacific = datetime.now(pacific)
 
-    # Start from beginning of tomorrow (Pacific)
-    tomorrow = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-    # End at end of day after tomorrow
-    day_after_tomorrow_end = tomorrow + timedelta(days=2)
+    # Start from beginning of today (Pacific)
+    today = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
+    # End at end of day after tomorrow (3 full days: today, tomorrow, day after)
+    three_days_end = today + timedelta(days=3)
 
     # Convert to UTC timestamps
-    start_ts = int(tomorrow.astimezone(timezone.utc).timestamp())
-    end_ts = int(day_after_tomorrow_end.astimezone(timezone.utc).timestamp())
+    start_ts = int(today.astimezone(timezone.utc).timestamp())
+    end_ts = int(three_days_end.astimezone(timezone.utc).timestamp())
 
-    print(f"Forecast range: {tomorrow.date()} to {(tomorrow + timedelta(days=1)).date()} (Pacific)")
+    print(f"Forecast range: {today.date()} to {(today + timedelta(days=2)).date()} (Pacific)")
     print(f"UTC range: {datetime.fromtimestamp(start_ts, tz=timezone.utc)} to {datetime.fromtimestamp(end_ts, tz=timezone.utc)}")
     print()
 
@@ -266,10 +366,10 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
             "generated_utc": datetime.now(timezone.utc).isoformat(),
             "type": "combined_water_level",
             "description": "Total water level = astronomical tide + storm surge forecast",
-            "forecast_start": tomorrow.isoformat(),
-            "forecast_end": day_after_tomorrow_end.isoformat(),
+            "forecast_start": today.isoformat(),
+            "forecast_end": three_days_end.isoformat(),
             "timezone": "America/Vancouver",
-            "forecast_days": 2,
+            "forecast_days": 3,
             "units": "meters",
             "data_sources": {
                 "astronomical_tide": "DFO IWLS (Integrated Water Level System)",
@@ -326,7 +426,12 @@ def main():
         output_file = OUTPUT_FILE
 
     try:
-        return export_combined_water_level(tide_db, surge_dir, output_file)
+        result = export_combined_water_level(tide_db, surge_dir, output_file)
+        if result == 0:
+            # Update tide-latest.json with current storm surge values
+            print()
+            update_latest_with_surge(surge_dir)
+        return result
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
