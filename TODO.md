@@ -2,6 +2,34 @@
 
 ## Upcoming Tasks
 
+### Buoy Card Refinements
+
+- **Wave height significant figures**
+  - Use 1 sig fig for all stations (e.g., 0.5m not 0.50m)
+  - EXCEPT: Crescent Beach stations (CRPILE, CRCHAN) keep 2 decimals (0.50m)
+  - Apply to both compact card view and expanded details
+
+- **Show latest available wave data with timestamp**
+  - If current wave data is missing, display most recent value within freshness window
+  - Format: "0.5m @ 4s from NW (18:30)"
+  - Timestamp in brackets shows when data was last updated
+
+- **History table date column cleanup**
+  - Current: "Time" column shows "Nov 11, 18:00"
+  - Need cleaner/shorter column header name (TBD)
+  - Consider: "Time (PT)", "When", "Date/Time", etc.
+
+- **Add Crescent Beach Ocean to wave comparison chart**
+  - Add CRPILE to the main wave height comparison chart on index.html
+  - Currently only shows: Halibut Bank, English Bay, Southern Georgia, Sentry Shoal, Neah Bay, New Dungeness
+  - Should include: Crescent Beach Ocean (CRPILE)
+
+- **"Hide Details" should collapse both details AND history**
+  - Current behavior: "Hide Details" only collapses details section
+  - Expected: "Hide Details" should collapse both details AND history sections
+  - Returns card to fully compact state with one click
+  - Update `toggleCardDetails()` function in main.js
+
 ### Storm Surge & Tides
 
 - **Find tide measurement station near Tofino**
@@ -19,6 +47,29 @@
   - Need to inject null entries in time series where data is missing
   - Affects all chart pages (buoys, tides, storm surge)
   - Reference: ECharts connectNulls option + data array structure
+
+---
+
+## Completed (2025-11-11)
+
+✅ **Condensed buoy cards refactor**
+  - Reduced default card height by 60% (~150px vs ~300-400px)
+  - Compact single-line wind/wave display
+  - Expandable "Show Details" button for full metrics
+  - Expandable "Show History (24h)" with 12 hourly observations
+  - Added `degreesToCardinal()` for wind direction in history table
+  - History table sorted newest-first
+  - Collapsible region groups (click header to collapse/expand)
+  - Default: Strait of Georgia expanded, others collapsed
+  - Fixed Surrey attribution: "Surrey (FlowWorks)"
+  - Added max-width: 450px constraint on cards
+
+✅ **Peak storm surge display on storm surge page**
+  - Added prominent "Peak Today" card above forecast chart
+  - Shows absolute peak (positive or negative) for current Pacific day
+  - Displays value (±X.XX m) and time (24h format)
+  - Updates when switching stations
+  - Hidden if no data available
 
 ---
 

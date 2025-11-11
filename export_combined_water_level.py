@@ -39,7 +39,8 @@ STATION_MAPPING = {
     "campbell_river": "Campbell_River",
     # Crescent Beach has predictions but not observations in tide_stations.json
     # Using crescent_pile as the tide station key
-    "crescent_pile": "Crescent_Beach_Channel"
+    "crescent_pile": "Crescent_Beach_Channel",
+    "tofino": "Tofino"
 }
 
 
@@ -252,6 +253,7 @@ def update_latest_with_surge(surge_dir):
         "point_atkinson": "Point_Atkinson",
         "campbell_river": "Campbell_River",
         "crescent_pile": "Crescent_Beach_Channel",
+        "tofino": "Tofino"
     }
 
     # Update each matching station
