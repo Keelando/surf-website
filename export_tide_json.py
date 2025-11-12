@@ -20,8 +20,9 @@ from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 
 # ---------- Config ----------
+SCRIPT_DIR = Path(__file__).parent
 DB_PATH = Path("~/.local/share/tide_data.sqlite").expanduser()
-STATION_FILE = Path("~/envcan_wave/tide_stations.json").expanduser()
+STATION_FILE = SCRIPT_DIR / "stations.json"
 
 # Output paths
 LATEST_OUT = Path("~/site/data/tide-latest.json").expanduser()
@@ -30,12 +31,14 @@ HIGHLOW_OUT = Path("~/site/data/tide-hi-low.json").expanduser()
 
 
 def load_station_metadata():
-    """Load station names and metadata from external JSON file."""
+    """Load station names and metadata from unified stations.json file."""
     if not STATION_FILE.exists():
         print(f"WARNING: Station file not found: {STATION_FILE}")
         return {}
     with open(STATION_FILE, "r") as f:
-        return json.load(f)
+        data = json.load(f)
+    # Extract tide stations from unified stations.json
+    return data.get("tides", {})
 
 
 def safe_json_write(path: Path, data: dict):
