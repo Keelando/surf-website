@@ -4,8 +4,14 @@
 
 set -e  # Exit on error
 
+# Change to repo root (parent of tests/ directory)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+cd "$REPO_ROOT"
+
 echo "🌊 Tide Offset Test Workflow"
 echo "======================================================================"
+echo "Working directory: $(pwd)"
 echo ""
 
 # Step 1: Generate test database
