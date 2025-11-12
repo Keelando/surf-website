@@ -53,13 +53,37 @@ def kmh_to_knots(kmh):
         return None
 
 def downsample_to_hourly(timeseries_data):
-    """Keep only data points at the top of each hour for high-frequency NOAA data."""
-    hourly = []
+    """Downsample high-frequency data to hourly intervals by keeping the closest point to each hour.
+    Normalizes all timestamps to the top of the hour (:00) for alignment in history tables."""
+    if not timeseries_data:
+        return []
+
+    # Group points by hour
+    hourly_buckets = {}
     for point in timeseries_data:
         time_obj = datetime.fromisoformat(point['time'])
-        # Only keep if it's at the top of the hour (:00)
-        if time_obj.minute == 0:
-            hourly.append(point)
+        # Create hour key (round down to the hour)
+        hour_key = time_obj.replace(minute=0, second=0, microsecond=0)
+
+        # Keep the point closest to the top of the hour
+        if hour_key not in hourly_buckets:
+            hourly_buckets[hour_key] = point
+        else:
+            # Compare which point is closer to the hour
+            existing_time = datetime.fromisoformat(hourly_buckets[hour_key]['time'])
+            existing_offset = abs((existing_time - hour_key).total_seconds())
+            new_offset = abs((time_obj - hour_key).total_seconds())
+            if new_offset < existing_offset:
+                hourly_buckets[hour_key] = point
+
+    # Normalize timestamps to the exact hour and sort
+    hourly = []
+    for hour_key, point in sorted(hourly_buckets.items()):
+        # Create new point with normalized timestamp
+        normalized_point = point.copy()
+        normalized_point['time'] = hour_key.isoformat()
+        hourly.append(normalized_point)
+
     return hourly
 
 def safe_json_write(path: Path, data: dict):
@@ -165,10 +189,9 @@ def query_and_export_timeseries():
                                 "value": value
                             })
                         
-                        # Downsample NOAA buoys' high-frequency wind/temp data to hourly
-                        # Keep wave data at native frequency (~30 min for NOAA)
-                        if buoy_id in ["46087", "46088"] and metric_key in ['wind_speed', 'wind_gust', 'wind_direction', 'air_temp', 'sea_temp']:
-                            timeseries = downsample_to_hourly(timeseries)
+                        # Don't downsample NOAA buoys - wind and wave share timestamps every 30 min
+                        # Frontend will filter to wave timestamps for history table display
+                        pass  # Keep all data at native frequency
                         
                         buoy_data["timeseries"][metric_key] = {
                             "name": metric_info["name"],
