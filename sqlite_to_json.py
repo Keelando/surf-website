@@ -2,27 +2,17 @@
 from pathlib import Path
 import sqlite3
 import json
-import math
 from datetime import datetime, timezone
 
+# Shared utilities
+from units import kmh_to_knots
+from directions import degrees_to_cardinal
+from config import BUOY_DATABASE, EXPORT_DIR, BUOY_FRESHNESS_WINDOW
+from stations import get_all_buoys
+
 # ---------- Config ----------
-SQLITE_PATH = Path("~/.local/share/buoy_data.sqlite").expanduser()
-OUT_PATH = Path("~/site/data/latest_buoy_v2.json").expanduser()
-
-# Freshness policy: how old can data be before we stop displaying it?
-FRESHNESS_WINDOW = 2 * 3600  # 2 hours in seconds
-
-BUOYS = {
-    "4600146": {"name": "Halibut Bank", "location": "Center Strait of Georgia"},
-    "4600303": {"name": "Southern Georgia Strait", "location": "Southern Strait of Georgia"},
-    "4600304": {"name": "English Bay", "location": "South of Bowen Island"},
-    "4600131": {"name": "Sentry Shoal", "location": "Northern Strait of Georgia"},
-    "46087": {"name": "Neah Bay", "location": "Cape Flattery, WA"},
-    "46088": {"name": "New Dungeness (Hein Bank)", "location": "Strait of Juan de Fuca, East"},
-    "CRPILE": {"name": "Crescent Beach Ocean", "location": "Crescent Beach, Surrey"},
-    "CRCHAN": {"name": "Crescent Channel", "location": "Boundary Bay Channel"},
-    "COLEB": {"name": "Colebrook", "location": "Colebrook Pump House"},
-}
+OUT_PATH = EXPORT_DIR / "latest_buoy_v2.json"
+BUOYS = get_all_buoys()
 
 # Fields to query individually (each gets most recent non-null value within 2 hours)
 ALL_FIELDS = [
@@ -35,30 +25,6 @@ ALL_FIELDS = [
     "air_temp", "sea_temp", "pressure"
 ]
 
-DIRS_16 = ['N','NNE','NE','ENE','E','ESE','SE','SSE',
-           'S','SSW','SW','WSW','W','WNW','NW','NNW']
-
-def degrees_to_cardinal(deg):
-    if deg is None:
-        return None
-    try:
-        d = float(deg)
-    except (TypeError, ValueError):
-        return None
-    if math.isnan(d):
-        return None
-    d = d % 360.0
-    idx = int((d + 11.25) // 22.5)
-    return DIRS_16[idx % 16]
-
-def kmh_to_knots(kmh):
-    if kmh is None:
-        return None
-    try:
-        return round(float(kmh) * 0.539957, 1)
-    except (TypeError, ValueError):
-        return None
-
 def safe_json_write(path: Path, data: dict):
     """Atomic write: temp file + rename to avoid partial writes."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -69,7 +35,7 @@ def safe_json_write(path: Path, data: dict):
 def query_and_export():
     latest_json = {}
 
-    with sqlite3.connect(SQLITE_PATH, timeout=5) as conn:
+    with sqlite3.connect(BUOY_DATABASE, timeout=5) as conn:
         # Enable WAL mode for safe concurrent reads during ingestion
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.row_factory = sqlite3.Row
@@ -110,7 +76,7 @@ def query_and_export():
             buoy_json["stale"] = age_minutes > 120  # >2 hours old
 
             # Query each field individually - get most recent non-null value within freshness window
-            cutoff_time = latest_time - FRESHNESS_WINDOW
+            cutoff_time = latest_time - BUOY_FRESHNESS_WINDOW
 
             for field in available_fields:
                 sql = f"""
@@ -174,8 +140,8 @@ def query_and_export():
     # Add metadata about this export
     latest_json["_meta"] = {
         "generated_utc": datetime.now(timezone.utc).isoformat(),
-        "freshness_window_seconds": FRESHNESS_WINDOW,
-        "freshness_window_human": f"{FRESHNESS_WINDOW // 3600}h"
+        "freshness_window_seconds": BUOY_FRESHNESS_WINDOW,
+        "freshness_window_human": f"{BUOY_FRESHNESS_WINDOW // 3600}h"
     }
 
     # Atomic write

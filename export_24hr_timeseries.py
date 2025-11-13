@@ -5,22 +5,15 @@ import json
 from datetime import datetime, timezone, timedelta
 import time
 
-# ---------- Config ----------
-SQLITE_PATH = Path("~/.local/share/buoy_data.sqlite").expanduser()
-OUT_PATH = Path("~/site/data/buoy_timeseries_24h.json").expanduser()
-LOCKFILE = Path("/tmp/buoy_timeseries.lock")
+# Shared utilities
+from units import kmh_to_knots
+from config import BUOY_DATABASE, EXPORT_DIR
+from stations import get_all_buoys
 
-BUOYS = {
-    "4600146": {"name": "Halibut Bank", "location": "Off Vancouver"},
-    "4600303": {"name": "Southern Georgia Strait", "location": "Southern Strait"},
-    "4600304": {"name": "English Bay", "location": "Vancouver Harbor"},
-    "4600131": {"name": "Sentry Shoal", "location": "Northern Strait of Georgia"},
-    "46087": {"name": "Neah Bay", "location": "Cape Flattery, WA"},
-    "46088": {"name": "New Dungeness", "location": "Strait of Juan de Fuca"},
-    "CRPILE": {"name": "Crescent Beach Ocean", "location": "Crescent Beach, Surrey"},
-    "CRCHAN": {"name": "Crescent Channel", "location": "Boundary Bay Channel"},
-    "COLEB": {"name": "Colebrook", "location": "Colebrook Pump House"},
-}
+# ---------- Config ----------
+OUT_PATH = EXPORT_DIR / "buoy_timeseries_24h.json"
+LOCKFILE = Path("/tmp/buoy_timeseries.lock")
+BUOYS = get_all_buoys()
 
 # All available metrics for timeseries
 ALL_METRICS = {
@@ -42,15 +35,6 @@ ALL_METRICS = {
     "sea_temp": {"name": "Sea Temperature", "unit": "°C"},
     "pressure": {"name": "Pressure", "unit": "hPa"},
 }
-
-def kmh_to_knots(kmh):
-    """Convert km/h to knots for wind fields."""
-    if kmh is None:
-        return None
-    try:
-        return round(float(kmh) * 0.539957, 1)
-    except (TypeError, ValueError):
-        return None
 
 def downsample_to_hourly(timeseries_data):
     """Downsample high-frequency data to hourly intervals by keeping the closest point to each hour.
@@ -114,17 +98,17 @@ def release_lock():
 
 def query_and_export_timeseries():
     # Check database exists
-    if not SQLITE_PATH.exists():
-        print(f"❌ Database not found: {SQLITE_PATH}")
+    if not BUOY_DATABASE.exists():
+        print(f"❌ Database not found: {BUOY_DATABASE}")
         return
 
     timeseries_json = {}
     now = datetime.now(timezone.utc)
     twenty_four_hours_ago = now - timedelta(hours=24)
     cutoff_timestamp = int(twenty_four_hours_ago.timestamp())
-    
+
     try:
-        with sqlite3.connect(SQLITE_PATH, timeout=10) as conn:
+        with sqlite3.connect(BUOY_DATABASE, timeout=10) as conn:
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
 
