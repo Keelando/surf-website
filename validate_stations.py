@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Set
 
-STATIONS_FILE = Path("~/envcan_wave/stations.json").expanduser()
+STATIONS_FILE = Path("~/envcan_wave/config/stations.json").expanduser()
 
 # Required fields for each station type
 REQUIRED_BUOY_FIELDS = {'id', 'name', 'location', 'lat', 'lon', 'source', 'type', 'data_types'}
