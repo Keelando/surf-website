@@ -13,6 +13,9 @@ import time
 import sqlite3
 from owslib.wms import WebMapService
 
+# Shared utilities
+from config import STORM_SURGE_DATABASE, EXPORT_DIR, STORM_SURGE_RETENTION_DAYS
+
 # Configuration
 TESTING = False  # Set to True for verbose output and progress tracking
 
@@ -25,14 +28,13 @@ STATIONS = {
     "Tofino": {"lat": 49.154, "lon": -125.913, "name": "Tofino"}  # Updated to match DFO tide station
 }
 
-OUTPUT_DIR = Path("~/site/data/storm_surge").expanduser()
+OUTPUT_DIR = EXPORT_DIR / "storm_surge"
 LOCKFILE = Path("/tmp/storm_surge_fetch.lock")
 WMS_URL = "https://geo.weather.gc.ca/geomet?SERVICE=WMS&REQUEST=GetCapabilities&layer=GDSPS_15km_StormSurge"
 LAYER = "GDSPS_15km_StormSurge"
 
 # Database configuration
-DB_PATH = Path("~/.local/share/storm_surge_forecast.sqlite").expanduser()
-DB_RETENTION_DAYS = 11
+DB_RETENTION_DAYS = STORM_SURGE_RETENTION_DAYS
 
 # Rate limiting
 FETCH_DELAY = 0.5  # seconds between requests
@@ -83,8 +85,8 @@ def ensure_db_schema(conn):
 def store_forecast_to_db(forecast_run_time, all_station_data):
     """Store complete forecast to database (18Z run only - closest to noon Pacific)."""
     try:
-        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(DB_PATH)
+        STORM_SURGE_DATABASE.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(STORM_SURGE_DATABASE)
         ensure_db_schema(conn)
         cur = conn.cursor()
 

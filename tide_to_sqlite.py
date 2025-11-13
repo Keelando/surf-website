@@ -11,30 +11,26 @@ Uses separate database (tide_data.sqlite) with three tables:
 import requests
 import sqlite3
 import datetime
-import json
 import time
 import argparse
 from pathlib import Path
 
-# Use script directory for stations.json, expanduser for database
-SCRIPT_DIR = Path(__file__).parent
-DB_PATH = Path("~/.local/share/tide_data.sqlite").expanduser()
-STATION_FILE = SCRIPT_DIR / "stations.json"
+# Shared utilities
+from config import TIDE_DATABASE
+from stations import STATIONS
+
 BASE_URL = "https://api-iwls.dfo-mpo.gc.ca/api/v1/stations"
 HEADERS = {"User-Agent": "keelan_w@hotmail.com"}
 
 def load_stations():
-    if not STATION_FILE.exists():
-        raise FileNotFoundError(f"Missing {STATION_FILE}")
-    with open(STATION_FILE, "r") as f:
-        data = json.load(f)
+    """Load tide stations from unified station registry."""
     # Extract tide stations from unified stations.json
-    tides = data.get("tides", {})
+    tides = STATIONS.tides
     return {k: v["id"] for k, v in tides.items()}
 
 def ensure_db():
     """Create database and tables if they don't exist."""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(TIDE_DATABASE)
     cur = conn.cursor()
 
     # Create tide_observation table
