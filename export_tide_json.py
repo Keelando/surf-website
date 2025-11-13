@@ -13,6 +13,7 @@ IMPORTANT: Two-stage downsampling strategy (DO NOT REMOVE):
 See function documentation for rationale.
 """
 
+import json
 import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone, timedelta

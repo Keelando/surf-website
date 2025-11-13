@@ -8,6 +8,7 @@ to JSON for plotting alongside GDSPS hindcast predictions.
 Output: ~/site/data/storm_surge/observed_surge.json
 """
 
+import json
 import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
