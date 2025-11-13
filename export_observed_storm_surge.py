@@ -9,15 +9,16 @@ Output: ~/site/data/storm_surge/observed_surge.json
 """
 
 import sqlite3
-import json
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 
+# Shared utilities
+from config import TIDE_DATABASE, EXPORT_DIR
+from stations import STATIONS
+
 # ---------- Config ----------
-DB_PATH = Path("~/.local/share/tide_data.sqlite").expanduser()
-STATION_FILE = Path("~/envcan_wave/stations.json").expanduser()
-OUTPUT_PATH = Path("~/site/data/storm_surge/observed_surge.json").expanduser()
+OUTPUT_PATH = EXPORT_DIR / "storm_surge" / "observed_surge.json"
 
 # Map tide station keys to storm surge station names (for matching)
 TIDE_TO_SURGE_MAP = {
@@ -31,14 +32,8 @@ DAYS_BACK = 14
 
 
 def load_station_metadata():
-    """Load station names and metadata from unified stations.json file."""
-    if not STATION_FILE.exists():
-        print(f"ERROR: Station file not found: {STATION_FILE}")
-        return {}
-    with open(STATION_FILE, "r") as f:
-        data = json.load(f)
-        # Extract tide stations from unified format
-        return data.get("tides", {})
+    """Load station names and metadata from unified station registry."""
+    return STATIONS.tides
 
 
 def fetch_observations(conn, station_id, start_time):
@@ -117,15 +112,15 @@ def calculate_observed_surge(observations, predictions):
 
 def export_observed_surge():
     """Main export function."""
-    if not DB_PATH.exists():
-        print(f"ERROR: Database not found: {DB_PATH}")
+    if not TIDE_DATABASE.exists():
+        print(f"ERROR: Database not found: {TIDE_DATABASE}")
         return
 
     station_metadata = load_station_metadata()
     if not station_metadata:
         return
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(TIDE_DATABASE)
 
     # Calculate start time
     start_time = int((datetime.now(timezone.utc) - timedelta(days=DAYS_BACK)).timestamp())

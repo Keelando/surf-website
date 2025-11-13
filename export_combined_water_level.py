@@ -22,10 +22,13 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 
+# Shared utilities
+from config import TIDE_DATABASE, EXPORT_DIR
+
 # ---------- Config ----------
-TIDE_DB = Path("~/.local/share/tide_data.sqlite").expanduser()
-SURGE_DIR = Path("~/site/data/storm_surge").expanduser()
-OUTPUT_FILE = Path("~/site/data/combined-water-level.json").expanduser()
+TIDE_DB = TIDE_DATABASE
+SURGE_DIR = EXPORT_DIR / "storm_surge"
+OUTPUT_FILE = EXPORT_DIR / "combined-water-level.json"
 
 # Test mode paths
 TEST_TIDE_DB = Path(__file__).parent / "tests" / "databases" / "tide_data_test.sqlite"

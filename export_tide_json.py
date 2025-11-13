@@ -14,31 +14,23 @@ See function documentation for rationale.
 """
 
 import sqlite3
-import json
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 
-# ---------- Config ----------
-SCRIPT_DIR = Path(__file__).parent
-DB_PATH = Path("~/.local/share/tide_data.sqlite").expanduser()
-STATION_FILE = SCRIPT_DIR / "stations.json"
+# Shared utilities
+from config import TIDE_DATABASE, EXPORT_DIR
+from stations import STATIONS
 
 # Output paths
-LATEST_OUT = Path("~/site/data/tide-latest.json").expanduser()
-TIMESERIES_OUT = Path("~/site/data/tide-timeseries.json").expanduser()
-HIGHLOW_OUT = Path("~/site/data/tide-hi-low.json").expanduser()
+LATEST_OUT = EXPORT_DIR / "tide-latest.json"
+TIMESERIES_OUT = EXPORT_DIR / "tide-timeseries.json"
+HIGHLOW_OUT = EXPORT_DIR / "tide-hi-low.json"
 
 
 def load_station_metadata():
-    """Load station names and metadata from unified stations.json file."""
-    if not STATION_FILE.exists():
-        print(f"WARNING: Station file not found: {STATION_FILE}")
-        return {}
-    with open(STATION_FILE, "r") as f:
-        data = json.load(f)
-    # Extract tide stations from unified stations.json
-    return data.get("tides", {})
+    """Load station names and metadata from unified station registry."""
+    return STATIONS.tides
 
 
 def safe_json_write(path: Path, data: dict):
@@ -391,8 +383,8 @@ def export_highlow(conn, station_metadata):
 
 
 def main():
-    if not DB_PATH.exists():
-        print(f"ERROR: Database not found: {DB_PATH}")
+    if not TIDE_DATABASE.exists():
+        print(f"ERROR: Database not found: {TIDE_DATABASE}")
         return 1
 
     station_metadata = load_station_metadata()
@@ -401,7 +393,7 @@ def main():
     print("=" * 70)
 
     try:
-        with sqlite3.connect(DB_PATH, timeout=10) as conn:
+        with sqlite3.connect(TIDE_DATABASE, timeout=10) as conn:
             conn.execute("PRAGMA journal_mode=WAL;")
 
             export_latest(conn, station_metadata)
