@@ -16,11 +16,14 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 import time
 
+# Shared utilities
+from units import ms_to_kmh
+from config import BUOY_DATABASE
+
 # ---- Configuration ----
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
 USERNAME = "surreyrain"
 PASSWORD = "surreyrain"
-SQLITE_PATH = Path("~/.local/share/buoy_data.sqlite").expanduser()
 
 # Station configuration (from v1)
 STATIONS = {
@@ -177,13 +180,6 @@ def ensure_columns(conn):
     conn.commit()
 
 
-def ms_to_kmh(ms):
-    """Convert m/s to km/h (for wind speeds)."""
-    if ms is None:
-        return None
-    return round(float(ms) * 3.6, 2)
-
-
 def parse_data_point(point):
     """Extract timestamp and value from FlowWorks data point."""
     timestamp_str = point.get("DataTime")
@@ -294,7 +290,7 @@ def main():
         return 1
     
     # Connect to database
-    conn = sqlite3.connect(SQLITE_PATH)
+    conn = sqlite3.connect(BUOY_DATABASE)
     ensure_columns(conn)
     
     # Fetch each station (use 24 hours to handle Surrey's reporting delays)
@@ -307,11 +303,11 @@ def main():
             print(f"  ❌ Error: {e}")
     
     conn.close()
-    
+
     print("\n" + "=" * 70)
     print(f"✅ Complete - inserted {total} data points")
-    print(f"💾 Database: {SQLITE_PATH}")
-    
+    print(f"💾 Database: {BUOY_DATABASE}")
+
     return 0
 
 

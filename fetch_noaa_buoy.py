@@ -9,13 +9,15 @@ import sqlite3
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-# ---- Configuration ----
-STATIONS = {
-    "46087": "Neah Bay - 6 NM North of Cape Flattery, WA",
-    "46088": "New Dungeness - Hein Bank, Strait of Juan de Fuca"
-}
+# Shared utilities
+from units import ms_to_kmh
+from config import BUOY_DATABASE
+from stations import STATIONS as STATION_REGISTRY
 
-SQLITE_PATH = Path("~/.local/share/buoy_data.sqlite").expanduser()
+# ---- Configuration ----
+# Get NOAA buoys from the unified station registry
+NOAA_BUOYS = STATION_REGISTRY.get_buoys_by_source("NOAA NDBC")
+STATIONS = {buoy_id: data["name"] for buoy_id, data in NOAA_BUOYS.items()}
 
 # Set True once to backfill fields into existing rows
 UPDATE_EXISTING = False
@@ -43,9 +45,6 @@ FIELD_MAP_SPEC = {
 }
 
 # ---- Utilities ----
-def ms_to_kmh(ms):
-    return round(ms * 3.6, 2)
-
 def parse_direction(val):
     """Handle cardinal ('WSW') or numeric degrees ('275')."""
     if val is None or str(val).strip().upper() in ("MM", "M", "NA", ""):
@@ -262,7 +261,7 @@ def insert_sqlite(conn, buoy_id, timestamp, fields):
 
 # ---- Main ----
 def main():
-    conn = sqlite3.connect(SQLITE_PATH)
+    conn = sqlite3.connect(BUOY_DATABASE)
     ensure_columns_exist(conn)
     
     total_inserted = 0
@@ -300,10 +299,10 @@ def main():
         total_ignored += ign
     
     conn.close()
-    
+
     print(f"\n{'='*60}")
     print(f"✅ Total: Inserted {total_inserted}, ignored {total_ignored} duplicates")
-    print(f"💾 Database: {SQLITE_PATH}")
+    print(f"💾 Database: {BUOY_DATABASE}")
 
 if __name__ == "__main__":
     main()
