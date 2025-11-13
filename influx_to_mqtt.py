@@ -3,8 +3,12 @@ from pathlib import Path
 from influxdb import InfluxDBClient
 import paho.mqtt.client as mqtt
 import json
-import math
 from datetime import datetime, timezone
+
+# Shared utilities
+from units import kmh_to_knots
+from directions import degrees_to_cardinal
+from stations import get_all_buoys
 
 env_path = Path("~/.config/buoy_influx_1.env").expanduser()
 creds = {}
@@ -27,12 +31,8 @@ mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqtt_client.username_pw_set(creds["MQTT_USER"], creds["MQTT_PASS"])
 mqtt_client.connect(creds["MQTT_HOST"], int(creds["MQTT_PORT"]), 60)
 
-BUOYS = {
-    "4600146": {"name": "Halibut Bank", "location": "Off Vancouver"},
-    "4600303": {"name": "Southern Georgia Strait", "location": "Southern Strait"},
-    "4600304": {"name": "English Bay", "location": "Vancouver Harbor"},
-    "4600131": {"name": "Sentry Shoal", "location": "Northern Strait of Georgia"}
-}
+# Get all buoys (Note: This script only processes Environment Canada buoys that are in InfluxDB)
+BUOYS = get_all_buoys()
 
 METRICS = {
     "wave_height_sig": {"name": "Significant Wave Height", "unit": "m", "icon": "mdi:wave"},
@@ -48,27 +48,6 @@ METRICS = {
     "sea_temp": {"name": "Sea Temperature", "unit": "°C", "icon": "mdi:thermometer"},
     "pressure": {"name": "Pressure", "unit": "hPa", "icon": "mdi:gauge"}
 }
-
-DIRS_16 = ['N','NNE','NE','ENE','E','ESE','SE','SSE',
-           'S','SSW','SW','WSW','W','WNW','NW','NNW']
-
-def degrees_to_cardinal(deg):
-    if deg is None:
-        return None
-    try:
-        d = float(deg)
-    except (TypeError, ValueError):
-        return None
-    if math.isnan(d):
-        return None
-    d = d % 360.0
-    idx = int((d + 11.25) // 22.5)
-    return DIRS_16[idx % 16]
-
-def kmh_to_knots(kmh):
-    if kmh is None:
-        return None
-    return round(kmh * 0.539957, 1)
 
 def publish_discovery(buoy_id, metric_key, metric_info):
     buoy_name = BUOYS[buoy_id]["name"]
