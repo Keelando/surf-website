@@ -16,7 +16,7 @@ from collections import defaultdict
 
 # ---------- Config ----------
 DB_PATH = Path("~/.local/share/tide_data.sqlite").expanduser()
-STATION_FILE = Path("~/envcan_wave/tide_stations.json").expanduser()
+STATION_FILE = Path("~/envcan_wave/stations.json").expanduser()
 OUTPUT_PATH = Path("~/site/data/storm_surge/observed_surge.json").expanduser()
 
 # Map tide station keys to storm surge station names (for matching)
@@ -31,12 +31,14 @@ DAYS_BACK = 14
 
 
 def load_station_metadata():
-    """Load station names and metadata from external JSON file."""
+    """Load station names and metadata from unified stations.json file."""
     if not STATION_FILE.exists():
         print(f"ERROR: Station file not found: {STATION_FILE}")
         return {}
     with open(STATION_FILE, "r") as f:
-        return json.load(f)
+        data = json.load(f)
+        # Extract tide stations from unified format
+        return data.get("tides", {})
 
 
 def fetch_observations(conn, station_id, start_time):

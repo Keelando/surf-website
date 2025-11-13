@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 # Default path to stations.json (adjust as needed)
-STATIONS_FILE = Path("~/envcan_wave/stations.json").expanduser()
+STATIONS_FILE = Path("~/envcan_wave/config/stations.json").expanduser()
 
 class StationRegistry:
     """Central registry for all marine monitoring stations."""
