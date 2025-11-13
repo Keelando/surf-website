@@ -115,10 +115,10 @@ def store_forecast_to_db(forecast_run_time, all_station_data):
         deleted = cur.rowcount
         conn.commit()
         conn.close()
-        
+
         print(f"\n💾 Stored {stored_count} forecast points to database")
         if deleted > 0:
-            print(f"🗑️  Purged {deleted} old records (before {cutoff_timestamp})")
+            print(f"🗑️  Purged {deleted} old records (before {cutoff_date})")
         
         return True
         
@@ -268,11 +268,14 @@ def create_combined_forecast():
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "stations": {}
     }
-    
+
+    # Files to skip (not station forecasts)
+    skip_files = {"combined_forecast.json", "hindcast.json", "observed_surge.json"}
+
     for station_file in sorted(OUTPUT_DIR.glob("*.json")):
-        if station_file.name == "combined_forecast.json":
+        if station_file.name in skip_files:
             continue
-        
+
         try:
             station_data = json.loads(station_file.read_text())
             station_id = station_data["station_id"]
