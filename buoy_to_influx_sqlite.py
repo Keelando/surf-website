@@ -4,6 +4,9 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 import sqlite3
 
+# Shared utilities
+from config import BUOY_DATABASE
+
 # ---- Optional Influx sink (soft dependency) ----
 class InfluxSink:
     def __init__(self, env_path):
@@ -60,8 +63,8 @@ class InfluxSink:
 
 
 # ---- SQLite setup ----
-SQLITE_PATH = Path("~/.local/share/buoy_data.sqlite").expanduser()
-SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
+# Database path comes from config.BUOY_DATABASE
+BUOY_DATABASE.parent.mkdir(parents=True, exist_ok=True)
 
 # Fields we may insert (order is stable for INSERT)
 EXPECTED_FIELDS = [
@@ -212,7 +215,7 @@ def main():
     influx = InfluxSink("~/.config/buoy_influx_1.env")
 
     # SQLite
-    conn = sqlite3.connect(SQLITE_PATH)
+    conn = sqlite3.connect(BUOY_DATABASE)
     cur = conn.cursor()
     ensure_schema(conn)
 
@@ -263,12 +266,12 @@ def main():
 
     processed_file.write_text("\n".join(sorted(processed)))
     conn.close()
-    
+
     print(f"\n{'='*60}")
     print(f"✅ Processed {new_count} new files")
     print(f"⏭️  Skipped {skipped_count} invalid files")
     print(f"📊 Total tracked: {len(processed)}")
-    print(f"💾 Database: {SQLITE_PATH}")
+    print(f"💾 Database: {BUOY_DATABASE}")
 
 
 if __name__ == "__main__":
