@@ -13,6 +13,9 @@ from pathlib import Path
 from units import ms_to_kmh
 from config import BUOY_DATABASE
 from stations import STATIONS as STATION_REGISTRY
+from logging_config import setup_logging
+
+logger = setup_logging('noaa')
 
 # ---- Configuration ----
 # Get NOAA buoys from the unified station registry
@@ -108,10 +111,10 @@ def fetch_noaa_txt(station):
                     records.append(row)
             except Exception:
                 continue
-        print(f"  ✅ Fetched {len(records)} records from .txt (last 6h)")
+        logger.info(f"Fetched {len(records)} records from .txt (last 6h)")
         return records
     except Exception as e:
-        print(f"  ❌ Failed to fetch .txt file: {e}")
+        logger.warning(f"Failed to fetch .txt file: {e}")
         return []
 
 def fetch_noaa_spec(station):
@@ -139,10 +142,10 @@ def fetch_noaa_spec(station):
                     records.append(row)
             except Exception:
                 continue
-        print(f"  ✅ Fetched {len(records)} records from .spec (last 6h)")
+        logger.info(f"Fetched {len(records)} records from .spec (last 6h)")
         return records
     except Exception as e:
-        print(f"  ❌ Failed to fetch .spec file: {e}")
+        logger.warning(f"Failed to fetch .spec file: {e}")
         return []
 
 # ---- Merge and insert ----
@@ -230,7 +233,7 @@ def ensure_columns_exist(conn):
         name = c.split()[0]
         if name not in existing:
             cur.execute(f"ALTER TABLE buoy_observation ADD COLUMN {c};")
-            print(f"  ℹ️  Added column: {name}")
+            logger.info(f"Added column: {name}")
     conn.commit()
 
 def insert_sqlite(conn, buoy_id, timestamp, fields):
@@ -268,18 +271,18 @@ def main():
     total_ignored = 0
     
     for station_id, station_name in STATIONS.items():
-        print(f"\n🌊 Processing {station_name} ({station_id})...")
-        
+        logger.info(f"Processing {station_name} ({station_id})")
+
         txt = fetch_noaa_txt(station_id)
         spec = fetch_noaa_spec(station_id)
-        
+
         if not txt and not spec:
-            print(f"  ⚠️  No data retrieved for {station_id}")
+            logger.warning(f"No data retrieved for {station_id}")
             continue
 
         merged = merge_records(txt, spec)
         if not merged:
-            print(f"  ⚠️  No merged records for {station_id}")
+            logger.warning(f"No merged records for {station_id}")
             continue
 
         ins = ign = 0
@@ -293,16 +296,16 @@ def main():
                 ign += 1
             else:
                 ins += 1
-        
-        print(f"  ✅ Inserted {ins}, ignored {ign} duplicates")
+
+        logger.info(f"Inserted {ins}, ignored {ign} duplicates")
         total_inserted += ins
         total_ignored += ign
-    
+
     conn.close()
 
-    print(f"\n{'='*60}")
-    print(f"✅ Total: Inserted {total_inserted}, ignored {total_ignored} duplicates")
-    print(f"💾 Database: {BUOY_DATABASE}")
+    logger.info("=" * 60)
+    logger.info(f"Total: Inserted {total_inserted}, ignored {total_ignored} duplicates")
+    logger.info(f"Database: {BUOY_DATABASE}")
 
 if __name__ == "__main__":
     main()

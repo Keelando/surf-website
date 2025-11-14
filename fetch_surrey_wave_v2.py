@@ -19,6 +19,9 @@ import time
 # Shared utilities
 from units import ms_to_kmh
 from config import BUOY_DATABASE
+from logging_config import setup_logging
+
+logger = setup_logging('surrey_fetch')
 
 # ---- Configuration ----
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
@@ -97,14 +100,14 @@ class FlowWorksAPI:
                         expires_str.replace("Z", "+00:00")
                     )
 
-                print(f"✅ Authenticated - expires {self.token_expiry}")
+                logger.info(f"Authenticated - expires {self.token_expiry}")
                 return True
             else:
-                print(f"❌ Auth failed: {data}")
+                logger.error(f"Auth failed: {data}")
                 return False
 
         except Exception as e:
-            print(f"❌ Auth error: {e}")
+            logger.error(f"Auth error: {e}")
             return False
     
     def _ensure_token(self):
@@ -150,11 +153,11 @@ class FlowWorksAPI:
             if data.get("ResultCode") == 0:
                 return data.get("Resources", [])
             else:
-                print(f"⚠️  API error: {data.get('ResultMessage')}")
+                logger.warning(f"API error: {data.get('ResultMessage')}")
                 return []
 
         except Exception as e:
-            print(f"❌ Fetch error: {e}")
+            logger.error(f"Fetch error: {e}")
             return []
 
 
@@ -175,8 +178,8 @@ def ensure_columns(conn):
     for col in required:
         if col not in existing:
             cur.execute(f"ALTER TABLE buoy_observation ADD COLUMN {col} REAL;")
-            print(f"ℹ️  Added column: {col}")
-    
+            logger.info(f"Added column: {col}")
+
     conn.commit()
 
 
@@ -243,9 +246,9 @@ def fetch_and_store(api, station_key, station_config, conn, hours=2):
     site_id = station_config["site_id"]
     buoy_id = station_config["buoy_id"]
     channels = station_config["channels"]
-    
-    print(f"\n📡 Fetching {station_config['name']}...")
-    
+
+    logger.info(f"Fetching {station_config['name']}...")
+
     cur = conn.cursor()
     total_inserted = 0
     
@@ -271,9 +274,9 @@ def fetch_and_store(api, station_key, station_config, conn, hours=2):
         
         conn.commit()
         total_inserted += inserted
-        
+
         if inserted > 0:
-            print(f"  ✅ {field_name}: {inserted} points")
+            logger.info(f"  {field_name}: {inserted} points")
 
         time.sleep(1.0)  # Rate limiting - increased to reduce API load
     
@@ -281,9 +284,8 @@ def fetch_and_store(api, station_key, station_config, conn, hours=2):
 
 
 def main():
-    print("🌊 Surrey FlowWorks Data Fetcher (API v2)")
-    print("=" * 70)
-    
+    logger.info("Surrey FlowWorks Data Fetcher (API v2)")
+
     # Authenticate
     api = FlowWorksAPI(USERNAME, PASSWORD)
     if not api.authenticate():
@@ -300,13 +302,12 @@ def main():
             count = fetch_and_store(api, station_key, station_config, conn, hours=24)
             total += count
         except Exception as e:
-            print(f"  ❌ Error: {e}")
-    
+            logger.error(f"  Error: {e}")
+
     conn.close()
 
-    print("\n" + "=" * 70)
-    print(f"✅ Complete - inserted {total} data points")
-    print(f"💾 Database: {BUOY_DATABASE}")
+    logger.info(f"Complete - inserted {total} data points")
+    logger.info(f"Database: {BUOY_DATABASE}")
 
     return 0
 

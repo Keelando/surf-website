@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+from logging_config import setup_logging
+
+logger = setup_logging('storm_surge')
 """
 Storm Surge Forecast Fetcher for Surf Server
 Fetches GDSPS data from Environment Canada GeoMet WMS
@@ -45,10 +48,10 @@ def acquire_lock():
     if LOCKFILE.exists():
         age = time.time() - LOCKFILE.stat().st_mtime
         if age > 300:  # 5 minutes
-            print("⚠️  Removing stale lock file")
+            logger.info("⚠️  Removing stale lock file")
             LOCKFILE.unlink()
         else:
-            print(f"⚠️  Another instance is running (lock age: {age:.0f}s), exiting")
+            logger.info(f"⚠️  Another instance is running (lock age: {age:.0f}s), exiting")
             return False
     LOCKFILE.touch()
     return True
@@ -105,7 +108,7 @@ def store_forecast_to_db(forecast_run_time, all_station_data):
                     """, (station_id, forecast_date, time_str, surge_value))
                     stored_count += 1
                 except Exception as e:
-                    print(f"⚠️  DB insert error for {station_id} {time_str}: {e}")
+                    logger.info(f"⚠️  DB insert error for {station_id} {time_str}: {e}")
 
         conn.commit()
 
@@ -116,14 +119,14 @@ def store_forecast_to_db(forecast_run_time, all_station_data):
         conn.commit()
         conn.close()
 
-        print(f"\n💾 Stored {stored_count} forecast points to database")
+        logger.info(f"\n💾 Stored {stored_count} forecast points to database")
         if deleted > 0:
-            print(f"🗑️  Purged {deleted} old records (before {cutoff_date})")
+            logger.info(f"🗑️  Purged {deleted} old records (before {cutoff_date})")
         
         return True
         
     except Exception as e:
-        print(f"❌ Database storage error: {e}")
+        logger.info(f"❌ Database storage error: {e}")
         return False
 
 
@@ -170,8 +173,8 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
             fetch_pixel_value._debug_count = 0
         
         if TESTING and fetch_pixel_value._debug_count < 3:
-            print(f"\n    🔍 Debug - Raw response for {time_str}:")
-            print(f"    {text[:200]}")
+            logger.info(f"\n    🔍 Debug - Raw response for {time_str}:")
+            logger.info(f"    {text[:200]}")
             fetch_pixel_value._debug_count += 1
         
         # Extract value from response
@@ -182,7 +185,7 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
         # Check for "no feature" response
         if TESTING and "no feature" in text.lower():
             if not hasattr(fetch_pixel_value, '_no_feature_warned'):
-                print(f"    ⚠️  'No feature' response - coordinates may be outside model domain")
+                logger.info(f"    ⚠️  'No feature' response - coordinates may be outside model domain")
                 fetch_pixel_value._no_feature_warned = True
         
         return None
@@ -190,7 +193,7 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
     except Exception as e:
         # Only log errors in testing mode or first occurrence
         if TESTING or not hasattr(fetch_pixel_value, '_error_count'):
-            print(f"    ⚠️  Error fetching data for {timestamp}: {e}")
+            logger.info(f"    ⚠️  Error fetching data for {timestamp}: {e}")
             if not hasattr(fetch_pixel_value, '_error_count'):
                 fetch_pixel_value._error_count = 0
             fetch_pixel_value._error_count += 1
@@ -199,11 +202,11 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
 
 def fetch_station_forecast(wms, layer, station_id, station_info, time_list):
     """Fetch complete forecast for a station."""
-    print(f"\n📍 Fetching {station_info['name']}...")
+    logger.info(f"\n📍 Fetching {station_info['name']}...")
     
     if TESTING:
-        print(f"    Total timesteps to fetch: {len(time_list)}")
-        print(f"    Estimated time: ~{len(time_list) * FETCH_DELAY:.0f} seconds "
+        logger.info(f"    Total timesteps to fetch: {len(time_list)}")
+        logger.info(f"    Estimated time: ~{len(time_list) * FETCH_DELAY:.0f} seconds "
               f"({len(time_list) * FETCH_DELAY / 60:.1f} minutes)")
     
     bbox = get_bounding_box(station_info['lat'], station_info['lon'])
@@ -225,14 +228,14 @@ def fetch_station_forecast(wms, layer, station_id, station_info, time_list):
         if TESTING:
             if idx % 10 == 0 or idx == len(time_list):
                 progress = (idx / len(time_list)) * 100
-                print(f"    Progress: {idx}/{len(time_list)} ({progress:.1f}%) - "
+                logger.info(f"    Progress: {idx}/{len(time_list)} ({progress:.1f}%) - "
                       f"Success: {successful}, Failed: {failed}")
         elif idx % 50 == 0:
-            print(f"    Progress: {idx}/{len(time_list)}...")
+            logger.info(f"    Progress: {idx}/{len(time_list)}...")
         
         time.sleep(FETCH_DELAY)  # Rate limiting
     
-    print(f"    ✅ Retrieved {successful}/{len(time_list)} forecasts (Failed: {failed})")
+    logger.info(f"    ✅ Retrieved {successful}/{len(time_list)} forecasts (Failed: {failed})")
     return forecast_data
 
 
@@ -259,7 +262,7 @@ def save_forecast(station_id, forecast_data, station_info):
     tmp_file.write_text(json.dumps(output_data, indent=2))
     tmp_file.replace(output_file)
     
-    print(f"    💾 Saved to {output_file}")
+    logger.info(f"    💾 Saved to {output_file}")
 
 
 def create_combined_forecast():
@@ -281,25 +284,25 @@ def create_combined_forecast():
             station_id = station_data["station_id"]
             combined["stations"][station_id] = station_data
         except Exception as e:
-            print(f"⚠️  Error reading {station_file.name}: {e}")
+            logger.info(f"⚠️  Error reading {station_file.name}: {e}")
     
     combined_file = OUTPUT_DIR / "combined_forecast.json"
     tmp_file = combined_file.with_suffix(".json.tmp")
     tmp_file.write_text(json.dumps(combined, indent=2))
     tmp_file.replace(combined_file)
     
-    print(f"\n✅ Created combined forecast: {combined_file}")
-    print(f"📊 Contains {len(combined['stations'])} stations")
+    logger.info(f"\n✅ Created combined forecast: {combined_file}")
+    logger.info(f"📊 Contains {len(combined['stations'])} stations")
 
 
 def main():
     if TESTING:
-        print("=" * 60)
-        print("🧪 TESTING MODE ENABLED - Verbose output active")
-        print("=" * 60)
+        logger.info("="* 60)
+        logger.info("🧪 TESTING MODE ENABLED - Verbose output active")
+        logger.info("="* 60)
     
-    print("🌊 Storm Surge Forecast Fetcher")
-    print("=" * 50)
+    logger.info("🌊 Storm Surge Forecast Fetcher")
+    logger.info("="* 50)
     
     if not acquire_lock():
         return 1
@@ -309,30 +312,30 @@ def main():
         warnings.filterwarnings("ignore", module="owslib", category=UserWarning)
         
         # Connect to WMS
-        print("\n🔌 Connecting to Environment Canada GeoMet...")
+        logger.info("\n🔌 Connecting to Environment Canada GeoMet...")
         wms = WebMapService(WMS_URL, version="1.3.0", timeout=300)
         
         # Get time parameters
         start_time, end_time, interval = get_time_parameters(wms, LAYER)
-        print(f"📅 Forecast period: {start_time.strftime('%Y-%m-%d %H:%M')} to "
+        logger.info(f"📅 Forecast period: {start_time.strftime('%Y-%m-%d %H:%M')} to "
               f"{end_time.strftime('%Y-%m-%d %H:%M')} UTC")
-        print(f"⏱️  Interval: {interval} hours")
+        logger.info(f"⏱️  Interval: {interval} hours")
         
         # Build time list
         time_list = [start_time]
         while time_list[-1] < end_time:
             time_list.append(time_list[-1] + timedelta(hours=interval))
         
-        print(f"📊 Total timesteps: {len(time_list)}")
+        logger.info(f"📊 Total timesteps: {len(time_list)}")
         
         # Estimate total time
         total_minutes = len(time_list) * len(STATIONS) * FETCH_DELAY / 60
         
         if TESTING:
-            print(f"\n⏰ Estimated total time: ~{total_minutes:.1f} minutes")
-            print(f"   ({len(time_list)} timesteps × {len(STATIONS)} stations × {FETCH_DELAY}s)")
+            logger.info(f"\n⏰ Estimated total time: ~{total_minutes:.1f} minutes")
+            logger.info(f"   ({len(time_list)} timesteps × {len(STATIONS)} stations × {FETCH_DELAY}s)")
         elif total_minutes > 5:
-            print(f"⏰ This will take approximately {total_minutes:.0f} minutes to complete...")
+            logger.info(f"⏰ This will take approximately {total_minutes:.0f} minutes to complete...")
         
         # Fetch data for each station
         all_forecasts = {}
@@ -346,10 +349,10 @@ def main():
                     save_forecast(station_id, forecast_data, station_info)
                     all_forecasts[station_id] = forecast_data
                 else:
-                    print(f"    ❌ No data retrieved for {station_id}")
+                    logger.info(f"    ❌ No data retrieved for {station_id}")
             
             except Exception as e:
-                print(f"    ❌ Error processing {station_id}: {e}")
+                logger.info(f"    ❌ Error processing {station_id}: {e}")
         
         # Create combined forecast
         create_combined_forecast()
@@ -357,16 +360,16 @@ def main():
         # Store to database if this is the 18Z run (hour 19)
         current_hour = datetime.now(timezone.utc).hour
         if current_hour == 19:
-            print("\n🎯 This is the 18Z run - storing to database for hindcast...")
+            logger.info("\n🎯 This is the 18Z run - storing to database for hindcast...")
             store_forecast_to_db(start_time, all_forecasts)
         else:
-            print(f"\n⏭️  Skipping database storage (hour={current_hour}, not 18Z run)")
+            logger.info(f"\n⏭️  Skipping database storage (hour={current_hour}, not 18Z run)")
         
-        print("\n✅ Storm surge forecast update complete!")
+        logger.info("\n✅ Storm surge forecast update complete!")
         return 0
     
     except Exception as e:
-        print(f"\n❌ Fatal error: {e}")
+        logger.info(f"\n❌ Fatal error: {e}")
         return 1
     
     finally:

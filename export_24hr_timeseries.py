@@ -9,6 +9,9 @@ import time
 from units import kmh_to_knots
 from config import BUOY_DATABASE, EXPORT_DIR
 from stations import get_all_buoys
+from logging_config import setup_logging
+
+logger = setup_logging('timeseries_export')
 
 # ---------- Config ----------
 OUT_PATH = EXPORT_DIR / "buoy_timeseries_24h.json"
@@ -82,12 +85,12 @@ def acquire_lock():
     if LOCKFILE.exists():
         # Check if lock is stale (>5 minutes old)
         if time.time() - LOCKFILE.stat().st_mtime > 300:
-            print("⚠️  Removing stale lock file")
+            logger.warning("Removing stale lock file")
             LOCKFILE.unlink()
         else:
-            print("⚠️  Another instance is running, exiting")
+            logger.warning("Another instance is running, exiting")
             return False
-    
+
     LOCKFILE.touch()
     return True
 
@@ -99,7 +102,7 @@ def release_lock():
 def query_and_export_timeseries():
     # Check database exists
     if not BUOY_DATABASE.exists():
-        print(f"❌ Database not found: {BUOY_DATABASE}")
+        logger.error(f"Database not found: {BUOY_DATABASE}")
         return
 
     timeseries_json = {}
@@ -117,12 +120,12 @@ def query_and_export_timeseries():
             existing_cols = {row[1] for row in cur.fetchall()}
             
             available_metrics = {k: v for k, v in ALL_METRICS.items() if k in existing_cols}
-            
+
             if not available_metrics:
-                print("⚠️  No timeseries metrics found in database.")
+                logger.warning("No timeseries metrics found in database.")
                 return
 
-            print(f"📊 Available metrics: {', '.join(available_metrics.keys())}")
+            logger.info(f"Available metrics: {', '.join(available_metrics.keys())}")
 
             for buoy_id in BUOYS.keys():
                 buoy_data = {
@@ -182,17 +185,17 @@ def query_and_export_timeseries():
                             "unit": metric_info["unit"],
                             "data": timeseries
                         }
-                        print(f"  📊 {buoy_id} - {metric_key}: {len(timeseries)} points")
+                        logger.debug(f"  {buoy_id} - {metric_key}: {len(timeseries)} points")
 
                 # Only add buoy if it has at least one timeseries
                 if buoy_data["timeseries"]:
                     timeseries_json[buoy_id] = buoy_data
-                    print(f"✅ Exported {buoy_id} ({BUOYS[buoy_id]['name']})")
+                    logger.info(f"Exported {buoy_id} ({BUOYS[buoy_id]['name']})")
                 else:
-                    print(f"⏭️  Skipped {buoy_id} (no data in last 24h)")
+                    logger.info(f"Skipped {buoy_id} (no data in last 24h)")
 
     except sqlite3.OperationalError as e:
-        print(f"❌ SQLite error: {e}")
+        logger.error(f"SQLite error: {e}")
         return
 
     # Determine actual data time range from exported data
@@ -223,9 +226,9 @@ def query_and_export_timeseries():
 
     # Atomic write
     safe_json_write(OUT_PATH, timeseries_json)
-    print(f"\n✅ Wrote 24h timeseries to {OUT_PATH}")
-    print(f"📊 Total buoys: {timeseries_json['_meta']['buoy_count']}")
-    print(f"⏰ Time range: {twenty_four_hours_ago.strftime('%Y-%m-%d %H:%M')} to {now.strftime('%Y-%m-%d %H:%M')} UTC")
+    logger.info(f"Wrote 24h timeseries to {OUT_PATH}")
+    logger.info(f"Total buoys: {timeseries_json['_meta']['buoy_count']}")
+    logger.info(f"Time range: {twenty_four_hours_ago.strftime('%Y-%m-%d %H:%M')} to {now.strftime('%Y-%m-%d %H:%M')} UTC")
 
 if __name__ == "__main__":
     if not acquire_lock():

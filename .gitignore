@@ -9,7 +9,8 @@ site/data/
 data/buoy/
 storm_surge/
 
-# Logs
+# Logs (all logs now in logs/ directory)
+logs/
 *.log
 
 # Environment/credentials
@@ -41,5 +42,3 @@ storm_surge/
 *.json
 !examples/*.json
 !requirements.txt
-*.log
-git_backup.log

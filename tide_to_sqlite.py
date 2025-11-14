@@ -18,6 +18,9 @@ from pathlib import Path
 # Shared utilities
 from config import TIDE_DATABASE
 from stations import STATIONS
+from logging_config import setup_logging
+
+logger = setup_logging('tide_obs')
 
 BASE_URL = "https://api-iwls.dfo-mpo.gc.ca/api/v1/stations"
 HEADERS = {"User-Agent": "keelan_w@hotmail.com"}
@@ -101,7 +104,7 @@ def safe_get(url, params=None):
         r.raise_for_status()
         return r.json()
     except requests.RequestException as e:
-        print(f"  ERROR: {e}")
+        logger.error(f"{e}")
         return None
 
 def detect_available_codes(station_id):
@@ -143,7 +146,7 @@ def insert_observations(cur, station_key, station_id, data):
             if cur.rowcount > 0:
                 added += 1
         except Exception as e:
-            print(f"    WARNING: skipped bad observation row: {e}")
+            logger.warning(f"Skipped bad observation row: {e}")
     return added
 
 def insert_predictions(cur, station_key, station_id, data):
@@ -162,7 +165,7 @@ def insert_predictions(cur, station_key, station_id, data):
             if cur.rowcount > 0:
                 added += 1
         except Exception as e:
-            print(f"    WARNING: skipped bad prediction row: {e}")
+            logger.warning(f"Skipped bad prediction row: {e}")
     return added
 
 def insert_highlow(cur, station_key, station_id, data):
@@ -203,7 +206,7 @@ def insert_highlow(cur, station_key, station_id, data):
             if cur.rowcount > 0:
                 added += 1
         except Exception as e:
-            print(f"    WARNING: skipped bad high/low row: {e}")
+            logger.warning(f"Skipped bad high/low row: {e}")
     return added
 
 def main():
@@ -228,22 +231,22 @@ def main():
     TIDE_STATIONS = load_stations()
     total_added = 0
 
-    print(f"Fetching tide data from {len(TIDE_STATIONS)} stations...")
+    logger.info(f"Fetching tide data from {len(TIDE_STATIONS)} stations...")
     if args.observations:
-        print("Mode: Observations only (wlo)")
+        logger.info("Mode: Observations only (wlo)")
     elif args.predictions:
-        print("Mode: Predictions only (wlp)")
+        logger.info("Mode: Predictions only (wlp)")
     elif args.highlow:
-        print("Mode: High/low events only (wlp-hilo)")
+        logger.info("Mode: High/low events only (wlp-hilo)")
     else:
-        print("Mode: All data types")
-    print("=" * 70)
+        logger.info("Mode: All data types")
+    logger.info("=" * 70)
 
     for key, sid in TIDE_STATIONS.items():
-        print(f"Station: {key} ({sid})")
+        logger.info(f"Station: {key} ({sid})")
         codes = detect_available_codes(sid)
         if not codes:
-            print("  WARNING: no timeSeries metadata")
+            logger.warning("No timeSeries metadata")
             continue
 
         # Fetch observations (wlo) - incremental fetch since last observation
@@ -277,7 +280,7 @@ def main():
                     if values:
                         added = insert_observations(cur, key, sid, values)
                         total_added += added
-                        print(f"  OK: observations added {added} rows")
+                        logger.info(f"Observations added {added} rows")
 
         # Fetch predictions (wlp) - current time + 3 days ahead
         # Extended to 3 days to ensure full 2 calendar days ahead coverage
@@ -298,7 +301,7 @@ def main():
                     if values:
                         added = insert_predictions(cur, key, sid, values)
                         total_added += added
-                        print(f"  OK: predictions added {added} rows")
+                        logger.info(f"Predictions added {added} rows")
 
         # Fetch high/low events (wlp-hilo) - 48-hour window
         if args.highlow or args.all:
@@ -317,13 +320,13 @@ def main():
                     if values:
                         added = insert_highlow(cur, key, sid, values)
                         total_added += added
-                        print(f"  OK: high/low events added {added} rows")
+                        logger.info(f"High/low events added {added} rows")
 
         time.sleep(2.1)  # Rate limiting
 
     # Purge old data (keep 10 days for analysis/validation)
-    print("=" * 70)
-    print("Purging data older than 10 days...")
+    logger.info("=" * 70)
+    logger.info("Purging data older than 10 days...")
     cutoff_timestamp = int((now - datetime.timedelta(days=10)).timestamp())
 
     cur.execute("DELETE FROM tide_observation WHERE observation_time < ?", (cutoff_timestamp,))
@@ -336,16 +339,16 @@ def main():
     hl_deleted = cur.rowcount
 
     if obs_deleted > 0 or pred_deleted > 0 or hl_deleted > 0:
-        print(f"  Deleted: {obs_deleted} observations, {pred_deleted} predictions, {hl_deleted} high/low events")
+        logger.info(f"Deleted: {obs_deleted} observations, {pred_deleted} predictions, {hl_deleted} high/low events")
     else:
-        print("  No old data to purge")
+        logger.info("No old data to purge")
 
     conn.commit()
     conn.close()
 
     elapsed = time.time() - start_time
-    print("=" * 70)
-    print(f"Done in {elapsed:.1f}s - total {total_added} new rows")
+    logger.info("=" * 70)
+    logger.info(f"Done in {elapsed:.1f}s - total {total_added} new rows")
 
 if __name__ == "__main__":
     main()

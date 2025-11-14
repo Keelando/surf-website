@@ -7,6 +7,9 @@ from pathlib import Path
 import sqlite3
 import json
 from datetime import datetime, timezone, timedelta
+from logging_config import setup_logging
+
+logger = setup_logging('hindcast_export')
 
 # Configuration
 DB_PATH = Path("~/.local/share/storm_surge_forecast.sqlite").expanduser()
@@ -24,10 +27,10 @@ STATIONS = {
 
 def export_hindcast():
     """Export +48h hindcast predictions to JSON."""
-    
+
     if not DB_PATH.exists():
-        print(f"❌ Database not found: {DB_PATH}")
-        print("   Run fetch_storm_surge.py at 19:30 UTC to start collecting data")
+        logger.error(f"Database not found: {DB_PATH}")
+        logger.info("Run fetch_storm_surge.py at 19:30 UTC to start collecting data")
         return False
     
     try:
@@ -46,11 +49,11 @@ def export_hindcast():
         stats = cur.fetchone()
         
         if not stats or stats["days"] == 0:
-            print("⚠️  No forecast data in database yet")
-            print("   First data will be available after 19:30 UTC run")
+            logger.warning("No forecast data in database yet")
+            logger.info("First data will be available after 19:30 UTC run")
             return False
-        
-        print(f"📊 Found {stats['days']} days of forecasts ({stats['oldest']} to {stats['newest']})")
+
+        logger.info(f"Found {stats['days']} days of forecasts ({stats['oldest']} to {stats['newest']})")
         
         hindcast_data = {
             "generated_utc": datetime.now(timezone.utc).isoformat(),
@@ -63,8 +66,8 @@ def export_hindcast():
         
         # Export each station
         for station_id, station_info in STATIONS.items():
-            print(f"\n📍 Processing {station_info['name']}...")
-            
+            logger.info(f"Processing {station_info['name']}...")
+
             # Query: Get all forecasts and filter for hours 38-61 FROM 18Z RUN
             # 18Z run on Nov 7 → hours 38-61 = all of Nov 9 PST (00:00-23:00 Pacific, 2 days ahead)
             # Since forecast_run_time is stored as date-only, we must add 18 hours to account for 18Z
@@ -82,9 +85,9 @@ def export_hindcast():
             """, (station_id,))
             
             rows = cur.fetchall()
-            
+
             if not rows:
-                print(f"   ⚠️  No 38-61h predictions found")
+                logger.warning(f"No 38-61h predictions found for {station_info['name']}")
                 continue
             
             # Build hindcast series
@@ -104,9 +107,9 @@ def export_hindcast():
             # Get time range
             first_time = datetime.fromisoformat(hindcast_series[0]["time"].replace('Z', '+00:00'))
             last_time = datetime.fromisoformat(hindcast_series[-1]["time"].replace('Z', '+00:00'))
-            
-            print(f"   ✅ {len(hindcast_series)} predictions")
-            print(f"   📅 Range: {first_time.strftime('%Y-%m-%d')} to {last_time.strftime('%Y-%m-%d')}")
+
+            logger.info(f"  {len(hindcast_series)} predictions")
+            logger.info(f"  Range: {first_time.strftime('%Y-%m-%d')} to {last_time.strftime('%Y-%m-%d')}")
             
             # Add to output
             hindcast_data["stations"][station_id] = {
@@ -126,30 +129,27 @@ def export_hindcast():
         tmp_file = OUTPUT_PATH.with_suffix(".json.tmp")
         tmp_file.write_text(json.dumps(hindcast_data, indent=2))
         tmp_file.replace(OUTPUT_PATH)
-        
-        print(f"\n💾 Wrote hindcast data to {OUTPUT_PATH}")
-        print(f"📊 Total stations: {len(hindcast_data['stations'])}")
-        
+
+        logger.info(f"Wrote hindcast data to {OUTPUT_PATH}")
+        logger.info(f"Total stations: {len(hindcast_data['stations'])}")
+
         return True
-        
+
     except Exception as e:
-        print(f"❌ Export error: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Export error: {e}", exc_info=True)
         return False
 
 
 def main():
-    print("🌊 Storm Surge Hindcast Export (38-61h / 2-day ahead Pacific)")
-    print("=" * 50)
-    
+    logger.info("Storm Surge Hindcast Export (38-61h / 2-day ahead Pacific)")
+
     success = export_hindcast()
-    
+
     if success:
-        print("\n✅ Hindcast export complete!")
+        logger.info("Hindcast export complete!")
         return 0
     else:
-        print("\n❌ Hindcast export failed")
+        logger.error("Hindcast export failed")
         return 1
 
 
