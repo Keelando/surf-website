@@ -24,6 +24,9 @@ from zoneinfo import ZoneInfo
 
 # Shared utilities
 from config import TIDE_DATABASE, EXPORT_DIR
+from logging_config import setup_logging
+
+logger = setup_logging('combined_water_level')
 
 # ---------- Config ----------
 TIDE_DB = TIDE_DATABASE
@@ -55,7 +58,7 @@ def load_storm_surge_forecasts(surge_dir):
     combined_file = surge_dir / "combined_forecast.json"
 
     if not combined_file.exists():
-        print(f"⚠️  Storm surge forecast not found: {combined_file}")
+        logger.warning(f"Storm surge forecast not found: {combined_file}")
         return {}
 
     with open(combined_file, 'r') as f:
@@ -76,7 +79,7 @@ def load_storm_surge_forecasts(surge_dir):
         if forecasts:
             surge_by_station[station_id] = forecasts
 
-    print(f"✅ Loaded storm surge forecasts for {len(surge_by_station)} stations")
+    logger.info(f"Loaded storm surge forecasts for {len(surge_by_station)} stations")
     return surge_by_station
 
 
@@ -86,7 +89,7 @@ def load_tide_predictions(station_id, start_ts, end_ts, tide_db):
     Returns dict: {timestamp: tide_value}
     """
     if not tide_db.exists():
-        print(f"⚠️  Tide database not found: {tide_db}")
+        logger.warning(f"Tide database not found: {tide_db}")
         return {}
 
     conn = sqlite3.connect(tide_db)
@@ -169,11 +172,11 @@ def combine_predictions(station_tide_id, station_surge_id, surge_forecasts, star
     tide_predictions = load_tide_predictions(station_tide_id, start_ts, end_ts, tide_db)
 
     if not tide_predictions:
-        print(f"  ⚠️  No tide predictions found for {station_tide_id}")
+        logger.warning(f"  No tide predictions found for {station_tide_id}")
         return None
 
     if station_surge_id not in surge_forecasts:
-        print(f"  ⚠️  No storm surge forecast for {station_surge_id}")
+        logger.warning(f"  No storm surge forecast for {station_surge_id}")
         return None
 
     surge_data = surge_forecasts[station_surge_id]
@@ -228,7 +231,7 @@ def update_latest_with_surge(surge_dir):
     latest_tide_file = Path("~/site/data/tide-latest.json").expanduser()
 
     if not latest_tide_file.exists():
-        print(f"⚠️  tide-latest.json not found: {latest_tide_file}")
+        logger.warning(f"tide-latest.json not found: {latest_tide_file}")
         return
 
     # Load existing tide latest
@@ -238,7 +241,7 @@ def update_latest_with_surge(surge_dir):
     # Load storm surge data
     combined_file = surge_dir / "combined_forecast.json"
     if not combined_file.exists():
-        print("⚠️  No storm surge data for latest update")
+        logger.warning("No storm surge data for latest update")
         return
 
     with open(combined_file) as f:
@@ -310,13 +313,12 @@ def update_latest_with_surge(surge_dir):
         tmp.write_text(json.dumps(tide_latest, indent=2, sort_keys=True))
         tmp.replace(latest_tide_file)
 
-        print(f"✅ Updated {updated_count} stations in tide-latest.json with surge data")
+        logger.info(f"Updated {updated_count} stations in tide-latest.json with surge data")
 
 
 def export_combined_water_level(tide_db, surge_dir, output_file):
     """Main export function."""
-    print("🌊 Combined Water Level Forecast Export")
-    print("=" * 70)
+    logger.info("Combined Water Level Forecast Export")
 
     # Determine time range: current day + next 2 full calendar days (Pacific time)
     pacific = ZoneInfo('America/Vancouver')
@@ -331,22 +333,21 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
     start_ts = int(today.astimezone(timezone.utc).timestamp())
     end_ts = int(three_days_end.astimezone(timezone.utc).timestamp())
 
-    print(f"Forecast range: {today.date()} to {(today + timedelta(days=2)).date()} (Pacific)")
-    print(f"UTC range: {datetime.fromtimestamp(start_ts, tz=timezone.utc)} to {datetime.fromtimestamp(end_ts, tz=timezone.utc)}")
-    print()
+    logger.info(f"Forecast range: {today.date()} to {(today + timedelta(days=2)).date()} (Pacific)")
+    logger.info(f"UTC range: {datetime.fromtimestamp(start_ts, tz=timezone.utc)} to {datetime.fromtimestamp(end_ts, tz=timezone.utc)}")
 
     # Load storm surge forecasts
     surge_forecasts = load_storm_surge_forecasts(surge_dir)
 
     if not surge_forecasts:
-        print("❌ No storm surge forecasts available")
+        logger.error("No storm surge forecasts available")
         return 1
 
     # Combine predictions for each station
     combined_data = {}
 
     for tide_station, surge_station in STATION_MAPPING.items():
-        print(f"📍 {tide_station} + {surge_station}")
+        logger.info(f"{tide_station} + {surge_station}")
 
         result = combine_predictions(tide_station, surge_station, surge_forecasts, start_ts, end_ts, tide_db)
 
@@ -357,11 +358,11 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
                 "forecast": result["forecast"],
                 "peak": result["peak"]
             }
-            print(f"  ✅ {len(result['forecast'])} combined predictions")
+            logger.info(f"  {len(result['forecast'])} combined predictions")
             if result["peak"]:
-                print(f"  🔝 Peak: {result['peak']['total_water_level_m']}m at {result['peak']['description']}")
+                logger.info(f"  Peak: {result['peak']['total_water_level_m']}m at {result['peak']['description']}")
         else:
-            print(f"  ⚠️  No data")
+            logger.warning(f"  No data for {tide_station}")
 
     # Create output JSON
     output = {
@@ -393,9 +394,8 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
     with open(output_file, 'w') as f:
         json.dump(output, f, indent=2, sort_keys=True)
 
-    print("=" * 70)
-    print(f"✅ Exported combined water level for {len(combined_data)} stations")
-    print(f"   Output: {output_file}")
+    logger.info(f"Exported combined water level for {len(combined_data)} stations")
+    logger.info(f"Output: {output_file}")
 
     return 0
 
@@ -408,20 +408,20 @@ def main():
 
     # Select paths based on mode
     if args.test_mode:
-        print("   [TEST MODE - Using test data]")
+        logger.info("[TEST MODE - Using test data]")
         tide_db = TEST_TIDE_DB
         surge_dir = TEST_SURGE_DIR
         output_file = TEST_OUTPUT_FILE
 
         # Check if test data exists
         if not tide_db.exists():
-            print(f"❌ Test tide database not found: {tide_db}")
-            print(f"   Run: python3 tests/create_test_tide_database.py")
+            logger.error(f"Test tide database not found: {tide_db}")
+            logger.info("Run: python3 tests/create_test_tide_database.py")
             return 1
 
         if not (surge_dir / "combined_forecast.json").exists():
-            print(f"❌ Test storm surge data not found: {surge_dir}")
-            print(f"   Run: python3 tests/create_test_storm_surge.py")
+            logger.error(f"Test storm surge data not found: {surge_dir}")
+            logger.info("Run: python3 tests/create_test_storm_surge.py")
             return 1
     else:
         tide_db = TIDE_DB
@@ -432,13 +432,10 @@ def main():
         result = export_combined_water_level(tide_db, surge_dir, output_file)
         if result == 0:
             # Update tide-latest.json with current storm surge values
-            print()
             update_latest_with_surge(surge_dir)
         return result
     except Exception as e:
-        print(f"\n❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Error: {e}", exc_info=True)
         return 1
 
 

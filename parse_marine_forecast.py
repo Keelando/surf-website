@@ -9,14 +9,11 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime, timezone
-import logging
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Use centralized logging configuration
+from logging_config import setup_logging
+
+logger = setup_logging('marine_forecast')
 
 # Directories
 DATA_DIR = Path.home() / "envcan_wave" / "data" / "marine_forecast"

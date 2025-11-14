@@ -9,6 +9,9 @@ from datetime import datetime, timezone
 from units import kmh_to_knots
 from directions import degrees_to_cardinal
 from stations import get_all_buoys
+from logging_config import setup_logging
+
+logger = setup_logging('mqtt')
 
 env_path = Path("~/.config/buoy_influx_1.env").expanduser()
 creds = {}
@@ -169,7 +172,7 @@ def query_and_publish():
                 mqtt_client.publish(f"buoy/{buoy_id}/wave_direction_peak_cardinal", cardinal)
 
         latest_json[buoy_id] = buoy_json
-        print(f"Published {buoy_id} data")
+        logger.info(f"Published {buoy_id} data")
 
     # --- OLD: write buoy data to JSON for the website ---
     #out_path = Path("~/site/data/latest_buoy.json").expanduser()

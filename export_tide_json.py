@@ -22,6 +22,9 @@ from zoneinfo import ZoneInfo
 # Shared utilities
 from config import TIDE_DATABASE, EXPORT_DIR
 from stations import STATIONS
+from logging_config import setup_logging
+
+logger = setup_logging('tide_export')
 
 # Output paths
 LATEST_OUT = EXPORT_DIR / "tide-latest.json"
@@ -180,7 +183,7 @@ def export_latest(conn, station_metadata):
     }
 
     safe_json_write(LATEST_OUT, output)
-    print(f"OK: Exported latest conditions for {len(latest_data)} stations")
+    logger.info(f"Exported latest conditions for {len(latest_data)} stations")
     return len(latest_data)
 
 
@@ -281,7 +284,7 @@ def export_timeseries(conn, station_metadata):
             pred_down = len(station_data["predictions"])
             obs_orig = len(obs_rows)
             obs_down = len(station_data["observations"])
-            print(f"  {station_name}: {pred_down} predictions (from {pred_orig}), {obs_down} observations (from {obs_orig})")
+            logger.info(f"  {station_name}: {pred_down} predictions (from {pred_orig}), {obs_down} observations (from {obs_orig})")
 
     output = {
         "_meta": {
@@ -298,7 +301,7 @@ def export_timeseries(conn, station_metadata):
     }
 
     safe_json_write(TIMESERIES_OUT, output)
-    print(f"OK: Exported timeseries for {len(timeseries_data)} stations (15-min intervals)")
+    logger.info(f"Exported timeseries for {len(timeseries_data)} stations (15-min intervals)")
     return len(timeseries_data)
 
 
@@ -364,7 +367,7 @@ def export_highlow(conn, station_metadata):
                 "location": metadata.get("location", ""),
                 "events": events
             }
-            print(f"  {station_name}: {len(events)} high/low events")
+            logger.info(f"  {station_name}: {len(events)} high/low events")
 
     output = {
         "_meta": {
@@ -379,19 +382,19 @@ def export_highlow(conn, station_metadata):
     }
 
     safe_json_write(HIGHLOW_OUT, output)
-    print(f"OK: Exported high/low events for {len(highlow_data)} stations")
+    logger.info(f"Exported high/low events for {len(highlow_data)} stations")
     return len(highlow_data)
 
 
 def main():
     if not TIDE_DATABASE.exists():
-        print(f"ERROR: Database not found: {TIDE_DATABASE}")
+        logger.error(f"Database not found: {TIDE_DATABASE}")
         return 1
 
     station_metadata = load_station_metadata()
 
-    print("Tide Data Export")
-    print("=" * 70)
+    logger.info("Tide Data Export")
+    logger.info("=" * 70)
 
     try:
         with sqlite3.connect(TIDE_DATABASE, timeout=10) as conn:
@@ -401,17 +404,15 @@ def main():
             export_timeseries(conn, station_metadata)
             export_highlow(conn, station_metadata)
 
-        print("=" * 70)
-        print("Export complete!")
+        logger.info("=" * 70)
+        logger.info("Export complete!")
         return 0
 
     except sqlite3.OperationalError as e:
-        print(f"Database error: {e}")
+        logger.error(f"Database error: {e}")
         return 1
     except Exception as e:
-        print(f"Unexpected error: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Unexpected error: {e}", exc_info=True)
         return 1
 
 

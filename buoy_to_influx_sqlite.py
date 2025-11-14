@@ -6,6 +6,9 @@ import sqlite3
 
 # Shared utilities
 from config import BUOY_DATABASE
+from logging_config import setup_logging
+
+logger = setup_logging('parser')
 
 # ---- Optional Influx sink (soft dependency) ----
 class InfluxSink:
@@ -15,13 +18,13 @@ class InfluxSink:
         try:
             from influxdb import InfluxDBClient
         except ImportError as e:
-            print(f"ℹ️  Influx client not installed ({e}); running SQLite-only.")
+            logger.info(f"Influx client not installed ({e}); running SQLite-only")
             return
 
         creds = {}
         p = Path(env_path).expanduser()
         if not p.exists():
-            print(f"ℹ️  Influx env file not found at {p}; running SQLite-only.")
+            logger.info(f"Influx env file not found at {p}; running SQLite-only")
             return
 
         for line in p.read_text().splitlines():
@@ -41,9 +44,9 @@ class InfluxSink:
             )
             self.client.ping()
             self.online = True
-            print("✅ InfluxDB connection established.")
+            logger.info("InfluxDB connection established")
         except Exception as e:
-            print(f"⚠️  InfluxDB unavailable ({e}); running SQLite-only.")
+            logger.info(f"InfluxDB unavailable ({e}); running SQLite-only")
             self.online = False
 
     def write_point(self, measurement, tags, time_iso, fields_dict):
@@ -58,7 +61,7 @@ class InfluxSink:
         try:
             self.client.write_points([point])
         except Exception as e:
-            print(f"⚠️  Lost Influx connection: {e}. Disabling Influx for this run.")
+            logger.warning(f"Lost Influx connection: {e}. Disabling Influx for this run")
             self.online = False
 
 
@@ -124,7 +127,7 @@ def ensure_schema(conn):
     for col in EXPECTED_FIELDS:
         if col not in existing:
             cur.execute(f"ALTER TABLE buoy_observation ADD COLUMN {col} REAL;")
-            print(f"ℹ️  Added missing column: {col}")
+            logger.info(f"Added missing column: {col}")
     conn.commit()
 
 
@@ -238,7 +241,7 @@ def main():
             root = tree.getroot()
             parsed = parse_and_collect_fields(root)
             if not parsed:
-                print(f"⏭️  Skipping {xml_path.name} (no id/fields/time)")
+                logger.info(f"Skipping {xml_path.name} (no id/fields/time)")
                 processed.add(fp)
                 skipped_count += 1
                 continue
@@ -260,18 +263,18 @@ def main():
             new_count += 1
             processed.add(fp)
             field_list = sorted(k for k in fields.keys() if k != 'observation_time')
-            print(f"✅ {buoy_id} @ {timestamp.strftime('%Y-%m-%d %H:%M')} UTC -> {field_list}")
+            logger.info(f"{buoy_id} @ {timestamp.strftime('%Y-%m-%d %H:%M')} UTC -> {field_list}")
         except Exception as e:
-            print(f"⚠️  Error processing {xml_path.name}: {e}")
+            logger.warning(f"Error processing {xml_path.name}: {e}")
 
     processed_file.write_text("\n".join(sorted(processed)))
     conn.close()
 
-    print(f"\n{'='*60}")
-    print(f"✅ Processed {new_count} new files")
-    print(f"⏭️  Skipped {skipped_count} invalid files")
-    print(f"📊 Total tracked: {len(processed)}")
-    print(f"💾 Database: {BUOY_DATABASE}")
+    logger.info("=" * 60)
+    logger.info(f"Processed {new_count} new files")
+    logger.info(f"Skipped {skipped_count} invalid files")
+    logger.info(f"Total tracked: {len(processed)}")
+    logger.info(f"Database: {BUOY_DATABASE}")
 
 
 if __name__ == "__main__":

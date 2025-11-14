@@ -9,6 +9,9 @@ from units import kmh_to_knots
 from directions import degrees_to_cardinal
 from config import BUOY_DATABASE, EXPORT_DIR, BUOY_FRESHNESS_WINDOW
 from stations import get_all_buoys
+from logging_config import setup_logging
+
+logger = setup_logging('json_export')
 
 # ---------- Config ----------
 OUT_PATH = EXPORT_DIR / "latest_buoy_v2.json"
@@ -48,7 +51,7 @@ def query_and_export():
         available_fields = [f for f in ALL_FIELDS if f in existing_cols]
 
         if not {"buoy_id", "observation_time"}.issubset(existing_cols):
-            print("⚠️  Table buoy_observation missing required columns.")
+            logger.error("Table buoy_observation missing required columns")
             return
 
         for buoy_id in BUOYS.keys():
@@ -131,11 +134,11 @@ def query_and_export():
 
             # Skip buoys with no actual data (only name + observation_time + stale flag)
             if len(buoy_json.keys()) <= 3:
-                print(f"⏭️  Skipped {buoy_id} (no data within freshness window)")
+                logger.info(f"Skipped {buoy_id} (no data within freshness window)")
                 continue
 
             latest_json[buoy_id] = buoy_json
-            print(f"✅ Exported {buoy_id} ({BUOYS[buoy_id]['name']})")
+            logger.info(f"Exported {buoy_id} ({BUOYS[buoy_id]['name']})")
 
     # Add metadata about this export
     latest_json["_meta"] = {
@@ -146,12 +149,12 @@ def query_and_export():
 
     # Atomic write
     safe_json_write(OUT_PATH, latest_json)
-    
+
     # Count actual buoys (exclude _meta)
     buoy_count = len([k for k in latest_json.keys() if k != "_meta"])
-    
-    print(f"\n✅ Wrote JSON snapshot to {OUT_PATH}")
-    print(f"📊 Total buoys: {buoy_count}")
+
+    logger.info(f"Wrote JSON snapshot to {OUT_PATH}")
+    logger.info(f"Total buoys: {buoy_count}")
 
 if __name__ == "__main__":
     query_and_export()

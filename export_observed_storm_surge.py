@@ -17,6 +17,9 @@ from collections import defaultdict
 # Shared utilities
 from config import TIDE_DATABASE, EXPORT_DIR
 from stations import STATIONS
+from logging_config import setup_logging
+
+logger = setup_logging('observed_surge')
 
 # ---------- Config ----------
 OUTPUT_PATH = EXPORT_DIR / "storm_surge" / "observed_surge.json"
@@ -114,7 +117,7 @@ def calculate_observed_surge(observations, predictions):
 def export_observed_surge():
     """Main export function."""
     if not TIDE_DATABASE.exists():
-        print(f"ERROR: Database not found: {TIDE_DATABASE}")
+        logger.error(f"Database not found: {TIDE_DATABASE}")
         return
 
     station_metadata = load_station_metadata()
@@ -130,25 +133,25 @@ def export_observed_surge():
 
     for tide_key, surge_name in TIDE_TO_SURGE_MAP.items():
         if tide_key not in station_metadata:
-            print(f"WARNING: Station {tide_key} not found in metadata")
+            logger.warning(f"Station {tide_key} not found in metadata")
             continue
 
         station = station_metadata[tide_key]
         station_id = station["id"]
         station_name = station["name"]
 
-        print(f"Processing {station_name} ({tide_key})...")
+        logger.info(f"Processing {station_name} ({tide_key})...")
 
         # Fetch observations and predictions
         observations = fetch_observations(conn, station_id, start_time)
         predictions = fetch_predictions(conn, station_id, start_time)
 
         if not observations:
-            print(f"  ⚠️  No observations found")
+            logger.warning(f"  No observations found for {station_name}")
             continue
 
         if not predictions:
-            print(f"  ⚠️  No predictions found")
+            logger.warning(f"  No predictions found for {station_name}")
             continue
 
         # Calculate observed surge
@@ -169,9 +172,9 @@ def export_observed_surge():
                     "end": surge_data[-1]["time"]
                 }
             }
-            print(f"  ✅ Exported {len(surge_data)} data points")
+            logger.info(f"  Exported {len(surge_data)} data points for {station_name}")
         else:
-            print(f"  ⚠️  No matching observation/prediction pairs")
+            logger.warning(f"  No matching observation/prediction pairs for {station_name}")
 
     conn.close()
 
@@ -190,8 +193,8 @@ def export_observed_surge():
     with open(OUTPUT_PATH, "w") as f:
         json.dump(output, f, indent=2)
 
-    print(f"\n✅ Exported observed surge to {OUTPUT_PATH}")
-    print(f"   Stations: {len(stations_data)}")
+    logger.info(f"Exported observed surge to {OUTPUT_PATH}")
+    logger.info(f"Stations: {len(stations_data)}")
 
 
 if __name__ == "__main__":
