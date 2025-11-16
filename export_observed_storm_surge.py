@@ -28,7 +28,8 @@ OUTPUT_PATH = EXPORT_DIR / "storm_surge" / "observed_surge.json"
 TIDE_TO_SURGE_MAP = {
     "point_atkinson": "Point_Atkinson",
     "campbell_river": "Campbell_River",
-    "crescent_pile": "Crescent_Beach_Channel"
+    "crescent_pile": "Crescent_Beach_Channel",
+    "tofino": "Tofino"
 }
 
 # Number of days back to export
