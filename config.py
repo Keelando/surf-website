@@ -18,6 +18,7 @@ Usage:
 """
 
 from pathlib import Path
+import json
 
 # =============================================================================
 # Directory Paths
@@ -182,6 +183,32 @@ def get_database_info():
             'size_mb': STORM_SURGE_DATABASE.stat().st_size / 1024 / 1024 if STORM_SURGE_DATABASE.exists() else 0
         }
     }
+
+
+def safe_json_write(path: Path, data: dict, sort_keys: bool = False, indent: int = 2):
+    """
+    Atomic JSON write: temp file + rename to avoid partial writes.
+
+    This prevents race conditions where a reader might get incomplete JSON
+    during the write operation. The temp file is written completely, then
+    atomically renamed to the target path.
+
+    Args:
+        path: Target file path (will be created/overwritten)
+        data: Dictionary to serialize as JSON
+        sort_keys: Whether to sort dictionary keys (default False)
+        indent: JSON indentation spaces (default 2)
+
+    Example:
+        from config import safe_json_write, EXPORT_DIR
+
+        data = {"station": "Point_Atkinson", "wave_height": 1.5}
+        safe_json_write(EXPORT_DIR / "latest.json", data)
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, indent=indent, sort_keys=sort_keys))
+    tmp.replace(path)
 
 
 # Test/demonstration code

@@ -7,7 +7,7 @@ import time
 
 # Shared utilities
 from units import kmh_to_knots
-from config import BUOY_DATABASE, EXPORT_DIR
+from config import BUOY_DATABASE, EXPORT_DIR, safe_json_write
 from stations import get_all_buoys
 from logging_config import setup_logging
 
@@ -72,13 +72,6 @@ def downsample_to_hourly(timeseries_data):
         hourly.append(normalized_point)
 
     return hourly
-
-def safe_json_write(path: Path, data: dict):
-    """Atomic write: temp file + rename to avoid partial writes."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, indent=2, sort_keys=True))
-    tmp.replace(path)
 
 def acquire_lock():
     """Simple file-based lock to prevent concurrent runs."""
@@ -225,7 +218,7 @@ def query_and_export_timeseries():
     }
 
     # Atomic write
-    safe_json_write(OUT_PATH, timeseries_json)
+    safe_json_write(OUT_PATH, timeseries_json, sort_keys=True)
     logger.info(f"Wrote 24h timeseries to {OUT_PATH}")
     logger.info(f"Total buoys: {timeseries_json['_meta']['buoy_count']}")
     logger.info(f"Time range: {twenty_four_hours_ago.strftime('%Y-%m-%d %H:%M')} to {now.strftime('%Y-%m-%d %H:%M')} UTC")

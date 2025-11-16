@@ -20,7 +20,7 @@ from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 
 # Shared utilities
-from config import TIDE_DATABASE, EXPORT_DIR
+from config import TIDE_DATABASE, EXPORT_DIR, safe_json_write
 from stations import STATIONS
 from logging_config import setup_logging
 
@@ -35,14 +35,6 @@ HIGHLOW_OUT = EXPORT_DIR / "tide-hi-low.json"
 def load_station_metadata():
     """Load station names and metadata from unified station registry."""
     return STATIONS.tides
-
-
-def safe_json_write(path: Path, data: dict):
-    """Atomic write: temp file + rename to avoid partial writes."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, indent=2, sort_keys=True))
-    tmp.replace(path)
 
 
 def downsample_to_15min(rows):
@@ -182,7 +174,7 @@ def export_latest(conn, station_metadata):
         "stations": latest_data
     }
 
-    safe_json_write(LATEST_OUT, output)
+    safe_json_write(LATEST_OUT, output, sort_keys=True)
     logger.info(f"Exported latest conditions for {len(latest_data)} stations")
     return len(latest_data)
 
@@ -300,7 +292,7 @@ def export_timeseries(conn, station_metadata):
         "stations": timeseries_data
     }
 
-    safe_json_write(TIMESERIES_OUT, output)
+    safe_json_write(TIMESERIES_OUT, output, sort_keys=True)
     logger.info(f"Exported timeseries for {len(timeseries_data)} stations (15-min intervals)")
     return len(timeseries_data)
 
@@ -381,7 +373,7 @@ def export_highlow(conn, station_metadata):
         "stations": highlow_data
     }
 
-    safe_json_write(HIGHLOW_OUT, output)
+    safe_json_write(HIGHLOW_OUT, output, sort_keys=True)
     logger.info(f"Exported high/low events for {len(highlow_data)} stations")
     return len(highlow_data)
 

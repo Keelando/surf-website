@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 # Shared utilities
 from units import kmh_to_knots
 from directions import degrees_to_cardinal
-from config import BUOY_DATABASE, EXPORT_DIR, BUOY_FRESHNESS_WINDOW
+from config import BUOY_DATABASE, EXPORT_DIR, BUOY_FRESHNESS_WINDOW, safe_json_write
 from stations import get_all_buoys
 from logging_config import setup_logging
 
@@ -27,13 +27,6 @@ ALL_FIELDS = [
     "wind_speed", "wind_gust", "wind_direction",
     "air_temp", "sea_temp", "pressure"
 ]
-
-def safe_json_write(path: Path, data: dict):
-    """Atomic write: temp file + rename to avoid partial writes."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, indent=2))
-    tmp.replace(path)
 
 def query_and_export():
     latest_json = {}
