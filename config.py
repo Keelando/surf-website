@@ -46,6 +46,9 @@ TIDE_DATABASE = DATA_DIR / "tide_data.sqlite"
 # Storm surge forecast database (GDSPS)
 STORM_SURGE_DATABASE = DATA_DIR / "storm_surge_forecast.sqlite"
 
+# Wind observations database (Environment Canada land stations)
+WIND_DATABASE = DATA_DIR / "wind_data.sqlite"
+
 # =============================================================================
 # Configuration Files
 # =============================================================================
@@ -181,6 +184,11 @@ def get_database_info():
             'path': str(STORM_SURGE_DATABASE),
             'exists': STORM_SURGE_DATABASE.exists(),
             'size_mb': STORM_SURGE_DATABASE.stat().st_size / 1024 / 1024 if STORM_SURGE_DATABASE.exists() else 0
+        },
+        'wind_database': {
+            'path': str(WIND_DATABASE),
+            'exists': WIND_DATABASE.exists(),
+            'size_mb': WIND_DATABASE.stat().st_size / 1024 / 1024 if WIND_DATABASE.exists() else 0
         }
     }
 
