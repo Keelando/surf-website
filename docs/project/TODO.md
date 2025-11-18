@@ -2,18 +2,51 @@
 
 ## Upcoming Tasks
 
-### Wind Stations (NEW FEATURE)
+### API Polling Frequency Review (NEW - 2025-11-18)
 
-**Stations to implement (9 total):**
-1. Sisters Islets - `CWGT`
-2. Ballenas - `CWGB`
-3. Entrance Island - `CWEL`
-4. Point Atkinson - `CWSB`
-5. Tsawwassen - `CVTF`
-6. Sand Heads - `CWVF`
-7. Saturna - `CWEZ`
-8. Race Rocks - `CWQK`
-9. YVR Airport - `CYVR`
+**Goal:** Be gentle on external APIs - reduce unnecessary polling
+
+**Current frequencies:**
+- NOAA buoys: Every 20 min (72x/day)
+- Surrey FlowWorks: Every 20 min (72x/day)
+- Tide observations: Every 30 min (48x/day)
+- Storm surge: 4x/day (reasonable)
+
+**Recommendations:**
+- [ ] NOAA: Reduce to 30-60 min intervals (24-48x/day)
+  - Stations update 10-60 min depending on type
+  - Current 20min is conservative but excessive
+  - Suggested: */30 or 5,35 pattern
+
+- [ ] Surrey: Reduce to 30 min intervals (48x/day)
+  - FlowWorks updates every 10 min
+  - Current 20min is reasonable but could be gentler
+  - Suggested: */30 pattern
+
+- [ ] Tides: Keep at 30 min (48x/day) ✓
+  - DFO updates every 6 min
+  - 30 min is already gentle
+
+**Action items:**
+- [ ] Update crontab with new schedules
+- [ ] Monitor for any stale data issues
+- [ ] Document changes in DEPLOYMENT.md
+
+---
+
+### Wind Stations ✅ COMPLETED (2025-11-18)
+
+**All 10 stations now operational via SR3:**
+1. ✅ Sisters Islets - `CWGT`
+2. ✅ Ballenas - `CWGB`
+3. ✅ Entrance Island - `CWEL`
+4. ✅ Point Atkinson - `CWSB`
+5. ✅ Tsawwassen - `CVTF`
+6. ✅ Sand Heads - `CWVF`
+7. ✅ Saturna - `CWEZ`
+8. ✅ Race Rocks - `CWQK`
+9. ✅ YVR Airport - `CYVR`
+10. ✅ Boundary Bay Airport - `CZBB` (added 2025-11-18)
 
 **Data fields to capture:**
 - Wind speed: `avg_wnd_spd_pst10mts` (km/h → display as knots)
