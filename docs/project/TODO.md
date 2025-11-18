@@ -145,22 +145,47 @@
 
 **Additional Data Sources (Future Enhancement):**
 
+**BC Stations (Custom/Non-SWOB-ML):**
 - **Jericho Wind Station** (Jericho Sailing Centre)
   - URL: https://jsca.bc.ca/main/downld02.txt
   - Format: Custom text file (non-SWOB-ML)
   - Would need dedicated fetch script similar to Surrey FlowWorks integration
+  - Priority: High (excellent English Bay coverage for sailors)
 
-- **US Wind Stations** (NOAA) - Southern Salish Sea / Puget Sound coverage
-  - Cherry Point, WA
-  - Sandy Point Shores, WA
-  - Orcas Island Airport (KORS) - METAR format
-  - Libbey Beach, WA
-  - Data sources to investigate:
-    - NOAA CO-OPS API (coastal stations with meteorological data)
-    - NOAA METAR (airports): `https://tgftp.nws.noaa.gov/data/observations/metar/stations/KORS.TXT`
-    - NOAA NWS API: `https://api.weather.gov/`
-  - Would integrate into existing `wind_data.sqlite` database
-  - Need to identify specific station IDs and optimal API endpoints
+- **Ambleside** (West Vancouver)
+  - Location: Near Ambleside Park
+  - Data source: TBD (possibly municipal or private weather station)
+  - Need to identify data feed and format
+  - Priority: Medium (complements Point Atkinson coverage)
+
+**US Stations (NOAA) - Southern Salish Sea / Puget Sound:**
+- **Orcas Island Airport (KORS)** - San Juan Islands
+  - Format: METAR (aviation weather)
+  - URL: `https://tgftp.nws.noaa.gov/data/observations/metar/stations/KORS.TXT`
+  - Priority: High (fills coverage gap in San Juans)
+
+- **Cherry Point, WA** - Northern Puget Sound
+  - Likely source: NOAA CO-OPS or military weather station
+  - Need to identify specific station ID
+  - Priority: High (industrial/ferry terminal area)
+
+- **Sandy Point Shores, WA** - Near Canadian border
+  - Likely source: NOAA or local weather network
+  - Need to identify station ID and data feed
+  - Priority: Medium
+
+- **Libbey Beach, WA** - Whidbey Island area
+  - Need to identify data source
+  - Priority: Medium
+
+**Implementation Notes:**
+- All US/custom stations would integrate into existing `wind_data.sqlite` database
+- Data sources to investigate:
+  - NOAA CO-OPS API: `https://api.tidesandcurrents.noaa.gov/` (coastal meteorological)
+  - NOAA METAR: `https://tgftp.nws.noaa.gov/data/observations/metar/stations/`
+  - NOAA NWS API: `https://api.weather.gov/`
+- Parser scripts would follow same pattern as `wind_to_sqlite.py`
+- Export scripts already handle any station IDs added to WIND_STATIONS dict
 
 ### Known Issues (Not Currently Affecting Operation)
 
