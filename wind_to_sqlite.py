@@ -20,7 +20,8 @@ import sqlite3
 from config import WIND_DATABASE
 from logging_config import setup_logging
 
-logger = setup_logging('wind_parser')
+# Disable console logging (runs from cron, file logging only)
+logger = setup_logging('wind_parser', console=False)
 
 # ---- Optional Influx sink (soft dependency) ----
 class InfluxSink:
