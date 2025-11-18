@@ -15,7 +15,7 @@ The **actual running configs** are located at:
 
 - `bc_buoys.conf` - Backup copy of buoy subscription config
 - `marine_forecast.conf` - Backup copy of marine forecast subscription config
-- `bc_wind_stations.conf` - (Future) Wind station subscription config
+- `bc_wind_stations.conf` - Wind station subscription config (9 coastal weather stations)
 
 ## Credentials
 

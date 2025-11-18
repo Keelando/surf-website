@@ -422,6 +422,170 @@
       ]
     }
   },
+  "wind": {
+    "CWGT": {
+      "id": "CWGT",
+      "name": "Sisters Islets",
+      "location": "Strait of Georgia",
+      "lat": 49.492,
+      "lon": -124.430,
+      "source": "Environment Canada",
+      "type": "weather_station",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "rainfall"
+      ]
+    },
+    "CWGB": {
+      "id": "CWGB",
+      "name": "Ballenas",
+      "location": "Strait of Georgia",
+      "lat": 49.350,
+      "lon": -124.158,
+      "source": "Environment Canada",
+      "type": "weather_station",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "rainfall"
+      ]
+    },
+    "CWEL": {
+      "id": "CWEL",
+      "name": "Entrance Island",
+      "location": "Nanaimo area",
+      "lat": 49.208,
+      "lon": -123.806,
+      "source": "Environment Canada",
+      "type": "weather_station",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "rainfall"
+      ]
+    },
+    "CWSB": {
+      "id": "CWSB",
+      "name": "Point Atkinson",
+      "location": "West Vancouver",
+      "lat": 49.330,
+      "lon": -123.265,
+      "source": "Environment Canada",
+      "type": "weather_station",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "rainfall"
+      ]
+    },
+    "CVTF": {
+      "id": "CVTF",
+      "name": "Tsawwassen",
+      "location": "Delta",
+      "lat": 49.007,
+      "lon": -123.183,
+      "source": "Environment Canada",
+      "type": "weather_station",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "rainfall"
+      ]
+    },
+    "CWVF": {
+      "id": "CWVF",
+      "name": "Sand Heads",
+      "location": "Fraser River mouth",
+      "lat": 49.107,
+      "lon": -123.300,
+      "source": "Environment Canada",
+      "type": "weather_station",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "rainfall"
+      ]
+    },
+    "CWEZ": {
+      "id": "CWEZ",
+      "name": "Saturna",
+      "location": "Gulf Islands",
+      "lat": 48.783,
+      "lon": -123.047,
+      "source": "Environment Canada",
+      "type": "weather_station",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "rainfall"
+      ]
+    },
+    "CWQK": {
+      "id": "CWQK",
+      "name": "Race Rocks",
+      "location": "Juan de Fuca Strait",
+      "lat": 48.298,
+      "lon": -123.532,
+      "source": "Environment Canada",
+      "type": "weather_station",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "rainfall"
+      ]
+    },
+    "CYVR": {
+      "id": "CYVR",
+      "name": "YVR Airport",
+      "location": "Richmond",
+      "lat": 49.194,
+      "lon": -123.184,
+      "source": "Environment Canada",
+      "type": "weather_station",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "rainfall"
+      ]
+    }
+  },
   "_metadata": {
     "version": "1.1.0",
     "created": "2025-01-30",
