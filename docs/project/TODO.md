@@ -2,51 +2,157 @@
 
 ## Upcoming Tasks
 
-### Buoy Card Refinements
+### Wind Stations (NEW FEATURE)
 
-- **Wave height significant figures**
-  - Use 1 sig fig for all stations (e.g., 0.5m not 0.50m)
-  - EXCEPT: Crescent Beach stations (CRPILE, CRCHAN) keep 2 decimals (0.50m)
-  - Apply to both compact card view and expanded details
+**Stations to implement (9 total):**
+1. Sisters Islets - `CWGT`
+2. Ballenas - `CWGB`
+3. Entrance Island - `CWEL`
+4. Point Atkinson - `CWSB`
+5. Tsawwassen - `CVTF`
+6. Sand Heads - `CWVF`
+7. Saturna - `CWEZ`
+8. Race Rocks - `CWQK`
+9. YVR Airport - `CYVR`
 
-- **Show latest available wave data with timestamp**
-  - If current wave data is missing, display most recent value within freshness window
-  - Format: "0.5m @ 4s from NW (18:30)"
-  - Timestamp in brackets shows when data was last updated
+**Data fields to capture:**
+- Wind speed: `avg_wnd_spd_pst10mts` (km/h → display as knots)
+- Wind gust: `max_avg_wnd_spd_pst10mts` (km/h → display as knots)
+- Wind direction: `avg_wnd_dir_pst10mts` (degrees + cardinal)
+- Air temperature: `avg_air_temp_pst10mts` (°C)
+- Atmospheric pressure: `avg_stn_pres_pst10mts` (hPa)
+- Rainfall: `pcpn_amt_pst1hr` or `pcpn_amt_pst6hrs` (mm)
 
-- **History table date column cleanup**
-  - Current: "Time" column shows "Nov 11, 18:00"
-  - Need cleaner/shorter column header name (TBD)
-  - Consider: "Time (PT)", "When", "Date/Time", etc.
+**Implementation plan:**
 
-- **Add Crescent Beach Ocean to wave comparison chart**
-  - Add CRPILE to the main wave height comparison chart on index.html
-  - Currently only shows: Halibut Bank, English Bay, Southern Georgia, Sentry Shoal, Neah Bay, New Dungeness
-  - Should include: Crescent Beach Ocean (CRPILE)
+1. **Data Pipeline Setup**
+   - [x] Confirm Environment Canada station IDs
+   - [ ] Create sr3 subscription config (`~/.config/sr3/subscribe/bc_wind_stations.conf`)
+     - broker: amqps://dd.weather.gc.ca
+     - topicPrefix: v02.post
+     - subtopic pattern: `*.WXO-DD.observations.swob-ml.*.STATION_ID.#` (need to confirm path)
+     - directory: `/home/keelando/envcan_wave/data/wind`
+   - [ ] Research correct SWOB-ML subtopic pattern for land-based weather stations
+   - [ ] Test sr3 subscription with 1-2 stations first
+   - [ ] Start full sr3 subscription after confirming data arrives
 
-- **"Hide Details" should collapse both details AND history**
-  - Current behavior: "Hide Details" only collapses details section
-  - Expected: "Hide Details" should collapse both details AND history sections
-  - Returns card to fully compact state with one click
-  - Update `toggleCardDetails()` function in main.js
+2. **Database Schema**
+   - [ ] Decision: Create new `wind_data.sqlite` (separate from buoys for clarity)
+   - [ ] Create `wind_observation` table:
+     ```sql
+     CREATE TABLE IF NOT EXISTS wind_observation (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       station_id TEXT NOT NULL,
+       observation_time INTEGER NOT NULL,
+       wind_speed_kmh REAL,
+       wind_gust_kmh REAL,
+       wind_direction_deg INTEGER,
+       air_temp_c REAL,
+       pressure_hpa REAL,
+       rainfall_1hr_mm REAL,
+       rainfall_6hr_mm REAL,
+       source_file TEXT,
+       recorded_at TEXT DEFAULT (datetime('now'))
+     );
+     ```
+   - [ ] Add indexes:
+     - `CREATE INDEX idx_wind_station_time ON wind_observation(station_id, observation_time DESC);`
+     - `CREATE UNIQUE INDEX uniq_wind_station_ts ON wind_observation(station_id, observation_time);`
 
-### Storm Surge & Tides
+3. **Backend Scripts**
+   - [ ] Create `wind_to_sqlite.py` - Parse SWOB-ML XMLs and insert to database
+     - Mirror structure of `buoy_to_influx_sqlite.py`
+     - SWOB-ML field mapping (see Data fields above)
+     - Handle missing values ("MSNG")
+     - Deduplication via unique index
+     - Optional InfluxDB support (soft dependency)
+   - [ ] Create `export_wind_json.py` - Export latest readings
+     - Output: `~/site/data/latest_wind.json`
+     - Format: `{ "CWGT": { "station_name": "Sisters Islets", "wind_speed_kt": 15.2, ... }, ... }`
+     - Per-field freshness (2-hour window like buoys)
+   - [ ] Create `export_wind_24hr_timeseries.py` - Export 24hr data for charts
+     - Output: `~/site/data/wind_timeseries_24hr.json`
+     - Hourly data points for past 24 hours
+   - [ ] Add wind stations to `stations.json` registry
+     - Include: station_id, name, lat/lon, type: "wind"
 
-- **Find tide measurement station near Tofino**
-  - Research DFO IWLS stations in Tofino/Ucluelet area
-  - Add tide station to `tide_stations.json`
-  - Add corresponding GDSPS storm surge location
-  - Enable hindcast validation for west coast exposure
-  - Priority: Compare exposed ocean coast vs protected inland waters
+4. **Frontend**
+   - [ ] Create `~/site/winds.html` - New dedicated wind page
+     - Header: "Wind Conditions"
+     - Tagline: "Real-time observations from coastal weather stations"
+     - Navigation bar with "Winds" link
+   - [ ] Create wind station cards (compact design like buoys)
+     - Current: Wind speed/gust (knots), direction (cardinal + arrow), temp (°C)
+     - Expandable details: Pressure, rainfall, timestamps
+     - Regional grouping (Strait of Georgia, Juan de Fuca, etc.)
+   - [ ] Create JavaScript module (`~/site/assets/js/winds_page.js`)
+     - Load latest_wind.json
+     - Render wind cards
+     - Handle missing data gracefully
+   - [ ] Implement 24hr wind charts
+     - Chart 1: Wind speed + gusts (knots)
+     - Chart 2: Wind direction (polar chart or line)
+     - Use ECharts like buoy/tide pages
+   - [ ] Add wind stations to Leaflet map on index.html
+     - New marker type/color for wind stations
+     - Popup shows latest wind data
+   - [ ] Update navigation bar on all pages
+     - Add "Winds" link between "Tides" and "Forecasts"
+   - [ ] Create CSS styles for wind-specific elements
+     - Wind rose/arrow styling
+     - Card layout optimizations
 
-### Tides Page Enhancements
+5. **Automation**
+   - [ ] Add cron jobs for wind data processing
+     ```
+     */1 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/wind_to_sqlite.py
+     */1 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_wind_json.py
+     */5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_wind_24hr_timeseries.py
+     ```
+   - [ ] Configure sr3 to auto-start on reboot
+     - Add systemd service or update existing sr3 startup
 
-- **Fix ECharts "connect nulls" issue in tide charts**
-  - Chart is connecting lines across data gaps when it shouldn't
-  - ECharts needs explicit null values at gap timestamps to avoid connecting
-  - Need to inject null entries in time series where data is missing
-  - Affects all chart pages (buoys, tides, storm surge)
-  - Reference: ECharts connectNulls option + data array structure
+6. **Documentation**
+   - [ ] Update README.md with wind station info
+   - [ ] Update CLAUDE.md with wind pipeline details
+   - [ ] Update ARCHITECTURE_DETAILED.md with wind database schema
+   - [ ] Document wind station IDs and metadata in stations.json
+
+**Key questions to resolve:**
+- What's the exact SWOB-ML subtopic pattern for land-based weather stations?
+  - Try: `*.WXO-DD.observations.swob-ml.*.CWGT.#` (test with Sisters Islets)
+  - Or: `*.WXO-DD.observations.swob-ml.land.*.CWGT.#`
+  - Research: Environment Canada MSC Datamart documentation
+- Should we use same database or separate? (Recommendation: separate for clarity)
+- Do we need MQTT/Home Assistant integration for wind data?
+
+### Known Issues (Not Currently Affecting Operation)
+
+- **ECharts "connect nulls" behavior**
+  - Charts may connect lines across data gaps in some scenarios
+  - Not currently observed as a problem in production
+  - Would require injecting explicit null values at gap timestamps if needed
+
+---
+
+## Completed (2025-11-18)
+
+✅ **Buoy Card Refinements**
+  - Wave height significant figures (1 sig fig, except Crescent Beach keeps 2 decimals)
+  - Show latest available wave data with timestamp
+  - History table date column cleanup
+  - Add Crescent Beach Ocean (CRPILE) to wave comparison chart
+  - "Hide Details" now collapses both details AND history sections
+
+✅ **Tofino tide station added**
+  - Added DFO IWLS station near Tofino/Ucluelet
+  - Corresponding GDSPS storm surge location added
+  - Enables hindcast validation for west coast exposure
+
+✅ **Storm surge hindcast plot improvements**
+  - Simplified legend to highlight observed surge (black line)
+  - Added subtitle explaining colored lines are historical forecast runs
+  - Reduced legend clutter
 
 ---
 
