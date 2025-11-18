@@ -77,6 +77,31 @@
      - Include: station_id, name, lat/lon, type: "wind"
 
 4. **Frontend**
+
+   **📊 Quick Start - Available Data:**
+
+   Backend already provides:
+   - `~/site/data/latest_wind.json` - Current conditions (all units pre-converted)
+     - `wind_speed_kt` / `wind_gust_kt` (already in knots, not km/h)
+     - `wind_direction_deg` + `wind_direction_cardinal` (e.g., "W", "NE")
+     - `air_temp_c`, `pressure_hpa`, `rainfall_1hr_mm`, `rainfall_6hr_mm`
+     - `stale: true/false` (auto-calculated, >2hr = stale)
+     - `observation_time` (ISO 8601 timestamp)
+
+   - `~/site/data/wind_timeseries_24hr.json` - 24hr historical (hourly samples)
+     - Same fields as above, in `{"time": "...", "value": ...}` format
+     - Ready for ECharts (just map to series data)
+
+   - Station metadata in `config/stations.json` under `"wind"` key
+     - IDs: CWGT, CWGB, CWEL, CWSB, CVTF, CWVF, CWEZ, CWQK, CYVR
+     - Includes lat/lon for map integration
+
+   **Copy patterns from:**
+   - `~/site/index.html` - Buoy cards, staleness indicators, wind arrows
+   - `~/site/charts.html` - ECharts 24hr timeseries
+   - `~/site/tides.html` - Station selector dropdown
+
+   **Tasks:**
    - [ ] Create `~/site/winds.html` - New dedicated wind page
      - Header: "Wind Conditions"
      - Tagline: "Real-time observations from coastal weather stations"
