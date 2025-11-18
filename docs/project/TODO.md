@@ -118,13 +118,24 @@
    - [ ] Update ARCHITECTURE_DETAILED.md with wind database schema
    - [ ] Document wind station IDs and metadata in stations.json
 
-**Key questions to resolve:**
-- What's the exact SWOB-ML subtopic pattern for land-based weather stations?
-  - Try: `*.WXO-DD.observations.swob-ml.*.CWGT.#` (test with Sisters Islets)
-  - Or: `*.WXO-DD.observations.swob-ml.land.*.CWGT.#`
-  - Research: Environment Canada MSC Datamart documentation
-- Should we use same database or separate? (Recommendation: separate for clarity)
-- Do we need MQTT/Home Assistant integration for wind data?
+**Additional Data Sources (Future Enhancement):**
+
+- **Jericho Wind Station** (Jericho Sailing Centre)
+  - URL: https://jsca.bc.ca/main/downld02.txt
+  - Format: Custom text file (non-SWOB-ML)
+  - Would need dedicated fetch script similar to Surrey FlowWorks integration
+
+- **US Wind Stations** (NOAA) - Southern Salish Sea / Puget Sound coverage
+  - Cherry Point, WA
+  - Sandy Point Shores, WA
+  - Orcas Island Airport (KORS) - METAR format
+  - Libbey Beach, WA
+  - Data sources to investigate:
+    - NOAA CO-OPS API (coastal stations with meteorological data)
+    - NOAA METAR (airports): `https://tgftp.nws.noaa.gov/data/observations/metar/stations/KORS.TXT`
+    - NOAA NWS API: `https://api.weather.gov/`
+  - Would integrate into existing `wind_data.sqlite` database
+  - Need to identify specific station IDs and optimal API endpoints
 
 ### Known Issues (Not Currently Affecting Operation)
 
