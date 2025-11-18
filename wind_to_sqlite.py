@@ -89,6 +89,11 @@ EXPECTED_FIELDS = [
     "pressure_hpa",
     "rainfall_1hr_mm",
     "rainfall_6hr_mm",
+    # High-value additions (2025-11-18)
+    "humidity_percent",
+    "dewpoint_c",
+    "pressure_mslp_hpa",
+    "visibility_km",
 ]
 
 CREATE_TABLE_SQL = """
@@ -160,6 +165,12 @@ FIELD_MAP = {
     # Rainfall
     "pcpn_amt_pst1hr": "rainfall_1hr_mm",
     "pcpn_amt_pst6hrs": "rainfall_6hr_mm",
+
+    # High-value additions (2025-11-18)
+    "rel_hum": "humidity_percent",  # Relative humidity
+    "dwpt_temp": "dewpoint_c",  # Dewpoint temperature
+    "mslp": "pressure_mslp_hpa",  # Mean sea level pressure
+    "avg_vis_pst10mts": "visibility_km",  # Visibility (10-min average)
 }
 
 
