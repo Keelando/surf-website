@@ -52,6 +52,11 @@ class StationRegistry:
     def tides(self) -> Dict:
         """Get all tide stations."""
         return self._data.get('tides', {})
+
+    @property
+    def wind(self) -> Dict:
+        """Get all wind stations."""
+        return self._data.get('wind', {})
     
     @property
     def metadata(self) -> Dict:
@@ -72,6 +77,10 @@ class StationRegistry:
             if data.get('id') == station_id:
                 return data
         return None
+
+    def get_wind_station(self, station_id: str) -> Optional[Dict]:
+        """Get metadata for a specific wind station by ID."""
+        return self.wind.get(station_id)
     
     def get_buoys_by_source(self, source: str) -> Dict:
         """Get all buoys from a specific source (e.g., 'Environment Canada', 'NOAA NDBC')."""
@@ -175,6 +184,14 @@ def get_all_tides() -> Dict:
 def get_tide_stations(has_observations: bool = None) -> Dict:
     """Get tide stations, optionally filtered by observation availability."""
     return STATIONS.get_tide_stations(has_observations=has_observations)
+
+def get_all_wind() -> Dict:
+    """Get all wind stations."""
+    return STATIONS.wind
+
+def get_wind_station(station_id: str) -> Optional[Dict]:
+    """Get wind station metadata by ID."""
+    return STATIONS.get_wind_station(station_id)
 
 
 # Example usage and testing
