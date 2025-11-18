@@ -87,35 +87,47 @@ def is_missing(val, field=None):
 
 # ---- Fetch NOAA data ----
 def fetch_noaa_txt(station):
-    """Fetch NOAA meteorological data (5-day feed, last 6h)."""
-    url = f"https://www.ndbc.noaa.gov/data/5day2/{station}_5day.txt"
-    try:
-        r = requests.get(url, timeout=15)
-        r.raise_for_status()
-        lines = r.text.strip().splitlines()
-        header = lines[0].split()
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=6)
-        records = []
-        for line in lines[2:]:
-            parts = line.split()
-            if len(parts) != len(header):
+    """Fetch NOAA meteorological data (5-day feed preferred, realtime2 fallback, last 6h)."""
+    # Try 5-day feed first (more data)
+    urls = [
+        f"https://www.ndbc.noaa.gov/data/5day2/{station}_5day.txt",
+        f"https://www.ndbc.noaa.gov/data/realtime2/{station}.txt"
+    ]
+
+    for url in urls:
+        try:
+            r = requests.get(url, timeout=15)
+            r.raise_for_status()
+            lines = r.text.strip().splitlines()
+            if len(lines) < 3:
                 continue
-            row = dict(zip(header, parts))
-            try:
-                ts = datetime.strptime(
-                    f"{row['#YY']} {row['MM']} {row['DD']} {row['hh']} {row['mm']}",
-                    "%Y %m %d %H %M"
-                ).replace(tzinfo=timezone.utc)
-                if ts >= cutoff:
-                    row["timestamp"] = int(ts.timestamp())
-                    records.append(row)
-            except Exception:
-                continue
-        logger.info(f"Fetched {len(records)} records from .txt (last 6h)")
-        return records
-    except Exception as e:
-        logger.warning(f"Failed to fetch .txt file: {e}")
-        return []
+            header = lines[0].split()
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=6)
+            records = []
+            for line in lines[2:]:
+                parts = line.split()
+                if len(parts) != len(header):
+                    continue
+                row = dict(zip(header, parts))
+                try:
+                    ts = datetime.strptime(
+                        f"{row['#YY']} {row['MM']} {row['DD']} {row['hh']} {row['mm']}",
+                        "%Y %m %d %H %M"
+                    ).replace(tzinfo=timezone.utc)
+                    if ts >= cutoff:
+                        row["timestamp"] = int(ts.timestamp())
+                        records.append(row)
+                except Exception:
+                    continue
+            if records:
+                feed_type = "5day" if "5day2" in url else "realtime2"
+                logger.info(f"Fetched {len(records)} records from .txt ({feed_type}, last 6h)")
+                return records
+        except Exception as e:
+            if url == urls[-1]:  # Last URL failed
+                logger.warning(f"Failed to fetch .txt file from all sources: {e}")
+            continue
+    return []
 
 def fetch_noaa_spec(station):
     """Fetch NOAA spectral wave data (5-day feed, last 6h)."""

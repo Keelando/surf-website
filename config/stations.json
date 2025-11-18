@@ -132,6 +132,57 @@
         "pressure"
       ]
     },
+    "46267": {
+      "id": "46267",
+      "name": "Angeles Point",
+      "location": "Clallam Bay, WA",
+      "lat": 48.173,
+      "lon": -123.607,
+      "source": "NOAA NDBC",
+      "type": "wave_buoy",
+      "update_frequency_minutes": 30,
+      "data_types": [
+        "wave_height",
+        "wave_period",
+        "wave_direction",
+        "air_temp",
+        "sea_temp"
+      ],
+      "note": "Wind data typically missing"
+    },
+    "CPMW1": {
+      "id": "CPMW1",
+      "name": "Cherry Point",
+      "location": "Cherry Point, WA",
+      "lat": 48.860,
+      "lon": -122.756,
+      "source": "NOAA NDBC",
+      "type": "land_station",
+      "update_frequency_minutes": 6,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp"
+      ]
+    },
+    "SISW1": {
+      "id": "SISW1",
+      "name": "Smith Island",
+      "location": "Smith Island, WA",
+      "lat": 48.321,
+      "lon": -122.831,
+      "source": "NOAA NDBC",
+      "type": "c_man_station",
+      "update_frequency_minutes": 10,
+      "data_types": [
+        "wind_gust",
+        "air_temp",
+        "pressure",
+        "dewpoint"
+      ],
+      "note": "Wind direction typically missing"
+    },
     "CRPILE": {
       "id": "CRPILE",
       "name": "Crescent Beach Ocean",
@@ -583,6 +634,24 @@
         "air_temp",
         "pressure",
         "rainfall"
+      ]
+    },
+    "CZBB": {
+      "id": "CZBB",
+      "name": "Boundary Bay Airport",
+      "location": "Delta",
+      "lat": 49.073,
+      "lon": -123.008,
+      "source": "Environment Canada",
+      "type": "weather_station",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "humidity"
       ]
     }
   },
