@@ -2,6 +2,30 @@
 
 ## Upcoming Tasks
 
+### Home Assistant / InfluxDB Removal (Future Consideration - 2025-11-18)
+
+**Current state:**
+- InfluxDB is only used for Home Assistant integration
+- `influx_to_mqtt.py` runs every minute, publishes EC buoy data to HA
+- Parsers (`buoy_to_influx_sqlite.py`, `wind_to_sqlite.py`) have soft dependency on InfluxDB
+- SQLite is primary storage for everything else (website, exports)
+
+**Decision:** No more data needs to be sent to Home Assistant
+
+**Future cleanup options:**
+- [ ] Stop `influx_to_mqtt.py` cron job
+- [ ] Remove InfluxDB soft dependencies from parsers
+- [ ] Remove InfluxSink classes from `buoy_to_influx_sqlite.py` and `wind_to_sqlite.py`
+- [ ] Uninstall InfluxDB client library
+- [ ] Remove `~/.config/buoy_influx_1.env` config file
+- [ ] Update documentation to remove InfluxDB references
+
+**Benefits:** Simplified architecture, one less dependency, cleaner code
+
+**Note:** Not urgent - current setup works fine, InfluxDB gracefully degrades if unavailable
+
+---
+
 ### API Polling Frequency Review (NEW - 2025-11-18)
 
 **Goal:** Be gentle on external APIs - reduce unnecessary polling
