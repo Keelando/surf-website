@@ -15,7 +15,8 @@ from config import BUOY_DATABASE
 from stations import STATIONS as STATION_REGISTRY
 from logging_config import setup_logging
 
-logger = setup_logging('noaa')
+# Disable console logging (runs from cron, file logging only)
+logger = setup_logging('noaa', console=False)
 
 # ---- Configuration ----
 # Get NOAA buoys from the unified station registry
