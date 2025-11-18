@@ -152,6 +152,14 @@
   - Would need dedicated fetch script similar to Surrey FlowWorks integration
   - Priority: High (excellent English Bay coverage for sailors)
 
+- **YVR Airport - NavCanada AeroView** (Alternative/Supplement to SWOB-ML)
+  - URL: https://spaces.navcanada.ca/workspace/aeroview/CYVR
+  - Update frequency: Every minute (vs hourly SWOB-ML)
+  - Format: Unknown - need to investigate API/data feed availability
+  - Would provide higher resolution wind data for YVR
+  - Priority: Medium (enhancement to existing CYVR station)
+  - Note: Investigate if NavCanada provides a public data API or parseable feed
+
 - **Ambleside** (West Vancouver)
   - Location: Near Ambleside Park
   - Data source: TBD (possibly municipal or private weather station)
