@@ -135,21 +135,27 @@ FIELD_MAP = {
     # Wind fields (10-minute averages)
     "avg_wnd_spd_pst10mts": "wind_speed_kmh",
     "avg_wnd_spd_pst10mts_1": "wind_speed_kmh",  # alternate naming
+    "avg_wnd_spd_10m_pst10mts": "wind_speed_kmh",  # CZBB format (10m sensor height)
 
     # Wind gust (maximum in past 10 minutes)
     "max_avg_wnd_spd_pst10mts": "wind_gust_kmh",
     "max_avg_wnd_spd_pst10mts_1": "wind_gust_kmh",  # alternate naming
     "max_wnd_spd_pst10mts": "wind_gust_kmh",  # another alternate
+    "max_wnd_gst_spd_10m_pst10mts": "wind_gust_kmh",  # CZBB format
+    "max_wnd_spd_10m_pst1hr": "wind_gust_kmh",  # CZBB 1-hour max
 
     # Wind direction (degrees, 10-minute average)
     "avg_wnd_dir_pst10mts": "wind_direction_deg",
     "avg_wnd_dir_pst10mts_1": "wind_direction_deg",
+    "avg_wnd_dir_10m_pst10mts": "wind_direction_deg",  # CZBB format
 
-    # Air temperature (10-minute average)
+    # Air temperature (10-minute average or instantaneous)
     "avg_air_temp_pst10mts": "air_temp_c",
+    "air_temp": "air_temp_c",  # CZBB instantaneous
 
-    # Atmospheric pressure (10-minute average)
+    # Atmospheric pressure (10-minute average or instantaneous)
     "avg_stn_pres_pst10mts": "pressure_hpa",
+    "stn_pres": "pressure_hpa",  # CZBB instantaneous
 
     # Rainfall
     "pcpn_amt_pst1hr": "rainfall_1hr_mm",
@@ -170,7 +176,10 @@ def parse_and_collect_fields(root):
     for e in root.findall(".//{http://dms.ec.gc.ca/schema/point-observation/2.0}element"):
         name = e.get("name")
         val = e.get("value")
-        if name in ["wmo_id_extnd", "wmo_synop_id", "stn_nam"] and val:
+        # Skip missing values
+        if val == "MSNG" or val is None or val == "":
+            continue
+        if name in ["icao_stn_id", "wmo_id_extnd", "wmo_synop_id", "stn_nam"]:
             station_id = val
             break
 
