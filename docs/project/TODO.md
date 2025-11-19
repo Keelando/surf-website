@@ -58,7 +58,7 @@
 
 ---
 
-### Wind Stations ✅ COMPLETED (2025-11-18)
+### Wind Stations 🚧 IN PROGRESS (2025-11-19)
 
 **All 10 stations now operational via SR3:**
 1. ✅ Sisters Islets - `CWGT`
@@ -184,21 +184,43 @@
      - Wind rose/arrow styling
      - Card layout optimizations
 
-5. **Automation**
-   - [ ] Add cron jobs for wind data processing
+5. **Automation** ✅ COMPLETED (2025-11-19)
+   - [x] Add cron jobs for wind data processing
      ```
      */1 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/wind_to_sqlite.py
-     */1 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_wind_json.py
-     */5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_wind_24hr_timeseries.py
+     */5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_wind_json.py
+     */10 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_wind_24hr_timeseries.py
      ```
-   - [ ] Configure sr3 to auto-start on reboot
-     - Add systemd service or update existing sr3 startup
+   - [x] Configure sr3 to auto-start on reboot (already configured)
 
 6. **Documentation**
    - [ ] Update README.md with wind station info
    - [ ] Update CLAUDE.md with wind pipeline details
    - [ ] Update ARCHITECTURE_DETAILED.md with wind database schema
    - [ ] Document wind station IDs and metadata in stations.json
+
+**COMPLETED (2025-11-19):**
+- [x] Created winds.html page with sortable table
+- [x] Data pipeline fully operational (parser, exports, cron)
+- [x] Fixed station ID parsing bug (was matching year "2025" instead of station code)
+- [x] 10 EnvCan wind stations + buoy wind data integrated
+- [x] Removed ESTEVAN RCS test station
+- [x] Added "Under Development" banner
+
+**NEXT STEPS (Winds Page Enhancement):**
+- [ ] Add wind station coordinates to `stations.json` (10 stations)
+  - CWGT (Sisters Island), CWGB (Ballenas), CWEL (Entrance Island)
+  - CWSB (Point Atkinson), CVTF (Tsawwassen), CWVF (Sand Heads)
+  - CWEZ (Saturna Island), CWQK (Race Rocks), CYVR (YVR), CZBB (Boundary Bay)
+- [ ] Implement interactive Leaflet map on winds.html
+  - Add wind/buoy station markers with current wind data popups
+  - Use emoji indicators: 💨 (land stations) 🌊 (buoys)
+- [ ] Implement 24-hour wind trend charts
+  - Station selector dropdown
+  - Wind speed/gust chart (knots)
+  - Wind direction arrows (rotated symbols like buoy page)
+  - Use existing `wind_timeseries_24hr.json` + buoy timeseries data
+- [ ] Remove "Under Development" banner when map + charts complete
 
 **Additional Data Sources (Future Enhancement):**
 
@@ -223,16 +245,30 @@
   - Need to identify data feed and format
   - Priority: Medium (complements Point Atkinson coverage)
 
-**US Stations (NOAA) - Southern Salish Sea / Puget Sound:**
+**US Stations (NOAA/NWS) - Southern Salish Sea / Puget Sound:**
+
 - **Orcas Island Airport (KORS)** - San Juan Islands
-  - Format: METAR (aviation weather)
-  - URL: `https://tgftp.nws.noaa.gov/data/observations/metar/stations/KORS.TXT`
+  - **WANTED** - User confirmed priority for wind data
+  - Format: METAR text OR NWS API (JSON)
+  - URLs:
+    - METAR: `https://tgftp.nws.noaa.gov/data/observations/metar/stations/KORS.TXT`
+    - NWS API: `https://api.weather.gov/stations/KORS/observations/latest`
   - Priority: High (fills coverage gap in San Juans)
+  - Implementation: Evaluate easiest approach (METAR vs NWS API)
+
+- **Bellingham International Airport (KBLI)** - Bellingham, WA
+  - **WANTED** - User confirmed priority for wind data
+  - Format: NWS API (JSON - confirmed working, see sample data)
+  - URL: `https://api.weather.gov/stations/KBLI/observations/latest`
+  - Data available: wind speed/dir/gust, temp, dewpoint, pressure, humidity, visibility
+  - Priority: High (northern Puget Sound coverage)
+  - Coordinates: 48.8°N, -122.53°W
+  - Implementation: If accumulating multiple NWS API stations, consider unified parser
 
 - **Cherry Point, WA** - Northern Puget Sound
   - Likely source: NOAA CO-OPS or military weather station
   - Need to identify specific station ID
-  - Priority: High (industrial/ferry terminal area)
+  - Priority: Medium (may be covered by KBLI)
 
 - **Sandy Point Shores, WA** - Near Canadian border
   - Likely source: NOAA or local weather network
@@ -246,11 +282,19 @@
 **Implementation Notes:**
 - All US/custom stations would integrate into existing `wind_data.sqlite` database
 - Data sources to investigate:
+  - **NWS API (RECOMMENDED)**: `https://api.weather.gov/stations/{STATION_ID}/observations/latest`
+    - JSON format (easy parsing)
+    - Rich data: wind, temp, dewpoint, pressure, humidity, visibility
+    - Confirmed working: KBLI, KORS available
+    - No API key required
+    - If multiple NWS stations are added, create unified `fetch_nws_weather.py` parser
+  - NOAA METAR (TEXT): `https://tgftp.nws.noaa.gov/data/observations/metar/stations/`
+    - Alternative if NWS API unavailable
+    - Requires METAR parsing (more complex)
   - NOAA CO-OPS API: `https://api.tidesandcurrents.noaa.gov/` (coastal meteorological)
-  - NOAA METAR: `https://tgftp.nws.noaa.gov/data/observations/metar/stations/`
-  - NOAA NWS API: `https://api.weather.gov/`
 - Parser scripts would follow same pattern as `wind_to_sqlite.py`
 - Export scripts already handle any station IDs added to WIND_STATIONS dict
+- Add KORS and KBLI to `config/stations.json` wind section when implementing
 
 ### Known Issues (Not Currently Affecting Operation)
 

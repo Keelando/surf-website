@@ -101,6 +101,7 @@ CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS wind_observation (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     station_id TEXT NOT NULL,
+    station_name TEXT,
     observation_time INTEGER NOT NULL,
     wind_speed_kmh REAL,
     wind_gust_kmh REAL,
@@ -175,7 +176,7 @@ FIELD_MAP = {
 }
 
 
-def parse_and_collect_fields(root):
+def parse_and_collect_fields(root, filename=None):
     """Extract station_id, timestamp, and mapped numeric fields."""
     # Timestamp
     t_elem = root.find(".//{http://www.opengis.net/gml}timePosition")
@@ -183,17 +184,42 @@ def parse_and_collect_fields(root):
         return None
     timestamp = datetime.fromisoformat(t_elem.text.replace("Z", "+00:00"))
 
-    # Station ID (try multiple possible field names)
-    station_id = None
+    # Station ID and name (collect all possible IDs)
+    station_ids = {}
+    station_name = None
     for e in root.findall(".//{http://dms.ec.gc.ca/schema/point-observation/2.0}element"):
         name = e.get("name")
         val = e.get("value")
         # Skip missing values
         if val == "MSNG" or val is None or val == "":
             continue
-        if name in ["icao_stn_id", "wmo_id_extnd", "wmo_synop_id", "stn_nam"]:
-            station_id = val
-            break
+        if name in ["icao_stn_id", "wmo_id_extnd", "wmo_synop_id", "tc_id"]:
+            station_ids[name] = val
+        elif name == "stn_nam":
+            station_name = val
+
+    # Try to extract ICAO code from filename
+    # Format 1: CWGT-AUTO-*.xml, CYVR-MAN-*.xml (station at start)
+    # Format 2: 2025-11-19-2307-CWSB-AUTO-minute-swob.xml (station after date/time)
+    station_id = None
+    if filename:
+        import re
+        # Try format with date prefix first (YYYY-MM-DD-HHMM-STATION-)
+        match = re.match(r"^\d{4}-\d{2}-\d{2}-\d{4}-([A-Z]{4})-", filename)
+        if not match:
+            # Try simple format (STATION-AUTO- or STATION-MAN-)
+            match = re.match(r"^([A-Z]{4})-(AUTO|MAN)-", filename)
+        if match:
+            station_id = match.group(1)
+
+    # Fall back to XML fields if filename doesn't have ICAO
+    if not station_id:
+        station_id = (
+            station_ids.get("icao_stn_id") or
+            station_ids.get("tc_id") or
+            station_ids.get("wmo_id_extnd") or
+            station_ids.get("wmo_synop_id")
+        )
 
     if not station_id:
         return None
@@ -222,16 +248,16 @@ def parse_and_collect_fields(root):
 
     # epoch seconds for fast WHERE clauses
     fields["observation_time"] = int(timestamp.timestamp())
-    return station_id, timestamp, fields
+    return station_id, station_name, timestamp, fields
 
 
-def insert_sqlite(cur, station_id, ts_epoch, field_vals, source_file):
+def insert_sqlite(cur, station_id, station_name, ts_epoch, field_vals, source_file):
     # only include fields we actually have, in stable order
     field_cols = [c for c in EXPECTED_FIELDS if c in field_vals]
-    cols = ["station_id", "observation_time"] + field_cols + ["source_file"]
+    cols = ["station_id", "station_name", "observation_time"] + field_cols + ["source_file"]
     placeholders = ",".join("?" * len(cols))
     sql = f"INSERT OR IGNORE INTO wind_observation ({','.join(cols)}) VALUES ({placeholders})"
-    vals = [station_id, ts_epoch] + [field_vals[c] for c in field_cols] + [source_file]
+    vals = [station_id, station_name, ts_epoch] + [field_vals[c] for c in field_cols] + [source_file]
     cur.execute(sql, vals)
 
 
@@ -268,31 +294,32 @@ def main():
         try:
             tree = ET.parse(xml_path)
             root = tree.getroot()
-            parsed = parse_and_collect_fields(root)
+            parsed = parse_and_collect_fields(root, xml_path.name)
             if not parsed:
                 logger.info(f"Skipping {xml_path.name} (no id/fields/time)")
                 processed.add(fp)
                 skipped_count += 1
                 continue
 
-            station_id, timestamp, fields = parsed
+            station_id, station_name, timestamp, fields = parsed
 
             # Try Influx (if online)
             influx.write_point(
                 measurement="wind_observation",
-                tags={"station_id": station_id},
+                tags={"station_id": station_id, "station_name": station_name or ""},
                 time_iso=timestamp.isoformat(),
                 fields_dict=fields,
             )
 
             # Always write SQLite
-            insert_sqlite(cur, station_id, fields["observation_time"], fields, xml_path.name)
+            insert_sqlite(cur, station_id, station_name, fields["observation_time"], fields, xml_path.name)
             conn.commit()
 
             new_count += 1
             processed.add(fp)
             field_list = sorted(k for k in fields.keys() if k != 'observation_time')
-            logger.info(f"{station_id} @ {timestamp.strftime('%Y-%m-%d %H:%M')} UTC -> {field_list}")
+            name_display = f" ({station_name})" if station_name else ""
+            logger.info(f"{station_id}{name_display} @ {timestamp.strftime('%Y-%m-%d %H:%M')} UTC -> {field_list}")
         except Exception as e:
             logger.warning(f"Error processing {xml_path.name}: {e}")
 

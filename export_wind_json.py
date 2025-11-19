@@ -40,17 +40,32 @@ logger = setup_logging('wind_json_export')
 OUT_PATH = EXPORT_DIR / "latest_wind.json"
 FRESHNESS_WINDOW = 7200  # 2 hours (same as buoys)
 
-# Wind station IDs to export (from TODO.md)
-WIND_STATIONS = {
-    "CWGT": "Sisters Islets",
-    "CWGB": "Ballenas",
+# Wind station IDs to export (ICAO codes)
+WIND_STATIONS = [
+    "CWGT",  # Sisters Islets
+    "CWGB",  # Ballenas
+    "CWEL",  # Entrance Island
+    "CWSB",  # Point Atkinson
+    "CVTF",  # Tsawwassen
+    "CWVF",  # Sand Heads
+    "CWEZ",  # Saturna
+    "CWQK",  # Race Rocks
+    "CYVR",  # YVR Airport
+    "CZBB",  # Boundary Bay Airport
+]
+
+# Station name overrides (for consistent display names)
+STATION_NAME_OVERRIDES = {
+    "CWGT": "Sisters Island",
+    "CWGB": "Ballenas Island",
     "CWEL": "Entrance Island",
     "CWSB": "Point Atkinson",
-    "CVTF": "Tsawwassen",
+    "CVTF": "Tsawwassen Ferry",
     "CWVF": "Sand Heads",
-    "CWEZ": "Saturna",
+    "CWEZ": "Saturna Island",
     "CWQK": "Race Rocks",
-    "CYVR": "YVR Airport",
+    "CYVR": "Vancouver International Airport",
+    "CZBB": "Boundary Bay Airport",
 }
 
 # Fields to query individually (each gets most recent non-null value within 2 hours)
@@ -89,7 +104,21 @@ def query_and_export():
             logger.error("Table wind_observation missing required columns")
             return
 
-        for station_id, station_name in WIND_STATIONS.items():
+        for station_id in WIND_STATIONS:
+            # Use override name if available, otherwise get from database
+            if station_id in STATION_NAME_OVERRIDES:
+                station_name = STATION_NAME_OVERRIDES[station_id]
+            else:
+                cur.execute("""
+                    SELECT station_name
+                    FROM wind_observation
+                    WHERE station_id = ?
+                    AND station_name IS NOT NULL
+                    LIMIT 1
+                """, (station_id,))
+                row = cur.fetchone()
+                station_name = row[0] if row else station_id
+
             station_json = {"name": station_name}
 
             # Get the most recent observation time (for reference)

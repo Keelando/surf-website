@@ -48,6 +48,7 @@ WIND_STATIONS = {
     "CWEZ": "Saturna",
     "CWQK": "Race Rocks",
     "CYVR": "YVR Airport",
+    "CZBB": "Boundary Bay Airport",
 }
 
 # Metrics to export as timeseries
