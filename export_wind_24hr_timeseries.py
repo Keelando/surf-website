@@ -49,7 +49,11 @@ WIND_STATIONS = {
     "CWQK": "Race Rocks",
     "CYVR": "YVR Airport",
     "CZBB": "Boundary Bay Airport",
+    "whiterock_pier": "White Rock Pier",
 }
+
+# White Rock Pier database path (separate from wind database)
+WHITEROCK_DATABASE = Path("~/.local/share/weather_data.sqlite").expanduser()
 
 # Metrics to export as timeseries
 ALL_METRICS = {
@@ -153,51 +157,99 @@ def query_and_export_timeseries():
             "timeseries": {}
         }
 
-        for metric, meta in ALL_METRICS.items():
-            if metric not in available_metrics:
-                continue
+        # Special handling for White Rock Pier (separate database)
+        if station_id == "whiterock_pier":
+            if WHITEROCK_DATABASE.exists():
+                wr_conn = sqlite3.connect(WHITEROCK_DATABASE, timeout=5)
+                wr_conn.row_factory = sqlite3.Row
+                wr_cur = wr_conn.cursor()
 
-            # Query 24hr data for this metric
-            sql = f"""
-            SELECT observation_time, {metric}
-            FROM wind_observation
-            WHERE station_id = ?
-              AND observation_time >= ?
-              AND {metric} IS NOT NULL
-            ORDER BY observation_time ASC
-            """
-            cur.execute(sql, (station_id, cutoff_time))
-            rows = cur.fetchall()
+                # Map White Rock fields to standard format
+                wr_metrics = {
+                    "wind_speed": {"field": "wind_speed", "convert": False},  # Already in knots
+                    "wind_gust": {"field": "wind_gust", "convert": False},  # Already in knots
+                    "wind_direction": {"field": "wind_direction", "convert": False},
+                    "air_temp": {"field": "temperature", "convert": False},
+                    "pressure": {"field": "pressure", "convert": False},
+                }
 
-            if not rows:
-                continue
+                for json_key, config in wr_metrics.items():
+                    field = config["field"]
+                    sql = f"""
+                    SELECT observation_time, {field}
+                    FROM whiterock_weather
+                    WHERE observation_time >= ?
+                      AND {field} IS NOT NULL
+                    ORDER BY observation_time ASC
+                    """
+                    wr_cur.execute(sql, (cutoff_time,))
+                    rows = wr_cur.fetchall()
 
-            # Build timeseries
-            timeseries = []
-            for row in rows:
-                value = row[metric]
+                    if rows:
+                        timeseries = [{
+                            "time": datetime.fromtimestamp(row["observation_time"], tz=timezone.utc).isoformat(),
+                            "value": round(row[field], 1) if row[field] is not None else None
+                        } for row in rows]
 
-                # Convert wind speeds to knots
-                if meta.get("convert_to_knots", False):
-                    value = round(kmh_to_knots(value), 1)
+                        # Downsample to hourly
+                        hourly = downsample_to_hourly(timeseries)
+                        if hourly:
+                            station_data["timeseries"][json_key] = hourly
 
-                timeseries.append({
-                    "time": datetime.fromtimestamp(row["observation_time"], tz=timezone.utc).isoformat(),
-                    "value": value
-                })
+                wr_conn.close()
+                logger.info(f"Exported 24hr timeseries for {station_id} ({station_name})")
+            else:
+                logger.warning(f"White Rock database not found: {WHITEROCK_DATABASE}")
+        else:
+            # Standard EnvCan wind stations
+            for metric, meta in ALL_METRICS.items():
+                if metric not in available_metrics:
+                    continue
 
-            # Downsample to hourly for chart display
-            hourly = downsample_to_hourly(timeseries)
+                # Query 24hr data for this metric
+                sql = f"""
+                SELECT observation_time, {metric}
+                FROM wind_observation
+                WHERE station_id = ?
+                  AND observation_time >= ?
+                  AND {metric} IS NOT NULL
+                ORDER BY observation_time ASC
+                """
+                cur.execute(sql, (station_id, cutoff_time))
+                rows = cur.fetchall()
 
-            if hourly:
-                # Store with simplified key (remove units from field name for JSON)
-                json_key = metric.replace("_kmh", "").replace("_deg", "").replace("_c", "").replace("_hpa", "").replace("_mm", "")
-                station_data["timeseries"][json_key] = hourly
+                if not rows:
+                    continue
+
+                # Build timeseries
+                timeseries = []
+                for row in rows:
+                    value = row[metric]
+
+                    # Convert wind speeds to knots
+                    if meta.get("convert_to_knots", False):
+                        value = round(kmh_to_knots(value), 1)
+
+                    timeseries.append({
+                        "time": datetime.fromtimestamp(row["observation_time"], tz=timezone.utc).isoformat(),
+                        "value": value
+                    })
+
+                # Downsample to hourly for chart display
+                hourly = downsample_to_hourly(timeseries)
+
+                if hourly:
+                    # Store with simplified key (remove units from field name for JSON)
+                    json_key = metric.replace("_kmh", "").replace("_deg", "").replace("_c", "").replace("_hpa", "").replace("_mm", "")
+                    station_data["timeseries"][json_key] = hourly
+
+            # Log if we got data for this station
+            if station_data["timeseries"]:
+                logger.info(f"Exported 24hr timeseries for {station_id} ({station_name})")
 
         # Only include stations with actual data
         if station_data["timeseries"]:
             output[station_id] = station_data
-            logger.info(f"Exported 24hr timeseries for {station_id} ({station_name})")
 
     conn.close()
 
