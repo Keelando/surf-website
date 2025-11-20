@@ -49,7 +49,7 @@ WIND_STATIONS = {
     "CWQK": "Race Rocks",
     "CYVR": "YVR Airport",
     "CZBB": "Boundary Bay Airport",
-    "whiterock_pier": "White Rock Pier",
+    "whiterock_pier": "White Rock East Beach",
 }
 
 # White Rock Pier database path (separate from wind database)
