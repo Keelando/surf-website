@@ -201,8 +201,8 @@ def export_json(conn):
     
     data = {
         "station_id": "whiterock_pier",
-        "station_name": "White Rock Pier",
-        "location": "East Beach, White Rock, BC",
+        "station_name": "White Rock East Beach",
+        "location": "East Beach Promenade, White Rock, BC",
         "observation_time": obs_time.isoformat(),
         "age_minutes": round(age_minutes, 1),
         "stale": age_minutes > 15,  # Flag if data is >15 minutes old
@@ -242,7 +242,7 @@ def export_json(conn):
     print(f"✅ Exported to {OUT_PATH}")
 
 def main():
-    print("White Rock Pier Weather Station")
+    print("White Rock East Beach Weather Station")
     print("=" * 50)
     
     if not acquire_lock():
