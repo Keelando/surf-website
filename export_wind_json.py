@@ -192,6 +192,34 @@ def query_and_export():
             latest_json[station_id] = station_json
             logger.info(f"Exported {station_id} ({station_name})")
 
+    # Include White Rock Pier weather station data
+    whiterock_json_path = EXPORT_DIR / "whiterock_weather.json"
+    if whiterock_json_path.exists():
+        try:
+            with open(whiterock_json_path) as f:
+                whiterock_data = json.load(f)
+
+            # Convert to same format as wind stations
+            latest_json["whiterock_pier"] = {
+                "name": whiterock_data["station_name"],
+                "observation_time": whiterock_data["observation_time"],
+                "stale": whiterock_data.get("stale", False),
+                "wind_speed_kt": whiterock_data.get("wind_speed"),
+                "wind_gust_kt": whiterock_data.get("wind_gust"),
+                "wind_direction_deg": whiterock_data.get("wind_direction"),
+                "wind_direction_cardinal": whiterock_data.get("wind_direction_cardinal"),
+                "air_temp_c": whiterock_data.get("temperature"),
+                "pressure_hpa": whiterock_data.get("pressure"),
+                "humidity": whiterock_data.get("humidity"),
+                "dew_point_c": whiterock_data.get("dew_point"),
+                "precipitation_mm": whiterock_data.get("precipitation"),
+            }
+            # Remove None values
+            latest_json["whiterock_pier"] = {k: v for k, v in latest_json["whiterock_pier"].items() if v is not None}
+            logger.info(f"Exported whiterock_pier (White Rock Pier)")
+        except Exception as e:
+            logger.warning(f"Failed to include White Rock Pier data: {e}")
+
     # Add metadata about this export
     latest_json["_meta"] = {
         "generated_utc": datetime.now(timezone.utc).isoformat(),
