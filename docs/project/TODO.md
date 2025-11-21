@@ -208,19 +208,21 @@
 - [x] Added "Under Development" banner
 
 **NEXT STEPS (Winds Page Enhancement):**
-- [ ] Add wind station coordinates to `stations.json` (10 stations)
+- [x] Add wind station coordinates to `stations.json` (10 stations) ✅ COMPLETED (2025-11-20)
   - CWGT (Sisters Island), CWGB (Ballenas), CWEL (Entrance Island)
   - CWSB (Point Atkinson), CVTF (Tsawwassen), CWVF (Sand Heads)
   - CWEZ (Saturna Island), CWQK (Race Rocks), CYVR (YVR), CZBB (Boundary Bay)
-- [ ] Implement interactive Leaflet map on winds.html
-  - Add wind/buoy station markers with current wind data popups
-  - Use emoji indicators: 💨 (land stations) 🌊 (buoys)
-- [ ] Implement 24-hour wind trend charts
-  - Station selector dropdown
+- [x] Implement interactive Leaflet map on winds.html ✅ COMPLETED (2025-11-20)
+  - Created `winds-map.js` - wind-focused map showing only stations with wind data
+  - Wind station markers (💨) show current wind speed, gust, direction, temp
+  - Buoy markers (🌊) show wind data for buoys that report wind
+  - Popups display real-time conditions with staleness indicators
+- [x] Implement 24-hour wind trend charts ✅ COMPLETED (2025-11-19)
+  - Station selector dropdown with search functionality
   - Wind speed/gust chart (knots)
   - Wind direction arrows (rotated symbols like buoy page)
-  - Use existing `wind_timeseries_24hr.json` + buoy timeseries data
-- [ ] Remove "Under Development" banner when map + charts complete
+  - Uses `wind_timeseries_24hr.json` + buoy timeseries data
+- [x] Remove "Under Development" banner ✅ COMPLETED (2025-11-20)
 
 **Additional Data Sources (Future Enhancement):**
 
