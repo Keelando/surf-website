@@ -63,6 +63,74 @@ CREATE INDEX idx_observation_time ON buoy_observation(observation_time DESC);
 
 ---
 
+### Wind Database
+
+**Location:** `~/.local/share/wind_data.sqlite`
+
+#### Table: `wind_observation`
+
+Real-time wind and weather observations from Environment Canada land-based weather stations.
+
+```sql
+CREATE TABLE wind_observation (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    station_id TEXT NOT NULL,           -- ICAO/TC code (e.g., 'CWSB', 'CYVR')
+    station_name TEXT,                  -- Friendly name (e.g., 'Point Atkinson')
+    observation_time INTEGER NOT NULL,  -- Unix timestamp (UTC)
+
+    -- Wind metrics (10-minute averages)
+    wind_speed_kmh REAL,               -- Average wind speed (km/h)
+    wind_gust_kmh REAL,                -- Maximum gust (km/h)
+    wind_direction_deg INTEGER,        -- Wind direction (degrees, coming FROM)
+
+    -- Atmospheric conditions
+    air_temp_c REAL,                   -- Air temperature (°C)
+    pressure_hpa REAL,                 -- Station pressure (hPa)
+    pressure_mslp_hpa REAL,            -- Mean sea level pressure (hPa)
+
+    -- Additional meteorology
+    humidity_percent REAL,             -- Relative humidity (%)
+    dewpoint_c REAL,                   -- Dewpoint temperature (°C)
+    visibility_km REAL,                -- Visibility (km)
+    rainfall_1hr_mm REAL,              -- Rainfall past 1 hour (mm)
+    rainfall_6hr_mm REAL,              -- Rainfall past 6 hours (mm)
+
+    -- Metadata
+    source_file TEXT,                  -- Source SWOB-ML filename
+    recorded_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Index for efficient "latest by station" queries
+CREATE INDEX idx_wind_station_time ON wind_observation(station_id, observation_time DESC);
+
+-- De-duplication: one observation per station per timestamp
+CREATE UNIQUE INDEX uniq_wind_station_ts ON wind_observation(station_id, observation_time);
+```
+
+**Data source:** Environment Canada SWOB-ML XMLs via sr3 Sarracenia
+
+**Update frequency:** Every 10 minutes by Environment Canada, parsed every minute by system
+
+**Design notes:**
+- Wind speed stored as km/h internally, converted to knots on export
+- Direction values: 0-360°, where value = direction wind is coming FROM
+- MSNG (missing) values in XMLs → NULL in database
+- Schema auto-expands to add new columns as needed (future-proof)
+
+**Monitored stations (10):**
+- CWGT (Sisters Island)
+- CWGB (Ballenas)
+- CWEL (Entrance Island)
+- CWSB (Point Atkinson)
+- CVTF (Tsawwassen)
+- CWVF (Sand Heads)
+- CWEZ (Saturna Island)
+- CWQK (Race Rocks)
+- CYVR (YVR Airport)
+- CZBB (Boundary Bay Airport)
+
+---
+
 ### Tide Database
 
 **Location:** `~/.local/share/tide_data.sqlite`

@@ -16,6 +16,7 @@ A real-time, open-source wave and weather monitoring system for the **Salish Sea
 
 This system collects, processes, and displays marine weather data from:
 - **5 Wave Buoys** – Halibut Bank, English Bay, Southern Georgia Strait, Sentry Shoal (EC), Neah Bay & New Dungeness (NOAA)
+- **10 Wind Stations** – Point Atkinson, Sisters Island, Entrance Island, Ballenas, Sand Heads, Tsawwassen, Saturna, Race Rocks, YVR, Boundary Bay (Environment Canada)
 - **10 Tide Stations** – Point Atkinson, Vancouver, Kitsilano, Tsawwassen, White Rock, New Westminster, Campbell River, Nanaimo, and more (DFO IWLS)
 
 ### Key Features
@@ -35,9 +36,13 @@ This system collects, processes, and displays marine weather data from:
 ```
 Environment Canada XML → buoy_to_influx_sqlite.py → SQLite Database (buoy_data.sqlite)
 NOAA 5-day feeds       → fetch_noaa_buoy.py       →      ↓
-DFO IWLS Tides         → tide_to_sqlite.py        →      ↓
+Environment Canada XML → wind_to_sqlite.py        → SQLite Database (wind_data.sqlite)
+DFO IWLS Tides         → tide_to_sqlite.py        → SQLite Database (tide_data.sqlite)
+                                                            ↓
                                                    ├→ sqlite_to_json.py → ~/site/data/latest_buoy_v2.json
                                                    ├→ export_24hr_timeseries.py → timeseries_*.json
+                                                   ├→ export_wind_json.py → latest_wind.json
+                                                   ├→ export_wind_24hr_timeseries.py → wind_timeseries_24hr.json
                                                    ├→ export_tide_json.py → tide-*.json
                                                    └→ influx_to_mqtt.py → Home Assistant (MQTT)
 ```
@@ -138,6 +143,15 @@ Add to crontab (crontab -e):
 
 # Export tide JSON every minute
 * * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_tide_json.py >> $HOME/envcan_wave/tide_export.log 2>&1
+
+# Parse Environment Canada wind station XMLs every minute
+* * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/wind_to_sqlite.py >> $HOME/envcan_wave/wind_parser.log 2>&1
+
+# Export wind JSON every 5 minutes
+*/5 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_wind_json.py >> $HOME/envcan_wave/wind_export.log 2>&1
+
+# Export wind 24h timeseries every 10 minutes
+*/10 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_wind_24hr_timeseries.py >> $HOME/envcan_wave/wind_timeseries_export.log 2>&1
 
 # Cleanup old XML files (keep 2 days)
 0 * * * * find $HOME/envcan_wave/data/buoy -name "*.xml" -mtime +2 -delete
