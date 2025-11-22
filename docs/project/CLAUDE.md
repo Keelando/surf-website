@@ -138,6 +138,24 @@ point_atk = get_tide_station("point_atkinson")
 - `46087` - Neah Bay (includes spectral: swell vs wind waves)
 - `46088` - New Dungeness / Hein Bank
 
+### Wind Stations (10)
+
+**Environment Canada SWOB-ML:**
+- `CWGT` - Sisters Island
+- `CWGB` - Ballenas
+- `CWEL` - Entrance Island
+- `CWSB` - Point Atkinson
+- `CVTF` - Tsawwassen
+- `CWVF` - Sand Heads
+- `CWEZ` - Saturna Island
+- `CWQK` - Race Rocks
+- `CYVR` - YVR Airport
+- `CZBB` - Boundary Bay Airport
+
+**Database:** `wind_data.sqlite` (separate from buoys)
+**Update frequency:** Every 10 minutes (parsed every minute)
+**Data fields:** Wind speed/gust/direction, temperature, pressure, humidity, dewpoint, visibility, rainfall
+
 ### Tide Stations (8)
 
 **Permanent (with real-time observations):**
