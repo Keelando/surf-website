@@ -226,6 +226,31 @@
 
 **Additional Data Sources (Future Enhancement):**
 
+**BC Lightstation Reports (Environment Canada):**
+- **Source:** https://dd.weather.gc.ca/today/bulletins/alphanumeric/YYYYMMDD/FP/CWVR/HH/FPCN61_CWVR_DDHHMM___52863
+- **Format:** Text-based reports (FPCN61)
+- **Update frequency:** Every 3 hours
+- **Data includes:**
+  - Wind speed/direction (knots) - some stations estimated
+  - Sea state (height, conditions: chop/moderate/rippled)
+  - Swell direction and intensity (low/moderate/heavy)
+  - Visibility (miles, fog/rain conditions)
+- **Regions covered:**
+  - Strait of Georgia (Cape Mudge, Chrome Island, Merry Island)
+  - Juan de Fuca Strait
+  - West Coast Vancouver Island (Cape Scott, Quatsino, Nootka, Estevan Point, Lennard Island, Cape Beale)
+  - Central Coast (Chatham Point, Pulteney Point, Scarlett Point, Addenbroke Island, Dryad Point, Ivory Island, McInnes Island, Boat Bluff, Bonilla Island)
+  - Hecate Strait (Langara Island, Green Island)
+- **Implementation plan:**
+  1. Create parser for text-based report format (period-delimited fields)
+  2. Determine URL pattern for fetching latest report (date/hour path structure)
+  3. Store parsed data in `wind_data.sqlite` or new `lightstation_data.sqlite`
+  4. Export to JSON for website integration
+  5. Add lightstation markers to winds map
+  6. Schedule fetching every 3 hours via cron
+- **Priority:** Medium (excellent coastal coverage, complements existing wind stations)
+- **Note:** Text parsing will be simpler than XML/SWOB-ML but requires handling variations in format
+
 **BC Stations (Custom/Non-SWOB-ML):**
 - **Jericho Wind Station** (Jericho Sailing Centre)
   - URL: https://jsca.bc.ca/main/downld02.txt

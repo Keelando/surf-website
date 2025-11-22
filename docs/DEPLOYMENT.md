@@ -19,6 +19,22 @@ Production system runs on cron. See `cron.txt` for the actual crontab file.
 5,25,45 * * * * cd /home/keelando/envcan_wave && source .venv/bin/activate && python3 fetch_noaa_buoy.py >> ~/envcan_wave/noaa.log 2>&1
 ```
 
+### Station Metadata
+
+```bash
+# Hourly: Export stations.json from backend to frontend
+# Backend source: ~/envcan_wave/config/stations.json
+# Frontend output: ~/site/data/stations.json
+# Contains coordinates, names, types for all buoys, tide stations, and wind stations
+0 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_stations_json.py >> /home/keelando/envcan_wave/logs/stations_export.log 2>&1
+```
+
+**Why this matters:**
+- Backend `config/stations.json` is the **source of truth**
+- Frontend `data/stations.json` is auto-synced every hour
+- Never edit the frontend copy - changes will be overwritten
+- Edit backend version only, then export will sync it
+
 ### Tide Data
 
 ```bash
@@ -323,9 +339,10 @@ rm *-v3.css
 # Ensure JSON files are world-readable for web server
 chmod 644 ~/site/data/*.json
 
-# Ensure stations.json is accessible by both backend and frontend
-chmod 644 ~/envcan_wave/stations.json
-chmod 644 ~/site/data/stations.json
+# Note: stations.json is automatically synced by export_stations_json.py (runs hourly)
+# Backend source: ~/envcan_wave/config/stations.json
+# Frontend copy: ~/site/data/stations.json (auto-updated, do not edit manually)
+chmod 644 ~/envcan_wave/config/stations.json
 
 # Protect credentials
 chmod 600 ~/.config/buoy_influx_1.env
