@@ -21,8 +21,9 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 
-# Default path to stations.json (adjust as needed)
-STATIONS_FILE = Path("~/envcan_wave/config/stations.json").expanduser()
+# Default path to stations.json (use PROJECT_ROOT from config)
+from config import PROJECT_ROOT
+STATIONS_FILE = PROJECT_ROOT / "config" / "stations.json"
 
 class StationRegistry:
     """Central registry for all marine monitoring stations."""
