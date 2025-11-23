@@ -20,25 +20,30 @@ All data stored in SQLite, published to MQTT/Home Assistant, and exported as JSO
 ### Data Flow Pipeline
 
 ```
-sr3 (Sarracenia) → EC XMLs → buoy_to_influx_sqlite.py → SQLite (buoy_data.sqlite)
-NOAA feeds        → fetch_noaa_buoy.py ↗
-                                        ├→ sqlite_to_json.py → JSON exports
-                                        ├→ export_24hr_timeseries.py
-                                        └→ influx_to_mqtt.py → Home Assistant
+sr3 (Buoys)   → EC Buoy XMLs → buoy_to_influx_sqlite.py → SQLite (buoy_data.sqlite)
+NOAA feeds    → fetch_noaa_buoy.py ↗
+                                    ├→ sqlite_to_json.py → JSON exports
+                                    ├→ export_24hr_timeseries.py
+                                    └→ influx_to_mqtt.py → Home Assistant
 
-DFO IWLS API → tide_to_sqlite.py → SQLite (tide_data.sqlite)
+sr3 (Wind)    → EC Wind XMLs → wind_to_sqlite.py → SQLite (wind_data.sqlite)
+                                                    ├→ export_wind_json.py → JSON exports
+                                                    └→ export_wind_24hr_timeseries.py
+
+DFO IWLS API  → tide_to_sqlite.py → SQLite (tide_data.sqlite)
                                     └→ export_tide_json.py → JSON exports
 
-sr3 (Marine) → EC Marine XMLs → parse_marine_forecast.py → marine_forecast.json
+sr3 (Marine)  → EC Marine XMLs → parse_marine_forecast.py → marine_forecast.json
 ```
 
 ### Databases
 
-**Two separate SQLite databases:**
+**Three separate SQLite databases:**
 - `~/.local/share/buoy_data.sqlite` - Wave/wind/temperature data from buoys
+- `~/.local/share/wind_data.sqlite` - Wind/weather data from land stations
 - `~/.local/share/tide_data.sqlite` - Tide observations/predictions/high-low events
 
-**Rationale:** Different update frequencies and data structures
+**Rationale:** Different update frequencies, data structures, and sources
 
 ### Key Scripts
 
@@ -46,9 +51,12 @@ sr3 (Marine) → EC Marine XMLs → parse_marine_forecast.py → marine_forecast
 |--------|---------|-----------|
 | `buoy_to_influx_sqlite.py` | Parse EC buoy XMLs | Every minute |
 | `fetch_noaa_buoy.py` | Fetch NOAA 5-day feeds | Every 20 min |
-| `sqlite_to_json.py` | Export latest buoy snapshot | Every minute |
-| `export_24hr_timeseries.py` | Export buoy timeseries | Every 5 min |
+| `wind_to_sqlite.py` | Parse EC wind station XMLs | Every minute |
 | `tide_to_sqlite.py` | Fetch DFO tide data | Obs: 30min, Pred: daily |
+| `sqlite_to_json.py` | Export latest buoy snapshot | Every minute |
+| `export_wind_json.py` | Export latest wind snapshot | Every 5 min |
+| `export_24hr_timeseries.py` | Export buoy timeseries | Every 5 min |
+| `export_wind_24hr_timeseries.py` | Export wind timeseries | Every 10 min |
 | `export_tide_json.py` | Export tide JSONs | Every 5 min |
 | `parse_marine_forecast.py` | Parse marine forecast XMLs | Every 30 min |
 | `fetch_storm_surge.py` | Fetch GDSPS surge forecasts | Every 6 hours |
@@ -156,7 +164,7 @@ point_atk = get_tide_station("point_atkinson")
 **Update frequency:** Every 10 minutes (parsed every minute)
 **Data fields:** Wind speed/gust/direction, temperature, pressure, humidity, dewpoint, visibility, rainfall
 
-### Tide Stations (8)
+### Tide Stations (12)
 
 **Permanent (with real-time observations):**
 - `point_atkinson` - Point Atkinson (07795)
@@ -164,13 +172,19 @@ point_atk = get_tide_station("point_atkinson")
 - `new_westminster` - New Westminster (07654)
 - `campbell_river` - Campbell River (08074)
 
+**Temporary (observations + predictions):**
+- `tofino` - Tofino (08615)
+- `ucluelet` - Ucluelet (08595)
+- `port_renfrew` - Port Renfrew (08525)
+- `victoria_harbor` - Victoria Harbor (07120)
+
 **Temporary (predictions only):**
 - `tsawwassen` - Tsawwassen (07590)
 - `whiterock` - White Rock (07577)
 - `crescent_pile` - Crescent Beach (07579)
 - `nanaimo` - Nanoose Bay (07930)
 
-**All metadata in `stations.json`**
+**All metadata in `config/stations.json`**
 
 ---
 
@@ -178,19 +192,21 @@ point_atk = get_tide_station("point_atkinson")
 
 **Purpose:** Subscribes to Environment Canada's AMQP broker and automatically downloads XML files
 
-**Two subscriptions run continuously:**
+**Three subscriptions run continuously:**
 1. **Buoy observations** (`bc_buoys.conf`) - SWOB-ML XMLs hourly
-2. **Marine forecasts** (`marine_forecast.conf`) - Forecast XMLs 2-4x daily
+2. **Wind stations** (`bc_wind_stations.conf`) - SWOB-ML XMLs every 10 minutes
+3. **Marine forecasts** (`marine_forecast.conf`) - Forecast XMLs 2-4x daily
 
 **Key commands:**
 ```bash
-sr3 status                          # Check if running
-sr3 start subscribe/bc_buoys        # Start buoy subscription
-sr3 start subscribe/marine_forecast # Start forecast subscription
-ps aux | grep sr3                   # Check process status
+sr3 status                               # Check if all running
+sr3 start subscribe/bc_buoys             # Start buoy subscription
+sr3 start subscribe/bc_wind_stations     # Start wind station subscription
+sr3 start subscribe/marine_forecast      # Start forecast subscription
+ps aux | grep sr3                        # Check process status
 ```
 
-**Without sr3 running:** No new XML files downloaded, `buoy_to_influx_sqlite.py` only parses existing files
+**Without sr3 running:** No new XML files downloaded, parsers only process existing files
 
 **See `docs/DEPLOYMENT.md` for sr3 config details.**
 
@@ -266,16 +282,21 @@ pip install -r requirements.txt
 
 # Start sr3 (critical!)
 sr3 start subscribe/bc_buoys
+sr3 start subscribe/bc_wind_stations
 sr3 start subscribe/marine_forecast
 
 # Run data pipeline manually
 python3 buoy_to_influx_sqlite.py
+python3 wind_to_sqlite.py
 python3 fetch_noaa_buoy.py
 python3 sqlite_to_json.py
+python3 export_wind_json.py
 
 # Check if data arrived
 sqlite3 ~/.local/share/buoy_data.sqlite "SELECT COUNT(*) FROM buoy_observation;"
+sqlite3 ~/.local/share/wind_data.sqlite "SELECT COUNT(*) FROM wind_observation;"
 cat ~/site/data/latest_buoy_v2.json | jq '.["4600146"]'
+cat ~/site/data/latest_wind.json | jq '.CWSB'
 ```
 
 **See `docs/COMMANDS.md` for more examples.**

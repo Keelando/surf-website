@@ -1,12 +1,23 @@
 #!/usr/bin/env python3
 """
 Export Storm Surge Hindcast Data
-Exports 38-61 hour predictions for charting (full Pacific calendar day predicted 2 days in advance)
+
+Exports storm surge predictions made 38-61 hours in advance (18Z model run, hours 56-79 from midnight)
+for hindcast comparison against observed tide offset data.
+
+Data windows:
+- Forecast predictions: 12 days (today + 11 back) - shows predictions FOR these dates
+- Requires forecast runs from ~14 days back to capture full range due to ~48h lead time
+
+See ~/site/docs/HINDCAST_METHODOLOGY.md for detailed methodology and scientific rationale.
+
+Output: ~/site/data/storm_surge/hindcast.json
 """
 from pathlib import Path
 import sqlite3
 import json
 from datetime import datetime, timezone, timedelta
+import pytz
 from logging_config import setup_logging
 
 logger = setup_logging('hindcast_export')
@@ -14,7 +25,8 @@ logger = setup_logging('hindcast_export')
 # Configuration
 DB_PATH = Path("~/.local/share/storm_surge_forecast.sqlite").expanduser()
 OUTPUT_PATH = Path("~/site/data/storm_surge/hindcast.json").expanduser()
-MAX_DAYS_BACK = 10
+MAX_DAYS_BACK = 12  # Show predictions for last 12 days (today + 11 back)
+# Note: Forecast runs go back ~14 days to capture predictions for the full 12-day window
 
 STATIONS = {
     "Point_Atkinson": {"name": "Point Atkinson", "lat": 49.3375, "lon": -123.253583},
@@ -68,10 +80,37 @@ def export_hindcast():
         for station_id, station_info in STATIONS.items():
             logger.info(f"Processing {station_info['name']}...")
 
-            # Query: Get all forecasts and filter for hours 38-61 FROM 18Z RUN
-            # 18Z run on Nov 7 → hours 38-61 = all of Nov 9 PST (00:00-23:00 Pacific, 2 days ahead)
-            # Since forecast_run_time is stored as date-only, we must add 18 hours to account for 18Z
-            # Hours 38-61 from 18Z = Hours 56-79 from midnight = (38+18) to (61+18)
+            # Query: Get forecasts for hours 38-61 FROM 18Z RUN (hours 56-79 from midnight)
+            # Goal: Show predictions FOR the last 10 days (today + 9 days back)
+            # Since forecasts are ~2 days ahead (38-62 hrs), to get predictions FOR day X,
+            # we need forecast runs from ~2 days before day X
+            # Example: To show predictions for Nov 14-23 (10 days), we need runs from ~Nov 12-21 (12 days back)
+
+            pacific = pytz.timezone('America/Vancouver')
+            now_pacific = datetime.now(pacific)
+            # Start of today Pacific
+            today_midnight_pacific = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
+            # End of today Pacific (23:59:59)
+            today_end_pacific = today_midnight_pacific.replace(hour=23, minute=59, second=59)
+
+            # Valid time range: 11 days back to today (show predictions FOR these dates)
+            # Extended by 2 days per user request to show more historical forecast data
+            valid_start_pacific = today_midnight_pacific - timedelta(days=11)
+
+            # Forecast run range: Need ~2 extra days earlier to capture predictions for the start date
+            # Hours 56-79 = 2.33 to 3.29 days ahead, so go back 3 days before valid_start to be safe
+            forecast_start_pacific = valid_start_pacific - timedelta(days=3)
+
+            # Convert to UTC for SQL query
+            valid_start_utc = valid_start_pacific.astimezone(timezone.utc)
+            today_end_utc = today_end_pacific.astimezone(timezone.utc)
+            forecast_start_utc = forecast_start_pacific.astimezone(timezone.utc)
+
+            # Use ISO format with 'Z' to match database storage format
+            valid_start_str = valid_start_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+            today_end_str = today_end_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+            forecast_start_str = forecast_start_utc.strftime('%Y-%m-%d')
+
             cur.execute("""
                 SELECT
                     forecast_run_time,
@@ -81,8 +120,11 @@ def export_hindcast():
                 FROM forecast_archive
                 WHERE station_id = ?
                   AND hours_ahead BETWEEN 56 AND 79
+                  AND forecast_run_time >= ?
+                  AND valid_time >= ?
+                  AND valid_time <= ?
                 ORDER BY valid_time ASC
-            """, (station_id,))
+            """, (station_id, forecast_start_str, valid_start_str, today_end_str))
             
             rows = cur.fetchall()
 

@@ -45,7 +45,7 @@ FIELD_MAP_SPEC = {
     "WWP":  "wind_wave_period",
     "WWD":  "wind_wave_direction",
     "APD":  "wave_period_avg",
-    "MWD":  "wave_direction_peak",
+    "MWD":  "wave_direction_avg",  # Mean Wave Direction
 }
 
 # ---- Utilities ----

@@ -13,6 +13,7 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
+import pytz
 
 # Shared utilities
 from config import TIDE_DATABASE, EXPORT_DIR
@@ -32,8 +33,8 @@ TIDE_TO_SURGE_MAP = {
     "tofino": "Tofino"
 }
 
-# Number of days back to export
-DAYS_BACK = 14
+# Number of days back to export (9 days back + today = 10 days total, matching hindcast)
+DAYS_BACK = 10
 
 
 def load_station_metadata():
@@ -127,8 +128,12 @@ def export_observed_surge():
 
     conn = sqlite3.connect(TIDE_DATABASE)
 
-    # Calculate start time
-    start_time = int((datetime.now(timezone.utc) - timedelta(days=DAYS_BACK)).timestamp())
+    # Calculate start time: midnight Pacific 9 days ago (matches hindcast logic)
+    pacific = pytz.timezone('America/Vancouver')
+    now_pacific = datetime.now(pacific)
+    today_midnight_pacific = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
+    start_date_pacific = today_midnight_pacific - timedelta(days=9)
+    start_time = int(start_date_pacific.timestamp())
 
     stations_data = {}
 

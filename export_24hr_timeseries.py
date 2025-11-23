@@ -24,6 +24,7 @@ ALL_METRICS = {
     "wave_height_peak": {"name": "Peak Wave Height", "unit": "m"},
     "wave_period_avg": {"name": "Average Wave Period", "unit": "s"},
     "wave_period_peak": {"name": "Peak Wave Period", "unit": "s"},
+    "wave_direction_avg": {"name": "Average Wave Direction", "unit": "°"},
     "wave_direction_peak": {"name": "Peak Wave Direction", "unit": "°"},
     "swell_height": {"name": "Swell Height", "unit": "m"},
     "swell_period": {"name": "Swell Period", "unit": "s"},

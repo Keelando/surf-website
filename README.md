@@ -15,9 +15,9 @@ A real-time, open-source wave and weather monitoring system for the **Salish Sea
 ## Overview
 
 This system collects, processes, and displays marine weather data from:
-- **5 Wave Buoys** – Halibut Bank, English Bay, Southern Georgia Strait, Sentry Shoal (EC), Neah Bay & New Dungeness (NOAA)
-- **10 Wind Stations** – Point Atkinson, Sisters Island, Entrance Island, Ballenas, Sand Heads, Tsawwassen, Saturna, Race Rocks, YVR, Boundary Bay (Environment Canada)
-- **10 Tide Stations** – Point Atkinson, Vancouver, Kitsilano, Tsawwassen, White Rock, New Westminster, Campbell River, Nanaimo, and more (DFO IWLS)
+- **6 Wave Buoys** – Halibut Bank, English Bay, Southern Georgia Strait, Sentry Shoal (EC), Neah Bay & New Dungeness (NOAA)
+- **10 Wind Stations** – Point Atkinson, Sisters Islets, Entrance Island, Ballenas, Sand Heads, Tsawwassen, Saturna, Race Rocks, YVR, Boundary Bay (Environment Canada)
+- **12 Tide Stations** – Point Atkinson, Kitsilano, Tsawwassen, White Rock, Crescent Beach, New Westminster, Campbell River, Nanaimo, Tofino, and more (DFO IWLS)
 
 ### Key Features
 - 🔁 Automated XML + text feed collection
@@ -28,6 +28,62 @@ This system collects, processes, and displays marine weather data from:
 - 🌊 Real-time tide predictions and observations
 - ⚙️ Smart deduplication and update scheduling
 - 🌊 NOAA "swell vs wind wave" separation  
+
+---
+
+## 📍 Monitored Stations
+
+### Wave Buoys (6)
+
+**Environment Canada:**
+- `4600146` – Halibut Bank (off Vancouver)
+- `4600303` – Southern Georgia Strait
+- `4600304` – English Bay (Vancouver Harbor)
+- `4600131` – Sentry Shoal (Northern Strait of Georgia)
+
+**NOAA NDBC:**
+- `46087` – Neah Bay (includes spectral wave data: swell vs wind waves)
+- `46088` – New Dungeness / Hein Bank
+
+**Additional monitored (Surrey FlowWorks):**
+- `CRPILE` – Crescent Beach Ocean (pile-mounted wave station)
+- `CRCHAN` – Crescent Channel (radar-based wave measurement)
+
+### Wind Stations (10)
+
+**Environment Canada SWOB-ML weather stations:**
+- `CWGT` – Sisters Islets (Strait of Georgia)
+- `CWGB` – Ballenas (Strait of Georgia)
+- `CWEL` – Entrance Island (Nanaimo area)
+- `CWSB` – Point Atkinson (West Vancouver)
+- `CVTF` – Tsawwassen (Delta)
+- `CWVF` – Sand Heads (Fraser River mouth)
+- `CWEZ` – Saturna (Gulf Islands)
+- `CWQK` – Race Rocks (Juan de Fuca Strait)
+- `CYVR` – YVR Airport (Richmond)
+- `CZBB` – Boundary Bay Airport (Delta)
+
+**Data provided:** Wind speed/gust/direction, temperature, pressure, humidity, dewpoint, visibility, rainfall
+
+**Update frequency:** Environment Canada updates every 10 minutes, parsed every minute
+
+### Tide Stations (12)
+
+**DFO IWLS stations** providing real-time observations and astronomical predictions:
+- `point_atkinson` – Point Atkinson (07795)
+- `kitsilano` – Kitsilano (07707)
+- `new_westminster` – New Westminster (07654)
+- `campbell_river` – Campbell River (08074)
+- `tsawwassen` – Tsawwassen (07590, predictions only)
+- `whiterock` – White Rock (07577, predictions only)
+- `crescent_pile` – Crescent Beach (07579, predictions only)
+- `nanaimo` – Nanoose Bay (07930, predictions only)
+- `tofino` – Tofino (08615)
+- `ucluelet` – Ucluelet (08595)
+- `port_renfrew` – Port Renfrew (08525)
+- `victoria_harbor` – Victoria Harbor (07120)
+
+**All station metadata:** See `config/stations.json`
 
 ---
 
@@ -159,7 +215,9 @@ Add to crontab (crontab -e):
 
 ---
 
-🗄️ Database Schema
+🗄️ Database Schemas
+
+### Buoy Database (`buoy_data.sqlite`)
 
 Table: buoy_observation
 
@@ -167,7 +225,7 @@ CREATE TABLE buoy_observation (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     buoy_id TEXT NOT NULL,
     observation_time INTEGER NOT NULL,  -- Unix timestamp
-    
+
     -- Wave metrics
     wave_height_sig REAL,
     wave_height_peak REAL,
@@ -176,7 +234,7 @@ CREATE TABLE buoy_observation (
     wave_period_peak REAL,
     wave_direction_avg REAL,
     wave_direction_peak REAL,
-    
+
     -- NOAA spectral data (Neah Bay only)
     swell_height REAL,
     swell_period REAL,
@@ -184,7 +242,7 @@ CREATE TABLE buoy_observation (
     wind_wave_height REAL,
     wind_wave_period REAL,
     wind_wave_direction REAL,
-    
+
     -- Meteorological
     wind_speed REAL,          -- km/h (converted to knots for display)
     wind_gust REAL,           -- km/h
@@ -192,7 +250,7 @@ CREATE TABLE buoy_observation (
     air_temp REAL,            -- °C
     sea_temp REAL,            -- °C
     pressure REAL,            -- hPa
-    
+
     -- Metadata
     source_file TEXT,
     recorded_at TEXT DEFAULT (datetime('now'))
@@ -200,6 +258,45 @@ CREATE TABLE buoy_observation (
 
 CREATE UNIQUE INDEX uniq_buoy_ts ON buoy_observation(buoy_id, observation_time);
 CREATE INDEX idx_buoy_time ON buoy_observation(buoy_id, observation_time DESC);
+
+### Wind Database (`wind_data.sqlite`)
+
+Table: wind_observation
+
+CREATE TABLE wind_observation (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    station_id TEXT NOT NULL,           -- ICAO/TC code (e.g., 'CWSB', 'CYVR')
+    station_name TEXT,                  -- Friendly name
+    observation_time INTEGER NOT NULL,  -- Unix timestamp
+
+    -- Wind metrics (10-minute averages)
+    wind_speed_kmh REAL,               -- km/h (converted to knots for display)
+    wind_gust_kmh REAL,
+    wind_direction_deg INTEGER,        -- degrees (coming FROM)
+
+    -- Atmospheric conditions
+    air_temp_c REAL,
+    pressure_hpa REAL,
+    pressure_mslp_hpa REAL,            -- Mean sea level pressure
+
+    -- Additional meteorology
+    humidity_percent REAL,
+    dewpoint_c REAL,
+    visibility_km REAL,
+    rainfall_1hr_mm REAL,
+    rainfall_6hr_mm REAL,
+
+    -- Metadata
+    source_file TEXT,
+    recorded_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX idx_wind_station_time ON wind_observation(station_id, observation_time DESC);
+CREATE UNIQUE INDEX uniq_wind_station_ts ON wind_observation(station_id, observation_time);
+
+### Tide Database (`tide_data.sqlite`)
+
+See `docs/ARCHITECTURE_DETAILED.md` for full tide database schemas (observations, predictions, high/low events)
 
 
 ---
@@ -213,7 +310,7 @@ Displays current conditions for all buoys with:
 - Wave height/period/direction
 - Air/sea temperature
 - Atmospheric pressure
-- Data staleness warnings (>3 hours old)
+- Data staleness warnings (>2 hours old)
 - Source badges (Environment Canada vs NOAA)
 
 **Neah Bay Special Features:**
@@ -226,19 +323,43 @@ Displays current conditions for all buoys with:
 - Storm surge forecasts (GeoMet GDSPS)
 - Responsive design for mobile and desktop
 
+### Winds Page (winds.html)
+
+Real-time wind conditions from 10 Environment Canada weather stations:
+- **Sortable table** - Current wind speed/gust/direction, temperature, pressure
+- **Interactive map** - Leaflet map showing all wind stations with live data popups
+- **24-hour charts** - ECharts visualization with:
+  - Wind speed and gust timeseries (knots)
+  - Wind direction arrows (10-minute averages)
+  - Station selector dropdown with search
+- **Data staleness indicators** - Visual warnings for stale data (>2 hours)
+- **Regional coverage** - Strait of Georgia, Gulf Islands, Juan de Fuca
+
 ### Tides Page (tides.html)
 
-Real-time tide monitoring for 10+ DFO stations:
+Real-time tide monitoring for 12 DFO stations:
 - **Current observation** - Latest water level measurement
 - **Current prediction** - Astronomical tide forecast (now)
 - **High/Low table** - Today's predicted high and low tides
-- **28-hour chart** - ECharts visualization showing:
-  - Tide predictions (blue line)
+- **Combined water level chart** - ECharts visualization showing:
+  - Astronomical tide predictions (blue line)
   - Actual observations (green dots)
+  - Storm surge forecast (orange dashed line)
+  - Total water level = tide + surge (purple bold line)
   - Interactive tooltips with Pacific time
+  - Day navigation (today, tomorrow, +2 days)
 - **Auto-loads Point Atkinson** as default station
 - Station selector dropdown for all monitored locations
 - Auto-refreshes every 5 minutes
+
+### Forecasts Page (forecasts.html)
+
+Marine weather forecasts and warnings from Environment Canada:
+- **Warning banners** - Dismissible banners on all pages (Storm/Gale/Strong Wind)
+- **Zone-specific forecasts** - Strait of Georgia (north/south of Nanaimo)
+- **Extended forecast** - Today, Tonight, Tomorrow, and named days
+- **Wave forecast** - Predicted wave heights and conditions
+- **Smooth navigation** - Scroll-to-zone links
 
 
 
@@ -248,14 +369,18 @@ Real-time tide monitoring for 10+ DFO stations:
 
 | Script | Purpose |
 |--------|---------|
-| `buoy_to_influx_sqlite.py` | Parse EC XML → SQLite; optional InfluxDB sync |
+| `buoy_to_influx_sqlite.py` | Parse EC buoy XMLs → SQLite; optional InfluxDB sync |
 | `fetch_noaa_buoy.py` | Download + merge NOAA data (met + spectral) |
+| `wind_to_sqlite.py` | Parse EC wind station XMLs → SQLite |
 | `tide_to_sqlite.py` | Fetch DFO IWLS tide data (observations + predictions) |
 | `sqlite_to_json.py` | Export latest buoy readings for website display |
+| `export_wind_json.py` | Export latest wind station readings |
 | `export_24hr_timeseries.py` | Export rolling 24-hour buoy timeseries |
+| `export_wind_24hr_timeseries.py` | Export rolling 24-hour wind timeseries |
 | `export_tide_json.py` | Export tide data (latest, timeseries, high/low) |
 | `influx_to_mqtt.py` | Publish MQTT topics for Home Assistant |
 | `fetch_storm_surge.py` | Fetch GeoMet GDSPS storm surge forecasts |
+| `parse_marine_forecast.py` | Parse EC marine forecast XMLs |
 
 
 

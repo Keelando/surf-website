@@ -2,6 +2,62 @@
 
 ## Upcoming Tasks
 
+### Lighthouse Performance Reports (Next Session)
+
+Add Lighthouse performance auditing to monitor frontend performance and accessibility.
+
+**Implementation ideas:**
+- Automated Lighthouse CI reports for key pages (index, winds, tides, forecasts)
+- Performance budgets and alerts
+- Track metrics over time (performance, accessibility, best practices, SEO)
+- Identify optimization opportunities
+
+**Priority:** Medium (site works well, but good to monitor)
+
+---
+
+### Backend Data Audit (Future Task - Rainy Day Project)
+
+**Goal:** Audit the backend data pipeline for errors and missed opportunities
+
+**Tasks:**
+- [ ] **Environment Canada XML audit**
+  - Parse sample SWOB-ML XMLs to identify all available fields
+  - Compare against fields currently being captured in `buoy_to_influx_sqlite.py` and `wind_to_sqlite.py`
+  - Document fields we're currently ignoring/throwing away
+  - Evaluate which additional fields would be useful (e.g., humidity, dewpoint, visibility for buoys)
+  - Check if EC provides wave spectral data (period bands, directional spectra) that we're missing
+
+- [ ] **NOAA data audit**
+  - Review NOAA .txt and .spec file formats for additional fields
+  - Check if we're missing any useful meteorological data
+  - Verify all spectral wave components are being captured correctly
+
+- [ ] **Error logging audit**
+  - Review all parser logs for recurring errors or warnings
+  - Check for data validation issues (malformed XMLs, unexpected values)
+  - Identify stations with frequent data gaps or stale data
+  - Look for silent failures in data processing
+
+- [ ] **Database schema optimization**
+  - Check for unused columns that could be removed
+  - Identify missing indexes that would improve query performance
+  - Consider adding data quality flags (e.g., sensor status, QC codes)
+
+- [ ] **Data completeness report**
+  - Generate statistics on data availability per station
+  - Identify time gaps in historical data
+  - Check if all expected fields are being populated
+
+**Benefits:**
+- Capture more useful data from existing sources
+- Improve data quality and reliability
+- Better understanding of system health
+
+**Priority:** Low (system works well, but could be optimized)
+
+---
+
 ### Home Assistant / InfluxDB Removal (Future Consideration - 2025-11-18)
 
 **Current state:**
@@ -252,10 +308,26 @@
 - **Note:** Text parsing will be simpler than XML/SWOB-ML but requires handling variations in format
 
 **BC Stations (Custom/Non-SWOB-ML):**
-- **Jericho Wind Station** (Jericho Sailing Centre)
+- **Jericho Wind Station** (Jericho Sailing Centre) ⭐ CONFIRMED DATA SOURCE
   - URL: https://jsca.bc.ca/main/downld02.txt
-  - Format: Custom text file (non-SWOB-ML)
-  - Would need dedicated fetch script similar to Surrey FlowWorks integration
+  - Coordinates: 49.28°N, 123.2°W
+  - Format: Fixed-width text table with header row
+  - Update frequency: 30-minute intervals
+  - Data fields to capture (standard set):
+    - Wind speed (mph) → convert to knots
+    - Wind gust (hi wind speed) → convert to knots
+    - Wind direction (degrees)
+    - Air temperature (°F) → convert to °C
+    - Barometric pressure (mb) → convert to hPa
+    - Rain amount (inches) → convert to mm
+  - Fields available but NOT capturing: humidity, dew point, wind chill, heat index, indoor readings
+  - Unit conversions needed: mph → knots (× 0.868976), °F → °C ((x-32)×5/9), mb → hPa (1:1), inches → mm (× 25.4)
+  - Implementation:
+    - Create `fetch_jericho_wind.py` similar to Surrey FlowWorks integration
+    - Parse fixed-width text format (not CSV)
+    - Insert into `wind_data.sqlite` with station_id 'JERICHO'
+    - Add to `config/stations.json` under wind section
+    - Integration with existing export scripts (already handle any station ID)
   - Priority: High (excellent English Bay coverage for sailors)
 
 - **YVR Airport - NavCanada AeroView** (Alternative/Supplement to SWOB-ML)

@@ -274,6 +274,143 @@ CREATE INDEX idx_tide_highlow_type ON tide_highlow(station_name, event_time DESC
 
 ---
 
+### wind_to_sqlite.py
+
+**Purpose:** Parse Environment Canada SWOB-ML XML files for wind stations
+
+**Data source:** XMLs in `~/envcan_wave/data/wind/` (downloaded by sr3)
+
+**Processing:**
+1. Find all `.xml` files in wind data directory
+2. Parse each XML using `ElementTree`
+3. Extract station ID from XML content (not filename)
+4. Extract wind and meteorological observations
+5. Map EC SWOB-ML field names to database columns
+6. Insert into SQLite (with deduplication via unique index)
+7. Optionally write to InfluxDB (soft dependency)
+8. Log processing statistics
+
+**Field mappings (EC SWOB-ML → Database):**
+- `avg_wnd_spd_pst10mts` → `wind_speed_kmh`
+- `max_avg_wnd_spd_pst10mts` → `wind_gust_kmh`
+- `avg_wnd_dir_pst10mts` → `wind_direction_deg`
+- `avg_air_temp_pst10mts` → `air_temp_c`
+- `avg_stn_pres_pst10mts` → `pressure_hpa`
+- `avg_mslp_pst10mts` → `pressure_mslp_hpa`
+- `avg_rel_hum_pst10mts` → `humidity_percent`
+- `avg_dwpt_temp_pst10mts` → `dewpoint_c`
+- `avg_vis_pst10mts` → `visibility_km`
+- `pcpn_amt_pst1hr` → `rainfall_1hr_mm`
+- `pcpn_amt_pst6hrs` → `rainfall_6hr_mm`
+
+**Frequency:** Every minute (cron)
+
+**Output:** Records in `wind_observation` table
+
+**Logs:** `~/envcan_wave/wind_parser.log`
+
+**Note:** Station ID parsing extracts from `tc_id` element in XML, not filename (filenames contain timestamps/locations that don't match station IDs)
+
+---
+
+### export_wind_json.py
+
+**Purpose:** Export latest wind station snapshot for website
+
+**Processing:**
+1. For each wind station:
+2. Query latest non-null value for each field (within 2-hour freshness window)
+3. Convert wind speed: km/h → knots (÷ 1.852)
+4. Add cardinal direction labels for wind directions
+5. Mark data as stale if > 2 hours old
+6. Format timestamps as ISO 8601
+7. Build JSON object with all stations
+8. Write atomically to avoid partial writes
+
+**Freshness window:** 2 hours
+- Each field independently queries for most recent non-null value
+- Data marked as stale if observation_time > 2 hours ago
+
+**Query pattern per field:**
+```sql
+SELECT field_name
+FROM wind_observation
+WHERE station_id = ?
+  AND field_name IS NOT NULL
+  AND observation_time >= strftime('%s', 'now', '-2 hours')
+ORDER BY observation_time DESC
+LIMIT 1
+```
+
+**Frequency:** Every 5 minutes (cron)
+
+**Output:** `~/site/data/latest_wind.json`
+
+**JSON structure:**
+```json
+{
+  "CWSB": {
+    "station_id": "CWSB",
+    "station_name": "Point Atkinson",
+    "observation_time": "2025-11-20T19:00:00Z",
+    "wind_speed_kt": 12.5,
+    "wind_gust_kt": 18.2,
+    "wind_direction_deg": 270,
+    "wind_direction_cardinal": "W",
+    "air_temp_c": 10.5,
+    "pressure_hpa": 1013.2,
+    "stale": false,
+    ...
+  },
+  ...
+}
+```
+
+**Logs:** `~/envcan_wave/wind_export.log`
+
+---
+
+### export_wind_24hr_timeseries.py
+
+**Purpose:** Generate 24-hour rolling wind timeseries for charts
+
+**Processing:**
+1. For each wind station:
+2. Query all observations from last 24 hours
+3. Extract fields: time, wind speed, wind gust, wind direction, temperature, pressure
+4. Convert wind speeds to knots
+5. Format as array of objects suitable for ECharts
+6. Write separate JSON file with all stations' data
+
+**Frequency:** Every 10 minutes (cron)
+
+**Output:** `~/site/data/wind_timeseries_24hr.json`
+
+**JSON structure:**
+```json
+{
+  "CWSB": {
+    "station_id": "CWSB",
+    "station_name": "Point Atkinson",
+    "data": {
+      "wind_speed_kt": [
+        {"time": "2025-11-20T19:00:00Z", "value": 12.5},
+        ...
+      ],
+      "wind_gust_kt": [...],
+      "wind_direction_deg": [...],
+      "air_temp_c": [...],
+      "pressure_hpa": [...]
+    }
+  },
+  ...
+}
+```
+
+**Logs:** `~/envcan_wave/wind_timeseries_export.log`
+
+---
+
 ### sqlite_to_json.py
 
 **Purpose:** Export latest buoy snapshot for website
@@ -558,6 +695,25 @@ timeseries_*.json (24h rolling)
 buoy_data.sqlite
          ↓ (influx_to_mqtt.py, every minute)
 MQTT → Home Assistant
+```
+
+### Wind Data Flow
+
+```
+Environment Canada AMQP Broker
+         ↓ (sr3 subscription: bc_wind_stations)
+data/wind/*.xml (SWOB-ML XMLs, every 10 min)
+         ↓ (wind_to_sqlite.py, every minute)
+wind_data.sqlite (wind_observation table)
+         ↓ (export_wind_json.py, every 5 min)
+latest_wind.json (latest snapshot)
+
+wind_data.sqlite
+         ↓ (export_wind_24hr_timeseries.py, every 10 min)
+wind_timeseries_24hr.json (24h rolling)
+         ↓ (browser, page load)
+         ├→ winds.html (sortable table + map)
+         └→ winds-charts.js (ECharts 24h timeseries)
 ```
 
 ### Tide Data Flow
