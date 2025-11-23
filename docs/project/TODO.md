@@ -2,6 +2,36 @@
 
 ## Upcoming Tasks
 
+### Map Enhancements - Direction Arrows & Data Labels (Medium Urgent)
+
+**Goal:** Add visual direction indicators and data labels to map markers
+
+**Implementation:**
+- [ ] **Wind stations map (winds.html)**
+  - Add rotated arrow icons showing wind direction at each station
+  - Display current wind speed (e.g., "25 kt") near marker
+  - Consider color-coding by wind speed intensity
+
+- [ ] **Buoy map (if exists, or future enhancement)**
+  - Add wave direction arrows
+  - Display key metrics: wave height (e.g., "0.7 m"), swell height, etc.
+  - Consider separate arrows for swell vs wind waves (NOAA buoys)
+
+**Technical approach:**
+- Use Leaflet's DivIcon for custom HTML markers with rotation
+- Update markers when data refreshes
+- Ensure readable on both light/dark backgrounds
+- Mobile-friendly sizing
+
+**Benefits:**
+- Immediate visual understanding of conditions at a glance
+- No need to click markers to see basic data
+- Better spatial awareness of wind/wave patterns across region
+
+**Priority:** Medium-High (improves usability significantly)
+
+---
+
 ### Lighthouse Performance Reports (Next Session)
 
 Add Lighthouse performance auditing to monitor frontend performance and accessibility.
