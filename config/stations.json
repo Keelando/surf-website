@@ -655,6 +655,53 @@
       ]
     }
   },
+  "lightstations": {
+    "CAPE_MUDGE": {
+      "id": "CAPE_MUDGE",
+      "name": "Cape Mudge",
+      "location": "Quadra Island",
+      "lat": 50.00,
+      "lon": -125.20,
+      "region": "STRAIT OF GEORGIA",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3
+    },
+    "CHROME_ISLAND": {
+      "id": "CHROME_ISLAND",
+      "name": "Chrome Island",
+      "location": "Strait of Georgia",
+      "lat": 49.47,
+      "lon": -124.69,
+      "region": "STRAIT OF GEORGIA",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3
+    },
+    "MERRY_ISLAND": {
+      "id": "MERRY_ISLAND",
+      "name": "Merry Island",
+      "location": "Sunshine Coast",
+      "lat": 49.47,
+      "lon": -123.91,
+      "region": "STRAIT OF GEORGIA",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3
+    },
+    "CHATHAM_POINT": {
+      "id": "CHATHAM_POINT",
+      "name": "Chatham Point",
+      "location": "Discovery Passage",
+      "lat": 50.33,
+      "lon": -125.44,
+      "region": "CENTRAL COAST",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3,
+      "note": "Approximate coordinates - to be refined"
+    }
+  },
   "_metadata": {
     "version": "1.1.0",
     "created": "2025-01-30",
