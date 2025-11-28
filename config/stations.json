@@ -656,56 +656,126 @@
     }
   },
   "lightstations": {
+    "CHROME_ISLAND": {
+      "id": "CHROME_ISLAND",
+      "name": "Chrome Island",
+      "location": "Denman Island, Georgia Strait",
+      "lat": 49.472194,
+      "lon": -124.685194,
+      "region": "STRAIT OF GEORGIA",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3,
+      "established": 1891,
+      "notes": "Marks southern entrance to Baynes Sound"
+    },
     "CAPE_MUDGE": {
       "id": "CAPE_MUDGE",
       "name": "Cape Mudge",
       "location": "Quadra Island",
-      "lat": 50.00,
-      "lon": -125.20,
+      "lat": 49.998556,
+      "lon": -125.195611,
       "region": "STRAIT OF GEORGIA",
       "source": "Environment Canada",
       "type": "lightstation",
-      "update_frequency_hours": 3
-    },
-    "CHROME_ISLAND": {
-      "id": "CHROME_ISLAND",
-      "name": "Chrome Island",
-      "location": "Strait of Georgia",
-      "lat": 49.47,
-      "lon": -124.69,
-      "region": "STRAIT OF GEORGIA",
-      "source": "Environment Canada",
-      "type": "lightstation",
-      "update_frequency_hours": 3
+      "update_frequency_hours": 3,
+      "established": 1898,
+      "notes": "Marks southern entrance to Discovery Passage"
     },
     "MERRY_ISLAND": {
       "id": "MERRY_ISLAND",
       "name": "Merry Island",
-      "location": "Sunshine Coast",
-      "lat": 49.47,
-      "lon": -123.91,
+      "location": "Halfmoon Bay, Sunshine Coast",
+      "lat": 49.467486,
+      "lon": -123.912011,
       "region": "STRAIT OF GEORGIA",
       "source": "Environment Canada",
       "type": "lightstation",
-      "update_frequency_hours": 3
+      "update_frequency_hours": 3,
+      "notes": "Marks southeast entrance to Welcome Passage"
     },
-    "CHATHAM_POINT": {
-      "id": "CHATHAM_POINT",
-      "name": "Chatham Point",
-      "location": "Discovery Passage",
-      "lat": 50.33,
-      "lon": -125.44,
-      "region": "CENTRAL COAST",
+    "CAPE_BEALE": {
+      "id": "CAPE_BEALE",
+      "name": "Cape Beale",
+      "location": "Barkley Sound, Vancouver Island",
+      "lat": 48.786472,
+      "lon": -125.2155,
+      "region": "WEST COAST VANCOUVER ISLAND",
       "source": "Environment Canada",
       "type": "lightstation",
       "update_frequency_hours": 3,
-      "note": "Approximate coordinates - to be refined"
+      "established": 1874,
+      "notes": "First lighthouse on VI west coast, marks entrance to Barkley Sound"
+    },
+    "LENNARD_ISLAND": {
+      "id": "LENNARD_ISLAND",
+      "name": "Lennard Island",
+      "location": "Near Tofino, Vancouver Island",
+      "lat": 49.110417,
+      "lon": -125.923528,
+      "region": "WEST COAST VANCOUVER ISLAND",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3,
+      "notes": "Southwest point of Lennard Island"
+    },
+    "ESTEVAN_POINT": {
+      "id": "ESTEVAN_POINT",
+      "name": "Estevan Point",
+      "location": "Hesquiat Peninsula, Vancouver Island",
+      "lat": 49.382972,
+      "lon": -126.544028,
+      "region": "WEST COAST VANCOUVER ISLAND",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3,
+      "established": 1909,
+      "notes": "Iconic rocket-shaped tower with flying buttresses, 102 feet tall"
+    },
+    "NOOTKA": {
+      "id": "NOOTKA",
+      "name": "Nootka",
+      "location": "San Rafael Island, Nootka Sound",
+      "lat": 49.592639,
+      "lon": -126.615389,
+      "region": "WEST COAST VANCOUVER ISLAND",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3,
+      "established": 1911,
+      "notes": "Marks entrance to Nootka Sound at Friendly Cove"
+    },
+    "CAPE_SCOTT": {
+      "id": "CAPE_SCOTT",
+      "name": "Cape Scott",
+      "location": "Northwest tip of Vancouver Island",
+      "lat": 50.782556,
+      "lon": -128.425778,
+      "region": "WEST COAST VANCOUVER ISLAND",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3,
+      "established": 1960,
+      "notes": "Northwest extremity of Vancouver Island"
+    },
+    "QUATSINO": {
+      "id": "QUATSINO",
+      "name": "Quatsino",
+      "location": "Kains Island, entrance to Quatsino Sound",
+      "lat": 50.441194,
+      "lon": -128.032444,
+      "region": "WEST COAST VANCOUVER ISLAND",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3,
+      "established": 1909,
+      "notes": "Marks entrance to Quatsino Sound"
     }
   },
   "_metadata": {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "created": "2025-01-30",
-    "updated": "2025-02-04",
+    "updated": "2025-11-28",
     "description": "Unified station metadata for Salish Sea marine monitoring",
     "sources": {
       "buoys": {
