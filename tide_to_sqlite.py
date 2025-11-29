@@ -303,11 +303,12 @@ def main():
                         total_added += added
                         logger.info(f"Predictions added {added} rows")
 
-        # Fetch high/low events (wlp-hilo) - 48-hour window
+        # Fetch high/low events (wlp-hilo) - 3-day window (matches prediction range)
+        # Extended to 3 days to support full calendar day navigation on frontend
         if args.highlow or args.all:
             if "wlp-hilo" in codes:
                 start = now - datetime.timedelta(hours=12)
-                end = now + datetime.timedelta(hours=36)
+                end = now + datetime.timedelta(days=3)
                 url = f"{BASE_URL}/{sid}/data"
                 params = {
                     "time-series-code": "wlp-hilo",

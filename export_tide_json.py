@@ -181,9 +181,10 @@ def export_latest(conn, station_metadata):
 
 def export_timeseries(conn, station_metadata):
     """
-    Export timeseries data for charts - today's calendar day +/- 2 hours.
+    Export timeseries data for charts - 3 full calendar days (today, tomorrow, day after).
     Downsampled to 15-minute intervals.
     Includes both predictions and observations separately.
+    This allows the frontend to navigate between days for all stations, even those without storm surge data.
     """
     cur = conn.cursor()
 
@@ -191,11 +192,13 @@ def export_timeseries(conn, station_metadata):
     pacific = ZoneInfo('America/Vancouver')
     now_pacific = datetime.now(pacific)
 
-    # Today's calendar day in Pacific time
+    # Start from today's midnight in Pacific time
     day_start = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
-    day_end = day_start + timedelta(days=1)
 
-    # Add 2-hour padding
+    # End at end of day after tomorrow (3 full days total)
+    day_end = day_start + timedelta(days=3)
+
+    # Add 2-hour padding on both ends for smooth chart display
     query_start = day_start - timedelta(hours=2)
     query_end = day_end + timedelta(hours=2)
 
@@ -282,7 +285,9 @@ def export_timeseries(conn, station_metadata):
         "_meta": {
             "generated_utc": datetime.now(timezone.utc).isoformat(),
             "type": "timeseries",
-            "calendar_day": day_start.strftime("%Y-%m-%d"),
+            "start_day": day_start.strftime("%Y-%m-%d"),
+            "end_day": (day_end - timedelta(days=1)).strftime("%Y-%m-%d"),
+            "days_included": 3,
             "query_start": query_start.isoformat(),
             "query_end": query_end.isoformat(),
             "timezone": "America/Vancouver",
@@ -301,16 +306,18 @@ def export_highlow(conn, station_metadata):
     """
     Export high/low tide events for text display.
     Uses tide_highlow table.
-    26-hour window centered on now (12h before to 14h after).
+    Exports 3 full calendar days: today, tomorrow, and day after tomorrow.
     """
     cur = conn.cursor()
 
     pacific = ZoneInfo('America/Vancouver')
     now_pacific = datetime.now(pacific)
 
-    # Query window: 12 hours before now to 14 hours after now (26 hour window)
-    query_start = now_pacific - timedelta(hours=12)
-    query_end = now_pacific + timedelta(hours=14)
+    # Start from beginning of today (Pacific)
+    today_start = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
+    # End at end of day after tomorrow (3 full days)
+    query_start = today_start
+    query_end = today_start + timedelta(days=3)
 
     # Convert to UTC timestamps
     start_ts = int(query_start.astimezone(timezone.utc).timestamp())
@@ -368,7 +375,8 @@ def export_highlow(conn, station_metadata):
             "query_start": query_start.isoformat(),
             "query_end": query_end.isoformat(),
             "timezone": "America/Vancouver",
-            "window": "12h before to 14h after now"
+            "window": "3 full calendar days (today, tomorrow, day after tomorrow)",
+            "days_included": 3
         },
         "stations": highlow_data
     }

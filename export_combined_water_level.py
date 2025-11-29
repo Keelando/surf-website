@@ -46,7 +46,9 @@ STATION_MAPPING = {
     # Crescent Beach has predictions but not observations in tide_stations.json
     # Using crescent_pile as the tide station key
     "crescent_pile": "Crescent_Beach_Channel",
-    "tofino": "Tofino"
+    "tofino": "Tofino",
+    # Port Renfrew uses Neah Bay surge data (closest station, ~30km away)
+    "port_renfrew": "Neah_Bay"
 }
 
 
@@ -254,13 +256,8 @@ def update_latest_with_surge(surge_dir):
     now = datetime.now(timezone.utc)
     updated_count = 0
 
-    # Station mapping: tide station key -> storm surge station key
-    station_mapping = {
-        "point_atkinson": "Point_Atkinson",
-        "campbell_river": "Campbell_River",
-        "crescent_pile": "Crescent_Beach_Channel",
-        "tofino": "Tofino"
-    }
+    # Station mapping: tide station key -> storm surge station key (use same mapping as main export)
+    station_mapping = STATION_MAPPING
 
     # Update each matching station
     for tide_station, surge_station in station_mapping.items():
