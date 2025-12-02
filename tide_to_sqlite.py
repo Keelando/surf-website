@@ -281,6 +281,7 @@ def main():
                         added = insert_observations(cur, key, sid, values)
                         total_added += added
                         logger.info(f"Observations added {added} rows")
+                time.sleep(1.0)  # Brief sleep between data types
 
         # Fetch predictions (wlp) - current time + 3 days ahead
         # Extended to 3 days to ensure full 2 calendar days ahead coverage
@@ -302,6 +303,7 @@ def main():
                         added = insert_predictions(cur, key, sid, values)
                         total_added += added
                         logger.info(f"Predictions added {added} rows")
+                time.sleep(1.0)  # Brief sleep between data types
 
         # Fetch high/low events (wlp-hilo) - 3-day window (matches prediction range)
         # Extended to 3 days to support full calendar day navigation on frontend
@@ -323,7 +325,7 @@ def main():
                         total_added += added
                         logger.info(f"High/low events added {added} rows")
 
-        time.sleep(2.1)  # Rate limiting
+        time.sleep(3.0)  # Rate limiting between stations - gentle on DFO API
 
     # Purge old data (keep 10 days for analysis/validation)
     logger.info("=" * 70)

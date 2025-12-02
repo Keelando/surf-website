@@ -425,6 +425,38 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
 - Export scripts already handle any station IDs added to WIND_STATIONS dict
 - Add KORS and KBLI to `config/stations.json` wind section when implementing
 
+### White Rock Pier Webcam Integration (Needs Reimplementation)
+
+**Old script (broken):**
+```bash
+#!/bin/sh
+# Fetched latest frame from WR YouTube stream, saved with timestamp
+rm /home/ubuntu/new_surf_604/604-surf-website/web/react-windswell/public/wrcam/*.jpg
+filename="WR$(date +%s)"
+cd /home/ubuntu/new_surf_604/604-surf-website/web/
+ffmpeg -hide_banner -loglevel error -i "$(/usr/bin/pipenv run yt-dlp -g https://www.youtube.com/watch?v=4MK3E9EWDSY)" -frames 1 /home/ubuntu/new_surf_604/604-surf-website/web/react-windswell/public/wrcam/${filename}.jpg
+echo {\"filename\":\"$filename\"}>/home/ubuntu/new_surf_604/604-surf-website/web/react-windswell/public/wrcam/latestimagefilename.json
+/usr/local/bin/aws s3 cp /home/ubuntu/new_surf_604/604-surf-website/web/react-windswell/public/wrcam/${filename}.jpg s3://wr-pier-cam-images/
+```
+
+**Issues:**
+- YouTube link likely broken or changed
+- Needs ffmpeg installation
+- Should be reimplemented for current infrastructure
+
+**Implementation plan:**
+- [ ] Verify White Rock Pier webcam source (find current YouTube stream or alternative)
+- [ ] Install ffmpeg on server
+- [ ] Create `fetch_wr_webcam.py` or bash script
+- [ ] Output to `~/site/data/wrcam/` directory
+- [ ] Add cron job (frequency TBD - every 5-10 min?)
+- [ ] Add webcam image display to website (possibly on index or dedicated cam page)
+- [ ] Decide on S3 upload requirement (archive old images?)
+
+**Priority:** Medium-Low (nice-to-have, visual enhancement)
+
+---
+
 ### Known Issues (Not Currently Affecting Operation)
 
 - **ECharts "connect nulls" behavior**

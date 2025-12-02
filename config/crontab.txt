@@ -1,0 +1,94 @@
+# Environment variables
+WINDY_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaSI6MTEyNzkyMDcsImlhdCI6MTcwNjAzNzIwOX0.vs_q3qKnJe8c-bOseKJ2hfST1ZpcKjCwpemqMJxH0BQ
+
+# system telemetry over mqtt to haos
+*/2 * * * * /home/keelando/.sys-venv/bin/python /home/keelando/sys_stats_mqtt.py
+
+# parse xmls
+* * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/buoy_to_influx_sqlite.py >> /home/keelando/envcan_wave/logs/parser.log 2>&1
+
+# purge data older than 2 days
+0 * * * * find /home/keelando/envcan_wave/data/buoy -name "*.xml" -mtime +2 -delete
+
+#every minute push latest data over mqtt
+* * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/influx_to_mqtt.py >> /home/keelando/envcan_wave/logs/mqtt.log 2>&1
+
+# Export latest snapshot to JSON for website (SQLite source)
+* * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/sqlite_to_json.py >> /home/keelando/envcan_wave/logs/json_export.log 2>&1
+*/5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_24hr_timeseries.py >> /home/keelando/envcan_wave/logs/timeseries_export.log 2>&1
+
+# Export stations metadata to website (backend → frontend sync)
+0 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_stations_json.py >> /home/keelando/envcan_wave/logs/stations_export.log 2>&1
+
+# Storm Surge Forecast - runs every 6 hours (GeoMet updates every 6h)
+30 1,7,13,19 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_storm_surge.py >> /home/keelando/envcan_wave/logs/storm_surge.log 2>&1
+
+# Marine Forecast - parse latest EC marine weather XMLs (updates 2-4x daily)
+*/30 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/parse_marine_forecast.py >> /home/keelando/envcan_wave/logs/marine_forecast.log 2>&1
+
+# Fetch NOAA buoy data every 5 minutes (NOAA updates hourly)
+5,25,45 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_noaa_buoy.py >> /home/keelando/envcan_wave/logs/noaa.log 2>&1
+
+# ========== TIDE DATA ==========
+
+# Fetch tide observations every 30 minutes (15-min downsampled, 11-day retention)
+*/30 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py --observations >> /home/keelando/envcan_wave/logs/tide_obs.log 2>&1
+
+# Fetch tide predictions once daily at 12:05 AM (current day only, 3-day retention)
+5 0 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py --predictions >> /home/keelando/envcan_wave/logs/tide_pred.log 2>&1
+
+# Fetch high/low tide events once daily at 12:10 AM (3-day window, 10-day retention)
+10 0 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/tide_to_sqlite.py --highlow >> /home/keelando/envcan_wave/logs/tide_highlow.log 2>&1
+
+# Export tide JSON data every 5 minutes (current conditions, timeseries, high/low events)
+*/5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_tide_json.py --all >> /home/keelando/envcan_wave/logs/tide_export.log 2>&1
+
+# Combined water level (tide + storm surge) - every 5 minutes and after storm surge updates
+*/5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_combined_water_level.py >> /home/keelando/envcan_wave/logs/combined_water_level.log 2>&1
+35 1,7,13,19 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_combined_water_level.py >> /home/keelando/envcan_wave/logs/combined_water_level.log 2>&1
+
+# ========== END TIDE DATA ==========
+
+# Backup crontab to git repo (runs at 11:02 PM before git backup)
+2 23 * * * crontab -l > /home/keelando/envcan_wave/config/crontab.txt 2>&1
+
+# Auto-backup git repo at 11 PM nightly
+3 23 * * * /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
+
+# Auto-backup website frontend at 11 PM nightly
+4 23 * * * cd /home/keelando/site && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/site/git_backup.log 2>&1
+
+# purge week old logs
+0 0 * * * find /home/keelando/envcan_wave/logs -name "*.log" -type f -mtime +7 -delete
+
+# Fetch Surrey FlowWorks data every 20 minutes
+*/20 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_surrey_wave_v2.py >> /home/keelando/envcan_wave/logs/surrey.log 2>&1
+
+# Storm Surge Hindcast Export - runs daily at 2 AM (after overnight fetch completes)
+0 2 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_hindcast_json.py >> /home/keelando/envcan_wave/logs/hindcast_export.log 2>&1
+
+# System backup with restic - daily at 2:30 AM (keeps 7 daily + 4 weekly snapshots)
+30 2 * * * /home/keelando/backup_surf.sh >> /home/keelando/envcan_wave/logs/restic_backup.log 2>&1
+
+# Export observed storm surge (tide offset) - runs every 5 minutes
+*/5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_observed_storm_surge.py >> /home/keelando/envcan_wave/logs/observed_surge_export.log 2>&1
+* * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/wind_to_sqlite.py >> /home/keelando/envcan_wave/logs/wind_parser.log 2>&1
+*/5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_wind_json.py >> /home/keelando/envcan_wave/logs/wind_export.log 2>&1
+*/10 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_wind_24hr_timeseries.py >> /home/keelando/envcan_wave/logs/wind_timeseries_export.log 2>&1
+
+# Generate website analytics every hour
+0 * * * * /home/keelando/site/scripts/generate_analytics.sh >> /home/keelando/envcan_wave/logs/analytics.log 2>&1
+
+# Fetch White Rock Pier weather every 5 minutes (updates every 5 min)
+*/5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_whiterock_weather.py >> /home/keelando/envcan_wave/logs/whiterock_weather.log 2>&1
+
+# Fetch White Rock Pier webcam every 10 minutes (30-day archive)
+*/10 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_whiterock_cam.py >> /home/keelando/envcan_wave/logs/whiterock_cam.log 2>&1
+
+# Lightstation Reports - fetch/parse/export every 3 hours
+
+# Lightstation Reports - fetch/parse/export every hour to catch delayed reports
+5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_lightstation.py >> /home/keelando/envcan_wave/logs/lightstation_fetch.log 2>&1
+10 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/parse_lightstation.py >> /home/keelando/envcan_wave/logs/lightstation_parse.log 2>&1
+15 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_lightstation_json.py >> /home/keelando/envcan_wave/logs/lightstation_export.log 2>&1
+18 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_lightstation_24hr_timeseries.py >> /home/keelando/envcan_wave/logs/lightstation_timeseries.log 2>&1

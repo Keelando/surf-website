@@ -15,6 +15,7 @@ from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
 import time
+import os
 
 # Shared utilities
 from units import ms_to_kmh
@@ -27,6 +28,35 @@ logger = setup_logging('surrey_fetch')
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
 USERNAME = "surreyrain"
 PASSWORD = "surreyrain"
+
+# Windy API Configuration
+WINDY_API_KEY = os.environ.get("WINDY_API_KEY")
+
+# Windy station metadata
+# Station IDs match registered stations in Windy (0, 1, 2)
+WINDY_STATIONS = {
+    "crescentpile": {
+        "stationid": 0,
+        "name": "Crescent Beach Ocean",
+        "lat": 49.0121666,
+        "lon": -122.9402834,
+        "elevation": 5,  # meters
+    },
+    "crescentchannel": {
+        "stationid": 1,
+        "name": "Crescent Beach Channel",
+        "lat": 49.05392053,
+        "lon": -122.8970759,
+        "elevation": 5,  # meters
+    },
+    "colebrook": {
+        "stationid": 2,
+        "name": "Colebrook Pump House",
+        "lat": 49.08583,
+        "lon": -122.845,
+        "elevation": 2,  # meters
+    },
+}
 
 # Station configuration (from v1)
 STATIONS = {
@@ -283,6 +313,108 @@ def fetch_and_store(api, station_key, station_config, conn, hours=2):
     return total_inserted
 
 
+def get_latest_station_data(conn, buoy_id):
+    """Get the most recent observation for a station from SQLite."""
+    cur = conn.cursor()
+
+    # Get the latest observation with required wind data
+    cur.execute("""
+        SELECT observation_time, wind_speed, wind_direction, wind_gust, air_temp
+        FROM buoy_observation
+        WHERE buoy_id = ?
+          AND wind_speed IS NOT NULL
+          AND wind_direction IS NOT NULL
+          AND wind_gust IS NOT NULL
+        ORDER BY observation_time DESC
+        LIMIT 1
+    """, (buoy_id,))
+
+    row = cur.fetchone()
+    if not row:
+        return None
+
+    # If air_temp is NULL, try to get the most recent non-null value
+    air_temp = row[4]
+    if air_temp is None:
+        cur.execute("""
+            SELECT air_temp
+            FROM buoy_observation
+            WHERE buoy_id = ? AND air_temp IS NOT NULL
+            ORDER BY observation_time DESC
+            LIMIT 1
+        """, (buoy_id,))
+        temp_row = cur.fetchone()
+        if temp_row:
+            air_temp = temp_row[0]
+
+    return {
+        'timestamp': row[0],
+        'wind_speed': row[1],
+        'wind_direction': row[2],
+        'wind_gust': row[3],
+        'air_temp': air_temp
+    }
+
+
+def push_to_windy(station_key, data, windy_config):
+    """Push station data to Windy API."""
+    if not WINDY_API_KEY:
+        logger.warning("WINDY_API_KEY not set - skipping Windy push")
+        return False
+
+    if not data:
+        logger.warning(f"{station_key}: No data to push to Windy")
+        return False
+
+    try:
+        # Convert timestamp to UTC ISO format
+        dt = datetime.fromtimestamp(data['timestamp'], tz=timezone.utc)
+        dt_utc_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        # Convert wind speeds from km/h to m/s (Windy expects m/s)
+        wind_ms = data['wind_speed'] / 3.6
+        gust_ms = data['wind_gust'] / 3.6
+
+        # Build query parameters
+        params = {
+            'station': windy_config['stationid'],
+            'name': windy_config['name'],
+            'latitude': windy_config['lat'],
+            'longitude': windy_config['lon'],
+            'elevation': windy_config['elevation'],
+            'dateutc': dt_utc_str,
+            'wind': round(wind_ms, 2),
+            'winddir': int(data['wind_direction']),
+            'gust': round(gust_ms, 2),
+            'shareOption': 'Open'
+        }
+
+        # Add temperature if available
+        if data['air_temp'] is not None:
+            params['temp'] = round(data['air_temp'], 1)
+
+        # Make request
+        url = f"https://stations.windy.com/pws/update/{WINDY_API_KEY}"
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+
+        # Log response details for debugging
+        response_text = response.text.strip()
+        logger.info(f"{station_key}: Windy response - HTTP {response.status_code}: {response_text}")
+        logger.debug(f"{station_key}: Sent params: {params}")
+
+        # Check for success indicators in response
+        if response_text.lower() in ['success', 'ok'] or response.status_code == 200:
+            return True
+        else:
+            logger.warning(f"{station_key}: Unexpected Windy response: {response_text}")
+            return False
+
+    except Exception as e:
+        logger.error(f"{station_key}: Windy push failed - {e}")
+        return False
+
+
 def main():
     logger.info("Surrey FlowWorks Data Fetcher (API v2)")
 
@@ -304,9 +436,27 @@ def main():
         except Exception as e:
             logger.error(f"  Error: {e}")
 
-    conn.close()
-
     logger.info(f"Complete - inserted {total} data points")
+
+    # Push latest data to Windy for each station
+    logger.info("Pushing data to Windy...")
+    windy_success = 0
+    for station_key, station_config in STATIONS.items():
+        try:
+            if station_key not in WINDY_STATIONS:
+                continue
+
+            buoy_id = station_config["buoy_id"]
+            data = get_latest_station_data(conn, buoy_id)
+
+            if data and push_to_windy(station_key, data, WINDY_STATIONS[station_key]):
+                windy_success += 1
+        except Exception as e:
+            logger.error(f"  Windy push error for {station_key}: {e}")
+
+    logger.info(f"Windy: {windy_success}/{len(WINDY_STATIONS)} stations updated")
+
+    conn.close()
     logger.info(f"Database: {BUOY_DATABASE}")
 
     return 0

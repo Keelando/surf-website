@@ -69,19 +69,24 @@ Production system runs on cron. See `cron.txt` for the actual crontab file.
 0 14 * * * cd /home/keelando/envcan_wave && source .venv/bin/activate && python3 export_hindcast_json.py >> ~/envcan_wave/hindcast_export.log 2>&1
 ```
 
-### Maintenance
+### Maintenance & Backups
 
 ```bash
-
 # Hourly: Purge XML files older than 2 days
 0 * * * * find /home/keelando/envcan_wave/data/buoy -name "*.xml" -mtime +2 -delete
 5 * * * * find /home/keelando/envcan_wave/data/marine_forecast -name "*.xml" -mtime +2 -delete
 
-# Daily 11 PM: Auto-commit and push to git (backend)
-0 23 * * * cd /home/keelando/envcan_wave && git add . && git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && git push >> ~/envcan_wave/git_backup.log 2>&1
+# Weekly: Purge logs older than 7 days
+0 0 * * * find /home/keelando/envcan_wave/logs -name "*.log" -type f -mtime +7 -delete
 
-# Daily 11:05 PM: Auto-commit and push to git (frontend)
-5 23 * * * cd /home/keelando/site && git add . && git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && git push >> ~/site/git_backup.log 2>&1
+# Daily 11:02 PM: Backup crontab to git repo (runs before git backup)
+2 23 * * * crontab -l > /home/keelando/envcan_wave/config/crontab.txt 2>&1
+
+# Daily 11:03 PM: Auto-commit and push backend repo to git
+3 23 * * * /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
+
+# Daily 11:04 PM: Auto-commit and push frontend repo to git
+4 23 * * * cd /home/keelando/site && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/site/git_backup.log 2>&1
 ```
 
 ### Install Cron Schedule
@@ -457,39 +462,308 @@ Add to crontab for daily health check:
 
 ## Backup Strategy
 
-### Automated Git Backups
+### Automated Nightly Backups
 
-Cron jobs automatically commit and push changes daily at 11 PM (see Cron Schedule section).
+The system performs automatic backups every night at 11 PM via cron jobs:
 
-**Backend repo:** `~/envcan_wave`
-**Frontend repo:** `~/site`
+**Backup sequence (runs in order):**
+1. **11:02 PM** - Export crontab to `~/envcan_wave/config/crontab.txt`
+2. **11:03 PM** - Commit and push backend repo (`~/envcan_wave`) to GitHub
+3. **11:04 PM** - Commit and push frontend repo (`~/site`) to GitHub
 
-### Manual Backup
+**What gets backed up:**
+- **Backend repo** (`~/envcan_wave`):
+  - All Python scripts (parsers, fetchers, exporters)
+  - Configuration files (`stations.json`, `tide_stations.json`)
+  - **Crontab** (`config/crontab.txt`) - Automatically saved before git push
+  - Documentation (README, CLAUDE.md, docs/)
+  - SQLite databases (via git-lfs if configured, otherwise excluded)
+
+- **Frontend repo** (`~/site`):
+  - HTML, CSS, JavaScript files
+  - Static assets (images, icons)
+  - JSON data exports (latest buoy/tide/wind/forecast data)
+  - Analytics reports
+
+**Not backed up to git:**
+- SQLite databases (`~/.local/share/*.sqlite`) - use manual backup below
+- sr3 configuration (`~/.config/sr3/`) - use manual backup below
+- Credentials (`~/.config/buoy_influx_1.env`) - NEVER commit to git
+- Raw XML data (`~/envcan_wave/data/`) - transient, auto-purged after 2 days
+
+**Backup logs:**
+- Backend: `~/envcan_wave/logs/git_backup.log`
+- Frontend: `~/site/git_backup.log`
+
+**Check backup status:**
+```bash
+# View backend backup log
+tail -20 ~/envcan_wave/logs/git_backup.log
+
+# View frontend backup log
+tail -20 ~/site/git_backup.log
+
+# Check if backup ran today
+ls -lh ~/envcan_wave/config/crontab.txt
+```
+
+### Manual Database Backups
+
+SQLite databases should be backed up manually or via separate cron job (not included in git due to size):
 
 ```bash
-# Backup databases
-cp ~/.local/share/buoy_data.sqlite ~/backups/buoy_data_$(date +%Y%m%d).sqlite
-cp ~/.local/share/tide_data.sqlite ~/backups/tide_data_$(date +%Y%m%d).sqlite
+# Create backup directory
+mkdir -p ~/backups/databases
 
-# Backup configuration
-cp -r ~/.config/sr3 ~/backups/sr3_config_$(date +%Y%m%d)
-cp ~/.config/buoy_influx_1.env ~/backups/
+# Backup all databases
+cp ~/.local/share/buoy_data.sqlite ~/backups/databases/buoy_data_$(date +%Y%m%d).sqlite
+cp ~/.local/share/tide_data.sqlite ~/backups/databases/tide_data_$(date +%Y%m%d).sqlite
+cp ~/.local/share/wind_data.sqlite ~/backups/databases/wind_data_$(date +%Y%m%d).sqlite
+cp ~/.local/share/storm_surge_forecast.sqlite ~/backups/databases/storm_surge_$(date +%Y%m%d).sqlite
+
+# Optional: Compress backups
+tar -czf ~/backups/databases_$(date +%Y%m%d).tar.gz ~/backups/databases/*_$(date +%Y%m%d).sqlite
+```
+
+**Add to crontab for weekly database backups:**
+```bash
+# Weekly Sunday 3 AM: Backup databases
+0 3 * * 0 mkdir -p ~/backups/databases && cp ~/.local/share/buoy_data.sqlite ~/backups/databases/buoy_data_$(date +\%Y\%m\%d).sqlite && cp ~/.local/share/tide_data.sqlite ~/backups/databases/tide_data_$(date +\%Y\%m\%d).sqlite && cp ~/.local/share/wind_data.sqlite ~/backups/databases/wind_data_$(date +\%Y\%m\%d).sqlite
+```
+
+### Manual Configuration Backups
+
+**Critical configuration files (backup before making changes):**
+
+```bash
+# Create config backup directory
+mkdir -p ~/backups/config
+
+# Backup sr3 subscription configs
+cp -r ~/.config/sr3 ~/backups/config/sr3_$(date +%Y%m%d)
+
+# Backup credentials (keep secure!)
+cp ~/.config/buoy_influx_1.env ~/backups/config/buoy_influx_1_$(date +%Y%m%d).env
+chmod 600 ~/backups/config/buoy_influx_1_*.env
 
 # Backup Caddyfile
-sudo cp /etc/caddy/Caddyfile ~/backups/Caddyfile_$(date +%Y%m%d)
+sudo cp /etc/caddy/Caddyfile ~/backups/config/Caddyfile_$(date +%Y%m%d)
+
+# Backup current crontab (redundant with automated backup, but useful before manual edits)
+crontab -l > ~/backups/config/crontab_$(date +%Y%m%d).txt
 ```
+
+---
+
+## System Backups with Restic
+
+The system uses [restic](https://restic.net/) for automated, incremental, deduplicated backups to `/mnt/storage/restic-backup`.
+
+### Automated Backup Schedule
+
+Daily backups run at **2:30 AM** via cron (`~/backup_surf.sh`):
+
+**What's backed up:**
+- `/home` (excluding cache, trash, logs, `.venv`, `__pycache__`)
+- `/etc` (system configs)
+- `/var/lib` (databases, application data)
+- `/srv`, `/opt`, `/usr/local`
+- `/root`
+- Package list, crontab, enabled services
+
+**Retention policy:**
+- Keep 7 daily snapshots
+- Keep 4 weekly snapshots
+- Automatic pruning of old snapshots
+
+### Manual Backup Operations
+
+**Run backup manually:**
+```bash
+sudo /home/keelando/backup_surf.sh
+```
+
+**List all snapshots:**
+```bash
+sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backup snapshots
+```
+
+**Check repository health:**
+```bash
+sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backup check
+```
+
+**View backup statistics:**
+```bash
+sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backup stats
+```
+
+### Restore from Restic
+
+**List files in latest snapshot:**
+```bash
+sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backup ls latest
+```
+
+**Restore specific file:**
+```bash
+# Restore to original location
+sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backup restore latest \
+  --target / \
+  --include /home/keelando/.config/buoy_influx_1.env
+
+# Or restore to temporary location for inspection
+sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backup restore latest \
+  --target /tmp/restore \
+  --include /home/keelando/envcan_wave/config/crontab.txt
+```
+
+**Restore entire home directory:**
+```bash
+# Restore to temporary location first (recommended)
+sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backup restore latest \
+  --target /tmp/restore \
+  --include /home/keelando
+
+# Then copy what you need
+cp -r /tmp/restore/home/keelando/envcan_wave ~/envcan_wave_restored
+```
+
+**Restore from specific snapshot:**
+```bash
+# List snapshots with IDs
+sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backup snapshots
+
+# Restore using snapshot ID
+sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backup restore a1b2c3d4 \
+  --target /tmp/restore
+```
+
+### Initialize New Restic Repository
+
+If setting up on a new drive:
+
+```bash
+# Initialize repository
+sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backup init
+
+# Run first backup
+sudo /home/keelando/backup_surf.sh
+```
+
+---
 
 ### Restore from Backup
 
+**Restore crontab:**
 ```bash
-# Restore database
-cp ~/backups/buoy_data_20251105.sqlite ~/.local/share/buoy_data.sqlite
+# Restore from git repo (automated backup)
+crontab ~/envcan_wave/config/crontab.txt
 
-# Restore sr3 config
-cp -r ~/backups/sr3_config_20251105/* ~/.config/sr3/
-sr3 stop subscribe/bc_buoys
-sr3 start subscribe/bc_buoys
+# OR restore from manual backup
+crontab ~/backups/config/crontab_20251130.txt
+
+# Verify restoration
+crontab -l | head -20
 ```
+
+**Restore databases:**
+```bash
+# Stop any running processes that might be writing to the database
+# (or wait for cron cycle to complete)
+
+# Restore database
+cp ~/backups/databases/buoy_data_20251130.sqlite ~/.local/share/buoy_data.sqlite
+
+# Verify restoration
+sqlite3 ~/.local/share/buoy_data.sqlite "SELECT COUNT(*) FROM buoy_observation;"
+```
+
+**Restore sr3 configuration:**
+```bash
+# Stop sr3 subscriptions
+sr3 stop subscribe/bc_buoys
+sr3 stop subscribe/bc_wind_stations
+sr3 stop subscribe/marine_forecast
+
+# Restore config
+cp -r ~/backups/config/sr3_20251130/* ~/.config/sr3/
+
+# Restart sr3
+sr3 start subscribe/bc_buoys
+sr3 start subscribe/bc_wind_stations
+sr3 start subscribe/marine_forecast
+
+# Verify
+sr3 status
+```
+
+**Restore credentials:**
+```bash
+# Restore environment file
+cp ~/backups/config/buoy_influx_1_20251130.env ~/.config/buoy_influx_1.env
+chmod 600 ~/.config/buoy_influx_1.env
+
+# Verify (check permissions)
+ls -la ~/.config/buoy_influx_1.env
+```
+
+### Disaster Recovery Checklist
+
+If rebuilding system from scratch:
+
+1. **Clone repositories:**
+   ```bash
+   git clone https://github.com/yourusername/envcan_wave.git ~/envcan_wave
+   git clone https://github.com/yourusername/site.git ~/site
+   ```
+
+2. **Restore crontab:**
+   ```bash
+   crontab ~/envcan_wave/config/crontab.txt
+   ```
+
+3. **Restore credentials:**
+   ```bash
+   mkdir -p ~/.config
+   cp ~/backups/config/buoy_influx_1.env ~/.config/
+   chmod 600 ~/.config/buoy_influx_1.env
+   ```
+
+4. **Restore sr3 config:**
+   ```bash
+   cp -r ~/backups/config/sr3_latest/* ~/.config/sr3/
+   ```
+
+5. **Restore databases (optional - they will rebuild from APIs):**
+   ```bash
+   mkdir -p ~/.local/share
+   cp ~/backups/databases/buoy_data_latest.sqlite ~/.local/share/
+   cp ~/backups/databases/tide_data_latest.sqlite ~/.local/share/
+   cp ~/backups/databases/wind_data_latest.sqlite ~/.local/share/
+   ```
+
+6. **Install dependencies and start services:**
+   ```bash
+   cd ~/envcan_wave
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+
+   # Start sr3
+   sr3 start subscribe/bc_buoys
+   sr3 start subscribe/bc_wind_stations
+   sr3 start subscribe/marine_forecast
+
+   # Verify
+   sr3 status
+   ```
+
+7. **Restore Caddy config:**
+   ```bash
+   sudo cp ~/backups/config/Caddyfile_latest /etc/caddy/Caddyfile
+   sudo caddy reload --config /etc/caddy/Caddyfile
+   ```
 
 ---
 
