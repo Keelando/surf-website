@@ -71,18 +71,37 @@ def get_stream_url():
         return None
 
 
-def capture_frame(stream_url, output_path):
-    """Capture a single frame from the stream using ffmpeg"""
+def capture_frame(stream_url, output_path, timestamp):
+    """Capture a single frame from the stream using ffmpeg with cropping and timestamp overlay"""
     try:
         logger.info(f"Capturing frame to: {output_path}")
 
-        # Use ffmpeg to grab one frame
+        # Format timestamp for overlay (YYYY-MM-DD HH:MM:SS PST/PDT)
+        # Determine if we're in PST or PDT based on the timestamp
+        import time
+        is_dst = time.localtime(timestamp.timestamp()).tm_isdst
+        tz_abbr = "PDT" if is_dst else "PST"
+        timestamp_str = timestamp.strftime("%Y-%m-%d %H\\:%M\\:%S") + f" {tz_abbr}"
+
+        # Use ffmpeg to grab one frame with cropping and timestamp overlay
+        # Crop filter removes black bars (adjust values as needed)
+        # Format: crop=width:height:x:y
+        # Current setting: crop to 16:9 aspect ratio, removing top/bottom black bars
+        # Drawtext adds timestamp in bottom-right corner
+        filter_complex = (
+            "crop=in_w:in_h-200:0:100,"  # Crop black bars
+            f"drawtext=text='{timestamp_str}':"
+            "fontsize=24:fontcolor=white:borderw=2:bordercolor=black:"
+            "x=w-tw-10:y=h-th-10"  # Bottom-right corner with 10px padding
+        )
+
         result = subprocess.run(
             [
                 "ffmpeg",
                 "-hide_banner",
                 "-loglevel", "error",
                 "-i", stream_url,
+                "-vf", filter_complex,
                 "-frames:v", "1",
                 "-q:v", "5",  # JPEG quality (5 is excellent, web-optimized)
                 "-y",  # Overwrite output file
@@ -122,7 +141,7 @@ def cleanup_old_archives():
         cutoff_time = datetime.now().timestamp() - (ARCHIVE_RETENTION_DAYS * 24 * 3600)
         deleted_count = 0
 
-        for img_path in ARCHIVE_DIR.glob("WR*.jpg"):
+        for img_path in ARCHIVE_DIR.glob("WR_*.jpg"):
             if img_path.stat().st_mtime < cutoff_time:
                 img_path.unlink()
                 deleted_count += 1
@@ -148,22 +167,30 @@ def main():
         logger.error("Failed to get stream URL - aborting")
         sys.exit(1)
 
-    # Generate timestamp-based filename
+    # Generate timestamp-based filename with readable format
+    # Format: WR_YYYYMMDD_HHMMSS_UnixTimestamp.jpg
+    # Example: WR_20251203_143025_1764801605.jpg
     timestamp = datetime.now(timezone.utc)
-    filename = f"WR{int(timestamp.timestamp())}.jpg"
+    timestamp_readable = timestamp.strftime("%Y%m%d_%H%M%S")
+    timestamp_unix = int(timestamp.timestamp())
+    filename = f"WR_{timestamp_readable}_{timestamp_unix}.jpg"
 
     # Capture to archive directory first
     archive_path = ARCHIVE_DIR / filename
-    if not capture_frame(stream_url, archive_path):
+    if not capture_frame(stream_url, archive_path, timestamp):
         logger.error("Failed to capture frame - aborting")
         sys.exit(1)
 
-    # Copy to website directory as "latest.jpg"
+    # Atomically move to website directory as "latest.jpg"
+    # Write to temp file first, then atomic rename to avoid serving partial images
     website_latest = WEBSITE_DIR / "latest.jpg"
+    website_temp = WEBSITE_DIR / f"latest.tmp.{timestamp_unix}.jpg"
     try:
         import shutil
-        shutil.copy2(archive_path, website_latest)
-        logger.info(f"Copied to website: {website_latest}")
+        shutil.copy2(archive_path, website_temp)
+        # Atomic rename - this ensures users never see partial images
+        website_temp.rename(website_latest)
+        logger.info(f"Atomically updated: {website_latest}")
     except Exception as e:
         logger.error(f"Failed to copy to website directory: {e}")
 
