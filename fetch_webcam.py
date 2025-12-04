@@ -96,29 +96,12 @@ def get_stream_url(youtube_url, logger):
 
 
 def capture_frame(stream_url, output_path, timestamp, crop_filter, logger):
-    """Capture a single frame from the stream using ffmpeg with cropping and timestamp overlay"""
+    """Capture a single frame from the stream using ffmpeg with cropping"""
     try:
         logger.info(f"Capturing frame to: {output_path}")
 
-        # Format timestamp for overlay (YYYY-MM-DD HH:MM:SS PST/PDT)
-        # Convert UTC to Pacific Time
-        from zoneinfo import ZoneInfo
-        pacific_tz = ZoneInfo("America/Vancouver")
-        timestamp_pacific = timestamp.astimezone(pacific_tz)
-
-        # Determine if we're in PST or PDT based on the Pacific time
-        import time
-        is_dst = timestamp_pacific.dst().total_seconds() != 0
-        tz_abbr = "PDT" if is_dst else "PST"
-        timestamp_str = timestamp_pacific.strftime("%Y-%m-%d %H\\:%M\\:%S") + f" {tz_abbr}"
-
-        # Build filter: crop + timestamp overlay
-        filter_complex = (
-            f"crop={crop_filter},"
-            f"drawtext=text='{timestamp_str}':"
-            "fontsize=24:fontcolor=white:borderw=2:bordercolor=black:"
-            "x=10:y=h-th-10"
-        )
+        # Build filter: crop only (stream already has its own timestamp)
+        filter_complex = f"crop={crop_filter}"
 
         result = subprocess.run(
             [

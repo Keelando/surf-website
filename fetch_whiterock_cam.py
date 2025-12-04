@@ -72,28 +72,16 @@ def get_stream_url():
 
 
 def capture_frame(stream_url, output_path, timestamp):
-    """Capture a single frame from the stream using ffmpeg with cropping and timestamp overlay"""
+    """Capture a single frame from the stream using ffmpeg with cropping"""
     try:
         logger.info(f"Capturing frame to: {output_path}")
 
-        # Format timestamp for overlay (YYYY-MM-DD HH:MM:SS PST/PDT)
-        # Determine if we're in PST or PDT based on the timestamp
-        import time
-        is_dst = time.localtime(timestamp.timestamp()).tm_isdst
-        tz_abbr = "PDT" if is_dst else "PST"
-        timestamp_str = timestamp.strftime("%Y-%m-%d %H\\:%M\\:%S") + f" {tz_abbr}"
-
-        # Use ffmpeg to grab one frame with cropping and timestamp overlay
+        # Use ffmpeg to grab one frame with cropping only
         # Crop filter removes black bars (adjust values as needed)
         # Format: crop=width:height:x:y
         # Current setting: crop to 16:9 aspect ratio, removing top/bottom black bars
-        # Drawtext adds timestamp in bottom-right corner
-        filter_complex = (
-            "crop=in_w:in_h-200:0:100,"  # Crop black bars
-            f"drawtext=text='{timestamp_str}':"
-            "fontsize=24:fontcolor=white:borderw=2:bordercolor=black:"
-            "x=w-tw-10:y=h-th-10"  # Bottom-right corner with 10px padding
-        )
+        # Stream already has its own timestamp
+        filter_complex = "crop=in_w:in_h-200:0:100"  # Crop black bars
 
         result = subprocess.run(
             [

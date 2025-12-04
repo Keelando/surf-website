@@ -71,19 +71,49 @@ BUOY_DATABASE.parent.mkdir(parents=True, exist_ok=True)
 
 # Fields we may insert (order is stable for INSERT)
 EXPECTED_FIELDS = [
+    # Wave metrics (basic)
     "wave_height_sig",
     "wave_height_peak",
+    "wave_height_max",
+    "wave_height_avg",
     "wave_period_sig",
     "wave_period_avg",
     "wave_period_peak",
+    "wave_period_max_wave",
     "wave_direction_avg",
     "wave_direction_peak",
+    "wave_direction_spread_avg",
+    "wave_direction_spread_peak",
+    "wave_crest_height_max",
+    # Wave metrics (spectral)
+    "wave_height_spectral",
+    "wave_period_spectral",
+    "wave_period_energy_spectral",
+    # Wind metrics (primary sensor)
     "wind_speed",
     "wind_gust",
     "wind_direction",
+    "wind_sensor_height",
+    # Wind metrics (secondary sensor)
+    "wind_speed_sensor_2",
+    "wind_gust_sensor_2",
+    "wind_direction_sensor_2",
+    "wind_samples_bad_1",
+    "wind_samples_bad_2",
+    # Temperature
     "air_temp",
     "sea_temp",
+    # Pressure
     "pressure",
+    "pressure_msl",
+    "pressure_sensor_2",
+    "pressure_trend_char",
+    "pressure_trend_amount",
+    # Position (current GPS coordinates)
+    "buoy_lat_current",
+    "buoy_lon_current",
+    # Solar panel current (cloudiness indicator!)
+    "solar_current",
 ]
 
 CREATE_TABLE_SQL = """
@@ -133,32 +163,77 @@ def ensure_schema(conn):
 
 # ---- Field mapping from SWOB-ML names -> our columns ----
 FIELD_MAP = {
+    # Wave height (multiple variants)
     "sig_wave_hgt_pst20mts": "wave_height_sig",
     "avg_sig_wave_hgt_pst20mts": "wave_height_sig",
     "sig_wave_hgt_pst35mts_10mts_ago": "wave_height_sig",
+    "spetrl_sig_wave_hgt_pst20mts": "wave_height_spectral",
 
     "pk_wave_hgt_pst20mts": "wave_height_peak",
     "pk_wave_hgt_pst35mts_10mts_ago": "wave_height_peak",
+    "max_wave_hgt_pst20mts": "wave_height_max",
+    "avg_wave_hgt_pst20mts": "wave_height_avg",
+    "max_wave_crst_hgt_abv_avg_wtr_lvl_pst20mts": "wave_crest_height_max",
 
+    # Wave period
     "avg_wave_pd_pst20mts": "wave_period_avg",
+    "avg_sig_wave_pd_pst20mts": "wave_period_sig",
     "pk_wave_pd_pst20mts": "wave_period_peak",
     "pk_wave_pd_pst35mts_10mts_ago": "wave_period_peak",
+    "pd_of_max_wave_hgt_pst20mts": "wave_period_max_wave",
+    "avg_spetrl_wave_pd_pst20mts": "wave_period_spectral",
+    "spetrl_wave_enrgy_pd_pst20mts": "wave_period_energy_spectral",
 
+    # Wave direction
     "avg_wave_dir_pst20mts": "wave_direction_avg",
     "avg_pk_wave_dir_pst20mts": "wave_direction_peak",
+    "avg_wave_dir_sprd_pst20mts": "wave_direction_spread_avg",
+    "pk_wave_dir_sprd_pst20mts": "wave_direction_spread_peak",
 
+    # Wind (primary sensor)
     "avg_wnd_spd_pst10mts": "wind_speed",
     "avg_wnd_spd_pst10mts_1": "wind_speed",
-
     "max_avg_wnd_spd_pst10mts": "wind_gust",
     "max_avg_wnd_spd_pst10mts_1": "wind_gust",
     "max_wnd_spd_pst10mts": "wind_gust",
-
+    "max_wnd_spd_pst10mts_1": "wind_gust",
     "avg_wnd_dir_pst10mts": "wind_direction",
+    "avg_wnd_dir_pst10mts_1": "wind_direction",
+    "wnd_snsr_vert_disp": "wind_sensor_height",
+
+    # Wind (secondary sensor)
+    "avg_wnd_spd_pst10mts_2": "wind_speed_sensor_2",
+    "max_wnd_spd_pst10mts_2": "wind_gust_sensor_2",
+    "avg_wnd_dir_pst10mts_2": "wind_direction_sensor_2",
+    "bad_wnd_smpls_1": "wind_samples_bad_1",
+    "bad_wnd_smpls_2": "wind_samples_bad_2",
+
+    # Temperature
     "avg_air_temp_pst10mts": "air_temp",
     "avg_sea_sfc_temp_pst10mts": "sea_temp",
+
+    # Pressure
     "avg_stn_pres_pst10mts": "pressure",
+    "avg_stn_pres_pst10mts_1": "pressure",
+    "avg_stn_pres_pst10mts_2": "pressure_sensor_2",
+    "avg_mslp_pst10mts": "pressure_msl",
+    "pres_tend_char_pst3hrs": "pressure_trend_char",
+    "pres_tend_amt_pst3hrs": "pressure_trend_amount",
+
+    # Position
+    "crnt_buoy_lat": "buoy_lat_current",
+    "crnt_buoy_long": "buoy_lon_current",
+
+    # Solar current (cloudiness indicator)
+    "avg_solr_panl_crnt_pst10mts": "solar_current",
 }
+
+# Note: The following fields are available in EC buoy XMLs but not currently captured:
+# - avg_batry_volt_pst10mts (battery voltage)
+# - wtchmn_boot_cnt_pst1hr (watchman boot count - system health)
+# - avg_cmpss_hdng_pst10mts_1/2 (compass heading from dual sensors)
+# - avg_wtr_lvl_snsr_volt_pst10mts (water level sensor voltage)
+# - avg_obstrn_lamp_crnt_pst10mts (obstruction lamp current)
 
 
 def parse_and_collect_fields(root):

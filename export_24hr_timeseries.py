@@ -20,24 +20,57 @@ BUOYS = get_all_buoys()
 
 # All available metrics for timeseries
 ALL_METRICS = {
+    # Wave heights
     "wave_height_sig": {"name": "Significant Wave Height", "unit": "m"},
     "wave_height_peak": {"name": "Peak Wave Height", "unit": "m"},
+    "wave_height_max": {"name": "Maximum Wave Height", "unit": "m"},
+    "wave_height_avg": {"name": "Average Wave Height", "unit": "m"},
+    "wave_height_spectral": {"name": "Spectral Significant Wave Height", "unit": "m"},
+    "wave_crest_height_max": {"name": "Max Crest Height Above Water", "unit": "m"},
+    # Wave periods
+    "wave_period_sig": {"name": "Significant Wave Period", "unit": "s"},
     "wave_period_avg": {"name": "Average Wave Period", "unit": "s"},
     "wave_period_peak": {"name": "Peak Wave Period", "unit": "s"},
+    "wave_period_max_wave": {"name": "Period of Max Wave", "unit": "s"},
+    "wave_period_spectral": {"name": "Spectral Wave Period", "unit": "s"},
+    "wave_period_energy_spectral": {"name": "Spectral Energy Period", "unit": "s"},
+    # Wave directions & spread
     "wave_direction_avg": {"name": "Average Wave Direction", "unit": "°"},
     "wave_direction_peak": {"name": "Peak Wave Direction", "unit": "°"},
+    "wave_direction_spread_avg": {"name": "Avg Direction Spread", "unit": "°"},
+    "wave_direction_spread_peak": {"name": "Peak Direction Spread", "unit": "°"},
+    # NOAA spectral (swell vs wind waves)
     "swell_height": {"name": "Swell Height", "unit": "m"},
     "swell_period": {"name": "Swell Period", "unit": "s"},
     "swell_direction": {"name": "Swell Direction", "unit": "°"},
     "wind_wave_height": {"name": "Wind Wave Height", "unit": "m"},
     "wind_wave_period": {"name": "Wind Wave Period", "unit": "s"},
     "wind_wave_direction": {"name": "Wind Wave Direction", "unit": "°"},
+    # Wind (primary sensor)
     "wind_speed": {"name": "Wind Speed", "unit": "kt"},
     "wind_gust": {"name": "Wind Gust", "unit": "kt"},
     "wind_direction": {"name": "Wind Direction", "unit": "°"},
+    "wind_sensor_height": {"name": "Wind Sensor Height", "unit": "m"},
+    # Wind (secondary sensor)
+    "wind_speed_sensor_2": {"name": "Wind Speed (Sensor 2)", "unit": "kt"},
+    "wind_gust_sensor_2": {"name": "Wind Gust (Sensor 2)", "unit": "kt"},
+    "wind_direction_sensor_2": {"name": "Wind Direction (Sensor 2)", "unit": "°"},
+    "wind_samples_bad_1": {"name": "Bad Wind Samples (S1)", "unit": "count"},
+    "wind_samples_bad_2": {"name": "Bad Wind Samples (S2)", "unit": "count"},
+    # Temperature
     "air_temp": {"name": "Air Temperature", "unit": "°C"},
     "sea_temp": {"name": "Sea Temperature", "unit": "°C"},
-    "pressure": {"name": "Pressure", "unit": "hPa"},
+    # Pressure
+    "pressure": {"name": "Station Pressure", "unit": "hPa"},
+    "pressure_msl": {"name": "Mean Sea Level Pressure", "unit": "hPa"},
+    "pressure_sensor_2": {"name": "Pressure (Sensor 2)", "unit": "hPa"},
+    "pressure_trend_char": {"name": "Pressure Tendency", "unit": "code"},
+    "pressure_trend_amount": {"name": "3hr Pressure Change", "unit": "hPa"},
+    # Position
+    "buoy_lat_current": {"name": "Current Latitude", "unit": "°"},
+    "buoy_lon_current": {"name": "Current Longitude", "unit": "°"},
+    # Solar (cloudiness indicator)
+    "solar_current": {"name": "Solar Panel Current", "unit": "A"},
 }
 
 def downsample_to_hourly(timeseries_data):

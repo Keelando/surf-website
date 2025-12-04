@@ -19,13 +19,32 @@ BUOYS = get_all_buoys()
 
 # Fields to query individually (each gets most recent non-null value within 2 hours)
 ALL_FIELDS = [
-    "wave_height_sig", "wave_height_peak",
-    "wave_period_sig", "wave_period_avg", "wave_period_peak",
+    # Wave heights
+    "wave_height_sig", "wave_height_peak", "wave_height_max", "wave_height_avg",
+    "wave_height_spectral", "wave_crest_height_max",
+    # Wave periods
+    "wave_period_sig", "wave_period_avg", "wave_period_peak", "wave_period_max_wave",
+    "wave_period_spectral", "wave_period_energy_spectral",
+    # Wave directions
     "wave_direction_avg", "wave_direction_peak",
+    "wave_direction_spread_avg", "wave_direction_spread_peak",
+    # NOAA spectral data (swell vs wind waves)
     "swell_height", "swell_period", "swell_direction",
     "wind_wave_height", "wind_wave_period", "wind_wave_direction",
-    "wind_speed", "wind_gust", "wind_direction",
-    "air_temp", "sea_temp", "pressure"
+    # Wind (primary sensor)
+    "wind_speed", "wind_gust", "wind_direction", "wind_sensor_height",
+    # Wind (secondary sensor for redundancy)
+    "wind_speed_sensor_2", "wind_gust_sensor_2", "wind_direction_sensor_2",
+    "wind_samples_bad_1", "wind_samples_bad_2",
+    # Temperature
+    "air_temp", "sea_temp",
+    # Pressure
+    "pressure", "pressure_msl", "pressure_sensor_2",
+    "pressure_trend_char", "pressure_trend_amount",
+    # Position
+    "buoy_lat_current", "buoy_lon_current",
+    # Solar (cloudiness indicator)
+    "solar_current",
 ]
 
 def query_and_export():
@@ -104,26 +123,21 @@ def query_and_export():
                             buoy_json["field_times"] = {}
                         buoy_json["field_times"][field] = datetime.fromtimestamp(field_time, tz=timezone.utc).isoformat()
 
-            # Add cardinal directions
-            if 'wind_direction' in buoy_json and buoy_json['wind_direction'] is not None:
-                cardinal = degrees_to_cardinal(buoy_json['wind_direction'])
-                if cardinal:
-                    buoy_json["wind_direction_cardinal"] = cardinal
+            # Add cardinal directions for all directional fields
+            direction_fields = [
+                'wind_direction',
+                'wind_direction_sensor_2',
+                'wave_direction_avg',
+                'wave_direction_peak',
+                'swell_direction',
+                'wind_wave_direction',
+            ]
 
-            if 'wave_direction_peak' in buoy_json and buoy_json['wave_direction_peak'] is not None:
-                cardinal = degrees_to_cardinal(buoy_json['wave_direction_peak'])
-                if cardinal:
-                    buoy_json["wave_direction_peak_cardinal"] = cardinal
-
-            if 'swell_direction' in buoy_json and buoy_json['swell_direction'] is not None:
-                cardinal = degrees_to_cardinal(buoy_json['swell_direction'])
-                if cardinal:
-                    buoy_json["swell_direction_cardinal"] = cardinal
-
-            if 'wind_wave_direction' in buoy_json and buoy_json['wind_wave_direction'] is not None:
-                cardinal = degrees_to_cardinal(buoy_json['wind_wave_direction'])
-                if cardinal:
-                    buoy_json["wind_wave_direction_cardinal"] = cardinal
+            for field in direction_fields:
+                if field in buoy_json and buoy_json[field] is not None:
+                    cardinal = degrees_to_cardinal(buoy_json[field])
+                    if cardinal:
+                        buoy_json[f"{field}_cardinal"] = cardinal
 
             # Skip buoys with no actual data (only name + observation_time + stale flag)
             if len(buoy_json.keys()) <= 3:
