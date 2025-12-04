@@ -46,8 +46,8 @@ WEBCAM_CONFIGS = {
     }
 }
 
-# Keep last N days of archive images
-ARCHIVE_RETENTION_DAYS = 30
+# Disk space management - cleanup when disk usage exceeds this percentage
+DISK_USAGE_THRESHOLD_PERCENT = 80
 
 # Keep last N images for slideshow
 SLIDESHOW_IMAGES_COUNT = 5
@@ -141,20 +141,65 @@ def capture_frame(stream_url, output_path, timestamp, crop_filter, logger):
 
 
 def cleanup_old_archives(archive_dir, prefix, logger):
-    """Remove archive images older than ARCHIVE_RETENTION_DAYS"""
+    """Remove oldest archive images when disk usage exceeds threshold"""
     try:
-        from datetime import timedelta
+        import shutil
 
-        cutoff_time = datetime.now().timestamp() - (ARCHIVE_RETENTION_DAYS * 24 * 3600)
+        # Get disk usage for the archive directory's filesystem
+        disk_usage = shutil.disk_usage(archive_dir)
+        usage_percent = (disk_usage.used / disk_usage.total) * 100
+
+        logger.info(f"Disk usage: {usage_percent:.1f}% ({disk_usage.used / (1024**3):.1f}GB / {disk_usage.total / (1024**3):.1f}GB)")
+
+        # Only cleanup if above threshold
+        if usage_percent < DISK_USAGE_THRESHOLD_PERCENT:
+            logger.info(f"Disk usage below {DISK_USAGE_THRESHOLD_PERCENT}% threshold - no cleanup needed")
+            return
+
+        logger.info(f"Disk usage above {DISK_USAGE_THRESHOLD_PERCENT}% threshold - cleaning up oldest images")
+
+        # Get all archive images sorted by modification time (oldest first)
+        all_images = sorted(
+            archive_dir.glob(f"{prefix}_*.jpg"),
+            key=lambda p: p.stat().st_mtime
+        )
+
+        if not all_images:
+            logger.warning("No images found to cleanup")
+            return
+
         deleted_count = 0
+        deleted_size_mb = 0
 
-        for img_path in archive_dir.glob(f"{prefix}_*.jpg"):
-            if img_path.stat().st_mtime < cutoff_time:
-                img_path.unlink()
-                deleted_count += 1
+        # Delete oldest images until we're below threshold (with 5% buffer)
+        target_percent = DISK_USAGE_THRESHOLD_PERCENT - 5
+
+        for img_path in all_images:
+            # Re-check disk usage after each deletion
+            disk_usage = shutil.disk_usage(archive_dir)
+            current_percent = (disk_usage.used / disk_usage.total) * 100
+
+            if current_percent <= target_percent:
+                break
+
+            # Keep at least the most recent 24 hours of images
+            age_hours = (datetime.now().timestamp() - img_path.stat().st_mtime) / 3600
+            if age_hours < 24:
+                logger.info(f"Stopped cleanup - remaining images are less than 24 hours old")
+                break
+
+            size_mb = img_path.stat().st_size / (1024 * 1024)
+            img_path.unlink()
+            deleted_count += 1
+            deleted_size_mb += size_mb
 
         if deleted_count > 0:
-            logger.info(f"Cleaned up {deleted_count} old archive images")
+            disk_usage = shutil.disk_usage(archive_dir)
+            final_percent = (disk_usage.used / disk_usage.total) * 100
+            logger.info(f"Cleaned up {deleted_count} old images ({deleted_size_mb:.1f} MB)")
+            logger.info(f"New disk usage: {final_percent:.1f}%")
+        else:
+            logger.warning(f"Disk usage still above threshold but no images old enough to delete")
 
     except Exception as e:
         logger.warning(f"Failed to cleanup old archives: {e}")
