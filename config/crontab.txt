@@ -4,6 +4,9 @@ WINDY_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaSI6MTEyNzkyMDcsImlhdCI6M
 # system telemetry over mqtt to haos
 */2 * * * * /home/keelando/.sys-venv/bin/python /home/keelando/sys_stats_mqtt.py
 
+# storage metrics to home assistant mqtt
+*/5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/storage_metrics_to_mqtt.py >> /home/keelando/envcan_wave/logs/storage_metrics.log 2>&1
+
 # parse xmls
 * * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/buoy_to_influx_sqlite.py >> /home/keelando/envcan_wave/logs/parser.log 2>&1
 
@@ -83,7 +86,6 @@ WINDY_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaSI6MTEyNzkyMDcsImlhdCI6M
 */5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_whiterock_weather.py >> /home/keelando/envcan_wave/logs/whiterock_weather.log 2>&1
 
 # Fetch White Rock Pier webcam every 10 minutes (30-day archive)
-*/10 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_whiterock_cam.py >> /home/keelando/envcan_wave/logs/whiterock_cam.log 2>&1
 
 # Lightstation Reports - fetch/parse/export every 3 hours
 
@@ -92,3 +94,10 @@ WINDY_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaSI6MTEyNzkyMDcsImlhdCI6M
 10 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/parse_lightstation.py >> /home/keelando/envcan_wave/logs/lightstation_parse.log 2>&1
 15 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_lightstation_json.py >> /home/keelando/envcan_wave/logs/lightstation_export.log 2>&1
 18 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_lightstation_24hr_timeseries.py >> /home/keelando/envcan_wave/logs/lightstation_timeseries.log 2>&1
+
+# Webcams - 10 minute intervals with 2-minute offsets
+# White Rock Pier webcam (slideshow-enabled)
+0,10,20,30,40,50 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_webcam.py whiterock >> /home/keelando/envcan_wave/logs/webcam_whiterock.log 2>&1
+
+# Boundary Bay webcam (slideshow-enabled, offset by 2 minutes)
+2,12,22,32,42,52 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_webcam.py boundarybay >> /home/keelando/envcan_wave/logs/webcam_boundarybay.log 2>&1

@@ -8,14 +8,8 @@ High-level project information and planning:
 
 - **[CLAUDE.md](project/CLAUDE.md)** - Instructions for Claude Code (AI assistant context)
 - **[TODO.md](project/TODO.md)** - Project todo list and upcoming work
-- **Refactoring Plans:**
-  - [PRACTICAL_REFACTORING_PLAN.md](project/PRACTICAL_REFACTORING_PLAN.md) - Main refactoring strategy
-  - [DIRECTORY_CLEANUP_PLAN.md](project/DIRECTORY_CLEANUP_PLAN.md) - Phase 1 directory organization
-  - [CODE_REFACTORING_OPPORTUNITIES.md](project/CODE_REFACTORING_OPPORTUNITIES.md) - Code improvement analysis
-  - [HYBRID_REFACTORING_STRATEGY.md](project/HYBRID_REFACTORING_STRATEGY.md) - Hybrid approach details
-  - [REFACTORING_PLAN.md](project/REFACTORING_PLAN.md) - Original refactoring plan
-  - [REFACTORING_EXECUTION_GUIDE.md](project/REFACTORING_EXECUTION_GUIDE.md) - Execution guide
-  - [PHASE0_READY_TO_EXECUTE.md](project/PHASE0_READY_TO_EXECUTE.md) - Phase 0 notes (not used)
+
+**Historical documentation:** Outdated refactoring plans and completed migration docs have been archived to `../archive/docs/` (2025-12-06)
 
 ## Deployment & Operations
 

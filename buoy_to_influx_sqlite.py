@@ -114,6 +114,17 @@ EXPECTED_FIELDS = [
     "buoy_lon_current",
     # Solar panel current (cloudiness indicator!)
     "solar_current",
+    # Wave metrics (additional statistics)
+    "wave_period_sig_basic",
+    "wave_height_max_avg",
+    "wave_period_max_avg",
+    # System health & monitoring
+    "battery_voltage",
+    "watchman_boot_count",
+    "obstruction_lamp_current",
+    # Orientation (compass headings)
+    "compass_heading_1",
+    "compass_heading_2",
 ]
 
 CREATE_TABLE_SQL = """
@@ -226,14 +237,24 @@ FIELD_MAP = {
 
     # Solar current (cloudiness indicator)
     "avg_solr_panl_crnt_pst10mts": "solar_current",
+
+    # Wave metrics (additional statistics) - Added 2025-12-06
+    "sig_wave_pd_pst20mts": "wave_period_sig_basic",
+    "avg_max_wave_hgt_pst20mts": "wave_height_max_avg",
+    "avg_max_wave_pd_pst20mts": "wave_period_max_avg",
+
+    # System health & monitoring - Added 2025-12-06
+    "avg_batry_volt_pst10mts": "battery_voltage",
+    "wtchmn_boot_cnt_pst1hr": "watchman_boot_count",
+    "avg_obstrn_lamp_crnt_pst10mts": "obstruction_lamp_current",
+
+    # Orientation (compass headings) - Added 2025-12-06
+    "avg_cmpss_hdng_pst10mts_1": "compass_heading_1",
+    "avg_cmpss_hdng_pst10mts_2": "compass_heading_2",
 }
 
-# Note: The following fields are available in EC buoy XMLs but not currently captured:
-# - avg_batry_volt_pst10mts (battery voltage)
-# - wtchmn_boot_cnt_pst1hr (watchman boot count - system health)
-# - avg_cmpss_hdng_pst10mts_1/2 (compass heading from dual sensors)
-# - avg_wtr_lvl_snsr_volt_pst10mts (water level sensor voltage)
-# - avg_obstrn_lamp_crnt_pst10mts (obstruction lamp current)
+# Note: The following fields are available in EC buoy XMLs but intentionally not captured:
+# - avg_wtr_lvl_snsr_volt_pst10mts (water level sensor voltage - too granular for operational needs)
 
 
 def parse_and_collect_fields(root):

@@ -24,7 +24,8 @@ ALL_FIELDS = [
     "wave_height_spectral", "wave_crest_height_max",
     # Wave periods
     "wave_period_sig", "wave_period_avg", "wave_period_peak", "wave_period_max_wave",
-    "wave_period_spectral", "wave_period_energy_spectral",
+    "wave_period_spectral", "wave_period_energy_spectral", "wave_period_sig_basic",
+    "wave_height_max_avg", "wave_period_max_avg",
     # Wave directions
     "wave_direction_avg", "wave_direction_peak",
     "wave_direction_spread_avg", "wave_direction_spread_peak",
@@ -45,6 +46,10 @@ ALL_FIELDS = [
     "buoy_lat_current", "buoy_lon_current",
     # Solar (cloudiness indicator)
     "solar_current",
+    # System health & monitoring (added 2025-12-06)
+    "battery_voltage", "watchman_boot_count", "obstruction_lamp_current",
+    # Orientation (compass headings, added 2025-12-06)
+    "compass_heading_1", "compass_heading_2",
 ]
 
 def query_and_export():
