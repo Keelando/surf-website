@@ -283,13 +283,14 @@ def main():
                         logger.info(f"Observations added {added} rows")
                 time.sleep(1.0)  # Brief sleep between data types
 
-        # Fetch predictions (wlp) - current time + 3 days ahead
-        # Extended to 3 days to ensure full 2 calendar days ahead coverage
+        # Fetch predictions (wlp) - current time + 4 days ahead
+        # Extended to 4 days to ensure coverage through midnight + 1 hour Pacific
+        # on day N+2 (accounts for UTC/Pacific timezone offset)
         # Note: DFO API rejects requests with 'from' dates in the past for predictions
         if args.predictions or args.all:
             if "wlp" in codes:
                 start = now
-                end = now + datetime.timedelta(days=3)
+                end = now + datetime.timedelta(days=4)
                 url = f"{BASE_URL}/{sid}/data"
                 params = {
                     "time-series-code": "wlp",
@@ -305,12 +306,13 @@ def main():
                         logger.info(f"Predictions added {added} rows")
                 time.sleep(1.0)  # Brief sleep between data types
 
-        # Fetch high/low events (wlp-hilo) - 3-day window (matches prediction range)
-        # Extended to 3 days to support full calendar day navigation on frontend
+        # Fetch high/low events (wlp-hilo) - 4-day window (matches prediction range)
+        # Extended to 4 days to ensure coverage through midnight + 1 hour Pacific
+        # on day N+2 (accounts for UTC/Pacific timezone offset)
         if args.highlow or args.all:
             if "wlp-hilo" in codes:
                 start = now - datetime.timedelta(hours=12)
-                end = now + datetime.timedelta(days=3)
+                end = now + datetime.timedelta(days=4)
                 url = f"{BASE_URL}/{sid}/data"
                 params = {
                     "time-series-code": "wlp-hilo",

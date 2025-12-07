@@ -80,6 +80,27 @@
         "pressure"
       ]
     },
+    "4600206": {
+      "id": "4600206",
+      "name": "La Perouse Bank",
+      "location": "West Coast Vancouver Island",
+      "lat": 48.83,
+      "lon": -126.0,
+      "region": "WEST COAST VANCOUVER ISLAND",
+      "source": "Environment Canada",
+      "type": "wave_buoy",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wave_height",
+        "wave_period",
+        "wave_direction",
+        "wind_speed",
+        "wind_direction",
+        "air_temp",
+        "sea_temp",
+        "pressure"
+      ]
+    },
     "46087": {
       "id": "46087",
       "name": "Neah Bay",
