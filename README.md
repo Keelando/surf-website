@@ -4,8 +4,9 @@
 
 A real-time, open-source wave and weather monitoring system for the **Salish Sea** region — combining data from Environment Canada and NOAA buoys.
 
-📍 **Live demo:** [halibutbank.ca](https://halibutbank.ca)  
-🧭 **Region:** Strait of Georgia, English Bay, Neah Bay, and surrounding waters  
+📍 **Live demo:** [halibutbank.ca](https://halibutbank.ca)
+🔗 **Front-end repo:** [surf-website-front-end](https://github.com/Keelando/surf-website-front-end)
+🧭 **Region:** Strait of Georgia, English Bay, Neah Bay, and surrounding waters
 ⚙️ **Stack:** Python · SQLite · MQTT · Home Assistant · ECharts
 
 ![Halibut Bank Dashboard Screenshot](assets/screenshot.png)
@@ -15,9 +16,12 @@ A real-time, open-source wave and weather monitoring system for the **Salish Sea
 ## Overview
 
 This system collects, processes, and displays marine weather data from:
-- **6 Wave Buoys** – Halibut Bank, English Bay, Southern Georgia Strait, Sentry Shoal (EC), Neah Bay & New Dungeness (NOAA)
-- **10 Wind Stations** – Point Atkinson, Sisters Islets, Entrance Island, Ballenas, Sand Heads, Tsawwassen, Saturna, Race Rocks, YVR, Boundary Bay (Environment Canada)
+- **8 Wave Buoys** – Halibut Bank, English Bay, Southern Georgia Strait, Sentry Shoal (EC), Neah Bay & New Dungeness (NOAA), Crescent Beach + Crescent Channel (Surrey FlowWorks)
+- **11 Wind Stations** – Point Atkinson, Sisters Islets, Entrance Island, Ballenas, Sand Heads, Tsawwassen, Saturna, Race Rocks, YVR, Boundary Bay, Jericho (Environment Canada + JSCA)
 - **12 Tide Stations** – Point Atkinson, Kitsilano, Tsawwassen, White Rock, Crescent Beach, New Westminster, Campbell River, Nanaimo, Tofino, and more (DFO IWLS)
+- **10 Lightstations** – Cape Beale, Solander Island, Entrance Island, Sisters Island, Chrome Island, Ballenas Islands, Discovery Island, Race Rocks, Sand Heads, Langara Island (DFO)
+- **2 Webcams** – White Rock Pier, Boundary Bay (10-minute snapshots with 30-day archive)
+- **1 Weather Station** – White Rock Pier (5-minute updates)
 
 ### Key Features
 - 🔁 Automated XML + text feed collection
@@ -26,8 +30,12 @@ This system collects, processes, and displays marine weather data from:
 - 🧩 JSON outputs for static website rendering
 - 📊 24-hour interactive charts (ECharts)
 - 🌊 Real-time tide predictions and observations
+- 🌊 Storm surge forecasts (GeoMet GDSPS) with combined water level modeling
+- 🌊 Observed storm surge calculation (tide offset analysis)
 - ⚙️ Smart deduplication and update scheduling
-- 🌊 NOAA "swell vs wind wave" separation  
+- 🌊 NOAA "swell vs wind wave" separation
+- 📸 Webcam archival system (30-day rolling archive)
+- 🏗️ Lightstation weather reports (manual + automated parsing)  
 
 ---
 
@@ -49,7 +57,7 @@ This system collects, processes, and displays marine weather data from:
 - `CRPILE` – Crescent Beach Ocean (pile-mounted wave station)
 - `CRCHAN` – Crescent Channel (radar-based wave measurement)
 
-### Wind Stations (10)
+### Wind Stations (11)
 
 **Environment Canada SWOB-ML weather stations:**
 - `CWGT` – Sisters Islets (Strait of Georgia)
@@ -63,9 +71,12 @@ This system collects, processes, and displays marine weather data from:
 - `CYVR` – YVR Airport (Richmond)
 - `CZBB` – Boundary Bay Airport (Delta)
 
+**JSCA Sailing Centre (Jericho Beach, Vancouver):**
+- `jericho` – Jericho Sailing Centre (English Bay)
+
 **Data provided:** Wind speed/gust/direction, temperature, pressure, humidity, dewpoint, visibility, rainfall
 
-**Update frequency:** Environment Canada updates every 10 minutes, parsed every minute
+**Update frequency:** Environment Canada updates every 10 minutes (parsed every minute), Jericho updates every 30 minutes
 
 ### Tide Stations (12)
 
@@ -85,21 +96,62 @@ This system collects, processes, and displays marine weather data from:
 
 **All station metadata:** See `config/stations.json`
 
+### Lightstations (10)
+
+**DFO Lightstation Weather Reports** (manual hourly reports from lightkeepers):
+- `cape_beale` – Cape Beale (West Coast Vancouver Island)
+- `solander_island` – Solander Island (Brooks Peninsula)
+- `entrance_island` – Entrance Island (Nanaimo)
+- `sisters_island` – Sisters Island (Smith Sound)
+- `chrome_island` – Chrome Island (Denman Island)
+- `ballenas_islands` – Ballenas Islands (Strait of Georgia)
+- `discovery_island` – Discovery Island (Victoria)
+- `race_rocks` – Race Rocks (Juan de Fuca Strait)
+- `sand_heads` – Sand Heads (Fraser River)
+- `langara_island` – Langara Island (Haida Gwaii)
+
+**Data provided:** Wind speed/direction, wave height/period, visibility, weather conditions, sea state, barometric pressure
+
+**Update frequency:** Hourly manual reports (fetched and parsed every hour)
+
+### Webcams & Weather Stations
+
+**Webcams:**
+- `whiterock` – White Rock Pier (10-minute snapshots, 30-day archive)
+- `boundarybay` – Boundary Bay (10-minute snapshots, 30-day archive)
+
+**Weather Stations:**
+- `whiterock_weather` – White Rock Pier Weather (5-minute updates: wind, temperature, humidity, pressure)
+
 ---
 
 ## 🏗️ System Architecture
 
 ```
-Environment Canada XML → buoy_to_influx_sqlite.py → SQLite Database (buoy_data.sqlite)
+Environment Canada XML → buoy_to_influx_sqlite.py → SQLite (buoy_data.sqlite)
 NOAA 5-day feeds       → fetch_noaa_buoy.py       →      ↓
-Environment Canada XML → wind_to_sqlite.py        → SQLite Database (wind_data.sqlite)
-DFO IWLS Tides         → tide_to_sqlite.py        → SQLite Database (tide_data.sqlite)
+Surrey FlowWorks API   → fetch_surrey_wave_v2.py  →      ↓
+Environment Canada XML → wind_to_sqlite.py        → SQLite (wind_data.sqlite)
+JSCA Jericho API       → fetch_jericho_wind.py    →      ↓
+DFO IWLS Tides         → tide_to_sqlite.py        → SQLite (tide_data.sqlite)
+GeoMet GDSPS           → fetch_storm_surge.py     → SQLite (tide_data.sqlite)
+DFO Lightstation       → fetch_lightstation.py    → SQLite (lightstation_data.sqlite)
+                       → parse_lightstation.py    →      ↓
+White Rock Pier        → fetch_whiterock_weather.py→ SQLite (wind_data.sqlite)
+Webcams                → fetch_webcam.py          → ~/site/data/{wrcam,bbcam}/
+Environment Canada     → parse_marine_forecast.py → ~/site/data/marine_forecast.json
                                                             ↓
-                                                   ├→ sqlite_to_json.py → ~/site/data/latest_buoy_v2.json
-                                                   ├→ export_24hr_timeseries.py → timeseries_*.json
+                                                   ├→ sqlite_to_json.py → latest_buoy_v2.json
+                                                   ├→ export_24hr_timeseries.py → buoy_timeseries_24h.json
                                                    ├→ export_wind_json.py → latest_wind.json
                                                    ├→ export_wind_24hr_timeseries.py → wind_timeseries_24hr.json
                                                    ├→ export_tide_json.py → tide-*.json
+                                                   ├→ export_combined_water_level.py → combined-water-level.json
+                                                   ├→ export_observed_storm_surge.py → (in tide-*.json)
+                                                   ├→ export_hindcast_json.py → storm_surge/hindcast/
+                                                   ├→ export_lightstation_json.py → latest_lightstation.json
+                                                   ├→ export_lightstation_24hr_timeseries.py → lightstation_timeseries_24hr.json
+                                                   ├→ export_stations_json.py → stations.json
                                                    └→ influx_to_mqtt.py → Home Assistant (MQTT)
 ```
 
@@ -174,43 +226,79 @@ site/
 
 🔄 Automated Data Collection (Cron)
 
-Add to crontab (crontab -e):
+See `config/crontab.txt` for the complete production cron schedule. Key jobs include:
 
-# Parse Environment Canada XMLs every minute
-* * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/buoy_to_influx_sqlite.py >> $HOME/envcan_wave/parser.log 2>&1
+### High-frequency data collection (every minute)
+```bash
+# Parse Environment Canada buoy/wind XMLs
+* * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/buoy_to_influx_sqlite.py >> $HOME/envcan_wave/logs/parser.log 2>&1
+* * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/wind_to_sqlite.py >> $HOME/envcan_wave/logs/wind_parser.log 2>&1
 
-# Fetch NOAA data every 5 minutes (NOAA updates hourly)
-5,25,45 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_noaa_buoy.py >> $HOME/envcan_wave/noaa.log 2>&1
+# Export latest snapshots
+* * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/sqlite_to_json.py >> $HOME/envcan_wave/logs/json_export.log 2>&1
 
-# Export latest snapshot every minute
-* * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/sqlite_to_json.py >> $HOME/envcan_wave/json_export.log 2>&1
+# Push to Home Assistant via MQTT
+* * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/influx_to_mqtt.py >> $HOME/envcan_wave/logs/mqtt.log 2>&1
+```
 
-# Export 24h timeseries every 5 minutes
-*/5 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_24hr_timeseries.py >> $HOME/envcan_wave/timeseries_export.log 2>&1
+### Medium-frequency jobs
+```bash
+# NOAA buoy data (every 5 min)
+5,25,45 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_noaa_buoy.py >> $HOME/envcan_wave/logs/noaa.log 2>&1
 
-# Push to Home Assistant via MQTT every minute
-* * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/influx_to_mqtt.py >> $HOME/envcan_wave/mqtt.log 2>&1
+# Surrey wave data (every 20 min)
+*/20 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_surrey_wave_v2.py >> $HOME/envcan_wave/logs/surrey.log 2>&1
 
-# Fetch storm surge forecast every 6 hours (GeoMet updates every 6h)
-30 1,7,13,19 * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_storm_surge.py >> $HOME/envcan_wave/storm_surge.log 2>&1
+# Jericho wind data (every 30 min)
+*/30 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_jericho_wind.py >> $HOME/envcan_wave/logs/jericho_wind.log 2>&1
 
-# Fetch tide data every 30 minutes (DFO IWLS)
-*/30 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/tide_to_sqlite.py >> $HOME/envcan_wave/tide.log 2>&1
+# White Rock weather (every 5 min)
+*/5 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_whiterock_weather.py >> $HOME/envcan_wave/logs/whiterock_weather.log 2>&1
 
-# Export tide JSON every minute
-* * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_tide_json.py >> $HOME/envcan_wave/tide_export.log 2>&1
+# Tide data (observations every 30 min, predictions/high-low daily)
+*/30 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/tide_to_sqlite.py --observations >> $HOME/envcan_wave/logs/tide_obs.log 2>&1
+5 0 * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/tide_to_sqlite.py --predictions >> $HOME/envcan_wave/logs/tide_pred.log 2>&1
+10 0 * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/tide_to_sqlite.py --highlow >> $HOME/envcan_wave/logs/tide_highlow.log 2>&1
 
-# Parse Environment Canada wind station XMLs every minute
-* * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/wind_to_sqlite.py >> $HOME/envcan_wave/wind_parser.log 2>&1
+# Export tide + combined water level (every 5 min)
+*/5 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_tide_json.py --all >> $HOME/envcan_wave/logs/tide_export.log 2>&1
+*/5 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_combined_water_level.py >> $HOME/envcan_wave/logs/combined_water_level.log 2>&1
+*/5 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_observed_storm_surge.py >> $HOME/envcan_wave/logs/observed_surge_export.log 2>&1
 
-# Export wind JSON every 5 minutes
-*/5 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_wind_json.py >> $HOME/envcan_wave/wind_export.log 2>&1
+# Marine forecast (every 30 min)
+*/30 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/parse_marine_forecast.py >> $HOME/envcan_wave/logs/marine_forecast.log 2>&1
+```
 
-# Export wind 24h timeseries every 10 minutes
-*/10 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_wind_24hr_timeseries.py >> $HOME/envcan_wave/wind_timeseries_export.log 2>&1
+### Hourly jobs
+```bash
+# Lightstations (fetch, parse, export at :05, :10, :15, :18)
+5 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_lightstation.py >> $HOME/envcan_wave/logs/lightstation_fetch.log 2>&1
+10 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/parse_lightstation.py >> $HOME/envcan_wave/logs/lightstation_parse.log 2>&1
+15 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_lightstation_json.py >> $HOME/envcan_wave/logs/lightstation_export.log 2>&1
+18 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_lightstation_24hr_timeseries.py >> $HOME/envcan_wave/logs/lightstation_timeseries.log 2>&1
 
-# Cleanup old XML files (keep 2 days)
+# Station metadata export (hourly)
+0 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_stations_json.py >> $HOME/envcan_wave/logs/stations_export.log 2>&1
+
+# Cleanup old XMLs (hourly, keep 2 days)
 0 * * * * find $HOME/envcan_wave/data/buoy -name "*.xml" -mtime +2 -delete
+```
+
+### Low-frequency jobs
+```bash
+# Storm surge forecast (every 6 hours: 1:30, 7:30, 13:30, 19:30)
+30 1,7,13,19 * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_storm_surge.py >> $HOME/envcan_wave/logs/storm_surge.log 2>&1
+35 1,7,13,19 * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_combined_water_level.py >> $HOME/envcan_wave/logs/combined_water_level.log 2>&1
+
+# Webcams (every 10 minutes, staggered)
+0,10,20,30,40,50 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_webcam.py whiterock >> $HOME/envcan_wave/logs/webcam_whiterock.log 2>&1
+2,12,22,32,42,52 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_webcam.py boundarybay >> $HOME/envcan_wave/logs/webcam_boundarybay.log 2>&1
+
+# Daily jobs
+0 2 * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/export_hindcast_json.py >> $HOME/envcan_wave/logs/hindcast_export.log 2>&1
+30 2 * * * /home/keelando/backup_surf.sh >> $HOME/envcan_wave/logs/restic_backup.log 2>&1
+3 23 * * * cd $HOME/envcan_wave && git add -A && git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && git push >> $HOME/envcan_wave/logs/git_backup.log 2>&1
+```
 
 
 ---
@@ -296,8 +384,19 @@ CREATE UNIQUE INDEX uniq_wind_station_ts ON wind_observation(station_id, observa
 
 ### Tide Database (`tide_data.sqlite`)
 
-See `docs/ARCHITECTURE_DETAILED.md` for full tide database schemas (observations, predictions, high/low events)
+See `docs/ARCHITECTURE_DETAILED.md` for full tide database schemas (observations, predictions, high/low events, storm surge)
 
+### Lightstation Database (`lightstation_data.sqlite`)
+
+**Table: lightstation_observation**
+
+Stores parsed weather observations from DFO lightstations:
+- Wind speed/direction, wave height/period
+- Visibility, weather conditions, sea state
+- Barometric pressure
+- Manual hourly reports from lightkeepers
+
+See `docs/ARCHITECTURE_DETAILED.md` for complete schema details.
 
 ---
 
@@ -305,13 +404,13 @@ See `docs/ARCHITECTURE_DETAILED.md` for full tide database schemas (observations
 
 ### Buoys Page (index.html)
 
-Displays current conditions for all buoys with:
+Displays current conditions for all 8 wave buoys:
 - Real-time wind speed/direction
 - Wave height/period/direction
 - Air/sea temperature
 - Atmospheric pressure
 - Data staleness warnings (>2 hours old)
-- Source badges (Environment Canada vs NOAA)
+- Source badges (Environment Canada vs NOAA vs Surrey)
 
 **Neah Bay Special Features:**
 - Displays swell (ocean waves) prominently
@@ -320,12 +419,11 @@ Displays current conditions for all buoys with:
 **Interactive Charts:**
 - 24-hour wave height comparison (all buoys)
 - Per-buoy wave, wind, and temperature timeseries
-- Storm surge forecasts (GeoMet GDSPS)
 - Responsive design for mobile and desktop
 
 ### Winds Page (winds.html)
 
-Real-time wind conditions from 10 Environment Canada weather stations:
+Real-time wind conditions from 11 wind stations:
 - **Sortable table** - Current wind speed/gust/direction, temperature, pressure
 - **Interactive map** - Leaflet map showing all wind stations with live data popups
 - **24-hour charts** - ECharts visualization with:
@@ -333,13 +431,14 @@ Real-time wind conditions from 10 Environment Canada weather stations:
   - Wind direction arrows (10-minute averages)
   - Station selector dropdown with search
 - **Data staleness indicators** - Visual warnings for stale data (>2 hours)
-- **Regional coverage** - Strait of Georgia, Gulf Islands, Juan de Fuca
+- **Regional coverage** - Strait of Georgia, Gulf Islands, Juan de Fuca, English Bay (Jericho)
 
 ### Tides Page (tides.html)
 
 Real-time tide monitoring for 12 DFO stations:
 - **Current observation** - Latest water level measurement
 - **Current prediction** - Astronomical tide forecast (now)
+- **Observed storm surge** - Real-time tide offset (observation - prediction)
 - **High/Low table** - Today's predicted high and low tides
 - **Combined water level chart** - ECharts visualization showing:
   - Astronomical tide predictions (blue line)
@@ -351,6 +450,34 @@ Real-time tide monitoring for 12 DFO stations:
 - **Auto-loads Point Atkinson** as default station
 - Station selector dropdown for all monitored locations
 - Auto-refreshes every 5 minutes
+
+### Storm Surge Page (storm_surge.html)
+
+Dedicated storm surge forecast visualization:
+- **GeoMet GDSPS forecasts** - 48-hour storm surge predictions
+- **Combined water level** - Tide + surge modeling
+- **Hindcast archive** - Historical storm surge data
+- **Station selector** - All 12 tide stations
+- **Interactive charts** - ECharts with zoom/pan capabilities
+
+### Lightstations Page (lightstations.html)
+
+Live weather reports from 10 DFO lightstations:
+- **Manual observations** - Hourly reports from lightkeepers
+- **Wind conditions** - Speed, direction, and gusts
+- **Wave observations** - Height, period, and sea state
+- **Visibility & weather** - Current conditions and barometric pressure
+- **Interactive map** - Leaflet map with station locations
+- **24-hour charts** - Wind and wave timeseries
+- **Coverage area** - West Coast VI, Strait of Georgia, Juan de Fuca, Haida Gwaii
+
+### Webcams Page (webcams.html)
+
+Live webcam feeds with archival:
+- **White Rock Pier** - 10-minute snapshots
+- **Boundary Bay** - 10-minute snapshots
+- **30-day archive** - Slideshow-enabled historical images
+- **Auto-refresh** - Latest images update automatically
 
 ### Forecasts Page (forecasts.html)
 
@@ -367,20 +494,37 @@ Marine weather forecasts and warnings from Environment Canada:
 
 🧠 Key Scripts
 
+### Data Collection
 | Script | Purpose |
 |--------|---------|
 | `buoy_to_influx_sqlite.py` | Parse EC buoy XMLs → SQLite; optional InfluxDB sync |
 | `fetch_noaa_buoy.py` | Download + merge NOAA data (met + spectral) |
+| `fetch_surrey_wave_v2.py` | Fetch Surrey FlowWorks wave data (Crescent Beach) |
 | `wind_to_sqlite.py` | Parse EC wind station XMLs → SQLite |
-| `tide_to_sqlite.py` | Fetch DFO IWLS tide data (observations + predictions) |
-| `sqlite_to_json.py` | Export latest buoy readings for website display |
-| `export_wind_json.py` | Export latest wind station readings |
+| `fetch_jericho_wind.py` | Fetch Jericho Sailing Centre wind data |
+| `fetch_whiterock_weather.py` | Fetch White Rock Pier weather station |
+| `tide_to_sqlite.py` | Fetch DFO IWLS tide data (observations + predictions + high/low) |
+| `fetch_storm_surge.py` | Fetch GeoMet GDSPS storm surge forecasts |
+| `fetch_lightstation.py` | Fetch DFO lightstation weather reports |
+| `parse_lightstation.py` | Parse lightstation text reports → SQLite |
+| `parse_marine_forecast.py` | Parse EC marine forecast XMLs → JSON |
+| `fetch_webcam.py` | Fetch webcam snapshots (White Rock, Boundary Bay) |
+
+### Data Export
+| Script | Purpose |
+|--------|---------|
+| `sqlite_to_json.py` | Export latest buoy readings for website |
 | `export_24hr_timeseries.py` | Export rolling 24-hour buoy timeseries |
+| `export_wind_json.py` | Export latest wind station readings |
 | `export_wind_24hr_timeseries.py` | Export rolling 24-hour wind timeseries |
 | `export_tide_json.py` | Export tide data (latest, timeseries, high/low) |
+| `export_combined_water_level.py` | Export tide + storm surge combined forecasts |
+| `export_observed_storm_surge.py` | Calculate real-time tide offset (obs - pred) |
+| `export_hindcast_json.py` | Export historical storm surge archive |
+| `export_lightstation_json.py` | Export latest lightstation conditions |
+| `export_lightstation_24hr_timeseries.py` | Export 24-hour lightstation timeseries |
+| `export_stations_json.py` | Export station metadata to website |
 | `influx_to_mqtt.py` | Publish MQTT topics for Home Assistant |
-| `fetch_storm_surge.py` | Fetch GeoMet GDSPS storm surge forecasts |
-| `parse_marine_forecast.py` | Parse EC marine forecast XMLs |
 
 
 
@@ -483,13 +627,21 @@ See LICENSE file for details.
 
 🙏 Acknowledgments
 
-Environment Canada – SWOB-ML buoy data
+**Environment Canada** – SWOB-ML buoy/wind data, GeoMet GDSPS storm surge forecasts, marine weather forecasts
 
-NOAA NDBC – Spectral and meteorological feeds
+**NOAA NDBC** – Spectral and meteorological feeds (Neah Bay, New Dungeness)
 
-Home Assistant Community – MQTT discovery patterns
+**DFO (Fisheries and Oceans Canada)** – IWLS tide data, lightstation weather reports
 
-ECharts – Beautiful visualization library
+**City of Surrey** – FlowWorks wave data (Crescent Beach)
+
+**Jericho Sailing Centre (JSCA)** – Real-time wind data (English Bay)
+
+**Home Assistant Community** – MQTT discovery patterns
+
+**ECharts** – Beautiful visualization library
+
+**Leaflet** – Interactive mapping library
 
 
 
@@ -497,6 +649,6 @@ ECharts – Beautiful visualization library
 
 📞 Contact
 
-Website: halibutbank.ca
-Maintainer: Keelan W.
-Last updated: October 2025
+**Website:** [halibutbank.ca](https://halibutbank.ca)
+**Maintainer:** Keelan W.
+**Last updated:** December 2025
