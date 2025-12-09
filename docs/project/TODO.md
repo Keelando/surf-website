@@ -32,6 +32,32 @@
 
 ---
 
+### Lightstation Map Labels - Zoom-Dependent Display
+
+**Goal:** Show lightstation names as labels above map icons, but only at appropriate zoom levels to prevent clutter
+
+**Implementation:**
+- [ ] Add station name labels above lightstation markers
+- [ ] Implement zoom-level threshold (e.g., only show labels at zoom ≥ 8 or 9)
+- [ ] Position labels above icons with clean typography
+- [ ] Consider subtle background or text shadow for readability
+- [ ] Ensure labels don't overlap at higher zoom levels
+
+**Technical approach:**
+- Listen to Leaflet map `zoomend` event
+- Toggle label visibility based on `map.getZoom()` threshold
+- Use CSS transitions for smooth fade in/out
+- Test optimal zoom level where labels don't overlap
+
+**Benefits:**
+- Quick identification of lightstations when zoomed in
+- No visual clutter at overview zoom levels
+- Better user experience for exploring specific regions
+
+**Priority:** Low-Medium (nice enhancement for lightstation page)
+
+---
+
 ### Lighthouse Performance Reports (Next Session)
 
 Add Lighthouse performance auditing to monitor frontend performance and accessibility.
