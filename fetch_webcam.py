@@ -111,7 +111,7 @@ def capture_frame(stream_url, output_path, timestamp, crop_filter, logger):
                 "-i", stream_url,
                 "-vf", filter_complex,
                 "-frames:v", "1",
-                "-q:v", "5",
+                "-q:v", "3",
                 "-y",
                 str(output_path)
             ],

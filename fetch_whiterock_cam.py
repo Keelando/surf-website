@@ -91,7 +91,7 @@ def capture_frame(stream_url, output_path, timestamp):
                 "-i", stream_url,
                 "-vf", filter_complex,
                 "-frames:v", "1",
-                "-q:v", "5",  # JPEG quality (5 is excellent, web-optimized)
+                "-q:v", "3",  # JPEG quality (3 is very high quality, slight increase in file size)
                 "-y",  # Overwrite output file
                 str(output_path)
             ],
