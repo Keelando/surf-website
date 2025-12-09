@@ -49,6 +49,7 @@ WIND_STATIONS = {
     "CWQK": "Race Rocks",
     "CYVR": "YVR Airport",
     "CZBB": "Boundary Bay Airport",
+    "JERICHO": "Jericho Sailing Centre",
     "whiterock_pier": "White Rock East Beach",
 }
 

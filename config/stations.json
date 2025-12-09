@@ -674,6 +674,30 @@
         "pressure",
         "humidity"
       ]
+    },
+    "JERICHO": {
+      "id": "JERICHO",
+      "name": "Jericho Sailing Centre",
+      "location": "English Bay, Vancouver",
+      "lat": 49.28,
+      "lon": -123.2,
+      "source": "Jericho Sailing Centre Association",
+      "type": "weather_station",
+      "url": "https://jsca.bc.ca/main/downld02.txt",
+      "update_frequency_minutes": 30,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "rainfall",
+        "humidity",
+        "dewpoint",
+        "wind_chill",
+        "heat_index"
+      ],
+      "note": "Excellent English Bay coverage for sailors - includes wind chill for wetsuit selection"
     }
   },
   "lightstations": {

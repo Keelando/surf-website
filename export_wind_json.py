@@ -52,6 +52,7 @@ WIND_STATIONS = [
     "CWQK",  # Race Rocks
     "CYVR",  # YVR Airport
     "CZBB",  # Boundary Bay Airport
+    "JERICHO",  # Jericho Sailing Centre
 ]
 
 # Station name overrides (for consistent display names)
@@ -64,8 +65,9 @@ STATION_NAME_OVERRIDES = {
     "CWVF": "Sand Heads",
     "CWEZ": "Saturna Island",
     "CWQK": "Race Rocks",
-    "CYVR": "Vancouver International Airport",
+    "CYVR": "Vancouver Int'l Airport",
     "CZBB": "Boundary Bay Airport",
+    "JERICHO": "Jericho Sailing Centre",
 }
 
 # Fields to query individually (each gets most recent non-null value within 2 hours)
