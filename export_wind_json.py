@@ -194,7 +194,7 @@ def query_and_export():
             latest_json[station_id] = station_json
             logger.info(f"Exported {station_id} ({station_name})")
 
-    # Include White Rock Pier weather station data
+    # Include White Rock East Beach weather station data
     whiterock_json_path = EXPORT_DIR / "whiterock_weather.json"
     if whiterock_json_path.exists():
         try:
@@ -218,9 +218,9 @@ def query_and_export():
             }
             # Remove None values
             latest_json["whiterock_pier"] = {k: v for k, v in latest_json["whiterock_pier"].items() if v is not None}
-            logger.info(f"Exported whiterock_pier (White Rock Pier)")
+            logger.info(f"Exported whiterock_pier (White Rock East Beach)")
         except Exception as e:
-            logger.warning(f"Failed to include White Rock Pier data: {e}")
+            logger.warning(f"Failed to include White Rock East Beach data: {e}")
 
     # Add metadata about this export
     latest_json["_meta"] = {

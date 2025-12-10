@@ -86,10 +86,10 @@ Planned and in-progress features:
 The Salish Sea Marine Monitoring System now includes:
 
 - **8 Wave Buoys** - Environment Canada, NOAA, and Surrey FlowWorks
-- **11 Wind Stations** - Environment Canada, JSCA Jericho, White Rock Pier
+- **11 Wind Stations** - Environment Canada, JSCA Jericho, White Rock East Beach
 - **12 Tide Stations** - DFO IWLS with observations, predictions, and high/low events
 - **10 Lightstations** - DFO manual weather reports (hourly)
-- **2 Webcams** - White Rock Pier and Boundary Bay (30-day archive)
+- **2 Webcams** - White Rock East Beach and Boundary Bay (30-day archive)
 - **Storm Surge Forecasts** - GeoMet GDSPS with combined water level modeling
 - **Marine Forecasts** - Environment Canada zone forecasts and warnings
 

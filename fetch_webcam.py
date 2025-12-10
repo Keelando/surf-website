@@ -27,13 +27,13 @@ import logging
 # Webcam configurations
 WEBCAM_CONFIGS = {
     "whiterock": {
-        "name": "White Rock Pier",
+        "name": "White Rock East Beach",
         "youtube_url": "https://www.youtube.com/watch?v=4MK3E9EWDSY",
         "archive_dir": Path("/mnt/storage/whiterock_cam"),
         "website_dir": Path.home() / "site" / "data" / "wrcam",
         "prefix": "WR",
         "crop": "in_w*0.75:in_h:in_w*0.25:0",  # Crop left 25% (street), keep right 75% (pier/sea)
-        "source_text": "White Rock Pier YouTube Livestream"
+        "source_text": "White Rock East Beach YouTube Livestream"
     },
     "boundarybay": {
         "name": "Boundary Bay",

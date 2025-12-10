@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-White Rock Pier Webcam Capture
+White Rock East Beach Webcam Capture
 
-Fetches the latest frame from the White Rock Pier YouTube livestream
+Fetches the latest frame from the White Rock East Beach YouTube livestream
 and saves it to both the Kingston drive (archive) and website data directory.
 
 Requirements:
@@ -188,7 +188,7 @@ def cleanup_old_archives():
 
 def main():
     """Main execution"""
-    logger.info("=== White Rock Pier Webcam Capture Started ===")
+    logger.info("=== White Rock East Beach Webcam Capture Started ===")
 
     # Ensure directories exist
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
@@ -232,7 +232,7 @@ def main():
         "filename": filename,
         "timestamp": timestamp.isoformat(),
         "timestamp_unix": int(timestamp.timestamp()),
-        "source": "White Rock Pier YouTube Livestream",
+        "source": "White Rock East Beach YouTube Livestream",
         "url": YOUTUBE_URL
     }
 
@@ -247,7 +247,7 @@ def main():
     # Cleanup old archives
     cleanup_old_archives()
 
-    logger.info("=== White Rock Pier Webcam Capture Completed Successfully ===")
+    logger.info("=== White Rock East Beach Webcam Capture Completed Successfully ===")
     sys.exit(0)
 
 

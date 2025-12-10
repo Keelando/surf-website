@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-White Rock Pier Weather Station - Direct JSON API Integration
+White Rock East Beach Weather Station - Direct JSON API Integration
 Fetches from https://maps.whiterockcity.ca/weather/weatherResults.txt
 """
 

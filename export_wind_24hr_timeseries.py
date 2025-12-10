@@ -53,7 +53,7 @@ WIND_STATIONS = {
     "whiterock_pier": "White Rock East Beach",
 }
 
-# White Rock Pier database path (separate from wind database)
+# White Rock East Beach database path (separate from wind database)
 WHITEROCK_DATABASE = Path("~/.local/share/weather_data.sqlite").expanduser()
 
 # Metrics to export as timeseries
@@ -158,7 +158,7 @@ def query_and_export_timeseries():
             "timeseries": {}
         }
 
-        # Special handling for White Rock Pier (separate database)
+        # Special handling for White Rock East Beach (separate database)
         if station_id == "whiterock_pier":
             if WHITEROCK_DATABASE.exists():
                 wr_conn = sqlite3.connect(WHITEROCK_DATABASE, timeout=5)

@@ -7,7 +7,7 @@ A real-time, open-source wave and weather monitoring system for the **Salish Sea
 📍 **Live demo:** [halibutbank.ca](https://halibutbank.ca)
 🔗 **Front-end repo:** [surf-website-front-end](https://github.com/Keelando/surf-website-front-end)
 🧭 **Region:** Strait of Georgia, English Bay, Neah Bay, and surrounding waters
-⚙️ **Stack:** Python · SQLite · MQTT · Home Assistant · ECharts
+⚙️ **Stack:** Python · SQLite · Vanilla JS · HTMX · CSS · ECharts
 
 ![Halibut Bank Dashboard Screenshot](assets/screenshot.png)
 
@@ -20,15 +20,15 @@ This system collects, processes, and displays marine weather data from:
 - **11 Wind Stations** – Point Atkinson, Sisters Islets, Entrance Island, Ballenas, Sand Heads, Tsawwassen, Saturna, Race Rocks, YVR, Boundary Bay, Jericho (Environment Canada + JSCA)
 - **12 Tide Stations** – Point Atkinson, Kitsilano, Tsawwassen, White Rock, Crescent Beach, New Westminster, Campbell River, Nanaimo, Tofino, and more (DFO IWLS)
 - **10 Lightstations** – Cape Beale, Solander Island, Entrance Island, Sisters Island, Chrome Island, Ballenas Islands, Discovery Island, Race Rocks, Sand Heads, Langara Island (DFO)
-- **2 Webcams** – White Rock Pier, Boundary Bay (10-minute snapshots with 30-day archive)
-- **1 Weather Station** – White Rock Pier (5-minute updates)
+- **2 Webcams** – White Rock East Beach, Boundary Bay (10-minute snapshots with 30-day archive)
+- **1 Weather Station** – White Rock East Beach (5-minute updates)
 
 ### Key Features
 - 🔁 Automated XML + text feed collection
 - 💾 SQLite database for local persistence (auto schema management)
-- 📡 MQTT integration with Home Assistant (auto-discovery)
-- 🧩 JSON outputs for static website rendering
-- 📊 24-hour interactive charts (ECharts)
+- 🧩 JSON exports for static website rendering
+- 📊 24-hour interactive charts with vanilla JS (ECharts)
+- 🎨 Modern, responsive UI with HTMX and CSS
 - 🌊 Real-time tide predictions and observations
 - 🌊 Storm surge forecasts (GeoMet GDSPS) with combined water level modeling
 - 🌊 Observed storm surge calculation (tide offset analysis)
@@ -117,11 +117,11 @@ This system collects, processes, and displays marine weather data from:
 ### Webcams & Weather Stations
 
 **Webcams:**
-- `whiterock` – White Rock Pier (10-minute snapshots, 30-day archive)
+- `whiterock` – White Rock East Beach (10-minute snapshots, 30-day archive)
 - `boundarybay` – Boundary Bay (10-minute snapshots, 30-day archive)
 
 **Weather Stations:**
-- `whiterock_weather` – White Rock Pier Weather (5-minute updates: wind, temperature, humidity, pressure)
+- `whiterock_weather` – White Rock East Beach Weather (5-minute updates: wind, temperature, humidity, pressure)
 
 ---
 
@@ -137,7 +137,7 @@ DFO IWLS Tides         → tide_to_sqlite.py        → SQLite (tide_data.sqlite
 GeoMet GDSPS           → fetch_storm_surge.py     → SQLite (tide_data.sqlite)
 DFO Lightstation       → fetch_lightstation.py    → SQLite (lightstation_data.sqlite)
                        → parse_lightstation.py    →      ↓
-White Rock Pier        → fetch_whiterock_weather.py→ SQLite (wind_data.sqlite)
+White Rock East Beach  → fetch_whiterock_weather.py→ SQLite (wind_data.sqlite)
 Webcams                → fetch_webcam.py          → ~/site/data/{wrcam,bbcam}/
 Environment Canada     → parse_marine_forecast.py → ~/site/data/marine_forecast.json
                                                             ↓
@@ -156,8 +156,8 @@ Environment Canada     → parse_marine_forecast.py → ~/site/data/marine_forec
 ```
 
 ### Hardware Setup
-- **Home Assistant Server** (Lenovo M715Q): Runs InfluxDB + MQTT broker  
-- **Surf Server** (Lenovo M910Q, Ubuntu): Runs Python scripts + hosts static website  
+- **Surf Server** (Lenovo M910Q, Ubuntu): Runs Python scripts + hosts static website
+- **Optional:** Home Assistant server for MQTT integration (InfluxDB + MQTT broker)  
 
 ---
 
@@ -252,7 +252,7 @@ See `config/crontab.txt` for the complete production cron schedule. Key jobs inc
 # Jericho wind data (every 30 min)
 */30 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_jericho_wind.py >> $HOME/envcan_wave/logs/jericho_wind.log 2>&1
 
-# White Rock weather (every 5 min)
+# White Rock East Beach weather (every 5 min)
 */5 * * * * $HOME/envcan_wave/.venv/bin/python3 $HOME/envcan_wave/fetch_whiterock_weather.py >> $HOME/envcan_wave/logs/whiterock_weather.log 2>&1
 
 # Tide data (observations every 30 min, predictions/high-low daily)
@@ -474,7 +474,7 @@ Live weather reports from 10 DFO lightstations:
 ### Webcams Page (webcams.html)
 
 Live webcam feeds with archival:
-- **White Rock Pier** - 10-minute snapshots
+- **White Rock East Beach** - 10-minute snapshots
 - **Boundary Bay** - 10-minute snapshots
 - **30-day archive** - Slideshow-enabled historical images
 - **Auto-refresh** - Latest images update automatically
@@ -502,13 +502,13 @@ Marine weather forecasts and warnings from Environment Canada:
 | `fetch_surrey_wave_v2.py` | Fetch Surrey FlowWorks wave data (Crescent Beach) |
 | `wind_to_sqlite.py` | Parse EC wind station XMLs → SQLite |
 | `fetch_jericho_wind.py` | Fetch Jericho Sailing Centre wind data |
-| `fetch_whiterock_weather.py` | Fetch White Rock Pier weather station |
+| `fetch_whiterock_weather.py` | Fetch White Rock East Beach weather station |
 | `tide_to_sqlite.py` | Fetch DFO IWLS tide data (observations + predictions + high/low) |
 | `fetch_storm_surge.py` | Fetch GeoMet GDSPS storm surge forecasts |
 | `fetch_lightstation.py` | Fetch DFO lightstation weather reports |
 | `parse_lightstation.py` | Parse lightstation text reports → SQLite |
 | `parse_marine_forecast.py` | Parse EC marine forecast XMLs → JSON |
-| `fetch_webcam.py` | Fetch webcam snapshots (White Rock, Boundary Bay) |
+| `fetch_webcam.py` | Fetch webcam snapshots (White Rock East Beach, Boundary Bay) |
 
 ### Data Export
 | Script | Purpose |

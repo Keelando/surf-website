@@ -451,7 +451,7 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
 - Export scripts already handle any station IDs added to WIND_STATIONS dict
 - Add KORS and KBLI to `config/stations.json` wind section when implementing
 
-### White Rock Pier Webcam Integration (Needs Reimplementation)
+### White Rock East Beach Webcam Integration (Needs Reimplementation)
 
 **Old script (broken):**
 ```bash
@@ -471,7 +471,7 @@ echo {\"filename\":\"$filename\"}>/home/ubuntu/new_surf_604/604-surf-website/web
 - Should be reimplemented for current infrastructure
 
 **Implementation plan:**
-- [ ] Verify White Rock Pier webcam source (find current YouTube stream or alternative)
+- [ ] Verify White Rock East Beach webcam source (find current YouTube stream or alternative)
 - [ ] Install ffmpeg on server
 - [ ] Create `fetch_wr_webcam.py` or bash script
 - [ ] Output to `~/site/data/wrcam/` directory

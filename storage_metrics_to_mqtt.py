@@ -36,7 +36,7 @@ WEBCAM_ARCHIVES = {
     "whiterock": {
         "path": Path("/mnt/storage/whiterock_cam"),
         "prefix": "WR",
-        "name": "White Rock Pier"
+        "name": "White Rock East Beach"
     },
     "boundarybay": {
         "path": Path("/mnt/storage/boundarybay_cam"),

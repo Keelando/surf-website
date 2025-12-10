@@ -1,7 +1,7 @@
 # Feature Plan: Cox Bay Webcam Integration
 
 ## Overview
-Add Cox Bay (Tofino area, West Coast Vancouver Island) webcam to the website's webcam page. This will provide the third webcam view alongside White Rock Pier and Boundary Bay, extending coverage to the Pacific Ocean coast.
+Add Cox Bay (Tofino area, West Coast Vancouver Island) webcam to the website's webcam page. This will provide the third webcam view alongside White Rock East Beach and Boundary Bay, extending coverage to the Pacific Ocean coast.
 
 **YouTube Source:** https://www.youtube.com/watch?v=LqaP8m2OIqM
 
@@ -13,7 +13,7 @@ Add Cox Bay (Tofino area, West Coast Vancouver Island) webcam to the website's w
 - Location: Near Tofino, West Coast Vancouver Island
 - Significance: Popular surf spot, exposed to Pacific Ocean swells
 - Complements existing coverage:
-  - White Rock Pier: Semiahmoo Bay (urban, sheltered)
+  - White Rock East Beach: Semiahmoo Bay (urban, sheltered)
   - Boundary Bay: Boundary Bay (shallow, tidal flats)
   - Cox Bay: **Pacific Ocean coast (exposed, surf conditions)**
 
