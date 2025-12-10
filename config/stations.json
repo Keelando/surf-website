@@ -986,6 +986,19 @@
       "update_frequency_hours": 3,
       "established": 1905,
       "notes": "Marks juncture of Christie Passage and Gordon Channel, 15 km northwest of Port Hardy"
+    },
+    "TRIAL_ISLAND": {
+      "id": "TRIAL_ISLAND",
+      "name": "Trial Island",
+      "location": "Southeast point of Trial Islands, Victoria",
+      "lat": 48.3951,
+      "lon": -123.3052,
+      "region": "JUAN DE FUCA STRAIT",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3,
+      "established": 1906,
+      "notes": "Built following 1895 wreck of steamer Velos, marks confluence of Juan de Fuca and Haro Straits. Automated but reports may be intermittent."
     }
   },
   "_metadata": {

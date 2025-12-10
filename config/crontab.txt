@@ -82,10 +82,10 @@ WINDY_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaSI6MTEyNzkyMDcsImlhdCI6M
 # Generate website analytics every hour
 0 * * * * /home/keelando/site/scripts/generate_analytics.sh >> /home/keelando/envcan_wave/logs/analytics.log 2>&1
 
-# Fetch White Rock East Beach weather every 5 minutes (updates every 5 min)
+# Fetch White Rock Pier weather every 5 minutes (updates every 5 min)
 */5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_whiterock_weather.py >> /home/keelando/envcan_wave/logs/whiterock_weather.log 2>&1
 
-# Fetch White Rock East Beach webcam every 10 minutes (30-day archive)
+# Fetch White Rock Pier webcam every 10 minutes (30-day archive)
 
 # Lightstation Reports - fetch/parse/export every 3 hours
 
@@ -96,7 +96,7 @@ WINDY_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaSI6MTEyNzkyMDcsImlhdCI6M
 18 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/export_lightstation_24hr_timeseries.py >> /home/keelando/envcan_wave/logs/lightstation_timeseries.log 2>&1
 
 # Webcams - 10 minute intervals with 2-minute offsets
-# White Rock East Beach webcam (slideshow-enabled)
+# White Rock Pier webcam (slideshow-enabled)
 0,10,20,30,40,50 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_webcam.py whiterock >> /home/keelando/envcan_wave/logs/webcam_whiterock.log 2>&1
 
 # Boundary Bay webcam (slideshow-enabled, offset by 2 minutes)
@@ -104,3 +104,6 @@ WINDY_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaSI6MTEyNzkyMDcsImlhdCI6M
 
 # Fetch Jericho wind data every 30 minutes
 */30 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_jericho_wind.py >> /home/keelando/envcan_wave/logs/jericho_wind.log 2>&1
+
+# Cox Bay webcam (slideshow-enabled, offset by 4 minutes)
+4,14,24,34,44,54 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_webcam.py coxbay >> /home/keelando/envcan_wave/logs/webcam_coxbay.log 2>&1

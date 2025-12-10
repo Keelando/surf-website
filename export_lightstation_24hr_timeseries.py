@@ -87,6 +87,7 @@ def export_timeseries():
             # Initialize timeseries structure
             station_data = {
                 "name": station_name,
+                "station_name": station_name,
                 "region": rows[0]["region"],
                 "timeseries": {
                     "wind_speed_kt": [],

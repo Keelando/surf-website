@@ -43,6 +43,15 @@ WEBCAM_CONFIGS = {
         "prefix": "BB",
         "crop": "in_w:in_h:0:0",  # Full frame, no cropping
         "source_text": "Boundary Bay YouTube Livestream"
+    },
+    "coxbay": {
+        "name": "Cox Bay",
+        "youtube_url": "https://www.youtube.com/watch?v=LqaP8m2OIqM",
+        "archive_dir": Path("/mnt/storage/coxbay_cam"),
+        "website_dir": Path.home() / "site" / "data" / "coxbay",
+        "prefix": "CB",
+        "crop": "in_w:in_h:0:0",  # Full frame initially - adjust after testing
+        "source_text": "Cox Bay (Tofino) - Pacific Sands Beach Resort Livestream"
     }
 }
 

@@ -79,6 +79,33 @@ def query_and_export():
             if not row:
                 continue
 
+            # Check if this observation has null key values
+            # If so, fall back to the most recent observation with non-null data
+            has_data = (
+                row["wind_speed_kt"] is not None or
+                row["wind_calm"] or
+                row["sea_height_ft"] is not None or
+                row["sea_condition"] is not None
+            )
+
+            if not has_data:
+                # Fall back to last observation with actual data
+                cur.execute("""
+                    SELECT *
+                    FROM lightstation_observation
+                    WHERE station_name = ?
+                      AND (wind_speed_kt IS NOT NULL
+                           OR wind_calm = 1
+                           OR sea_height_ft IS NOT NULL
+                           OR sea_condition IS NOT NULL)
+                    ORDER BY observation_time DESC
+                    LIMIT 1
+                """, (station_name,))
+
+                fallback_row = cur.fetchone()
+                if fallback_row:
+                    row = fallback_row
+
             # Calculate staleness (>6 hours = stale)
             observation_time = row["observation_time"]
             now_ts = datetime.now(timezone.utc).timestamp()
