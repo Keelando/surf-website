@@ -223,7 +223,9 @@
         "wind_gust",
         "wind_direction",
         "air_temp",
-        "sea_temp"
+        "sea_temp",
+        "water_level_predicted",
+        "water_level_observed"
       ],
       "channels": {
         "wind_speed": 1810,
@@ -234,12 +236,15 @@
         "wave_period_avg": 2009,
         "wave_period_peak": 2012,
         "sea_temp": 2007,
-        "air_temp": 1794
-      }
+        "air_temp": 1794,
+        "water_level_predicted": 2620,
+        "water_level_observed": 2296
+      },
+      "note": "Water levels referenced to CGVD28 GVRD datum"
     },
     "CRCHAN": {
       "id": "CRCHAN",
-      "name": "Crescent Channel",
+      "name": "Crescent Channel Ocean",
       "location": "Boundary Bay",
       "lat": 49.0536,
       "lon": -122.8969,
@@ -252,16 +257,20 @@
         "wind_speed",
         "wind_gust",
         "wind_direction",
-        "air_temp"
+        "air_temp",
+        "water_level_predicted",
+        "water_level_observed"
       ],
       "channels": {
         "wind_speed": 1837,
         "wind_direction": 1838,
         "wind_gust": 1841,
         "wave_height_sig": 2155,
-        "air_temp": 1821
+        "air_temp": 1821,
+        "water_level_predicted": 2621,
+        "water_level_observed": 2279
       },
-      "note": "Radar-based wave measurement"
+      "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum"
     },
     "COLEB": {
       "id": "COLEB",
@@ -698,6 +707,54 @@
         "heat_index"
       ],
       "note": "Excellent English Bay coverage for sailors - includes wind chill for wetsuit selection"
+    },
+    "KBLI": {
+      "id": "KBLI",
+      "name": "Bellingham International Airport",
+      "location": "Bellingham, WA",
+      "lat": 48.8,
+      "lon": -122.53,
+      "source": "NOAA NWS",
+      "type": "weather_station",
+      "url": "https://api.weather.gov/stations/KBLI/observations/latest",
+      "update_frequency_minutes": 10,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "humidity",
+        "dewpoint",
+        "visibility",
+        "wind_chill",
+        "heat_index"
+      ],
+      "note": "Northern Puget Sound coverage - NWS API provides sea level pressure and visibility"
+    },
+    "KORS": {
+      "id": "KORS",
+      "name": "Orcas Island Airport",
+      "location": "Orcas Island, WA",
+      "lat": 48.708,
+      "lon": -122.91,
+      "source": "NOAA NWS",
+      "type": "weather_station",
+      "url": "https://api.weather.gov/stations/KORS/observations/latest",
+      "update_frequency_minutes": 10,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "humidity",
+        "dewpoint",
+        "visibility",
+        "wind_chill",
+        "heat_index"
+      ],
+      "note": "San Juan Islands coverage - fills gap between Canadian stations and northern Puget Sound"
     }
   },
   "lightstations": {

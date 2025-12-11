@@ -50,6 +50,8 @@ WIND_STATIONS = {
     "CYVR": "YVR Airport",
     "CZBB": "Boundary Bay Airport",
     "JERICHO": "Jericho Sailing Centre",
+    "KBLI": "Bellingham Airport",
+    "KORS": "Orcas Island Airport",
     "whiterock_pier": "White Rock East Beach",
 }
 

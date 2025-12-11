@@ -74,11 +74,13 @@ STATIONS = {
             "wave_period_peak": 2012,     # Tpeak_Anderra
             "sea_temp": 2007,             # Temperature_Anderra
             "air_temp": 1794,             # PTemp
+            "water_level_predicted": 2620,  # Tidal_Prediction_CGVD28_GVRD
+            "water_level_observed": 2296,   # Anderra - CGVD28 GVRD Stage_10min
         }
     },
     "crescentchannel": {
         "site_id": 20183,
-        "name": "Crescent Channel",
+        "name": "Crescent Channel Ocean",
         "buoy_id": "CRCHAN",
         "channels": {
             "wind_speed": 1837,
@@ -86,6 +88,8 @@ STATIONS = {
             "wind_gust": 1841,
             "wave_height_sig": 2155,      # Hm0_Radar
             "air_temp": 1821,
+            "water_level_predicted": 2621,  # Tidal_Prediction_CGVD28_GVRD
+            "water_level_observed": 2279,   # PT - CGVD28 GVRD Stage
         }
     },
     "colebrook": {
@@ -202,7 +206,8 @@ def ensure_columns(conn):
         "wave_height_sig", "wave_height_peak",
         "wave_period_avg", "wave_period_peak",
         "wind_speed", "wind_gust", "wind_direction",
-        "air_temp", "sea_temp"
+        "air_temp", "sea_temp",
+        "water_level_predicted", "water_level_observed"
     }
     
     for col in required:

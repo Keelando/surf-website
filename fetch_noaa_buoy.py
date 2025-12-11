@@ -34,6 +34,10 @@ FIELD_MAP_TXT = {
     "ATMP": "air_temp",
     "WTMP": "sea_temp",
     "PRES": "pressure",
+    "WVHT": "wave_height_sig",
+    "DPD":  "wave_period_sig",
+    "APD":  "wave_period_avg",
+    "MWD":  "wave_direction_avg",
 }
 
 FIELD_MAP_SPEC = {

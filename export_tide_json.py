@@ -162,6 +162,17 @@ def export_latest(conn, station_metadata):
                 "trend": trend
             }
 
+        # Calculate tide offset (observed - predicted = residual/storm surge)
+        if "observation" in station_data and "prediction_now" in station_data:
+            obs_val = station_data["observation"].get("value")
+            pred_val = station_data["prediction_now"].get("value")
+            if obs_val is not None and pred_val is not None:
+                offset = obs_val - pred_val
+                station_data["tide_offset"] = {
+                    "value": round(offset, 3),
+                    "description": "Observed minus predicted (storm surge + forecast error)"
+                }
+
         # Only add if we have at least one data point
         if "observation" in station_data or "prediction_now" in station_data:
             latest_data[station_name] = station_data

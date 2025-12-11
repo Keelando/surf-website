@@ -3,7 +3,7 @@
 Generic Webcam Capture Script
 
 Fetches frames from YouTube livestreams and saves them to both archive
-and website directories with slideshow support (keeps last 5 images).
+and website directories with slideshow support (keeps last 7 images).
 
 Usage:
     python3 fetch_webcam.py <config_name>
