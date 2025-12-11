@@ -80,7 +80,7 @@ STATIONS = {
     },
     "crescentchannel": {
         "site_id": 20183,
-        "name": "Crescent Channel Ocean",
+        "name": "Crescent Channel",
         "buoy_id": "CRCHAN",
         "channels": {
             "wind_speed": 1837,
@@ -206,8 +206,7 @@ def ensure_columns(conn):
         "wave_height_sig", "wave_height_peak",
         "wave_period_avg", "wave_period_peak",
         "wind_speed", "wind_gust", "wind_direction",
-        "air_temp", "sea_temp",
-        "water_level_predicted", "water_level_observed"
+        "air_temp", "sea_temp"
     }
     
     for col in required:
