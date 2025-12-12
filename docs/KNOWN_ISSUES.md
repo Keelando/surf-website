@@ -1,6 +1,70 @@
 # Known Issues
 
-## ⚠️ Geodetic Tide Chart Date Picker Breaks All Graphs (Dec 12, 2025)
+## 📍 Database Locations (Reference)
+
+**IMPORTANT:** All databases are in `/home/keelando/.local/share/`, NOT in the project directory!
+
+```bash
+/home/keelando/.local/share/tide_data.sqlite         # 40.2 MB - DFO + Surrey tides
+/home/keelando/.local/share/buoy_data.sqlite         # 23.0 MB - Wave/wind observations
+/home/keelando/.local/share/storm_surge_forecast.sqlite  # 7.8 MB - ECCC GDSPS forecasts
+```
+
+The empty file at `/home/keelando/envcan_wave/data/tide_data.sqlite` is a historical artifact and should be ignored.
+
+---
+
+## ✅ Surrey API Timezone Issue - Using UTC Instead of Pacific (Dec 12, 2025) - RESOLVED
+
+### Issue
+Surrey geodetic stations were showing stale observation data (2+ hours old) even though the FlowWorks API had recent data available.
+
+### Root Cause
+**The Surrey FlowWorks API expects Pacific time in request parameters, not UTC!**
+
+Our `fetch_surrey_tides.py` script was sending UTC timestamps:
+```python
+# WRONG - Surrey API returns no data
+now = datetime.now(timezone.utc)
+params = {
+    'startDateFilter': '2025-12-12T23:17:01',  # UTC time
+    'endDateFilter': '2025-12-12T17:17:01'      # UTC time
+}
+# Result: 0 points
+```
+
+When we send Pacific time:
+```python
+# CORRECT - Surrey API returns data
+now = datetime.now(ZoneInfo('America/Vancouver'))
+params = {
+    'startDateFilter': '2025-12-12T15:17:01',  # Pacific time (no TZ indicator)
+    'endDateFilter': '2025-12-12T09:17:01'      # Pacific time
+}
+# Result: 32 points
+```
+
+### Solution (Dec 12, 2025)
+Changed `get_channel_data()` to use Pacific time:
+```python
+# Surrey API expects Pacific time (no TZ indicator)
+now = datetime.now(ZoneInfo('America/Vancouver'))
+```
+
+### Result
+- ✅ Observations now fetch successfully (82 points)
+- ✅ Data shows up-to-date within 10-20 minutes
+- ✅ No more "stale data" warnings for Surrey stations
+
+### Files Modified
+- `fetch_surrey_tides.py` (line 130) - Changed from `timezone.utc` to `ZoneInfo('America/Vancouver')`
+
+### Important Note
+**The Surrey API is undocumented regarding timezone expectations.** This was discovered through trial and error testing different request formats. Keep this in mind for future API integrations.
+
+---
+
+## ⚠️ Geodetic Tide Chart Date Picker Breaks All Graphs (Dec 12, 2025) - RESOLVED
 
 ### Issue
 When changing the date on geodetic tide plots (Surrey stations), the graphs disappear and NO graphs show up on any page until the browser is refreshed.

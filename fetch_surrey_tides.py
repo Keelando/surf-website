@@ -120,10 +120,14 @@ class FlowWorksAPI:
         Args:
             hours_past: Hours backward from now (for observations/past predictions)
             hours_future: Hours forward from now (for future predictions)
+
+        IMPORTANT: Surrey API expects Pacific time in the request parameters,
+        not UTC! Using UTC will return no data.
         """
         url = f"{self.base_url}/sites/{site_id}/channels/{channel_id}/data"
 
-        now = datetime.now(timezone.utc)
+        # Surrey API expects Pacific time (no TZ indicator)
+        now = datetime.now(ZoneInfo('America/Vancouver'))
 
         if hours_future > 0:
             # Fetch prediction data (include 2 hours of past data to cover current time)

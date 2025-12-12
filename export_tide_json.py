@@ -133,6 +133,13 @@ def export_latest(conn, station_metadata):
         if pred_row:
             pred_time, pred_value = pred_row
 
+            # Check if prediction is reasonably close to "now" (within 1 hour)
+            # Don't show "current prediction" if it's too far in the future
+            time_diff_seconds = abs(pred_time - now_timestamp)
+            if time_diff_seconds > 3600:  # More than 1 hour away
+                pred_row = None  # Skip this prediction
+
+        if pred_row:
             # Calculate tide trend (rising/falling/slack) by comparing with predictions 15 min before/after
             trend = None
             if pred_value is not None:
