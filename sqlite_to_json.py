@@ -75,13 +75,16 @@ def query_and_export():
             buoy_json = {"name": BUOYS[buoy_id]["name"]}
 
             # Get the most recent observation time (for reference)
+            # Exclude future timestamps (from tide predictions)
+            now_ts = datetime.now(timezone.utc).timestamp()
             cur.execute("""
                 SELECT observation_time
                 FROM buoy_observation
                 WHERE buoy_id = ?
+                  AND observation_time <= ?
                 ORDER BY observation_time DESC
                 LIMIT 1
-            """, (buoy_id,))
+            """, (buoy_id, now_ts))
             latest_row = cur.fetchone()
 
             if not latest_row:
@@ -91,7 +94,6 @@ def query_and_export():
             buoy_json["observation_time"] = datetime.fromtimestamp(latest_time, tz=timezone.utc).isoformat()
 
             # Calculate staleness for UI indicators
-            now_ts = datetime.now(timezone.utc).timestamp()
             age_minutes = (now_ts - latest_time) / 60
             buoy_json["stale"] = age_minutes > 120  # >2 hours old
 

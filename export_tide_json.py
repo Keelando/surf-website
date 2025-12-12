@@ -114,6 +114,11 @@ def export_latest(conn, station_metadata):
             }
 
         # Get current prediction (closest to now)
+        # Surrey stations have 20-min prediction intervals and future-only data,
+        # so use wider search window (±8 hours) for them
+        is_surrey = station_id.startswith("surrey_")
+        search_window = 28800 if is_surrey else 1800  # 8 hours vs 30 minutes
+
         cur.execute("""
             SELECT prediction_time, water_level
             FROM tide_prediction
@@ -122,7 +127,7 @@ def export_latest(conn, station_metadata):
               AND prediction_time <= ?
             ORDER BY ABS(prediction_time - ?)
             LIMIT 1
-        """, (station_id, now_timestamp - 1800, now_timestamp + 1800, now_timestamp))
+        """, (station_id, now_timestamp - search_window, now_timestamp + search_window, now_timestamp))
 
         pred_row = cur.fetchone()
         if pred_row:
@@ -163,15 +168,54 @@ def export_latest(conn, station_metadata):
             }
 
         # Calculate tide offset (observed - predicted = residual/storm surge)
-        if "observation" in station_data and "prediction_now" in station_data:
+        # For ALL stations with observations, calculate actual residual using matched timestamps
+        # This is the real observed storm surge/tide offset
+        if "observation" in station_data and obs_row:
+            obs_time_for_offset = obs_row[0]  # Use observation timestamp
             obs_val = station_data["observation"].get("value")
-            pred_val = station_data["prediction_now"].get("value")
-            if obs_val is not None and pred_val is not None:
-                offset = obs_val - pred_val
-                station_data["tide_offset"] = {
-                    "value": round(offset, 3),
-                    "description": "Observed minus predicted (storm surge + forecast error)"
-                }
+
+            if obs_val is not None:
+                # Find prediction at the SAME time as observation
+                # DFO: ±10 min tolerance (1-5 min sampling)
+                # Surrey: ±8 hours tolerance (20-min sampling, future-only data)
+                offset_tolerance = 28800 if is_surrey else 600  # 8 hours vs 10 minutes
+
+                cur.execute("""
+                    SELECT prediction_time, water_level
+                    FROM tide_prediction
+                    WHERE station_id = ?
+                      AND prediction_time >= ?
+                      AND prediction_time <= ?
+                    ORDER BY ABS(prediction_time - ?)
+                    LIMIT 1
+                """, (station_id, obs_time_for_offset - offset_tolerance, obs_time_for_offset + offset_tolerance, obs_time_for_offset))
+
+                pred_at_obs_time = cur.fetchone()
+                if pred_at_obs_time:
+                    pred_time_matched, pred_val_matched = pred_at_obs_time
+                    time_diff_sec = abs(pred_time_matched - obs_time_for_offset)
+
+                    # Only calculate offset if timestamps are reasonably close
+                    # Don't calculate for Surrey - their future-only predictions mean
+                    # we'd be comparing observation NOW to prediction 6-8h FUTURE (meaningless)
+                    # Actual storm surge for Surrey comes from GDSPS forecast (combined water level)
+                    max_diff = 600  # 10 minutes for all stations
+                    if time_diff_sec <= max_diff and pred_val_matched is not None:
+                        offset = obs_val - pred_val_matched
+
+                        # Description depends on time matching quality
+                        if time_diff_sec <= 600:
+                            description = "Observed minus predicted (actual tide residual)"
+                        else:
+                            description = f"Observed minus predicted (times differ by {time_diff_sec//3600:.0f}h - approximate)"
+
+                        station_data["tide_offset"] = {
+                            "value": round(offset, 3),
+                            "observation_time": station_data["observation"]["time"],
+                            "prediction_time": datetime.fromtimestamp(pred_time_matched, tz=timezone.utc).isoformat(),
+                            "time_diff_seconds": time_diff_sec,
+                            "description": description
+                        }
 
         # Only add if we have at least one data point
         if "observation" in station_data or "prediction_now" in station_data:
@@ -282,6 +326,29 @@ def export_timeseries(conn, station_metadata):
                 "quality": quality
             })
 
+        # Calculate residuals (observed - predicted) for geodetic tide stations ONLY
+        # This is the tide residual for Surrey stations using CGVD28 datum
+        # Regular DFO Chart Datum stations use ECCC storm surge forecast instead
+        is_surrey_geodetic = station_id.startswith("surrey_")
+        if is_surrey_geodetic and station_data["predictions"] and station_data["observations"]:
+            # Create lookup dict of predictions by timestamp for fast matching
+            pred_dict = {ts: val for ts, val in pred_downsampled}
+
+            residuals = []
+            for ts, obs_val, quality in obs_downsampled:
+                # Look for matching prediction at exact same timestamp
+                if ts in pred_dict:
+                    pred_val = pred_dict[ts]
+                    residual = obs_val - pred_val
+                    residuals.append({
+                        "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+                        "value": round(residual, 3),
+                        "quality": quality
+                    })
+
+            if residuals:
+                station_data["residuals"] = residuals
+
         # Add station if it has any data
         if station_data["predictions"] or station_data["observations"]:
             station_data["has_observations"] = len(station_data["observations"]) > 0
@@ -290,7 +357,8 @@ def export_timeseries(conn, station_metadata):
             pred_down = len(station_data["predictions"])
             obs_orig = len(obs_rows)
             obs_down = len(station_data["observations"])
-            logger.info(f"  {station_name}: {pred_down} predictions (from {pred_orig}), {obs_down} observations (from {obs_orig})")
+            residual_count = len(station_data.get("residuals", []))
+            logger.info(f"  {station_name}: {pred_down} predictions (from {pred_orig}), {obs_down} observations (from {obs_orig}), {residual_count} residuals")
 
     output = {
         "_meta": {

@@ -48,7 +48,11 @@ STATION_MAPPING = {
     "crescent_pile": "Crescent_Beach_Channel",
     "tofino": "Tofino",
     # Port Renfrew uses Neah Bay surge data (closest station, ~30km away)
-    "port_renfrew": "Neah_Bay"
+    "port_renfrew": "Neah_Bay",
+    # Surrey geodetic stations - both use Crescent_Beach_Channel surge data
+    # (same location for channel, nearby for ocean - ~300m apart)
+    "crescent_channel_ocean": "Crescent_Beach_Channel",
+    "crescent_beach_ocean": "Crescent_Beach_Channel"
 }
 
 
