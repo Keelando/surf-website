@@ -17,6 +17,7 @@ IMPORTANT DATUM NOTES:
 import requests
 import sqlite3
 import argparse
+import os
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -27,9 +28,11 @@ from logging_config import setup_logging
 logger = setup_logging('surrey_tide_sync')
 
 # ---- Configuration ----
+
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
-USERNAME = "surreyrain"
-PASSWORD = "surreyrain"
+# Surrey FlowWorks API credentials (use environment variables if available)
+USERNAME = os.environ.get("SURREY_API_USERNAME", "surreyrain")
+PASSWORD = os.environ.get("SURREY_API_PASSWORD", "surreyrain")
 
 # Surrey station mapping with channel IDs
 SURREY_STATIONS = {

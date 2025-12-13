@@ -26,8 +26,9 @@ logger = setup_logging('surrey_fetch')
 
 # ---- Configuration ----
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
-USERNAME = "surreyrain"
-PASSWORD = "surreyrain"
+# Surrey FlowWorks API credentials (use environment variables if available)
+USERNAME = os.environ.get("SURREY_API_USERNAME", "surreyrain")
+PASSWORD = os.environ.get("SURREY_API_PASSWORD", "surreyrain")
 
 # Windy API Configuration
 WINDY_API_KEY = os.environ.get("WINDY_API_KEY")
