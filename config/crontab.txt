@@ -1,5 +1,7 @@
 # Environment variables
 WINDY_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaSI6MTEyNzkyMDcsImlhdCI6MTcwNjAzNzIwOX0.vs_q3qKnJe8c-bOseKJ2hfST1ZpcKjCwpemqMJxH0BQ
+SURREY_API_USERNAME=surreyrain
+SURREY_API_PASSWORD=surreyrain
 
 # system telemetry over mqtt to haos
 */2 * * * * /home/keelando/.sys-venv/bin/python /home/keelando/sys_stats_mqtt.py
