@@ -94,6 +94,26 @@ def ensure_db():
         ON tide_offset(station_id, observation_time DESC)
     """)
 
+    # Create Surrey geodetic data table (for channels 2414, 2129, 2455)
+    # These are Surrey-specific geodetic analysis channels
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS surrey_geodetic_data (
+            station_id TEXT NOT NULL,
+            observation_time INTEGER NOT NULL,
+            tidal_residual REAL,
+            geodiff_cb_vs_cc REAL,
+            geodiff_pt_vs_radar REAL,
+            recorded_at TEXT DEFAULT (datetime('now')),
+            PRIMARY KEY (station_id, observation_time)
+        )
+    """)
+
+    # Index for efficient geodetic data queries
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_surrey_geodetic_time
+        ON surrey_geodetic_data(station_id, observation_time DESC)
+    """)
+
     cur.execute("PRAGMA journal_mode=WAL;")
     conn.commit()
     return conn

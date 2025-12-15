@@ -44,6 +44,8 @@ SURREY_STATIONS = {
         "channels": {
             "water_level_predicted": 2620,  # Tidal_Prediction_CGVD28_GVRD
             "water_level_observed": 2296,   # Anderra - CGVD28 GVRD Stage_10min
+            "tidal_residual": 2414,          # Tidal Residual (observed - predicted, Surrey's calculation)
+            "geodiff_cb_vs_cc": 2129,        # Geodifference_CBvsCC_Radar
         }
     },
     "crescentchannel": {
@@ -54,6 +56,7 @@ SURREY_STATIONS = {
         "channels": {
             "water_level_predicted": 2621,  # Tidal_Prediction_CGVD28_GVRD
             "water_level_observed": 2279,   # PT - CGVD28 GVRD Stage
+            "geodiff_pt_vs_radar": 2455,     # Geodifference_CC_PTvsRadar
         }
     }
 }
@@ -294,6 +297,87 @@ def fetch_observations(api, station_config, tide_conn, hours_past=48):
     return inserted
 
 
+def fetch_geodetic_data(api, station_config, tide_conn, hours_past=48):
+    """
+    Fetch geodetic analysis channels (tidal residual, geodetic differences) from Surrey API.
+
+    Stores to surrey_geodetic_data table for comparison with calculated residuals.
+    This helps calibrate our own residual calculations using Surrey's ground truth.
+    """
+    site_id = station_config["site_id"]
+    station_id = station_config["station_id"]
+    channels = station_config["channels"]
+
+    # Determine which geodetic channels this station has
+    geodetic_channels = {}
+    if "tidal_residual" in channels:
+        geodetic_channels["tidal_residual"] = channels["tidal_residual"]
+    if "geodiff_cb_vs_cc" in channels:
+        geodetic_channels["geodiff_cb_vs_cc"] = channels["geodiff_cb_vs_cc"]
+    if "geodiff_pt_vs_radar" in channels:
+        geodetic_channels["geodiff_pt_vs_radar"] = channels["geodiff_pt_vs_radar"]
+
+    if not geodetic_channels:
+        logger.debug(f"{station_config['display_name']}: No geodetic channels configured")
+        return 0
+
+    # Fetch data for each geodetic channel
+    geodetic_data = {}
+    for channel_name, channel_id in geodetic_channels.items():
+        data_points = api.get_channel_data(site_id, channel_id, hours_past=hours_past)
+
+        if data_points:
+            # Build timestamp -> value lookup
+            geodetic_data[channel_name] = {}
+            for point in data_points:
+                timestamp, value = parse_data_point(point)
+                if timestamp is not None and value is not None:
+                    geodetic_data[channel_name][timestamp] = value
+
+    if not geodetic_data:
+        logger.debug(f"{station_config['display_name']}: No geodetic data available")
+        return 0
+
+    # Merge data by timestamp and insert into database
+    tide_cur = tide_conn.cursor()
+    inserted = 0
+
+    # Get all unique timestamps across all channels
+    all_timestamps = set()
+    for channel_data in geodetic_data.values():
+        all_timestamps.update(channel_data.keys())
+
+    for timestamp in sorted(all_timestamps):
+        # Gather values for this timestamp
+        tidal_residual = geodetic_data.get("tidal_residual", {}).get(timestamp)
+        geodiff_cb_vs_cc = geodetic_data.get("geodiff_cb_vs_cc", {}).get(timestamp)
+        geodiff_pt_vs_radar = geodetic_data.get("geodiff_pt_vs_radar", {}).get(timestamp)
+
+        # Skip if all values are None
+        if all(v is None for v in [tidal_residual, geodiff_cb_vs_cc, geodiff_pt_vs_radar]):
+            continue
+
+        try:
+            tide_cur.execute("""
+                INSERT OR REPLACE INTO surrey_geodetic_data
+                (station_id, observation_time, tidal_residual, geodiff_cb_vs_cc, geodiff_pt_vs_radar)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                station_id,
+                timestamp,
+                tidal_residual,
+                geodiff_cb_vs_cc,
+                geodiff_pt_vs_radar
+            ))
+            inserted += 1
+        except sqlite3.Error as e:
+            logger.warning(f"Failed to insert geodetic data: {e}")
+
+    tide_conn.commit()
+    logger.info(f"{station_config['display_name']}: Fetched {inserted} geodetic data points")
+    return inserted
+
+
 def main():
     """
     Fetch Surrey water level data from API and store to tide database.
@@ -330,6 +414,7 @@ def main():
 
     total_pred = 0
     total_obs = 0
+    total_geo = 0
 
     try:
         for station_key, station_config in SURREY_STATIONS.items():
@@ -346,10 +431,17 @@ def main():
                 obs_count = fetch_observations(api, station_config, tide_conn, hours_past=2)
                 total_obs += obs_count
 
+            # Fetch geodetic data (tidal residual, geodetic differences)
+            # Same time window as observations - for calibration/comparison
+            if args.observations or args.all:
+                geo_count = fetch_geodetic_data(api, station_config, tide_conn, hours_past=2)
+                total_geo += geo_count
+
         if args.predictions or args.all:
             logger.info(f"Predictions: {total_pred} points")
         if args.observations or args.all:
             logger.info(f"Observations: {total_obs} points")
+            logger.info(f"Geodetic data: {total_geo} points")
 
     except Exception as e:
         logger.error(f"Fetch failed: {e}", exc_info=True)

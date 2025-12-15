@@ -64,7 +64,8 @@ SLIDESHOW_IMAGES_COUNT = 7
 
 def setup_logger(config_name):
     """Setup logging for this webcam"""
-    log_path = Path(__file__).parent / f"webcam_{config_name}.log"
+    log_path = Path(__file__).parent / "logs" / f"webcam_{config_name}.log"
+    log_path.parent.mkdir(exist_ok=True)  # Ensure logs/ directory exists
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',

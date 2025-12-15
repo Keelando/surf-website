@@ -186,6 +186,26 @@
     2. Calculating tidal residuals (storm surge = observed - predicted)
   - **Do NOT directly compare absolute water levels between Surrey and DFO stations**
 
+### Geodetic Analysis Channels
+
+These channels help understand the offsets between different measurement systems and datums:
+
+**Crescent Beach Ocean (Site 20182):**
+- **2129**: `Geodifference_CBvsCC_Radar` - Difference between Crescent Beach Ocean and Crescent Channel using Radar measurements
+  - Useful for comparing water levels between the two locations
+  - Helps validate measurement consistency across sites
+
+- **2414**: `Tidal Residual` - Observed minus predicted water level
+  - **This is the storm surge component!** (non-tidal water level variations)
+  - Key metric for understanding storm surge events
+  - Positive values = water higher than predicted (storm surge)
+  - Negative values = water lower than predicted (inverse surge)
+
+**Crescent Channel (Site 20183):**
+- **2455**: `Geodifference_CC_PTvsRadar` - Difference between Pressure Transducer and Radar measurements at Crescent Channel
+  - Helps validate sensor accuracy and consistency
+  - Useful for identifying sensor drift or calibration issues
+
 ### Deprecated Channels
 
 - **2004**: `TideLevel_Anderra` - Originally tested but found to have inconsistent offsets with DFO predictions

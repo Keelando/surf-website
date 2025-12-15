@@ -6,6 +6,9 @@ SURREY_API_PASSWORD=surreyrain
 # system telemetry over mqtt to haos
 */2 * * * * /home/keelando/.sys-venv/bin/python /home/keelando/sys_stats_mqtt.py
 
+# backup crontab to repo daily (for git push and restic backup)
+0 1 * * * crontab -l > /home/keelando/envcan_wave/config/crontab.txt
+
 # storage metrics to home assistant mqtt
 */5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/storage_metrics_to_mqtt.py >> /home/keelando/envcan_wave/logs/storage_metrics.log 2>&1
 
@@ -111,7 +114,7 @@ SURREY_API_PASSWORD=surreyrain
 4,14,24,34,44,54 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_webcam.py coxbay >> /home/keelando/envcan_wave/logs/webcam_coxbay.log 2>&1
 
 # NWS Weather Stations (KBLI Bellingham, KORS Orcas Island)
-*/10 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_nws_weather.py >> /home/keelando/envcan_wave/nws_fetch.log 2>&1
+*/10 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_nws_weather.py >> /home/keelando/envcan_wave/logs/nws_fetch.log 2>&1
 # Surrey water level sync to tide database - runs after Surrey fetch (every 20 min + 2)
 # Surrey tide predictions (daily at 2am with DFO tides)
 0 2 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_surrey_tides.py --predictions >> /home/keelando/envcan_wave/logs/surrey_tide_sync.log 2>&1
