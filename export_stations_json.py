@@ -39,22 +39,31 @@ def validate_stations_json(file_path):
 
         # Check for expected top-level keys
         required_keys = ['buoys', 'tides', 'wind']
+        optional_keys = ['lightstations', 'webcams']
+
         missing_keys = [key for key in required_keys if key not in data]
 
         if missing_keys:
             return False, f"Missing required keys: {missing_keys}"
 
         # Check that each section is a dict
-        for key in required_keys:
+        all_keys = required_keys + [k for k in optional_keys if k in data]
+        for key in all_keys:
             if not isinstance(data[key], dict):
                 return False, f"Key '{key}' must be a dictionary, got {type(data[key])}"
 
         # Count stations
-        buoy_count = len(data['buoys'])
-        tide_count = len(data['tides'])
-        wind_count = len(data['wind'])
+        counts = []
+        counts.append(f"{len(data['buoys'])} buoys")
+        counts.append(f"{len(data['tides'])} tides")
+        counts.append(f"{len(data['wind'])} wind stations")
 
-        logger.info(f"Validated stations.json: {buoy_count} buoys, {tide_count} tides, {wind_count} wind stations")
+        if 'lightstations' in data:
+            counts.append(f"{len(data['lightstations'])} lightstations")
+        if 'webcams' in data:
+            counts.append(f"{len(data['webcams'])} webcams")
+
+        logger.info(f"Validated stations.json: {', '.join(counts)}")
 
         return True, None
 
