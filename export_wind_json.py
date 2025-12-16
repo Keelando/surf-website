@@ -40,7 +40,8 @@ logger = setup_logging('wind_json_export')
 OUT_PATH = EXPORT_DIR / "latest_wind.json"
 FRESHNESS_WINDOW = 7200  # 2 hours (same as buoys)
 
-# Wind station IDs to export (ICAO codes)
+# Wind station IDs to export
+# All land-based wind stations (from wind_data.sqlite)
 WIND_STATIONS = [
     "CWGT",  # Sisters Islets
     "CWGB",  # Ballenas
@@ -55,6 +56,9 @@ WIND_STATIONS = [
     "JERICHO",  # Jericho Sailing Centre
     "KBLI",  # Bellingham International Airport
     "KORS",  # Orcas Island Airport
+    "CPMW1",  # Cherry Point, WA (NOAA land station)
+    "SISW1",  # Smith Island, WA (NOAA C-MAN)
+    "COLEB",  # Colebrook (Surrey land station)
 ]
 
 # Station name overrides (for consistent display names)
@@ -72,6 +76,9 @@ STATION_NAME_OVERRIDES = {
     "JERICHO": "Jericho Sailing Centre",
     "KBLI": "Bellingham Airport",
     "KORS": "Orcas Island Airport",
+    "CPMW1": "Cherry Point",
+    "SISW1": "Smith Island",
+    "COLEB": "Colebrook",
 }
 
 # Fields to query individually (each gets most recent non-null value within 2 hours)

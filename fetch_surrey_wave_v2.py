@@ -19,7 +19,7 @@ import os
 
 # Shared utilities
 from units import ms_to_kmh
-from config import BUOY_DATABASE
+from config import BUOY_DATABASE, WIND_DATABASE
 from logging_config import setup_logging
 
 logger = setup_logging('surrey_fetch')
@@ -242,67 +242,121 @@ def parse_data_point(point):
         return None, None
 
 
-def upsert_data(cur, buoy_id, timestamp, field, value):
-    """Insert or update a data point in SQLite."""
+def upsert_data_buoy(cur, buoy_id, timestamp, field, value):
+    """Insert or update a data point in buoy database."""
     ts_epoch = int(timestamp.timestamp())
-    
+
     # Check if record exists
     cur.execute("""
-        SELECT COUNT(*) FROM buoy_observation 
+        SELECT COUNT(*) FROM buoy_observation
         WHERE buoy_id = ? AND observation_time = ?
     """, (buoy_id, ts_epoch))
-    
+
     exists = cur.fetchone()[0] > 0
-    
+
     if exists:
         # Update existing
         cur.execute(f"""
-            UPDATE buoy_observation 
+            UPDATE buoy_observation
             SET {field} = ?
             WHERE buoy_id = ? AND observation_time = ?
         """, (value, buoy_id, ts_epoch))
     else:
         # Insert new
         cur.execute(f"""
-            INSERT INTO buoy_observation 
+            INSERT INTO buoy_observation
             (buoy_id, observation_time, {field}, source_file)
             VALUES (?, ?, ?, ?)
         """, (buoy_id, ts_epoch, value, "flowworks_surrey"))
-    
+
     return cur.rowcount > 0
 
 
-def fetch_and_store(api, station_key, station_config, conn, hours=2):
-    """Fetch all channels for a station and store to SQLite."""
+def upsert_data_wind(cur, station_id, station_name, timestamp, field, value):
+    """Insert or update a data point in wind database."""
+    ts_epoch = int(timestamp.timestamp())
+
+    # Map field names from buoy schema to wind schema
+    field_map = {
+        "wind_speed": "wind_speed_kmh",
+        "wind_gust": "wind_gust_kmh",
+        "wind_direction": "wind_direction_deg",
+        "air_temp": "air_temp_c",
+    }
+    wind_field = field_map.get(field, field)
+
+    # Check if record exists
+    cur.execute("""
+        SELECT COUNT(*) FROM wind_observation
+        WHERE station_id = ? AND observation_time = ?
+    """, (station_id, ts_epoch))
+
+    exists = cur.fetchone()[0] > 0
+
+    if exists:
+        # Update existing
+        cur.execute(f"""
+            UPDATE wind_observation
+            SET {wind_field} = ?
+            WHERE station_id = ? AND observation_time = ?
+        """, (value, station_id, ts_epoch))
+    else:
+        # Insert new
+        cur.execute(f"""
+            INSERT INTO wind_observation
+            (station_id, observation_time, station_name, {wind_field})
+            VALUES (?, ?, ?, ?)
+        """, (station_id, ts_epoch, station_name, value))
+
+    return cur.rowcount > 0
+
+
+def fetch_and_store(api, station_key, station_config, conn, is_wind_station=False, hours=2):
+    """Fetch all channels for a station and store to SQLite.
+
+    Args:
+        api: FlowWorks API instance
+        station_key: Station key (e.g., 'colebrook')
+        station_config: Station configuration dict
+        conn: Database connection (buoy or wind database)
+        is_wind_station: True if wind-only station (uses wind_observation table)
+        hours: Hours of data to fetch
+    """
     site_id = station_config["site_id"]
-    buoy_id = station_config["buoy_id"]
+    station_id = station_config["buoy_id"]  # Used as station_id for both
+    station_name = station_config["name"]
     channels = station_config["channels"]
 
-    logger.info(f"Fetching {station_config['name']}...")
+    logger.info(f"Fetching {station_name}...")
 
     cur = conn.cursor()
     total_inserted = 0
-    
+
     for field_name, channel_id in channels.items():
         data_points = api.get_channel_data(site_id, channel_id, hours)
-        
+
         if not data_points:
             continue
-        
+
         inserted = 0
         for point in data_points:
             timestamp, value = parse_data_point(point)
-            
+
             if timestamp is None or value is None:
                 continue
-            
+
             # Convert wind speeds from m/s to km/h
             if field_name in ["wind_speed", "wind_gust"]:
                 value = ms_to_kmh(value)
-            
-            if upsert_data(cur, buoy_id, timestamp, field_name, value):
-                inserted += 1
-        
+
+            # Route to appropriate database
+            if is_wind_station:
+                if upsert_data_wind(cur, station_id, station_name, timestamp, field_name, value):
+                    inserted += 1
+            else:
+                if upsert_data_buoy(cur, station_id, timestamp, field_name, value):
+                    inserted += 1
+
         conn.commit()
         total_inserted += inserted
 
@@ -310,7 +364,7 @@ def fetch_and_store(api, station_key, station_config, conn, hours=2):
             logger.info(f"  {field_name}: {inserted} points")
 
         time.sleep(1.0)  # Rate limiting - increased to reduce API load
-    
+
     return total_inserted
 
 
@@ -423,16 +477,24 @@ def main():
     api = FlowWorksAPI(USERNAME, PASSWORD)
     if not api.authenticate():
         return 1
-    
-    # Connect to database
-    conn = sqlite3.connect(BUOY_DATABASE)
-    ensure_columns(conn)
-    
+
+    # Connect to both databases
+    buoy_conn = sqlite3.connect(BUOY_DATABASE)
+    wind_conn = sqlite3.connect(WIND_DATABASE)
+    ensure_columns(buoy_conn)
+
     # Fetch each station (use 24 hours to handle Surrey's reporting delays)
+    # COLEB is wind-only → wind database
+    # CRPILE, CRCHAN have wave data → buoy database
     total = 0
     for station_key, station_config in STATIONS.items():
         try:
-            count = fetch_and_store(api, station_key, station_config, conn, hours=24)
+            # Route to appropriate database
+            is_wind_only = (station_key == "colebrook")
+            conn = wind_conn if is_wind_only else buoy_conn
+
+            count = fetch_and_store(api, station_key, station_config, conn,
+                                   is_wind_station=is_wind_only, hours=24)
             total += count
         except Exception as e:
             logger.error(f"  Error: {e}")
@@ -448,7 +510,8 @@ def main():
                 continue
 
             buoy_id = station_config["buoy_id"]
-            data = get_latest_station_data(conn, buoy_id)
+            # Get data from buoy database (COLEB not in Windy anyway)
+            data = get_latest_station_data(buoy_conn, buoy_id)
 
             if data and push_to_windy(station_key, data, WINDY_STATIONS[station_key]):
                 windy_success += 1
@@ -457,8 +520,10 @@ def main():
 
     logger.info(f"Windy: {windy_success}/{len(WINDY_STATIONS)} stations updated")
 
-    conn.close()
-    logger.info(f"Database: {BUOY_DATABASE}")
+    buoy_conn.close()
+    wind_conn.close()
+    logger.info(f"Buoy database: {BUOY_DATABASE}")
+    logger.info(f"Wind database: {WIND_DATABASE}")
 
     return 0
 
