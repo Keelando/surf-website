@@ -307,7 +307,11 @@
       "lon": -123.253583,
       "source": "DFO IWLS",
       "type": "PERMANENT",
-      "series": ["wlo", "wlp", "wlp-hilo"],
+      "series": [
+        "wlo",
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": 6,
       "data_types": [
         "water_level_observed",
@@ -324,7 +328,11 @@
       "lon": -123.13936,
       "source": "DFO IWLS",
       "type": "PERMANENT",
-      "series": ["wlo", "wlp", "wlp-hilo"],
+      "series": [
+        "wlo",
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": 6,
       "data_types": [
         "water_level_observed",
@@ -341,7 +349,10 @@
       "lon": -123.12933,
       "source": "DFO IWLS",
       "type": "TEMPORARY",
-      "series": ["wlp", "wlp-hilo"],
+      "series": [
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": null,
       "data_types": [
         "water_level_predicted",
@@ -358,7 +369,10 @@
       "lon": -122.8,
       "source": "DFO IWLS",
       "type": "TEMPORARY",
-      "series": ["wlp", "wlp-hilo"],
+      "series": [
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": null,
       "data_types": [
         "water_level_predicted",
@@ -375,7 +389,10 @@
       "lon": -122.883333,
       "source": "DFO IWLS",
       "type": "TEMPORARY",
-      "series": ["wlp", "wlp-hilo"],
+      "series": [
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": null,
       "data_types": [
         "water_level_predicted",
@@ -392,7 +409,10 @@
       "lon": -124.17,
       "source": "DFO IWLS",
       "type": "TEMPORARY",
-      "series": ["wlp", "wlp-hilo"],
+      "series": [
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": null,
       "data_types": [
         "water_level_predicted",
@@ -409,7 +429,11 @@
       "lon": -122.91,
       "source": "DFO IWLS",
       "type": "PERMANENT",
-      "series": ["wlo", "wlp", "wlp-hilo"],
+      "series": [
+        "wlo",
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": 6,
       "data_types": [
         "water_level_observed",
@@ -426,7 +450,11 @@
       "lon": -125.247,
       "source": "DFO IWLS",
       "type": "PERMANENT",
-      "series": ["wlo", "wlp", "wlp-hilo"],
+      "series": [
+        "wlo",
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": 6,
       "data_types": [
         "water_level_observed",
@@ -443,7 +471,11 @@
       "lon": -125.913,
       "source": "DFO IWLS",
       "type": "TEMPORARY",
-      "series": ["wlo", "wlp", "wlp-hilo"],
+      "series": [
+        "wlo",
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": 6,
       "data_types": [
         "water_level_observed",
@@ -460,7 +492,11 @@
       "lon": -125.552,
       "source": "DFO IWLS",
       "type": "TEMPORARY",
-      "series": ["wlo", "wlp", "wlp-hilo"],
+      "series": [
+        "wlo",
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": 6,
       "data_types": [
         "water_level_observed",
@@ -477,7 +513,11 @@
       "lon": -124.421,
       "source": "DFO IWLS",
       "type": "TEMPORARY",
-      "series": ["wlo", "wlp", "wlp-hilo"],
+      "series": [
+        "wlo",
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": 6,
       "data_types": [
         "water_level_observed",
@@ -494,7 +534,11 @@
       "lon": -123.3707,
       "source": "DFO IWLS",
       "type": "TEMPORARY",
-      "series": ["wlo", "wlp", "wlp-hilo"],
+      "series": [
+        "wlo",
+        "wlp",
+        "wlp-hilo"
+      ],
       "update_frequency_minutes": 6,
       "data_types": [
         "water_level_observed",
@@ -1100,6 +1144,44 @@
         "rate_limit": "Configured per user - contact support if exceeded",
         "credentials": "Public: surreyrain / surreyrain"
       }
+    }
+  },
+  "webcams": {
+    "whiterock": {
+      "id": "whiterock",
+      "name": "White Rock Pier Cam",
+      "location": "White Rock, BC",
+      "lat": 49.0167,
+      "lon": -122.8,
+      "source": "White Rock Pier - YouTube Livestream",
+      "type": "webcam",
+      "update_frequency_minutes": 10,
+      "stream_delay_minutes": 6,
+      "page_url": "/webcams.html#whiterock"
+    },
+    "boundarybay": {
+      "id": "boundarybay",
+      "name": "White Rock East Beach",
+      "location": "White Rock, BC",
+      "lat": 49.0119,
+      "lon": -122.8019,
+      "source": "White Rock East Beach - YouTube Livestream",
+      "type": "webcam",
+      "update_frequency_minutes": 10,
+      "stream_delay_minutes": 20,
+      "page_url": "/webcams.html#boundarybay"
+    },
+    "coxbay": {
+      "id": "coxbay",
+      "name": "Cox Bay",
+      "location": "Tofino, BC",
+      "lat": 49.1053,
+      "lon": -125.8844,
+      "source": "Cox Bay - YouTube Livestream",
+      "type": "webcam",
+      "update_frequency_minutes": 10,
+      "stream_delay_minutes": 20,
+      "page_url": "/webcams.html#coxbay"
     }
   }
 }
