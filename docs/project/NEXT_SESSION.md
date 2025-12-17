@@ -1,36 +1,63 @@
 # Next Session Plan
 
-**Date created:** 2025-12-16
+**Last updated:** 2025-12-17
+**Status:** Major refactoring complete! Ready for technical debt cleanup.
 
-## Quick Wins (1-2 hours)
+---
 
-### 1. Documentation Updates
-- [ ] Update `CLAUDE.md` with:
+## ✅ Quick Wins - COMPLETED (2025-12-17)
+
+### 1. Documentation Updates ✅
+- [x] Update `CLAUDE.md` with:
   - Webcams section (3 webcams: White Rock Pier, White Rock East Beach, Cox Bay)
   - Lightstations section (23 stations)
   - NOAA land stations (CPMW1, SISW1)
   - Updated station counts throughout
   - Note about field name differences (wind_direction vs wind_direction_deg)
+- **Completed in:** commit 374d589
 
-### 2. Script Organization
-- [ ] Create subdirectories:
-  - `scripts/fetch/` - All fetch_* scripts (12 scripts)
-  - `scripts/export/` - All export_* scripts (9 scripts)
-  - `scripts/parse/` - Parser scripts (3 scripts)
-  - `lib/` or `utils/` - Shared modules (config.py, units.py, directions.py, logging_config.py, stations.py)
-- [ ] Update import paths across codebase
-- [ ] Update cron jobs with new paths
-- [ ] Test all scripts after move
+### 2. Script Organization ✅
+- [x] Create subdirectories:
+  - `scripts/fetch/` - All fetch_* scripts (11 scripts)
+  - `scripts/export/` - All export_* scripts (13 scripts)
+  - `scripts/parse/` - Parser scripts (5 scripts)
+  - `lib/` - Shared modules (config.py, units.py, directions.py, logging_config.py, stations.py)
+- [x] Update import paths across codebase
+- [x] Update cron jobs with new paths
+- [x] Test all scripts after move
+- **Completed in:** commit 374d589
 
-### 3. Documentation Cleanup
-- [ ] Review and consolidate duplicate/outdated docs
-- [ ] Ensure consistency across README, CLAUDE.md, and other docs
-- [ ] Archive obsolete documentation
+### 3. Documentation Cleanup ✅
+- [x] Review and consolidate duplicate/outdated docs
+- [x] Ensure consistency across README, CLAUDE.md, and other docs
+- [x] Archive obsolete documentation (moved to archive/docs/refactoring_plans/completed/)
+- **Completed in:** commits 374d589, today's session
 
-## Technical Debt Items (Future Sessions)
+---
+
+## 🎯 CURRENT PRIORITY: Field Name Unification
+
+**Effort:** 1-2 hours
+**Impact:** HIGH - Eliminates frontend bugs, cleaner code
+**Status:** Ready to execute
+
+### Detailed Migration Plan
+
+See **FIELD_UNIFICATION_PLAN.md** (to be created) for step-by-step execution guide.
+
+**Quick Summary:**
+1. Choose approach (rename wind DB column OR add _deg to buoy DB)
+2. Create migration script
+3. Update backend export scripts (2 files)
+4. Update frontend code (4 files)
+5. Test and verify
+
+---
+
+## 📋 Technical Debt Items (Future Sessions)
 
 ### High Priority
-1. **Field Name Unification** (2-4 hours)
+1. **Field Name Unification** (2-4 hours) - **NEXT UP** ⬆️
    - Problem: Buoys use `wind_direction`, wind stations use `wind_direction_deg`
    - Caused the map bug we fixed today (stations-map.js:370)
    - Solution: Standardize on one field name across both databases

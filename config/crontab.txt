@@ -70,7 +70,7 @@ SURREY_API_PASSWORD=surreyrain
 0 0 * * * find /home/keelando/envcan_wave/logs -name "*.log" -type f -mtime +7 -delete
 
 # Fetch Surrey FlowWorks data every 20 minutes
-*/20 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/fetch_surrey_wave_v2.py >> /home/keelando/envcan_wave/logs/surrey.log 2>&1
+*/20 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_surrey_wave_v2.py >> /home/keelando/envcan_wave/logs/surrey.log 2>&1
 
 # Storm Surge Hindcast Export - runs daily at 2 AM (after overnight fetch completes)
 0 2 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_hindcast_json.py >> /home/keelando/envcan_wave/logs/hindcast_export.log 2>&1
