@@ -14,7 +14,7 @@ Format:
     "name": "Sisters Islets",
     "wind_speed_kt": 15.2,
     "wind_gust_kt": 22.1,
-    "wind_direction_deg": 270,
+    "wind_direction": 270,
     "wind_direction_cardinal": "W",
     "air_temp_c": 12.5,
     "pressure_hpa": 1013.2,
@@ -72,7 +72,7 @@ STATION_NAME_OVERRIDES = {
 ALL_FIELDS = [
     "wind_speed_kmh",
     "wind_gust_kmh",
-    "wind_direction_deg",
+    "wind_direction",
     "air_temp_c",
     "pressure_hpa",
     "rainfall_1hr_mm",
@@ -173,8 +173,8 @@ def query_and_export():
                         station_json["field_times"][field] = datetime.fromtimestamp(field_time, tz=timezone.utc).isoformat()
 
             # Add cardinal direction
-            if 'wind_direction_deg' in station_json and station_json['wind_direction_deg'] is not None:
-                cardinal = degrees_to_cardinal(station_json['wind_direction_deg'])
+            if 'wind_direction' in station_json and station_json['wind_direction'] is not None:
+                cardinal = degrees_to_cardinal(station_json['wind_direction'])
                 if cardinal:
                     station_json["wind_direction_cardinal"] = cardinal
 
@@ -200,7 +200,7 @@ def query_and_export():
                 "stale": whiterock_data.get("stale", False),
                 "wind_speed_kt": whiterock_data.get("wind_speed"),
                 "wind_gust_kt": whiterock_data.get("wind_gust"),
-                "wind_direction_deg": whiterock_data.get("wind_direction"),
+                "wind_direction": whiterock_data.get("wind_direction"),
                 "wind_direction_cardinal": whiterock_data.get("wind_direction_cardinal"),
                 "air_temp_c": whiterock_data.get("temperature"),
                 "pressure_hpa": whiterock_data.get("pressure"),

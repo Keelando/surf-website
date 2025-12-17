@@ -56,7 +56,7 @@ WHITEROCK_DATABASE = Path("~/.local/share/weather_data.sqlite").expanduser()
 ALL_METRICS = {
     "wind_speed_kmh": {"name": "Wind Speed", "unit": "kt", "convert_to_knots": True},
     "wind_gust_kmh": {"name": "Wind Gust", "unit": "kt", "convert_to_knots": True},
-    "wind_direction_deg": {"name": "Wind Direction", "unit": "°", "convert_to_knots": False},
+    "wind_direction": {"name": "Wind Direction", "unit": "°", "convert_to_knots": False},
     "air_temp_c": {"name": "Air Temperature", "unit": "°C", "convert_to_knots": False},
     "pressure_hpa": {"name": "Pressure", "unit": "hPa", "convert_to_knots": False},
     "rainfall_1hr_mm": {"name": "Rainfall (1hr)", "unit": "mm", "convert_to_knots": False},
