@@ -391,6 +391,12 @@ tail -f ~/envcan_wave/*.log
 ### Wind direction shows as null
 **Expected** - NOAA reports `MM` (missing) for calm conditions or sensor failures
 
+### Wind direction field name inconsistency
+**Known issue** - Buoys use `wind_direction`, wind stations use `wind_direction_deg`
+- Affects frontend code that needs to check both field names
+- Example: `stations-map.js:370` checks both with fallback
+- Should be unified in future refactor (see Technical Debt in planning docs)
+
 ### Missing tide predictions/high-low events
 **Check:**
 ```bash

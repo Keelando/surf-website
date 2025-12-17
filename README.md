@@ -16,12 +16,11 @@ A real-time, open-source wave and weather monitoring system for the **Salish Sea
 ## Overview
 
 This system collects, processes, and displays marine weather data from:
-- **8 Wave Buoys** – Halibut Bank, English Bay, Southern Georgia Strait, Sentry Shoal (EC), Neah Bay & New Dungeness (NOAA), Crescent Beach + Crescent Channel (Surrey FlowWorks)
-- **11 Wind Stations** – Point Atkinson, Sisters Islets, Entrance Island, Ballenas, Sand Heads, Tsawwassen, Saturna, Race Rocks, YVR, Boundary Bay, Jericho (Environment Canada + JSCA)
-- **12 Tide Stations** – Point Atkinson, Kitsilano, Tsawwassen, White Rock, Crescent Beach, New Westminster, Campbell River, Nanaimo, Tofino, and more (DFO IWLS)
-- **10 Lightstations** – Cape Beale, Solander Island, Entrance Island, Sisters Island, Chrome Island, Ballenas Islands, Discovery Island, Race Rocks, Sand Heads, Langara Island (DFO)
-- **2 Webcams** – White Rock East Beach, Boundary Bay (10-minute snapshots with 30-day archive)
-- **1 Weather Station** – White Rock East Beach (5-minute updates)
+- **9 Wave Buoys** – Halibut Bank, English Bay, Southern Georgia Strait, Sentry Shoal (EC), Neah Bay, New Dungeness, Angeles Point, Cherry Point, Smith Island (NOAA)
+- **13 Wind Stations** – Point Atkinson, Sisters Island, Entrance Island, Ballenas, Sand Heads, Tsawwassen, Saturna, Race Rocks, YVR, Boundary Bay (EC), Jericho (JSCA), Bellingham, Orcas Island (US)
+- **12 Tide Stations** – Point Atkinson, Kitsilano, Tsawwassen, White Rock, Crescent Beach, New Westminster, Campbell River, Nanaimo, Tofino, Ucluelet, Port Renfrew, Victoria Harbor (DFO IWLS)
+- **23 Lightstations** – Chrome Island, Merry Island, Sisters Island, Race Rocks, Cape Scott, Quatsino, Nootka, Estevan Point, Lennard Island, Cape Beale, and 13 more (DFO)
+- **3 Webcams** – White Rock Pier, White Rock East Beach, Cox Bay (10-minute snapshots with 30-day archive)
 
 ### Key Features
 - 🔁 Automated XML + text feed collection
@@ -41,7 +40,7 @@ This system collects, processes, and displays marine weather data from:
 
 ## 📍 Monitored Stations
 
-### Wave Buoys (6)
+### Wave Buoys (9)
 
 **Environment Canada:**
 - `4600146` – Halibut Bank (off Vancouver)
@@ -53,11 +52,12 @@ This system collects, processes, and displays marine weather data from:
 - `46087` – Neah Bay (includes spectral wave data: swell vs wind waves)
 - `46088` – New Dungeness / Hein Bank
 
-**Additional monitored (Surrey FlowWorks):**
-- `CRPILE` – Crescent Beach Ocean (pile-mounted wave station)
-- `CRCHAN` – Crescent Channel (radar-based wave measurement)
+**Additional NOAA:**
+- `46267` – Angeles Point
+- `CPMW1` – Cherry Point, WA (C-MAN land station, also in wind database)
+- `SISW1` – Smith Island, WA (C-MAN land station, also in wind database)
 
-### Wind Stations (11)
+### Wind Stations (13)
 
 **Environment Canada SWOB-ML weather stations:**
 - `CWGT` – Sisters Islets (Strait of Georgia)
@@ -71,12 +71,18 @@ This system collects, processes, and displays marine weather data from:
 - `CYVR` – YVR Airport (Richmond)
 - `CZBB` – Boundary Bay Airport (Delta)
 
-**JSCA Sailing Centre (Jericho Beach, Vancouver):**
-- `jericho` – Jericho Sailing Centre (English Bay)
+**US Stations:**
+- `KBLI` – Bellingham Int'l Airport (NWS API)
+- `KORS` – Orcas Island Airport (NWS API)
 
-**Data provided:** Wind speed/gust/direction, temperature, pressure, humidity, dewpoint, visibility, rainfall
+**Custom/Third-Party:**
+- `JERICHO` - Jericho Sailing Centre (Vancouver)
 
-**Update frequency:** Environment Canada updates every 10 minutes (parsed every minute), Jericho updates every 30 minutes
+**Note:** CPMW1 and SISW1 (NOAA C-MAN land stations) are stored in both buoy and wind databases.
+
+**Database:** `wind_data.sqlite` (separate from buoys)
+**Update frequency:** Every 10 minutes (parsed every minute)
+**Data fields:** Wind speed/gust/direction, temperature, pressure, humidity, dewpoint, visibility, rainfall
 
 ### Tide Stations (12)
 
@@ -96,32 +102,39 @@ This system collects, processes, and displays marine weather data from:
 
 **All station metadata:** See `config/stations.json`
 
-### Lightstations (10)
+### Lightstations (23)
 
-**DFO Lightstation Weather Reports** (manual hourly reports from lightkeepers):
-- `cape_beale` – Cape Beale (West Coast Vancouver Island)
-- `solander_island` – Solander Island (Brooks Peninsula)
-- `entrance_island` – Entrance Island (Nanaimo)
-- `sisters_island` – Sisters Island (Smith Sound)
-- `chrome_island` – Chrome Island (Denman Island)
-- `ballenas_islands` – Ballenas Islands (Strait of Georgia)
-- `discovery_island` – Discovery Island (Victoria)
-- `race_rocks` – Race Rocks (Juan de Fuca Strait)
-- `sand_heads` – Sand Heads (Fraser River)
-- `langara_island` – Langara Island (Haida Gwaii)
+**Environment Canada FPCN61 Reports** (manual reports from lightkeepers every 3 hours):
 
-**Data provided:** Wind speed/direction, wave height/period, visibility, weather conditions, sea state, barometric pressure
+**Strait of Georgia:**
+- Chrome Island, Merry Island, Sisters Island
 
-**Update frequency:** Hourly manual reports (fetched and parsed every hour)
+**Juan de Fuca Strait:**
+- Race Rocks
 
-### Webcams & Weather Stations
+**West Coast Vancouver Island:**
+- Cape Scott, Quatsino, Nootka, Estevan Point, Lennard Island, Cape Beale
 
-**Webcams:**
-- `whiterock` – White Rock East Beach (10-minute snapshots, 30-day archive)
-- `boundarybay` – Boundary Bay (10-minute snapshots, 30-day archive)
+**Central Coast:**
+- Chatham Point, Pulteney Point, Scarlett Point, Addenbroke Island, Dryad Point, Ivory Island, McInnes Island, Boat Bluff, Bonilla Island
 
-**Weather Stations:**
-- `whiterock_weather` – White Rock East Beach Weather (5-minute updates: wind, temperature, humidity, pressure)
+**Hecate Strait:**
+- Langara Island, Green Island
+
+**Data provided:** Wind speed/direction (knots), sea state (wave height, conditions), swell (direction, intensity), visibility
+
+**Update frequency:** Every 3 hours (manual lightkeeper reports)
+**Database:** `lightstation_data.sqlite`
+
+### Webcams (3)
+
+Live webcam feeds with automated screen capture:
+- `whiterock` – White Rock Pier Cam (10-minute snapshots, 30-day archive)
+- `boundarybay` – White Rock East Beach (10-minute snapshots, 30-day archive)
+- `coxbay` – Cox Bay (Tofino) (10-minute snapshots, 30-day archive)
+
+**Update frequency:** Every 10 minutes (with 6-20 min livestream delay)
+**Output:** `~/site/data/{webcam_id}/latest.jpg` + slideshow manifest
 
 ---
 

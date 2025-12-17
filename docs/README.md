@@ -8,6 +8,9 @@ High-level project information and planning:
 
 - **[CLAUDE.md](project/CLAUDE.md)** - Instructions for Claude Code (AI assistant context)
 - **[TODO.md](project/TODO.md)** - Project todo list and upcoming work
+- **[NEXT_SESSION.md](project/NEXT_SESSION.md)** - Next session work plan
+- **[BACKEND_AUDIT_2025-12-06.md](project/BACKEND_AUDIT_2025-12-06.md)** - Backend audit report (Dec 2025)
+- **[BACKEND_TEST_RESULTS.md](project/BACKEND_TEST_RESULTS.md)** - Testing results (Nov 2025)
 
 **Historical documentation:** Outdated refactoring plans and completed migration docs have been archived to `../archive/docs/` (2025-12-06)
 
@@ -85,11 +88,11 @@ Planned and in-progress features:
 
 The Salish Sea Marine Monitoring System now includes:
 
-- **8 Wave Buoys** - Environment Canada, NOAA, and Surrey FlowWorks
-- **11 Wind Stations** - Environment Canada, JSCA Jericho, White Rock East Beach
+- **9 Wave Buoys** - Environment Canada, NOAA, and NOAA C-MAN land stations
+- **13 Wind Stations** - Environment Canada, US airports (KBLI, KORS), and JSCA Jericho
 - **12 Tide Stations** - DFO IWLS with observations, predictions, and high/low events
-- **10 Lightstations** - DFO manual weather reports (hourly)
-- **2 Webcams** - White Rock East Beach and Boundary Bay (30-day archive)
+- **23 Lightstations** - DFO manual weather reports (every 3 hours)
+- **3 Webcams** - White Rock Pier, White Rock East Beach, Cox Bay (30-day archive)
 - **Storm Surge Forecasts** - GeoMet GDSPS with combined water level modeling
 - **Marine Forecasts** - Environment Canada zone forecasts and warnings
 
