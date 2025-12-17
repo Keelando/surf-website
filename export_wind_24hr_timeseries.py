@@ -29,6 +29,7 @@ import time
 # Shared utilities
 from units import kmh_to_knots
 from config import WIND_DATABASE, EXPORT_DIR, safe_json_write
+from stations import get_all_wind
 from logging_config import setup_logging
 
 logger = setup_logging('wind_timeseries_export')
@@ -37,23 +38,13 @@ logger = setup_logging('wind_timeseries_export')
 OUT_PATH = EXPORT_DIR / "wind_timeseries_24hr.json"
 LOCKFILE = Path("/tmp/wind_timeseries.lock")
 
-# Wind station IDs to export
-WIND_STATIONS = {
-    "CWGT": "Sisters Islets",
-    "CWGB": "Ballenas",
-    "CWEL": "Entrance Island",
-    "CWSB": "Point Atkinson",
-    "CVTF": "Tsawwassen",
-    "CWVF": "Sand Heads",
-    "CWEZ": "Saturna",
-    "CWQK": "Race Rocks",
-    "CYVR": "YVR Airport",
-    "CZBB": "Boundary Bay Airport",
-    "JERICHO": "Jericho Sailing Centre",
-    "KBLI": "Bellingham Airport",
-    "KORS": "Orcas Island Airport",
-    "whiterock_pier": "White Rock East Beach",
-}
+# Load wind stations from registry (single source of truth)
+WIND_STATIONS_REGISTRY = get_all_wind()
+
+# Build station names dict for compatibility
+# Note: white rock_pier is handled separately (different database)
+WIND_STATIONS = {sid: meta['name'] for sid, meta in WIND_STATIONS_REGISTRY.items()}
+WIND_STATIONS["whiterock_pier"] = "White Rock East Beach"  # Special case: different DB
 
 # White Rock East Beach database path (separate from wind database)
 WHITEROCK_DATABASE = Path("~/.local/share/weather_data.sqlite").expanduser()

@@ -171,39 +171,6 @@
       ],
       "note": "Wind data typically missing"
     },
-    "CPMW1": {
-      "id": "CPMW1",
-      "name": "Cherry Point",
-      "location": "Cherry Point, WA",
-      "lat": 48.860,
-      "lon": -122.756,
-      "source": "NOAA NDBC",
-      "type": "land_station",
-      "update_frequency_minutes": 6,
-      "data_types": [
-        "wind_speed",
-        "wind_gust",
-        "wind_direction",
-        "air_temp"
-      ]
-    },
-    "SISW1": {
-      "id": "SISW1",
-      "name": "Smith Island",
-      "location": "Smith Island, WA",
-      "lat": 48.321,
-      "lon": -122.831,
-      "source": "NOAA NDBC",
-      "type": "c_man_station",
-      "update_frequency_minutes": 10,
-      "data_types": [
-        "wind_gust",
-        "air_temp",
-        "pressure",
-        "dewpoint"
-      ],
-      "note": "Wind direction typically missing"
-    },
     "CRPILE": {
       "id": "CRPILE",
       "name": "Crescent Beach Ocean",
@@ -295,6 +262,39 @@
         "air_temp": 1439
       },
       "note": "Wind monitoring station - no wave data"
+    },
+    "CPMW1": {
+      "id": "CPMW1",
+      "name": "Cherry Point",
+      "location": "Cherry Point, WA",
+      "lat": 48.86,
+      "lon": -122.756,
+      "source": "NOAA NDBC",
+      "type": "land_station",
+      "update_frequency_minutes": 6,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp"
+      ]
+    },
+    "SISW1": {
+      "id": "SISW1",
+      "name": "Smith Island",
+      "location": "Smith Island, WA",
+      "lat": 48.321,
+      "lon": -122.831,
+      "source": "NOAA NDBC",
+      "type": "c_man_station",
+      "update_frequency_minutes": 10,
+      "data_types": [
+        "wind_gust",
+        "air_temp",
+        "pressure",
+        "dewpoint"
+      ],
+      "note": "Wind direction typically missing"
     }
   },
   "tides": {
@@ -553,7 +553,7 @@
       "name": "Sisters Islets",
       "location": "Strait of Georgia",
       "lat": 49.492,
-      "lon": -124.430,
+      "lon": -124.43,
       "source": "Environment Canada",
       "type": "weather_station",
       "update_frequency_minutes": 60,
@@ -570,7 +570,7 @@
       "id": "CWGB",
       "name": "Ballenas",
       "location": "Strait of Georgia",
-      "lat": 49.350,
+      "lat": 49.35,
       "lon": -124.158,
       "source": "Environment Canada",
       "type": "weather_station",
@@ -606,7 +606,7 @@
       "id": "CWSB",
       "name": "Point Atkinson",
       "location": "West Vancouver",
-      "lat": 49.330,
+      "lat": 49.33,
       "lon": -123.265,
       "source": "Environment Canada",
       "type": "weather_station",
@@ -643,7 +643,7 @@
       "name": "Sand Heads",
       "location": "Fraser River mouth",
       "lat": 49.107,
-      "lon": -123.300,
+      "lon": -123.3,
       "source": "Environment Canada",
       "type": "weather_station",
       "update_frequency_minutes": 60,

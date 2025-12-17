@@ -32,6 +32,7 @@ from datetime import datetime, timezone
 from units import kmh_to_knots
 from directions import degrees_to_cardinal
 from config import WIND_DATABASE, EXPORT_DIR, safe_json_write
+from stations import get_all_wind
 from logging_config import setup_logging
 
 logger = setup_logging('wind_json_export')
@@ -40,26 +41,9 @@ logger = setup_logging('wind_json_export')
 OUT_PATH = EXPORT_DIR / "latest_wind.json"
 FRESHNESS_WINDOW = 7200  # 2 hours (same as buoys)
 
-# Wind station IDs to export
-# All land-based wind stations (from wind_data.sqlite)
-WIND_STATIONS = [
-    "CWGT",  # Sisters Islets
-    "CWGB",  # Ballenas
-    "CWEL",  # Entrance Island
-    "CWSB",  # Point Atkinson
-    "CVTF",  # Tsawwassen
-    "CWVF",  # Sand Heads
-    "CWEZ",  # Saturna
-    "CWQK",  # Race Rocks
-    "CYVR",  # YVR Airport
-    "CZBB",  # Boundary Bay Airport
-    "JERICHO",  # Jericho Sailing Centre
-    "KBLI",  # Bellingham International Airport
-    "KORS",  # Orcas Island Airport
-    "CPMW1",  # Cherry Point, WA (NOAA land station)
-    "SISW1",  # Smith Island, WA (NOAA C-MAN)
-    "COLEB",  # Colebrook (Surrey land station)
-]
+# Load wind stations from registry (single source of truth)
+# This replaces the hardcoded WIND_STATIONS list
+WIND_STATIONS_REGISTRY = get_all_wind()
 
 # Station name overrides (for consistent display names)
 STATION_NAME_OVERRIDES = {
@@ -117,20 +101,14 @@ def query_and_export():
             logger.error("Table wind_observation missing required columns")
             return
 
-        for station_id in WIND_STATIONS:
-            # Use override name if available, otherwise get from database
+        for station_id in WIND_STATIONS_REGISTRY.keys():
+            # Get station name from registry (single source of truth)
+            station_metadata = WIND_STATIONS_REGISTRY[station_id]
+            station_name = station_metadata.get('name', station_id)
+
+            # Override with legacy name if specified (for backward compatibility)
             if station_id in STATION_NAME_OVERRIDES:
                 station_name = STATION_NAME_OVERRIDES[station_id]
-            else:
-                cur.execute("""
-                    SELECT station_name
-                    FROM wind_observation
-                    WHERE station_id = ?
-                    AND station_name IS NOT NULL
-                    LIMIT 1
-                """, (station_id,))
-                row = cur.fetchone()
-                station_name = row[0] if row else station_id
 
             station_json = {"name": station_name}
 

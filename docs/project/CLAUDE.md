@@ -118,7 +118,7 @@ Example: If wave height was last reported 30 min ago but wind speed 1 hour ago, 
 Unified registry containing all monitored stations with coordinates, data types, and metadata.
 
 **Key files:**
-- `stations.json` - Master metadata (6 buoys + 8 tide stations)
+- `stations.json` - Master metadata (9 buoys + 12 tide stations + 13 wind + 3 webcams + 23 lightstations)
 - `stations.py` - Python module for accessing station data
 - `validate_stations.py` - Validation script
 
@@ -134,7 +134,7 @@ point_atk = get_tide_station("point_atkinson")
 
 ## Monitored Stations
 
-### Buoys (6)
+### Buoys (9)
 
 **Environment Canada:**
 - `4600146` - Halibut Bank
@@ -145,8 +145,13 @@ point_atk = get_tide_station("point_atkinson")
 **NOAA:**
 - `46087` - Neah Bay (includes spectral: swell vs wind waves)
 - `46088` - New Dungeness / Hein Bank
+- `46267` - Angeles Point
+- `CPMW1` - Cherry Point, WA (C-MAN land station)
+- `SISW1` - Smith Island, WA (C-MAN land station)
 
-### Wind Stations (10)
+**Note:** CPMW1 and SISW1 are land stations but stored in buoy database for historical reasons. They're also fetched to wind database.
+
+### Wind Stations (13)
 
 **Environment Canada SWOB-ML:**
 - `CWGT` - Sisters Island
@@ -159,6 +164,13 @@ point_atk = get_tide_station("point_atkinson")
 - `CWQK` - Race Rocks
 - `CYVR` - YVR Airport
 - `CZBB` - Boundary Bay Airport
+
+**US Stations:**
+- `KBLI` - Bellingham Int'l Airport (NWS API)
+- `KORS` - Orcas Island Airport (NWS API)
+
+**Custom/Third-Party:**
+- `JERICHO` - Jericho Sailing Centre (Vancouver)
 
 **Database:** `wind_data.sqlite` (separate from buoys)
 **Update frequency:** Every 10 minutes (parsed every minute)
@@ -185,6 +197,40 @@ point_atk = get_tide_station("point_atkinson")
 - `nanaimo` - Nanoose Bay (07930)
 
 **All metadata in `config/stations.json`**
+
+### Webcams (3)
+
+Live webcam feeds with automated screen capture:
+- `whiterock` - White Rock Pier Cam
+- `boundarybay` - White Rock East Beach
+- `coxbay` - Cox Bay (Tofino)
+
+**Update frequency:** Every 10 minutes (with 6-20 min livestream delay)
+**Output:** `~/site/data/{webcam_id}/latest.jpg` + slideshow manifest
+**Page:** `/webcams.html`
+
+### Lightstations (23)
+
+**Environment Canada FPCN61 Reports (updated every 3 hours):**
+
+**Strait of Georgia:**
+- Chrome Island, Merry Island, Sisters Island (CWGT wind station overlaps)
+
+**Juan de Fuca Strait:**
+- Race Rocks (CWQK wind station overlaps)
+
+**West Coast Vancouver Island:**
+- Cape Scott, Quatsino, Nootka, Estevan Point, Lennard Island, Cape Beale
+
+**Central Coast:**
+- Chatham Point, Pulteney Point, Scarlett Point, Addenbroke Island, Dryad Point, Ivory Island, McInnes Island, Boat Bluff, Bonilla Island
+
+**Hecate Strait:**
+- Langara Island, Green Island
+
+**Data fields:** Wind speed/direction (knots), sea state (wave height, conditions), swell (direction, intensity), visibility
+**Database:** `lightstation_data.sqlite`
+**Page:** `/lightstations.html`
 
 ---
 

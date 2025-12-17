@@ -57,7 +57,7 @@
    - Add type annotations for better IDE support
    - Create pytest suite for critical functions
 
-## Bugs Fixed This Session
+## Bugs Fixed Previous Session (2025-12-16)
 
 1. ✅ **Wind direction arrows missing** (stations-map.js)
    - Root cause: Only checked `wind_direction_deg` (wind stations), not `wind_direction` (buoys)
@@ -69,6 +69,18 @@
    - `export_stations_json.py` overwrote frontend file
    - Fixed: Added webcams to backend `config/stations.json`
    - Commits: 83ece2e, c0f6358
+
+## Bugs Fixed This Session (2025-12-17)
+
+1. ✅ **Lightstation popup links not working**
+   - Root cause: querystring/ID conversion mismatch between map popup and dropdown
+   - Fixed: lightstation-map.js:349 - simplified station name conversion
+   - Also added check for 24hr data availability before navigating
+
+2. ✅ **Webcam coordinates incorrect**
+   - Root cause: Coordinates added to frontend but overwritten by backend export
+   - Fixed: Updated backend config/stations.json with correct coordinates
+   - Now persists through export runs
 
 ## Files Modified This Session
 
