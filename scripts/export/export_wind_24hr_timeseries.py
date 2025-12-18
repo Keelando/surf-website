@@ -45,9 +45,9 @@ LOCKFILE = Path("/tmp/wind_timeseries.lock")
 WIND_STATIONS_REGISTRY = get_all_wind()
 
 # Build station names dict for compatibility
-# Note: white rock_pier is handled separately (different database)
+# Note: whiterock_east is handled separately (different database)
 WIND_STATIONS = {sid: meta['name'] for sid, meta in WIND_STATIONS_REGISTRY.items()}
-WIND_STATIONS["whiterock_pier"] = "White Rock East Beach"  # Special case: different DB
+WIND_STATIONS["whiterock_east"] = "White Rock East Beach"  # Special case: different DB
 
 # White Rock East Beach database path (separate from wind database)
 WHITEROCK_DATABASE = Path("~/.local/share/weather_data.sqlite").expanduser()
@@ -155,7 +155,7 @@ def query_and_export_timeseries():
         }
 
         # Special handling for White Rock East Beach (separate database)
-        if station_id == "whiterock_pier":
+        if station_id == "whiterock_east":
             if WHITEROCK_DATABASE.exists():
                 wr_conn = sqlite3.connect(WHITEROCK_DATABASE, timeout=5)
                 wr_conn.row_factory = sqlite3.Row

@@ -743,8 +743,8 @@
       ],
       "note": "San Juan Islands coverage - fills gap between Canadian stations and northern Puget Sound"
     },
-    "whiterock_pier": {
-      "id": "whiterock_pier",
+    "whiterock_east": {
+      "id": "whiterock_east",
       "name": "White Rock East Beach",
       "location": "White Rock East Beach, Boundary Bay",
       "lat": 49.01647,

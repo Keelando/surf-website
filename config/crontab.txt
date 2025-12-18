@@ -37,6 +37,9 @@ SURREY_API_PASSWORD=surreyrain
 # Fetch NOAA buoy data every 5 minutes (NOAA updates hourly)
 5,25,45 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_noaa_buoy.py >> /home/keelando/envcan_wave/logs/noaa.log 2>&1
 
+# Fetch NOAA land/C-MAN stations (CPMW1, SISW1) every 20 minutes
+7,27,47 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_noaa_land.py >> /home/keelando/envcan_wave/logs/noaa_land.log 2>&1
+
 # ========== TIDE DATA ==========
 
 # Fetch tide observations every 30 minutes (15-min downsampled, 11-day retention)

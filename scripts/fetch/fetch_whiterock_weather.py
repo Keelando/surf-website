@@ -203,7 +203,7 @@ def export_json(conn):
     age_minutes = (now.timestamp() - row[0]) / 60
     
     data = {
-        "station_id": "whiterock_pier",
+        "station_id": "whiterock_east",
         "station_name": "White Rock East Beach",
         "location": "East Beach Promenade, White Rock, BC",
         "observation_time": obs_time.isoformat(),

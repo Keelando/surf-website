@@ -197,7 +197,7 @@ def query_and_export():
                 whiterock_data = json.load(f)
 
             # Convert to same format as wind stations
-            latest_json["whiterock_pier"] = {
+            latest_json["whiterock_east"] = {
                 "name": whiterock_data["station_name"],
                 "observation_time": whiterock_data["observation_time"],
                 "stale": whiterock_data.get("stale", False),
@@ -212,8 +212,8 @@ def query_and_export():
                 "precipitation_mm": whiterock_data.get("precipitation"),
             }
             # Remove None values
-            latest_json["whiterock_pier"] = {k: v for k, v in latest_json["whiterock_pier"].items() if v is not None}
-            logger.info(f"Exported whiterock_pier (White Rock East Beach)")
+            latest_json["whiterock_east"] = {k: v for k, v in latest_json["whiterock_east"].items() if v is not None}
+            logger.info(f"Exported whiterock_east (White Rock East Beach)")
         except Exception as e:
             logger.warning(f"Failed to include White Rock East Beach data: {e}")
 
