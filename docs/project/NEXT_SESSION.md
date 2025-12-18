@@ -1,7 +1,40 @@
 # Next Session Plan
 
-**Last updated:** 2025-12-17
-**Status:** Major refactoring complete! Ready for technical debt cleanup.
+**Last updated:** 2025-12-18
+**Status:** Field unification complete! Ready for schema cleanup.
+
+---
+
+## ✅ COMPLETED (2025-12-18)
+
+### Wind Direction Field Unification ✅
+**Completed in:** commits 0a09976 (backend), c1f9375 (frontend)
+
+**Backend:**
+- ✅ Updated `export_wind_json.py` to query `wind_direction_deg` field
+- ✅ Fixed cardinal direction calculation
+- ✅ Moved Colebrook from buoys to wind stations (it's a land wind station)
+- ✅ Added White Rock East Beach (`whiterock_pier`) to wind stations registry
+
+**Frontend:**
+- ✅ Updated `stations-map.js` to use `wind_direction_deg || wind_direction`
+- ✅ Updated `winds-map.js` to use unified field (4 locations)
+- ✅ Updated `wind-stations.js` to use unified field (4 locations)
+- ✅ Updated `main.js` to use unified field (buoy cards)
+
+**Webcam Coordinates Fixed:**
+- ✅ All 3 webcams updated to accurate GPS coordinates
+- ✅ Created `docs/WEBCAM_COORDINATES.md` as authoritative reference
+- ✅ Hard-coded in 4 places so they never get lost again
+- ✅ White Rock Pier: 49.021719°N, 122.807111°W
+- ✅ White Rock East Beach: 49.01647°N, 122.79082°W
+- ✅ Cox Bay: 49.106802°N, 125.872949°W
+
+**Result:**
+- All wind direction arrows working on both maps
+- White Rock East Beach now on winds map
+- Colebrook shows as land wind station (not wave)
+- Backend/frontend fully unified on `wind_direction_deg`
 
 ---
 
@@ -35,35 +68,36 @@
 
 ---
 
-## 🎯 CURRENT PRIORITY: Field Name Unification
+## 🎯 CURRENT PRIORITY: Database Schema Cleanup
 
-**Effort:** 1-2 hours
-**Impact:** HIGH - Eliminates frontend bugs, cleaner code
+**Effort:** 4-6 hours
+**Impact:** MEDIUM-HIGH - Reduces bloat, improves performance
 **Status:** Ready to execute
 
-### Detailed Migration Plan
+### Next Up: Database Schema Audit
 
-See **FIELD_UNIFICATION_PLAN.md** (to be created) for step-by-step execution guide.
+**Why now:** With field unification complete, we can safely audit and clean up unused columns.
 
-**Quick Summary:**
-1. Choose approach (rename wind DB column OR add _deg to buoy DB)
-2. Create migration script
-3. Update backend export scripts (2 files)
-4. Update frontend code (4 files)
-5. Test and verify
+**Goals:**
+1. Review `buoy_observation` table (58+ columns, many unused)
+2. Review `wind_observation` table - identify deprecated fields
+3. Document which columns are actually used vs cruft
+4. Create migration plan to drop unused columns
+5. Update any scripts that might reference old fields
+
+**Approach:**
+1. Query actual column usage in export scripts
+2. Check frontend JavaScript for field references
+3. Identify safe-to-remove columns (never used, deprecated)
+4. Create SQL migration script with DROP COLUMN statements
+5. Test thoroughly before applying
 
 ---
 
 ## 📋 Technical Debt Items (Future Sessions)
 
 ### High Priority
-1. **Field Name Unification** (2-4 hours) - **NEXT UP** ⬆️
-   - Problem: Buoys use `wind_direction`, wind stations use `wind_direction_deg`
-   - Caused the map bug we fixed today (stations-map.js:370)
-   - Solution: Standardize on one field name across both databases
-   - Impact: Eliminates entire class of frontend bugs
-
-2. **Database Schema Audit** (4-6 hours)
+1. **Database Schema Audit** (4-6 hours) - **NEXT UP** ⬆️
    - `buoy_observation` has 58+ columns, many unused
    - Review what's actually used vs what's cruft
    - Opportunity to clean up and optimize
@@ -83,6 +117,26 @@ See **FIELD_UNIFICATION_PLAN.md** (to be created) for step-by-step execution gui
 5. **Type Hints & Testing**
    - Add type annotations for better IDE support
    - Create pytest suite for critical functions
+
+## Bugs Fixed This Session (2025-12-18)
+
+1. ✅ **Wind direction arrows broken on all maps**
+   - Root cause: Backend switched to `wind_direction_deg` but frontend still used `wind_direction`
+   - Fixed: Updated all frontend JS files to use `wind_direction_deg || wind_direction`
+   - Affected files: stations-map.js, winds-map.js, wind-stations.js, main.js
+
+2. ✅ **White Rock East Beach missing from winds map**
+   - Root cause: `whiterock_pier` not in wind stations registry
+   - Fixed: Added to `stations.json` wind section with coordinates
+
+3. ✅ **Colebrook showing as wave station**
+   - Root cause: Located in buoys section instead of wind section
+   - Fixed: Moved from buoys to wind stations in `stations.json`
+
+4. ✅ **Webcam coordinates inaccurate (3rd-4th time)**
+   - Root cause: Coordinates only stored in one place, kept getting lost
+   - Fixed: Hard-coded in 4 documentation files as authoritative source
+   - Created `docs/WEBCAM_COORDINATES.md` quick reference
 
 ## Bugs Fixed Previous Session (2025-12-16)
 
