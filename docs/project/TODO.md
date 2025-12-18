@@ -234,3 +234,26 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
   - Added tide system architecture
   - Documented new scripts and cron jobs
   - Added frontend structure documentation
+
+## URGENT: Rename whiterock_pier Station ID
+**Priority**: High  
+**Date Added**: 2025-12-18
+
+### Problem
+The weather station ID `whiterock_pier` is misleading - the station **moved from the pier to White Rock East Beach** but still has the old ID.
+
+### Impact
+- Confusing for maintenance (coordinates keep getting "corrected" back to pier location)
+- ID doesn't match physical location
+- Could cause data misattribution
+
+### Required Changes
+1. **stations.json**: Rename `wind.whiterock_pier` → `wind.whiterock_east`
+2. **Database**: Check if any tables reference this station ID
+3. **Frontend**: Update any hardcoded references
+4. **Export scripts**: Verify field mappings
+5. **Documentation**: Update WEBCAM_COORDINATES.md if needed
+
+### Current Workaround
+Name/location fields updated to say "White Rock East Beach" (not pier) - but ID still says `whiterock_pier`.
+

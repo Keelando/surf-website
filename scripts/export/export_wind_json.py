@@ -162,6 +162,9 @@ def query_and_export():
                         # Store knots with _kt suffix
                         knot_field = field.replace("_kmh", "_kt")
                         station_json[knot_field] = round(kmh_to_knots(value), 1)
+                    elif field == "wind_direction_deg":
+                        # Store as wind_direction (not wind_direction_deg) for backward compatibility
+                        station_json["wind_direction"] = value
                     else:
                         # Store other fields as-is
                         station_json[field] = value
@@ -173,8 +176,8 @@ def query_and_export():
                         station_json["field_times"][field] = datetime.fromtimestamp(field_time, tz=timezone.utc).isoformat()
 
             # Add cardinal direction
-            if 'wind_direction_deg' in station_json and station_json['wind_direction_deg'] is not None:
-                cardinal = degrees_to_cardinal(station_json['wind_direction_deg'])
+            if 'wind_direction' in station_json and station_json['wind_direction'] is not None:
+                cardinal = degrees_to_cardinal(station_json['wind_direction'])
                 if cardinal:
                     station_json["wind_direction_cardinal"] = cardinal
 

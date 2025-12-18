@@ -238,39 +238,6 @@
         "water_level_observed": 2279
       },
       "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum"
-    },
-    "CPMW1": {
-      "id": "CPMW1",
-      "name": "Cherry Point",
-      "location": "Cherry Point, WA",
-      "lat": 48.86,
-      "lon": -122.756,
-      "source": "NOAA NDBC",
-      "type": "land_station",
-      "update_frequency_minutes": 6,
-      "data_types": [
-        "wind_speed",
-        "wind_gust",
-        "wind_direction",
-        "air_temp"
-      ]
-    },
-    "SISW1": {
-      "id": "SISW1",
-      "name": "Smith Island",
-      "location": "Smith Island, WA",
-      "lat": 48.321,
-      "lon": -122.831,
-      "source": "NOAA NDBC",
-      "type": "c_man_station",
-      "update_frequency_minutes": 10,
-      "data_types": [
-        "wind_gust",
-        "air_temp",
-        "pressure",
-        "dewpoint"
-      ],
-      "note": "Wind direction typically missing"
     }
   },
   "tides": {
@@ -779,7 +746,7 @@
     "whiterock_pier": {
       "id": "whiterock_pier",
       "name": "White Rock East Beach",
-      "location": "White Rock, BC",
+      "location": "White Rock East Beach, Boundary Bay",
       "lat": 49.01647,
       "lon": -122.79082,
       "source": "White Rock Pier Weather Station",
@@ -821,6 +788,39 @@
         "air_temp": 1439
       },
       "note": "Wind monitoring station - no wave data"
+    },
+    "CPMW1": {
+      "id": "CPMW1",
+      "name": "Cherry Point",
+      "location": "Cherry Point, WA",
+      "lat": 48.86,
+      "lon": -122.756,
+      "source": "NOAA NDBC",
+      "type": "land_station",
+      "update_frequency_minutes": 6,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp"
+      ]
+    },
+    "SISW1": {
+      "id": "SISW1",
+      "name": "Smith Island",
+      "location": "Smith Island, WA",
+      "lat": 48.321,
+      "lon": -122.831,
+      "source": "NOAA NDBC",
+      "type": "c_man_station",
+      "update_frequency_minutes": 10,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure"
+      ]
     }
   },
   "lightstations": {
@@ -1171,8 +1171,8 @@
   "webcams": {
     "whiterock": {
       "id": "whiterock",
-      "name": "White Rock Pier Cam",
-      "location": "White Rock, BC",
+      "name": "White Rock Pier Webcam",
+      "location": "White Rock Pier, Boundary Bay",
       "lat": 49.021719,
       "lon": -122.807111,
       "source": "White Rock Pier - YouTube Livestream",
@@ -1183,8 +1183,8 @@
     },
     "boundarybay": {
       "id": "boundarybay",
-      "name": "White Rock East Beach",
-      "location": "White Rock, BC",
+      "name": "White Rock East Beach Webcam",
+      "location": "White Rock East Beach, Boundary Bay",
       "lat": 49.01647,
       "lon": -122.79082,
       "source": "White Rock East Beach - YouTube Livestream",
