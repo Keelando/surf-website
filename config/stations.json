@@ -239,30 +239,6 @@
       },
       "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum"
     },
-    "COLEB": {
-      "id": "COLEB",
-      "name": "Colebrook",
-      "location": "Boundary Bay (Land)",
-      "lat": 49.0858,
-      "lon": -122.845,
-      "source": "Surrey FlowWorks",
-      "type": "wind_monitoring_station",
-      "flowworks_site_id": 18507,
-      "update_frequency_minutes": 10,
-      "data_types": [
-        "wind_speed",
-        "wind_gust",
-        "wind_direction",
-        "air_temp"
-      ],
-      "channels": {
-        "wind_speed": 1425,
-        "wind_direction": 1426,
-        "wind_gust": 1427,
-        "air_temp": 1439
-      },
-      "note": "Wind monitoring station - no wave data"
-    },
     "CPMW1": {
       "id": "CPMW1",
       "name": "Cherry Point",
@@ -799,6 +775,52 @@
         "heat_index"
       ],
       "note": "San Juan Islands coverage - fills gap between Canadian stations and northern Puget Sound"
+    },
+    "whiterock_pier": {
+      "id": "whiterock_pier",
+      "name": "White Rock East Beach",
+      "location": "White Rock, BC",
+      "lat": 49.01647,
+      "lon": -122.79082,
+      "source": "White Rock Pier Weather Station",
+      "type": "weather_station",
+      "url": "https://whiterockweather.com/",
+      "update_frequency_minutes": 5,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "humidity",
+        "dewpoint",
+        "precipitation"
+      ],
+      "note": "Coastal weather station at White Rock pier - excellent Boundary Bay coverage"
+    },
+    "COLEB": {
+      "id": "COLEB",
+      "name": "Colebrook",
+      "location": "Boundary Bay (Land)",
+      "lat": 49.0858,
+      "lon": -122.845,
+      "source": "Surrey FlowWorks",
+      "type": "wind_monitoring_station",
+      "flowworks_site_id": 18507,
+      "update_frequency_minutes": 10,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp"
+      ],
+      "channels": {
+        "wind_speed": 1425,
+        "wind_direction": 1426,
+        "wind_gust": 1427,
+        "air_temp": 1439
+      },
+      "note": "Wind monitoring station - no wave data"
     }
   },
   "lightstations": {
@@ -1151,8 +1173,8 @@
       "id": "whiterock",
       "name": "White Rock Pier Cam",
       "location": "White Rock, BC",
-      "lat": 49.0167,
-      "lon": -122.8,
+      "lat": 49.021719,
+      "lon": -122.807111,
       "source": "White Rock Pier - YouTube Livestream",
       "type": "webcam",
       "update_frequency_minutes": 10,
@@ -1163,8 +1185,8 @@
       "id": "boundarybay",
       "name": "White Rock East Beach",
       "location": "White Rock, BC",
-      "lat": 49.0119,
-      "lon": -122.8019,
+      "lat": 49.01647,
+      "lon": -122.79082,
       "source": "White Rock East Beach - YouTube Livestream",
       "type": "webcam",
       "update_frequency_minutes": 10,
@@ -1175,8 +1197,8 @@
       "id": "coxbay",
       "name": "Cox Bay",
       "location": "Tofino, BC",
-      "lat": 49.1053,
-      "lon": -125.8844,
+      "lat": 49.106802,
+      "lon": -125.872949,
       "source": "Cox Bay - YouTube Livestream",
       "type": "webcam",
       "update_frequency_minutes": 10,

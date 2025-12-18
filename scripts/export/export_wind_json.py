@@ -72,7 +72,7 @@ STATION_NAME_OVERRIDES = {
 ALL_FIELDS = [
     "wind_speed_kmh",
     "wind_gust_kmh",
-    "wind_direction",
+    "wind_direction_deg",  # Unified field name (was wind_direction)
     "air_temp_c",
     "pressure_hpa",
     "rainfall_1hr_mm",
@@ -173,8 +173,8 @@ def query_and_export():
                         station_json["field_times"][field] = datetime.fromtimestamp(field_time, tz=timezone.utc).isoformat()
 
             # Add cardinal direction
-            if 'wind_direction' in station_json and station_json['wind_direction'] is not None:
-                cardinal = degrees_to_cardinal(station_json['wind_direction'])
+            if 'wind_direction_deg' in station_json and station_json['wind_direction_deg'] is not None:
+                cardinal = degrees_to_cardinal(station_json['wind_direction_deg'])
                 if cardinal:
                     station_json["wind_direction_cardinal"] = cardinal
 

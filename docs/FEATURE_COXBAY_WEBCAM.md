@@ -7,15 +7,38 @@ Add Cox Bay (Tofino area, West Coast Vancouver Island) webcam to the website's w
 
 ---
 
+## Webcam Coordinates (Hard-Coded Reference)
+
+### White Rock Pier Cam
+- **Coordinates**: 49.021719°N, 122.807111°W (WGS84)
+- **Decimal**: `lat: 49.021719, lon: -122.807111`
+- **Location**: White Rock Pier, Semiahmoo Bay
+
+### White Rock East Beach (Boundary Bay)
+- **Coordinates**: 49.01647°N, 122.79082°W (WGS84)
+- **Decimal**: `lat: 49.01647, lon: -122.79082`
+- **Location**: East Beach, White Rock
+
+### Cox Bay
+- **Coordinates**: 49.106802°N, 125.872949°W (WGS84)
+- **Decimal**: `lat: 49.106802, lon: -125.872949`
+- **Location**: Pacific Sands Beach Resort, Cox Bay, near Tofino, West Coast Vancouver Island
+
+**Coordinate Reference System**: WGS84 (World Geodetic System 1984)
+**Precision**: 6 decimal places (~0.1 meter accuracy)
+
+---
+
 ## Location Context
 
 **Cox Bay:**
 - Location: Near Tofino, West Coast Vancouver Island
+- Coordinates: 49.106802°N, 125.872949°W
 - Significance: Popular surf spot, exposed to Pacific Ocean swells
 - Complements existing coverage:
-  - White Rock East Beach: Semiahmoo Bay (urban, sheltered)
-  - Boundary Bay: Boundary Bay (shallow, tidal flats)
-  - Cox Bay: **Pacific Ocean coast (exposed, surf conditions)**
+  - White Rock Pier: 49.021719°N, 122.807111°W - Semiahmoo Bay (urban, sheltered)
+  - White Rock East Beach: 49.01647°N, 122.79082°W - Boundary Bay (shallow, tidal flats)
+  - Cox Bay: 49.106802°N, 125.872949°W - **Pacific Ocean coast (exposed, surf conditions)**
 
 **Value for Users:**
 - Mariners: Pacific Ocean conditions, wave action

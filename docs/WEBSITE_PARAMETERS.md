@@ -343,6 +343,133 @@ Forecasts are textual bulletins from Environment Canada, so display is already c
 
 ---
 
+## Webcams Page (webcams.html)
+
+### Currently Displayed Webcams
+
+#### White Rock Pier Cam
+- **ID**: `whiterock`
+- **Name**: White Rock Pier Cam
+- **Location**: White Rock, BC
+- **Coordinates**: 49.021719°N, 122.807111°W
+- **Decimal Format**: `lat: 49.021719, lon: -122.807111`
+- **Source**: YouTube Livestream (https://www.youtube.com/watch?v=4MK3E9EWDSY)
+- **Update Frequency**: 10 minutes
+- **Stream Delay**: ~6 minutes
+- **View**: White Rock Pier and Semiahmoo Bay
+- **Cropping**: Left 25% removed (street), right 75% kept (pier/sea)
+- **Archive**: `/mnt/storage/whiterock_cam/`
+- **Website Path**: `~/site/data/wrcam/latest.jpg`
+
+#### White Rock East Beach
+- **ID**: `boundarybay`
+- **Name**: White Rock East Beach
+- **Location**: White Rock, BC
+- **Coordinates**: 49.01647°N, 122.79082°W
+- **Decimal Format**: `lat: 49.01647, lon: -122.79082`
+- **Source**: YouTube Livestream (https://www.youtube.com/watch?v=O8RsAq9RUlA)
+- **Update Frequency**: 10 minutes
+- **Stream Delay**: ~20 minutes
+- **View**: East Beach looking toward Boundary Bay
+- **Cropping**: Full frame (no cropping)
+- **Archive**: `/mnt/storage/boundarybay_cam/`
+- **Website Path**: `~/site/data/bbcam/latest.jpg`
+
+#### Cox Bay
+- **ID**: `coxbay`
+- **Name**: Cox Bay
+- **Location**: Tofino, BC (West Coast Vancouver Island)
+- **Coordinates**: 49.106802°N, 125.872949°W
+- **Source**: Pacific Sands Beach Resort Livestream (https://www.youtube.com/watch?v=LqaP8m2OIqM)
+- **Update Frequency**: 10 minutes
+- **Stream Delay**: ~20 minutes
+- **View**: Cox Bay surf zone, Pacific Ocean conditions
+- **Cropping**: Full frame (no cropping)
+- **Archive**: `/mnt/storage/coxbay_cam/`
+- **Website Path**: `~/site/data/coxbay/latest.jpg`
+
+### Currently Displayed Parameters
+
+#### Main Webcam Display
+- Latest captured image (JPEG)
+- Image timestamp (ISO format + Unix timestamp)
+- Source information
+- Link to live YouTube stream
+- Slideshow of last 7 images
+
+#### Metadata (`latest.json`)
+```json
+{
+  "filename": "PREFIX_YYYYMMDD_HHMMSS_UnixTimestamp.jpg",
+  "timestamp": "ISO 8601 timestamp",
+  "timestamp_unix": "Unix timestamp (seconds)",
+  "source": "Source description",
+  "url": "YouTube URL"
+}
+```
+
+#### Slideshow Manifest (`slideshow_manifest.json`)
+```json
+[
+  {
+    "filename": "img_TIMESTAMP.jpg",
+    "timestamp": "ISO 8601 timestamp",
+    "path": "slideshow/img_TIMESTAMP.jpg"
+  }
+]
+```
+
+### Technical Details
+
+#### Image Capture Process
+1. **YouTube Stream Resolution**: Uses yt-dlp to fetch best available stream
+2. **Frame Extraction**: ffmpeg captures single frame with optional cropping
+3. **Quality**: JPEG quality level 3 (very high, ~200-350 KB per image)
+4. **Frequency**: Every 10 minutes via cron
+5. **Atomic Updates**: Temp file written then atomically renamed to avoid partial images
+6. **Slideshow**: Last 7 images kept in `slideshow/` directory
+7. **Archive**: All images saved with timestamp to archive directory
+
+#### Storage Management
+- **Archive Directory**: `/mnt/storage/{webcam}_cam/`
+- **Website Directory**: `~/site/data/{webcam}/`
+- **Disk Cleanup**: Automatic when usage exceeds 80%
+- **Minimum Retention**: 24 hours of images
+- **Target After Cleanup**: 75% disk usage
+- **Estimated Daily Storage**: ~47 MB per webcam (144 images × ~330 KB)
+- **Estimated Annual Storage**: ~17 GB per webcam
+
+#### Coordinate Reference System
+- **Datum**: WGS84
+- **Format**: Decimal degrees
+- **Precision**: 4 decimal places (~11 meters)
+
+### Available But NOT Currently Displayed
+- Historical image archive browser
+- Time-lapse videos
+- Comparison view (side-by-side webcams)
+- Synchronized timestamp comparison
+- Wave height annotations
+- Tide level indicators
+- Weather overlay (wind direction, conditions)
+
+### Suggested Additions
+1. **Archive Browser**: Calendar view to select historical dates
+2. **Time-Lapse Generator**: Daily or weekly time-lapse from slideshow images
+3. **Multi-Cam Comparison**: Side-by-side view of all webcams
+4. **Condition Annotations**:
+   - Overlay current wave height (from nearby buoy)
+   - Overlay wind speed/direction arrow
+   - Overlay tide level indicator
+   - Color-coded surf rating
+5. **Metadata Overlay**:
+   - Display capture time on image
+   - Display conditions summary
+6. **Download Options**: Allow download of current or historical images
+7. **Integration with Buoys**: Link to nearby buoy data (e.g., Cox Bay ↔ La Perouse Bank)
+
+---
+
 ## Additional Data Sources to Consider
 
 ### Not Currently Integrated
@@ -351,11 +478,10 @@ Forecasts are textual bulletins from Environment Canada, so display is already c
 3. **Salinity** - From some oceanographic buoys
 4. **Sea surface temperature trends** - Daily/seasonal changes
 5. **Ice conditions** - Relevant for winter in some areas
-6. **Webcams** - Real-time visual conditions
-7. **Satellite imagery** - SST, chlorophyll, etc.
-8. **Rainfall** - From weather stations
-9. **Lightning detection** - Thunderstorm proximity
-10. **UV Index** - Sun exposure for mariners
+6. **Satellite imagery** - SST, chlorophyll, etc.
+7. **Rainfall** - From weather stations
+8. **Lightning detection** - Thunderstorm proximity
+9. **UV Index** - Sun exposure for mariners
 
 ### Derived/Calculated Parameters
 1. **Beaufort Scale** - Convert wind to Beaufort number
