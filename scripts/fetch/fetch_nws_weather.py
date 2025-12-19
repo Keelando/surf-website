@@ -28,14 +28,17 @@ from lib.logging_config import setup_logging
 logger = setup_logging('nws_fetch')
 
 # NWS Stations Configuration
+# NOTE: Using /observations (multiple) instead of /observations/latest
+# because latest sometimes has incomplete data (null wind fields)
+# We'll fetch recent observations and pick the best one
 NWS_STATIONS = {
     'KBLI': {
         'name': 'Bellingham International Airport',
-        'url': 'https://api.weather.gov/stations/KBLI/observations/latest'
+        'url': 'https://api.weather.gov/stations/KBLI/observations'
     },
     'KORS': {
         'name': 'Orcas Island Airport',
-        'url': 'https://api.weather.gov/stations/KORS/observations/latest'
+        'url': 'https://api.weather.gov/stations/KORS/observations'
     }
 }
 
@@ -119,11 +122,14 @@ def parse_metar_wind(raw_metar):
 
 def fetch_nws_observation(station_id, url):
     """
-    Fetch latest observation from NWS API.
+    Fetch recent observations from NWS API and pick the best one.
+
+    Strategy: NWS /observations/latest sometimes has incomplete data (null wind fields).
+    Instead, fetch recent observations and pick the most recent one with complete wind data.
 
     Args:
         station_id: Station identifier (e.g., 'KBLI')
-        url: NWS API URL for station
+        url: NWS API URL for station observations
 
     Returns:
         Dictionary with parsed observation data, or None if fetch fails
@@ -140,17 +146,62 @@ def fetch_nws_observation(station_id, url):
         response.raise_for_status()
 
         data = response.json()
-        props = data.get('properties', {})
 
-        # Parse timestamp (ISO 8601 format)
-        timestamp_str = props.get('timestamp')
-        if not timestamp_str:
-            logger.warning(f"No timestamp in NWS response for {station_id}")
+        # Parse response as feature collection
+        features = data.get('features', [])
+        if not features:
+            logger.warning(f"No observations returned for {station_id}")
             return None
 
-        # Parse ISO 8601 timestamp
-        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
-        observation_time = int(dt.timestamp())
+        # Score and rank observations by data completeness
+        # Prefer observations with: wind_direction AND wind_speed, or parseable METAR
+        from datetime import timedelta
+        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=1)
+
+        scored_obs = []
+        for feature in features[:5]:  # Check last 5 observations
+            props = feature.get('properties', {})
+
+            # Parse timestamp
+            timestamp_str = props.get('timestamp')
+            if not timestamp_str:
+                continue
+
+            obs_dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            if obs_dt < cutoff_time:
+                continue  # Too old
+
+            # Score based on data completeness
+            score = 0
+            has_wind_dir = props.get('windDirection', {}).get('value') is not None
+            has_wind_speed = props.get('windSpeed', {}).get('value') is not None
+            has_metar = bool(props.get('rawMessage', '').strip())
+            has_temp = props.get('temperature', {}).get('value') is not None
+
+            if has_wind_dir and has_wind_speed:
+                score += 10  # Best: parsed wind data
+            elif has_metar:
+                score += 5   # Good: can parse METAR
+            if has_temp:
+                score += 2   # Nice to have
+
+            # Prefer more recent (tie-breaker)
+            score += (obs_dt.timestamp() / 1000000)
+
+            scored_obs.append((score, props, obs_dt))
+
+        if not scored_obs:
+            logger.warning(f"No recent observations found for {station_id}")
+            return None
+
+        # Pick highest scoring observation
+        scored_obs.sort(reverse=True, key=lambda x: x[0])
+        best_score, props, obs_dt = scored_obs[0]
+
+        logger.debug(f"Selected observation from {obs_dt.isoformat()} (score: {best_score:.1f})")
+
+        # Use the observation time from the selected observation
+        observation_time = int(obs_dt.timestamp())
 
         # Extract and convert values
         # Wind speed/direction (NWS API returns km/h, not m/s!)
