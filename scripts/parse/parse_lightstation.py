@@ -66,8 +66,10 @@ def parse_report_time(header_line, report_time_line):
         # Create datetime (UTC)
         dt = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
 
-        # Sanity check: if report date is > 5 days in future, assume it's from last month
-        if (dt - now_utc).days > 5:
+        # Sanity check: if report date is in the future AT ALL, assume it's from last month
+        # (Reports are current observations, NEVER legitimately in the future)
+        # Allow small buffer (1 hour) for clock drift/timezone edge cases
+        if dt > now_utc + timedelta(hours=1):
             month -= 1
             if month == 0:
                 month = 12

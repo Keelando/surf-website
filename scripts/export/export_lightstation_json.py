@@ -109,11 +109,12 @@ def query_and_export():
                 if fallback_row:
                     row = fallback_row
 
-            # Calculate staleness (>6 hours = stale)
+            # Calculate staleness (>12 hours = stale)
+            # Lightstations report every 3 hours, but can be delayed or infrequent
             observation_time = row["observation_time"]
             now_ts = datetime.now(timezone.utc).timestamp()
             age_hours = (now_ts - observation_time) / 3600
-            is_stale = age_hours > 6
+            is_stale = age_hours > 12
 
             # Build JSON entry
             station_json = {

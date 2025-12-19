@@ -56,6 +56,35 @@ TIDE_TO_SURGE_MAP = {
 - [ ] Surrey geodetic stations appear on hindcast comparison plot
 - [ ] Observed surge line displays for Surrey stations (no forecast line - expected)
 
+#### Task 1.3: Validate Geodetic Tide Offset Calculation
+**Issue:** Need to verify the tide residual calculation is correct for geodetic stations
+
+**Investigation plan:**
+1. **Use measured offset channel** between Crescent Beach Channel and Crescent Beach Ocean/Pile
+   - Both stations are geodetic (CGVD28)
+   - Measure the actual offset between the two stations
+   - Compare against what we're calculating
+
+2. **Plot internally calculated tide residual**
+   - Calculate: `tide_residual = observed - predicted`
+   - Plot this against the hindcast data
+   - Verify our calculation matches expected storm surge values
+
+3. **Debug offset alignment**
+   - Check if geodetic vs chart datum conversions are correct
+   - Verify the offset is being applied in the right direction
+   - Ensure hindcast comparison accounts for geodetic datum
+
+**Files to investigate:**
+- `scripts/export/export_tide_json.py` - Where `tide_offset` is calculated
+- `scripts/export/export_observed_storm_surge.py` - Hindcast export logic
+- `~/site/assets/js/storm_surge_page.js` - Frontend plotting
+
+**Success criteria:**
+- [ ] Measured offset between Surrey stations matches calculated offset
+- [ ] Tide residual plot matches hindcast expectations
+- [ ] Geodetic stations align properly on hindcast comparison chart
+
 ---
 
 ### Priority 2: Health Monitoring System (Phase 1)
@@ -112,8 +141,46 @@ TIDE_TO_SURGE_MAP = {
 
 ## ✅ COMPLETED (2025-12-19)
 
+### Staleness Threshold Unification + Lightstation Date Bug ✅
+**Completed:** 2025-12-19 (afternoon session)
+
+**Issues resolved:**
+1. ✅ **Unified staleness thresholds across all data types**
+   - Buoys/Wind/Tides: 3 hours (appropriate for frequent updates)
+   - Lightstations: 12 hours (appropriate for 3-hour update cycles)
+   - All displays now use backend `stale` flag consistently
+   - Frontend warnings updated to match backend thresholds
+
+2. ✅ **Lightstation date bug (MAJOR FIX)**
+   - Issue: Dates showing 6 days in the future (Dec 25 instead of Dec 19)
+   - Root cause: Parser threshold `> 5 days` didn't trigger when difference was exactly 5 days
+   - Fix: Changed to `> now + 1 hour` - never accept future dates for current observations
+   - Parser now correctly handles month boundaries
+
+3. ✅ **Transparent stale markers on maps**
+   - Stale directional arrows now show at 35% opacity
+   - Direction and values still visible but clearly faded
+   - Applied to all map popups (winds-map.js, stations-map.js, lightstation-map.js)
+
+4. ✅ **Prominent STALE indicators on all pages**
+   - Buoys page: "⚠️ STALE (>3h old)"
+   - Lightstations page: "⚠️ STALE DATA (>12h old)"
+   - Map popups: Red backgrounds and "STALE" in headers
+   - Lightstation popups unified across both maps
+
+5. ✅ **Display consistency fixes**
+   - Buoys page was calculating staleness client-side (could mismatch)
+   - Now all pages use backend `stale` flag from JSON exports
+   - Eliminates timing-based inconsistencies
+
+**Files modified:**
+- Backend: `sqlite_to_json.py`, `export_wind_json.py`, `export_tide_json.py`, `export_lightstation_json.py`, `parse_lightstation.py`
+- Frontend: `main.js`, `lightstations.html`, `lightstation-map.js`, `stations-map.js`, `winds-map.js`
+
+---
+
 ### Cherry Point Investigation + Logging Fixes ✅
-**Completed:** 2025-12-19
+**Completed:** 2025-12-19 (morning session)
 
 **Issues resolved:**
 1. ✅ Cherry Point "feed down" - Root cause: NOAA station hardware outage (not our code)

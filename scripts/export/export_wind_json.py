@@ -139,7 +139,7 @@ def query_and_export():
             # Calculate staleness for UI indicators
             now_ts = datetime.now(timezone.utc).timestamp()
             age_minutes = (now_ts - latest_time) / 60
-            station_json["stale"] = age_minutes > 120  # >2 hours old
+            station_json["stale"] = age_minutes > 180  # >3 hours old
 
             # Query each field individually - get most recent non-null value within freshness window
             cutoff_time = latest_time - FRESHNESS_WINDOW
