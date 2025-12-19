@@ -113,7 +113,7 @@ def export_latest(conn, station_metadata):
                 "value": round(obs_value, 3) if obs_value is not None else None,
                 "quality": obs_quality,
                 "age_minutes": round(age_minutes, 1),
-                "stale": age_minutes > 120
+                "stale": age_minutes > 180
             }
 
         # Get current prediction (closest to now)
@@ -358,6 +358,32 @@ def export_timeseries(conn, station_metadata):
 
             if residuals:
                 station_data["residuals"] = residuals
+
+            # Export geodetic offset data (CB-CC difference) for calibration testing
+            # This allows testing if predictions need datum offset correction
+            if station_id == "surrey_crescent_ocean":
+                cur.execute("""
+                    SELECT observation_time, geodiff_cb_vs_cc
+                    FROM surrey_geodetic_data
+                    WHERE station_id = ?
+                      AND observation_time >= ?
+                      AND observation_time <= ?
+                      AND geodiff_cb_vs_cc IS NOT NULL
+                    ORDER BY observation_time ASC
+                """, (station_id, start_ts, end_ts))
+
+                geodiff_rows = cur.fetchall()
+                geodiff_downsampled = downsample_to_15min(geodiff_rows)
+
+                geodetic_offsets = []
+                for ts, offset_val in geodiff_downsampled:
+                    geodetic_offsets.append({
+                        "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+                        "value": round(offset_val, 3)
+                    })
+
+                if geodetic_offsets:
+                    station_data["geodetic_offsets"] = geodetic_offsets
 
         # Add station if it has any data
         if station_data["predictions"] or station_data["observations"]:
