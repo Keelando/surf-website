@@ -49,6 +49,7 @@ SURREY_STATIONS = {
             "water_level_observed": 2296,   # Anderra - CGVD28 GVRD Stage_10min
             "tidal_residual": 2414,          # Tidal Residual (observed - predicted, Surrey's calculation)
             "geodiff_cb_vs_cc": 2129,        # Geodifference_CBvsCC_Radar
+            "geodiff_cbvscc_pt": 2126,       # Geodifference_CBvsCC_PT (THIS IS THE ONE!)
             "geodiff_cb_pt_vs_radar": 2454,  # Geodifference_CB_PTvsRadar (PT vs Radar offset)
         }
     },
@@ -318,6 +319,8 @@ def fetch_geodetic_data(api, station_config, tide_conn, hours_past=48):
         geodetic_channels["tidal_residual"] = channels["tidal_residual"]
     if "geodiff_cb_vs_cc" in channels:
         geodetic_channels["geodiff_cb_vs_cc"] = channels["geodiff_cb_vs_cc"]
+    if "geodiff_cbvscc_pt" in channels:
+        geodetic_channels["geodiff_cbvscc_pt"] = channels["geodiff_cbvscc_pt"]
     if "geodiff_pt_vs_radar" in channels:
         geodetic_channels["geodiff_pt_vs_radar"] = channels["geodiff_pt_vs_radar"]
     if "geodiff_cb_pt_vs_radar" in channels:
@@ -357,23 +360,25 @@ def fetch_geodetic_data(api, station_config, tide_conn, hours_past=48):
         # Gather values for this timestamp
         tidal_residual = geodetic_data.get("tidal_residual", {}).get(timestamp)
         geodiff_cb_vs_cc = geodetic_data.get("geodiff_cb_vs_cc", {}).get(timestamp)
+        geodiff_cbvscc_pt = geodetic_data.get("geodiff_cbvscc_pt", {}).get(timestamp)
         geodiff_pt_vs_radar = geodetic_data.get("geodiff_pt_vs_radar", {}).get(timestamp)
         geodiff_cb_pt_vs_radar = geodetic_data.get("geodiff_cb_pt_vs_radar", {}).get(timestamp)
 
         # Skip if all values are None
-        if all(v is None for v in [tidal_residual, geodiff_cb_vs_cc, geodiff_pt_vs_radar, geodiff_cb_pt_vs_radar]):
+        if all(v is None for v in [tidal_residual, geodiff_cb_vs_cc, geodiff_cbvscc_pt, geodiff_pt_vs_radar, geodiff_cb_pt_vs_radar]):
             continue
 
         try:
             tide_cur.execute("""
                 INSERT OR REPLACE INTO surrey_geodetic_data
-                (station_id, observation_time, tidal_residual, geodiff_cb_vs_cc, geodiff_pt_vs_radar, geodiff_cb_pt_vs_radar)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (station_id, observation_time, tidal_residual, geodiff_cb_vs_cc, geodiff_cbvscc_pt, geodiff_pt_vs_radar, geodiff_cb_pt_vs_radar)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 station_id,
                 timestamp,
                 tidal_residual,
                 geodiff_cb_vs_cc,
+                geodiff_cbvscc_pt,
                 geodiff_pt_vs_radar,
                 geodiff_cb_pt_vs_radar
             ))
