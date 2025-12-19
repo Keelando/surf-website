@@ -1,14 +1,145 @@
 # Next Session Plan
 
-**Last updated:** 2025-12-18
-**Status:** Field unification complete! Ready for schema cleanup.
+**Last updated:** 2025-12-19
+**Status:** Health monitoring + geodetic tide fixes
 
 ---
 
-## ✅ COMPLETED (2025-12-18)
+## 🎯 TOMORROW'S PRIORITIES (2025-12-19)
+
+### Priority 1: Geodetic Tide Offset Fixes (URGENT)
+
+**Effort:** 1-2 hours
+**Impact:** HIGH - User-facing bug + missing data on storm surge page
+
+#### Task 1.1: Fix "Invalid Date" on Storm Surge Card
+**Issue:** Storm surge card shows "Invalid time date" for calculation timestamp
+
+**Quick fix:**
+```python
+# export_tide_json.py:171-174
+station_data["tide_offset"] = {
+    "value": round(offset, 2),  # Reduce from 3 to 2 decimals
+    "observation_time": station_data["observation"]["time"],  # ADD THIS
+    "description": "Observed minus predicted (storm surge + forecast error)"
+}
+```
+
+**Files to modify:**
+- `scripts/export/export_tide_json.py` (lines 165-174)
+- Test: Check `/data/tide-latest.json` has `tide_offset.observation_time`
+- Frontend should display timestamp correctly
+
+#### Task 1.2: Add Surrey Stations to Hindcast Plot
+**Issue:** Crescent Beach Ocean and Crescent Channel Ocean missing from storm surge comparison
+
+**Implementation:**
+```python
+# export_observed_storm_surge.py - Add to TIDE_TO_SURGE_MAP
+TIDE_TO_SURGE_MAP = {
+    "point_atkinson": "Point_Atkinson",
+    "campbell_river": "Campbell_River",
+    "crescent_pile": "Crescent_Beach_Channel",
+    "tofino": "Tofino",
+    "crescent_beach_ocean": "Crescent_Beach_Ocean",      # NEW
+    "crescent_channel_ocean": "Crescent_Channel_Ocean"   # NEW
+}
+```
+
+**Files to modify:**
+- `scripts/export/export_observed_storm_surge.py` (line 29-34)
+- `/home/keelando/site/assets/js/storm_surge_page.js` - Handle stations with obs but no hindcast
+- Test: Verify Surrey stations appear on /storm_surge.html hindcast plot
+
+**Success criteria:**
+- [ ] Storm surge card shows valid timestamp
+- [ ] Surrey geodetic stations appear on hindcast comparison plot
+- [ ] Observed surge line displays for Surrey stations (no forecast line - expected)
+
+---
+
+### Priority 2: Health Monitoring System (Phase 1)
+
+**Effort:** 2-3 hours
+**Impact:** HIGH - Makes future refactors painless
+
+#### Create Health Check Script
+
+**File:** `scripts/monitoring/health_check.py`
+
+**Checks to implement:**
+1. **Data Freshness** - Flag stations >2hrs old (warning), >4hrs old (error)
+2. **Cron Job Monitoring** - Verify critical jobs ran recently via syslog
+3. **Database Integrity** - Check size, recent writes, WAL mode
+4. **Export File Freshness** - Verify JSON exports are recent and parseable
+
+**Output:** `/home/keelando/site/data/system_health.json`
+
+```json
+{
+  "generated_utc": "2025-12-19T12:00:00Z",
+  "overall_status": "warning",
+  "checks": {
+    "data_freshness": {
+      "status": "warning",
+      "stale_stations": [
+        {"id": "CPMW1", "name": "Cherry Point", "age_hours": 4.5}
+      ]
+    },
+    "cron_jobs": {"status": "ok", ...},
+    "database_integrity": {"status": "ok", ...},
+    "export_files": {"status": "ok", ...}
+  }
+}
+```
+
+**Add to crontab:**
+```bash
+0 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/monitoring/health_check.py >> /home/keelando/envcan_wave/logs/health_check.log 2>&1
+```
+
+**Success criteria:**
+- [ ] Script runs successfully in <5 seconds
+- [ ] Detects stale data (e.g., Cherry Point at 4+ hours)
+- [ ] Identifies missing/overdue cron jobs
+- [ ] JSON validates against expected schema
+- [ ] Running hourly via cron
+
+**Documentation:**
+- See `docs/project/HEALTH_MONITORING_PLAN.md` for full implementation details
+
+---
+
+## ✅ COMPLETED (2025-12-19)
+
+### Cherry Point Investigation + Logging Fixes ✅
+**Completed:** 2025-12-19
+
+**Issues resolved:**
+1. ✅ Cherry Point "feed down" - Root cause: NOAA station hardware outage (not our code)
+   - Data pipeline working correctly, station hasn't reported since 2025-12-18 22:54 UTC
+   - Cron job running every 20 min but finding no new observations (all duplicates)
+
+2. ✅ Log file location mismatch - Fixed duplicate log directories
+   - Was: Scripts logging to `lib/logs/`, cron redirecting to `logs/`
+   - Now: Everything consolidated to `/home/keelando/envcan_wave/logs/`
+   - File: `lib/logging_config.py:28` changed from `Path(__file__).parent / "logs"` to `Path(__file__).parent.parent / "logs"`
+
+3. ✅ Stale station links added to warning card
+   - Users can now click station names in stale data warning to check source feeds
+   - Reuses sourceLinks from main table for consistency
+   - File: `/home/keelando/site/assets/js/wind-stations.js`
+
+4. ✅ Wind direction field unification complete
+   - Fixed last reference in `export_wind_24hr_timeseries.py`
+   - All scripts now use correct field names (wind_direction_deg for wind stations, wind_direction for buoys)
+
+**Commits:** 8848620, 20484ae, 35fabf5
+
+---
 
 ### Wind Direction Field Unification ✅
-**Completed in:** commits 0a09976 (backend), c1f9375 (frontend)
+**Completed in:** 2025-12-18 - commits 0a09976 (backend), c1f9375 (frontend)
 
 **Backend:**
 - ✅ Updated `export_wind_json.py` to query `wind_direction_deg` field
