@@ -24,7 +24,8 @@ import sys
 
 
 # Log configuration
-LOGS_DIR = Path(__file__).parent / "logs"
+# Use project root logs directory, not lib/logs
+LOGS_DIR = Path(__file__).parent.parent / "logs"
 DEFAULT_LOG_LEVEL = logging.INFO
 MAX_LOG_SIZE = 10 * 1024 * 1024  # 10 MB
 BACKUP_COUNT = 5  # Keep 5 old log files
