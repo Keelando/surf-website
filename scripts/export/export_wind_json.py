@@ -77,6 +77,11 @@ ALL_FIELDS = [
     "pressure_hpa",
     "rainfall_1hr_mm",
     "rainfall_6hr_mm",
+    # Additional fields (added 2025-12-19) - stored but previously not exported
+    "humidity_percent",      # 66% populated - relative humidity
+    "dewpoint_c",            # 66% populated - dewpoint temperature
+    "pressure_mslp_hpa",     # Mean sea level pressure (for NOAA stations)
+    "visibility_km",         # Visibility distance
 ]
 
 
