@@ -359,9 +359,10 @@ def export_timeseries(conn, station_metadata):
             if residuals:
                 station_data["residuals"] = residuals
 
-            # Export geodetic offset data (CB-CC difference) for calibration testing
+            # Export geodetic offset data for calibration testing
             # This allows testing if predictions need datum offset correction
             if station_id == "surrey_crescent_ocean":
+                # Channel 2129: CB vs CC (Radar)
                 cur.execute("""
                     SELECT observation_time, geodiff_cb_vs_cc
                     FROM surrey_geodetic_data
@@ -372,18 +373,42 @@ def export_timeseries(conn, station_metadata):
                     ORDER BY observation_time ASC
                 """, (station_id, start_ts, end_ts))
 
-                geodiff_rows = cur.fetchall()
-                geodiff_downsampled = downsample_to_15min(geodiff_rows)
+                geodiff_cc_rows = cur.fetchall()
+                geodiff_cc_downsampled = downsample_to_15min(geodiff_cc_rows)
 
-                geodetic_offsets = []
-                for ts, offset_val in geodiff_downsampled:
-                    geodetic_offsets.append({
+                geodetic_offsets_cc = []
+                for ts, offset_val in geodiff_cc_downsampled:
+                    geodetic_offsets_cc.append({
                         "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
                         "value": round(offset_val, 3)
                     })
 
-                if geodetic_offsets:
-                    station_data["geodetic_offsets"] = geodetic_offsets
+                if geodetic_offsets_cc:
+                    station_data["geodetic_offsets_cc"] = geodetic_offsets_cc
+
+                # Channel 2454: CB PT vs Radar
+                cur.execute("""
+                    SELECT observation_time, geodiff_cb_pt_vs_radar
+                    FROM surrey_geodetic_data
+                    WHERE station_id = ?
+                      AND observation_time >= ?
+                      AND observation_time <= ?
+                      AND geodiff_cb_pt_vs_radar IS NOT NULL
+                    ORDER BY observation_time ASC
+                """, (station_id, start_ts, end_ts))
+
+                geodiff_pt_rows = cur.fetchall()
+                geodiff_pt_downsampled = downsample_to_15min(geodiff_pt_rows)
+
+                geodetic_offsets_pt = []
+                for ts, offset_val in geodiff_pt_downsampled:
+                    geodetic_offsets_pt.append({
+                        "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+                        "value": round(offset_val, 3)
+                    })
+
+                if geodetic_offsets_pt:
+                    station_data["geodetic_offsets_pt"] = geodetic_offsets_pt
 
         # Add station if it has any data
         if station_data["predictions"] or station_data["observations"]:

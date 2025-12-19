@@ -49,6 +49,7 @@ SURREY_STATIONS = {
             "water_level_observed": 2296,   # Anderra - CGVD28 GVRD Stage_10min
             "tidal_residual": 2414,          # Tidal Residual (observed - predicted, Surrey's calculation)
             "geodiff_cb_vs_cc": 2129,        # Geodifference_CBvsCC_Radar
+            "geodiff_cb_pt_vs_radar": 2454,  # Geodifference_CB_PTvsRadar (PT vs Radar offset)
         }
     },
     "crescentchannel": {
@@ -319,6 +320,8 @@ def fetch_geodetic_data(api, station_config, tide_conn, hours_past=48):
         geodetic_channels["geodiff_cb_vs_cc"] = channels["geodiff_cb_vs_cc"]
     if "geodiff_pt_vs_radar" in channels:
         geodetic_channels["geodiff_pt_vs_radar"] = channels["geodiff_pt_vs_radar"]
+    if "geodiff_cb_pt_vs_radar" in channels:
+        geodetic_channels["geodiff_cb_pt_vs_radar"] = channels["geodiff_cb_pt_vs_radar"]
 
     if not geodetic_channels:
         logger.debug(f"{station_config['display_name']}: No geodetic channels configured")
@@ -355,22 +358,24 @@ def fetch_geodetic_data(api, station_config, tide_conn, hours_past=48):
         tidal_residual = geodetic_data.get("tidal_residual", {}).get(timestamp)
         geodiff_cb_vs_cc = geodetic_data.get("geodiff_cb_vs_cc", {}).get(timestamp)
         geodiff_pt_vs_radar = geodetic_data.get("geodiff_pt_vs_radar", {}).get(timestamp)
+        geodiff_cb_pt_vs_radar = geodetic_data.get("geodiff_cb_pt_vs_radar", {}).get(timestamp)
 
         # Skip if all values are None
-        if all(v is None for v in [tidal_residual, geodiff_cb_vs_cc, geodiff_pt_vs_radar]):
+        if all(v is None for v in [tidal_residual, geodiff_cb_vs_cc, geodiff_pt_vs_radar, geodiff_cb_pt_vs_radar]):
             continue
 
         try:
             tide_cur.execute("""
                 INSERT OR REPLACE INTO surrey_geodetic_data
-                (station_id, observation_time, tidal_residual, geodiff_cb_vs_cc, geodiff_pt_vs_radar)
-                VALUES (?, ?, ?, ?, ?)
+                (station_id, observation_time, tidal_residual, geodiff_cb_vs_cc, geodiff_pt_vs_radar, geodiff_cb_pt_vs_radar)
+                VALUES (?, ?, ?, ?, ?, ?)
             """, (
                 station_id,
                 timestamp,
                 tidal_residual,
                 geodiff_cb_vs_cc,
-                geodiff_pt_vs_radar
+                geodiff_pt_vs_radar,
+                geodiff_cb_pt_vs_radar
             ))
             inserted += 1
         except sqlite3.Error as e:
