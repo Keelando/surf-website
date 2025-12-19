@@ -58,6 +58,64 @@ def m_to_km(m):
         return None
     return m / 1000.0
 
+def knots_to_kmh(knots):
+    """Convert knots to kilometers per hour."""
+    if knots is None:
+        return None
+    return knots * 1.852
+
+def parse_metar_wind(raw_metar):
+    """
+    Parse wind data from METAR rawMessage when API fields are null.
+
+    METAR wind format: DDDSSGGGkt or DDDSSkt
+    - DDD: direction in degrees (3 digits, or VRB for variable)
+    - SS: speed in knots (2-3 digits)
+    - GGG: gust in knots (optional, after G)
+    - kt: units
+
+    Examples:
+      19025G33KT -> dir=190, speed=25kt, gust=33kt
+      VRB05KT -> dir=variable, speed=5kt
+      00000KT -> calm
+
+    Returns:
+        tuple: (wind_direction_deg, wind_speed_kmh, wind_gust_kmh)
+    """
+    import re
+
+    if not raw_metar:
+        return None, None, None
+
+    # METAR wind pattern: direction (3 digits or VRB), speed (2-3 digits), optional gust (G + 2-3 digits), KT
+    # Examples: 19025G33KT, VRB05KT, 00000KT, 27015KT
+    pattern = r'\b(VRB|\d{3})(\d{2,3})(?:G(\d{2,3}))?KT\b'
+    match = re.search(pattern, raw_metar)
+
+    if not match:
+        return None, None, None
+
+    dir_str, speed_str, gust_str = match.groups()
+
+    # Parse direction
+    if dir_str == 'VRB':
+        wind_direction = None  # Variable direction
+    elif dir_str == '000':
+        wind_direction = None  # Calm
+    else:
+        wind_direction = int(dir_str)
+
+    # Parse speed and gust (convert knots to km/h)
+    wind_speed_kt = int(speed_str)
+    wind_speed_kmh = knots_to_kmh(wind_speed_kt) if wind_speed_kt > 0 else None
+
+    wind_gust_kmh = None
+    if gust_str:
+        wind_gust_kt = int(gust_str)
+        wind_gust_kmh = knots_to_kmh(wind_gust_kt)
+
+    return wind_direction, wind_speed_kmh, wind_gust_kmh
+
 
 def fetch_nws_observation(station_id, url):
     """
@@ -99,6 +157,23 @@ def fetch_nws_observation(station_id, url):
         wind_speed_kmh = props.get('windSpeed', {}).get('value')  # Already in km/h
         wind_gust_kmh = props.get('windGust', {}).get('value')    # Already in km/h
         wind_direction = props.get('windDirection', {}).get('value')
+
+        # Fallback: Parse METAR rawMessage if API fields are null
+        # Many NOAA land stations don't return parsed wind fields, but METAR has the data
+        if (wind_direction is None or wind_speed_kmh is None):
+            raw_metar = props.get('rawMessage', '')
+            if raw_metar:
+                metar_dir, metar_speed, metar_gust = parse_metar_wind(raw_metar)
+                if metar_dir is not None:
+                    wind_direction = metar_dir
+                    logger.debug(f"Parsed wind direction from METAR: {metar_dir}°")
+                if metar_speed is not None:
+                    wind_speed_kmh = metar_speed
+                    logger.debug(f"Parsed wind speed from METAR: {metar_speed:.1f} km/h")
+                # Use METAR gust only if API didn't provide it
+                if wind_gust_kmh is None and metar_gust is not None:
+                    wind_gust_kmh = metar_gust
+                    logger.debug(f"Parsed wind gust from METAR: {metar_gust:.1f} km/h")
 
         # Temperature
         air_temp_c = props.get('temperature', {}).get('value')
