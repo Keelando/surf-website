@@ -488,6 +488,50 @@
         "water_level_predicted",
         "high_low_events"
       ]
+    },
+    "crescent_beach_ocean": {
+      "id": "surrey_crescent_ocean",
+      "code": "CBOCN",
+      "name": "Crescent Beach Ocean",
+      "location": "Surrey (Geodetic)",
+      "lat": 49.033333,
+      "lon": -122.883333,
+      "source": "Surrey FlowWorks",
+      "type": "SURREY_FLOWWORKS",
+      "series": [
+        "wlp",
+        "wlo",
+        "geodetic"
+      ],
+      "update_frequency_minutes": 10,
+      "data_types": [
+        "water_level_predicted",
+        "water_level_observed",
+        "geodetic_offsets"
+      ],
+      "note": "CGVD28 datum - requires calibration with channel 2126"
+    },
+    "crescent_channel_ocean": {
+      "id": "surrey_crescent_channel",
+      "code": "CCOCN",
+      "name": "Crescent Channel Ocean",
+      "location": "Surrey (Geodetic)",
+      "lat": 49.033333,
+      "lon": -122.866667,
+      "source": "Surrey FlowWorks",
+      "type": "SURREY_FLOWWORKS",
+      "series": [
+        "wlp",
+        "wlo",
+        "geodetic"
+      ],
+      "update_frequency_minutes": 10,
+      "data_types": [
+        "water_level_predicted",
+        "water_level_observed",
+        "geodetic_offsets"
+      ],
+      "note": "CGVD28 datum - requires calibration with channel 2126"
     }
   },
   "wind": {
