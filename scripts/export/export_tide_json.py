@@ -363,6 +363,7 @@ def export_timeseries(conn, station_metadata):
             # This allows testing if predictions need datum offset correction
             if station_id == "surrey_crescent_ocean":
                 # Channel 2126: CB vs CC (PT) - THE MAIN CALIBRATION CHANNEL (-0.34m)
+                # Applied to PREDICTIONS for Crescent Beach
                 cur.execute("""
                     SELECT observation_time, geodiff_cbvscc_pt
                     FROM surrey_geodetic_data
@@ -378,6 +379,33 @@ def export_timeseries(conn, station_metadata):
 
                 geodetic_offsets = []
                 for ts, offset_val in geodiff_pt_downsampled:
+                    geodetic_offsets.append({
+                        "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+                        "value": round(offset_val, 3)
+                    })
+
+                if geodetic_offsets:
+                    station_data["geodetic_offsets"] = geodetic_offsets
+
+            elif station_id == "surrey_crescent_channel":
+                # Channel 2126: CB vs CC (PT) - SAME CHANNEL AS CRESCENT BEACH
+                # Applied to OBSERVATIONS for Crescent Channel (vs predictions for CB)
+                # NOTE: This channel is fetched from Crescent Beach site but used for both stations!
+                cur.execute("""
+                    SELECT observation_time, geodiff_cbvscc_pt
+                    FROM surrey_geodetic_data
+                    WHERE station_id = 'surrey_crescent_ocean'
+                      AND observation_time >= ?
+                      AND observation_time <= ?
+                      AND geodiff_cbvscc_pt IS NOT NULL
+                    ORDER BY observation_time ASC
+                """, (start_ts, end_ts))
+
+                geodiff_cc_rows = cur.fetchall()
+                geodiff_cc_downsampled = downsample_to_15min(geodiff_cc_rows)
+
+                geodetic_offsets = []
+                for ts, offset_val in geodiff_cc_downsampled:
                     geodetic_offsets.append({
                         "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
                         "value": round(offset_val, 3)
