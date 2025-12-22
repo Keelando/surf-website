@@ -124,3 +124,6 @@ SURREY_API_PASSWORD=surreyrain
 
 # Surrey tide observations (every 20 minutes - incremental, 2hr lookback)
 */20 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_surrey_tides.py --observations >> /home/keelando/envcan_wave/logs/surrey_tide_sync.log 2>&1
+
+# Export sunlight times (sunrise/sunset/twilight) for all webcams and tide stations - daily at 12:06 AM
+6 0 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_sunlight_times.py >> /home/keelando/envcan_wave/logs/sunlight_export.log 2>&1
