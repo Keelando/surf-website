@@ -27,6 +27,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 import logging
 
+# Import daylight detection
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils.daylight import is_daylight
+
 # Webcam configurations
 WEBCAM_CONFIGS = {
     "whiterock": {
@@ -36,7 +40,10 @@ WEBCAM_CONFIGS = {
         "website_dir": Path.home() / "site" / "data" / "wrcam",
         "prefix": "WR",
         "crop": "in_w*0.75:in_h:in_w*0.25:0",  # Crop left 25% (street), keep right 75% (pier/sea)
-        "source_text": "White Rock Pier - YouTube Livestream"
+        "source_text": "White Rock Pier - YouTube Livestream",
+        "lat": 49.0253,
+        "lon": -122.8031,
+        "check_daylight": False  # Capture 24/7
     },
     "boundarybay": {
         "name": "White Rock East Beach",
@@ -45,7 +52,10 @@ WEBCAM_CONFIGS = {
         "website_dir": Path.home() / "site" / "data" / "bbcam",
         "prefix": "BB",
         "crop": "in_w:in_h:0:0",  # Full frame, no cropping
-        "source_text": "White Rock East Beach - YouTube Livestream"
+        "source_text": "White Rock East Beach - YouTube Livestream",
+        "lat": 49.0042,
+        "lon": -123.0128,
+        "check_daylight": False  # Capture 24/7
     },
     "coxbay": {
         "name": "Cox Bay",
@@ -54,7 +64,11 @@ WEBCAM_CONFIGS = {
         "website_dir": Path.home() / "site" / "data" / "coxbay",
         "prefix": "CB",
         "crop": "in_w:in_h:0:0",  # Full frame initially - adjust after testing
-        "source_text": "Cox Bay (Tofino) - Pacific Sands Beach Resort Livestream"
+        "source_text": "Cox Bay (Tofino) - Pacific Sands Beach Resort Livestream",
+        "lat": 49.1167,
+        "lon": -125.9000,
+        "check_daylight": True,  # Only capture during daylight
+        "daylight_margin_minutes": 60  # Stop 1 hour after sunset, start 1 hour before sunrise
     }
 }
 
@@ -287,6 +301,17 @@ def main():
     logger = setup_logger(config_name)
 
     logger.info(f"=== {config['name']} Webcam Capture Started ===")
+
+    # Check if daylight check is enabled for this webcam
+    if config.get("check_daylight", False):
+        margin = config.get("daylight_margin_minutes", 30)
+        if not is_daylight(config["lat"], config["lon"], margin_minutes=margin):
+            logger.info(f"Skipping capture - it's nighttime (outside daylight hours + {margin}min margin)")
+            logger.info("Webcam captures are only taken during daylight hours for this location")
+            sys.exit(0)
+        logger.info(f"Daylight check passed (within {margin}min of sunrise/sunset) - proceeding with capture")
+    else:
+        logger.info("Daylight check disabled for this webcam - capturing 24/7")
 
     # Ensure directories exist
     config["archive_dir"].mkdir(parents=True, exist_ok=True)
