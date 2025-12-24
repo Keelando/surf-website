@@ -38,7 +38,7 @@ from lib.logging_config import setup_logging
 logger = setup_logging('wind_timeseries_export')
 
 # ---------- Config ----------
-OUT_PATH = EXPORT_DIR / "wind_timeseries_24hr.json"
+OUT_PATH = EXPORT_DIR / "wind_timeseries_48hr.json"
 LOCKFILE = Path("/tmp/wind_timeseries.lock")
 
 # Load wind stations from registry (single source of truth)
@@ -142,9 +142,9 @@ def query_and_export_timeseries():
         conn.close()
         return
 
-    # Calculate 24-hour window
+    # Calculate 48-hour window
     now = datetime.now(timezone.utc)
-    cutoff_time = int((now - timedelta(hours=24)).timestamp())
+    cutoff_time = int((now - timedelta(hours=48)).timestamp())
 
     output = {}
 
@@ -194,7 +194,7 @@ def query_and_export_timeseries():
                             station_data["timeseries"][json_key] = hourly
 
                 wr_conn.close()
-                logger.info(f"Exported 24hr timeseries for {station_id} ({station_name})")
+                logger.info(f"Exported 48hr timeseries for {station_id} ({station_name})")
             else:
                 logger.warning(f"White Rock database not found: {WHITEROCK_DATABASE}")
         else:
@@ -242,7 +242,7 @@ def query_and_export_timeseries():
 
             # Log if we got data for this station
             if station_data["timeseries"]:
-                logger.info(f"Exported 24hr timeseries for {station_id} ({station_name})")
+                logger.info(f"Exported 48hr timeseries for {station_id} ({station_name})")
 
         # Only include stations with actual data
         if station_data["timeseries"]:
@@ -253,7 +253,7 @@ def query_and_export_timeseries():
     # Add metadata
     output["_meta"] = {
         "generated_utc": now.isoformat(),
-        "window_hours": 24,
+        "window_hours": 48,
         "data_resolution": "hourly (downsampled)"
     }
 
@@ -261,7 +261,7 @@ def query_and_export_timeseries():
     safe_json_write(OUT_PATH, output)
 
     station_count = len([k for k in output.keys() if k != "_meta"])
-    logger.info(f"Wrote 24hr timeseries to {OUT_PATH}")
+    logger.info(f"Wrote 48hr timeseries to {OUT_PATH}")
     logger.info(f"Total stations: {station_count}")
 
 
