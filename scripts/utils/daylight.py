@@ -28,7 +28,7 @@ def calculate_sunrise_sunset(lat, lon, date=None):
     Args:
         lat: Latitude in decimal degrees (positive = North, negative = South)
         lon: Longitude in decimal degrees (positive = East, negative = West)
-        date: datetime object (defaults to today in local timezone)
+        date: datetime object in UTC (defaults to now in UTC)
 
     Returns:
         tuple: (sunrise_datetime, sunset_datetime) in UTC
@@ -39,9 +39,22 @@ def calculate_sunrise_sunset(lat, lon, date=None):
     # Create a LocationInfo object (name is arbitrary)
     location = LocationInfo("Custom", "Region", "UTC", lat, lon)
 
-    # Calculate sun times for this location and date
+    # IMPORTANT: Calculate sunrise/sunset for the LOCAL date at this location,
+    # not the UTC date. This fixes timezone boundary issues where UTC midnight
+    # occurs in the middle of the local day (e.g., 4 PM PST = 00:00 UTC next day).
+    #
+    # For locations west of UTC (negative longitude = west), we need to account
+    # for the fact that their local time is behind UTC. A simple approximation
+    # is to subtract the longitude-based timezone offset.
+    #
+    # More robust: estimate timezone offset from longitude (15° ≈ 1 hour)
+    estimated_tz_offset_hours = lon / 15.0  # Positive = east of UTC, negative = west
+    local_offset = timedelta(hours=estimated_tz_offset_hours)
+    local_date = date + local_offset
+
+    # Use the local date to calculate sunrise/sunset
     try:
-        s = sun(location.observer, date=date.date(), tzinfo=timezone.utc)
+        s = sun(location.observer, date=local_date.date(), tzinfo=timezone.utc)
         sunrise_time = s["sunrise"]
         sunset_time = s["sunset"]
 
