@@ -1,0 +1,615 @@
+#!/usr/bin/env python3
+"""
+Health monitoring script for Salish Sea marine weather system.
+
+Checks:
+- Data freshness (buoys, wind, tides, lightstations)
+- Database integrity (size, WAL mode, recent writes)
+- Export file freshness and validity
+- Basic cron job monitoring
+
+Output: /home/keelando/site/data/system_health.json
+
+Usage:
+    python3 health_check.py [--verbose]
+"""
+
+import sys
+import json
+import sqlite3
+from pathlib import Path
+from datetime import datetime, timezone, timedelta
+from typing import Dict, List, Tuple
+
+# Add lib to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from lib.stations import get_all_buoys, get_all_tides, get_all_wind
+from lib.config import PROJECT_ROOT
+
+# Database paths
+DB_DIR = Path.home() / ".local" / "share"
+BUOY_DB = DB_DIR / "buoy_data.sqlite"
+WIND_DB = DB_DIR / "wind_data.sqlite"
+TIDE_DB = DB_DIR / "tide_data.sqlite"
+LIGHTSTATION_DB = DB_DIR / "lightstation_data.sqlite"
+STORM_SURGE_DB = DB_DIR / "storm_surge_forecast.sqlite"
+WEATHER_DB = DB_DIR / "weather_data.sqlite"
+
+# Export paths
+SITE_DATA = Path.home() / "site" / "data"
+OUTPUT_FILE = SITE_DATA / "system_health.json"
+
+# Freshness thresholds (in hours)
+THRESHOLDS = {
+    'buoy': {'warning': 2, 'error': 4},
+    'wind': {'warning': 2, 'error': 4},
+    'tide': {'warning': 2, 'error': 4},
+    'lightstation': {'warning': 6, 'error': 12},
+}
+
+# Stations known to be intermittent (report but don't flag as critical)
+INTERMITTENT_STATIONS = {
+    'TRIAL_ISLAND': 'Lightstation - reports intermittently, extended gaps are normal',
+}
+
+VERBOSE = False
+
+
+def log(msg: str):
+    """Print if verbose mode enabled."""
+    if VERBOSE:
+        print(msg)
+
+
+def check_data_freshness() -> Dict:
+    """Check all data sources for stale data."""
+    log("\n=== Checking Data Freshness ===")
+
+    stale_stations = []
+    total_checked = 0
+    status = "ok"
+
+    # Check buoys
+    log("Checking buoys...")
+    buoy_stale = check_buoy_freshness()
+    stale_stations.extend(buoy_stale)
+    total_checked += len(get_all_buoys())
+
+    # Check wind stations
+    log("Checking wind stations...")
+    wind_stale = check_wind_freshness()
+    stale_stations.extend(wind_stale)
+    total_checked += len(get_all_wind())
+
+    # Check tide stations
+    log("Checking tide stations...")
+    tide_stale = check_tide_freshness()
+    stale_stations.extend(tide_stale)
+    total_checked += len(get_all_tides())
+
+    # Check lightstations
+    log("Checking lightstations...")
+    lightstation_stale = check_lightstation_freshness()
+    stale_stations.extend(lightstation_stale)
+    # We don't have a station registry for lightstations yet, so count from DB
+
+    # Determine overall status (ignore 'info' severity for intermittent stations)
+    error_stations = [s for s in stale_stations if s['severity'] == 'error']
+    warning_stations = [s for s in stale_stations if s['severity'] == 'warning']
+
+    if error_stations:
+        status = "error"
+    elif warning_stations:
+        status = "warning"
+
+    return {
+        "status": status,
+        "total_stations": total_checked,
+        "stale_count": len(stale_stations),
+        "stale_stations": stale_stations
+    }
+
+
+def check_buoy_freshness() -> List[Dict]:
+    """Check buoy data freshness."""
+    stale = []
+    now = datetime.now(timezone.utc)
+
+    if not BUOY_DB.exists():
+        log(f"  ⚠️  Database not found: {BUOY_DB}")
+        return stale
+
+    try:
+        conn = sqlite3.connect(BUOY_DB)
+        cursor = conn.cursor()
+
+        for buoy_id, metadata in get_all_buoys().items():
+            # Get most recent observation time for this buoy
+            cursor.execute("""
+                SELECT MAX(observation_time)
+                FROM buoy_observation
+                WHERE buoy_id = ?
+            """, (buoy_id,))
+
+            result = cursor.fetchone()
+            if not result or not result[0]:
+                log(f"  ❌ {metadata['name']}: No data found")
+                stale.append({
+                    "id": buoy_id,
+                    "name": metadata['name'],
+                    "type": "buoy",
+                    "age_hours": None,
+                    "severity": "error",
+                    "message": "No data"
+                })
+                continue
+
+            last_obs = datetime.fromtimestamp(result[0], tz=timezone.utc)
+            age = (now - last_obs).total_seconds() / 3600
+
+            if age > THRESHOLDS['buoy']['error']:
+                severity = 'error'
+                log(f"  ❌ {metadata['name']}: {age:.1f}h old (ERROR)")
+            elif age > THRESHOLDS['buoy']['warning']:
+                severity = 'warning'
+                log(f"  ⚠️  {metadata['name']}: {age:.1f}h old (WARNING)")
+            else:
+                log(f"  ✅ {metadata['name']}: {age:.1f}h old (OK)")
+                continue
+
+            stale.append({
+                "id": buoy_id,
+                "name": metadata['name'],
+                "type": "buoy",
+                "age_hours": round(age, 1),
+                "last_observation": last_obs.isoformat(),
+                "severity": severity
+            })
+
+        conn.close()
+    except Exception as e:
+        log(f"  ❌ Error checking buoys: {e}")
+
+    return stale
+
+
+def check_wind_freshness() -> List[Dict]:
+    """Check wind station data freshness."""
+    stale = []
+    now = datetime.now(timezone.utc)
+
+    if not WIND_DB.exists():
+        log(f"  ⚠️  Database not found: {WIND_DB}")
+        return stale
+
+    try:
+        conn = sqlite3.connect(WIND_DB)
+        cursor = conn.cursor()
+
+        # Also check weather database for whiterock_east
+        weather_conn = None
+        weather_cursor = None
+        if WEATHER_DB.exists():
+            weather_conn = sqlite3.connect(WEATHER_DB)
+            weather_cursor = weather_conn.cursor()
+
+        for station_id, metadata in get_all_wind().items():
+            # Special case: whiterock_east is in weather_data.sqlite
+            if station_id == 'whiterock_east' and weather_cursor:
+                weather_cursor.execute("""
+                    SELECT MAX(observation_time)
+                    FROM whiterock_weather
+                """)
+                result = weather_cursor.fetchone()
+            else:
+                cursor.execute("""
+                    SELECT MAX(observation_time)
+                    FROM wind_observation
+                    WHERE station_id = ?
+                """, (station_id,))
+                result = cursor.fetchone()
+            if not result or not result[0]:
+                log(f"  ❌ {metadata['name']}: No data found")
+                stale.append({
+                    "id": station_id,
+                    "name": metadata['name'],
+                    "type": "wind",
+                    "age_hours": None,
+                    "severity": "error",
+                    "message": "No data"
+                })
+                continue
+
+            last_obs = datetime.fromtimestamp(result[0], tz=timezone.utc)
+            age = (now - last_obs).total_seconds() / 3600
+
+            if age > THRESHOLDS['wind']['error']:
+                severity = 'error'
+                log(f"  ❌ {metadata['name']}: {age:.1f}h old (ERROR)")
+            elif age > THRESHOLDS['wind']['warning']:
+                severity = 'warning'
+                log(f"  ⚠️  {metadata['name']}: {age:.1f}h old (WARNING)")
+            else:
+                log(f"  ✅ {metadata['name']}: {age:.1f}h old (OK)")
+                continue
+
+            stale.append({
+                "id": station_id,
+                "name": metadata['name'],
+                "type": "wind",
+                "age_hours": round(age, 1),
+                "last_observation": last_obs.isoformat(),
+                "severity": severity
+            })
+
+        conn.close()
+        if weather_conn:
+            weather_conn.close()
+    except Exception as e:
+        log(f"  ❌ Error checking wind stations: {e}")
+
+    return stale
+
+
+def check_tide_freshness() -> List[Dict]:
+    """Check tide station observation freshness."""
+    stale = []
+    now = datetime.now(timezone.utc)
+
+    if not TIDE_DB.exists():
+        log(f"  ⚠️  Database not found: {TIDE_DB}")
+        return stale
+
+    try:
+        conn = sqlite3.connect(TIDE_DB)
+        cursor = conn.cursor()
+
+        # Only check stations that should have observations (series contains 'wlo')
+        for station_key, metadata in get_all_tides().items():
+            if 'wlo' not in metadata.get('series', []):
+                log(f"  ⏭️  {metadata['name']}: No observations expected (predictions only)")
+                continue
+
+            # Map station_key to station_id (e.g., 'point_atkinson' -> '07795')
+            station_id = metadata.get('id')
+            if not station_id:
+                continue
+
+            cursor.execute("""
+                SELECT MAX(observation_time)
+                FROM tide_observation
+                WHERE station_id = ?
+            """, (station_id,))
+
+            result = cursor.fetchone()
+            if not result or not result[0]:
+                log(f"  ❌ {metadata['name']}: No data found")
+                stale.append({
+                    "id": station_key,
+                    "name": metadata['name'],
+                    "type": "tide",
+                    "age_hours": None,
+                    "severity": "error",
+                    "message": "No data"
+                })
+                continue
+
+            last_obs = datetime.fromtimestamp(result[0], tz=timezone.utc)
+            age = (now - last_obs).total_seconds() / 3600
+
+            if age > THRESHOLDS['tide']['error']:
+                severity = 'error'
+                log(f"  ❌ {metadata['name']}: {age:.1f}h old (ERROR)")
+            elif age > THRESHOLDS['tide']['warning']:
+                severity = 'warning'
+                log(f"  ⚠️  {metadata['name']}: {age:.1f}h old (WARNING)")
+            else:
+                log(f"  ✅ {metadata['name']}: {age:.1f}h old (OK)")
+                continue
+
+            stale.append({
+                "id": station_key,
+                "name": metadata['name'],
+                "type": "tide",
+                "age_hours": round(age, 1),
+                "last_observation": last_obs.isoformat(),
+                "severity": severity
+            })
+
+        conn.close()
+    except Exception as e:
+        log(f"  ❌ Error checking tide stations: {e}")
+
+    return stale
+
+
+def check_lightstation_freshness() -> List[Dict]:
+    """Check lightstation data freshness."""
+    stale = []
+    now = datetime.now(timezone.utc)
+
+    if not LIGHTSTATION_DB.exists():
+        log(f"  ⚠️  Database not found: {LIGHTSTATION_DB}")
+        return stale
+
+    try:
+        conn = sqlite3.connect(LIGHTSTATION_DB)
+        cursor = conn.cursor()
+
+        # Get all unique station names and their latest observation time
+        cursor.execute("""
+            SELECT station_name, MAX(observation_time) as last_obs
+            FROM lightstation_observation
+            GROUP BY station_name
+        """)
+
+        for row in cursor.fetchall():
+            station_name, last_obs_timestamp = row
+
+            if not last_obs_timestamp:
+                continue
+
+            last_obs = datetime.fromtimestamp(last_obs_timestamp, tz=timezone.utc)
+            age = (now - last_obs).total_seconds() / 3600
+
+            if age > THRESHOLDS['lightstation']['error']:
+                severity = 'error'
+                # Check if this is a known intermittent station
+                station_id = station_name.replace(' ', '_')
+                if station_id in INTERMITTENT_STATIONS:
+                    severity = 'info'
+                    log(f"  ℹ️  {station_name}: {age:.1f}h old (INTERMITTENT - expected)")
+                else:
+                    log(f"  ❌ {station_name}: {age:.1f}h old (ERROR)")
+            elif age > THRESHOLDS['lightstation']['warning']:
+                severity = 'warning'
+                log(f"  ⚠️  {station_name}: {age:.1f}h old (WARNING)")
+            else:
+                log(f"  ✅ {station_name}: {age:.1f}h old (OK)")
+                continue
+
+            stale_entry = {
+                "id": station_name.replace(' ', '_'),  # Use name as ID
+                "name": station_name,
+                "type": "lightstation",
+                "age_hours": round(age, 1),
+                "last_observation": last_obs.isoformat(),
+                "severity": severity
+            }
+
+            # Add note for intermittent stations
+            if stale_entry["id"] in INTERMITTENT_STATIONS:
+                stale_entry["note"] = INTERMITTENT_STATIONS[stale_entry["id"]]
+
+            stale.append(stale_entry)
+
+        conn.close()
+    except Exception as e:
+        log(f"  ❌ Error checking lightstations: {e}")
+
+    return stale
+
+
+def check_database_integrity() -> Dict:
+    """Check database health: size, WAL mode, recent writes."""
+    log("\n=== Checking Database Integrity ===")
+
+    databases = {
+        'buoy_data': BUOY_DB,
+        'wind_data': WIND_DB,
+        'weather_data': WEATHER_DB,
+        'tide_data': TIDE_DB,
+        'lightstation_data': LIGHTSTATION_DB,
+        'storm_surge': STORM_SURGE_DB
+    }
+
+    status = "ok"
+    db_status = {}
+
+    for name, db_path in databases.items():
+        if not db_path.exists():
+            log(f"  ⚠️  {name}: Database not found")
+            db_status[name] = {
+                "exists": False,
+                "status": "warning"
+            }
+            status = "warning"
+            continue
+
+        try:
+            # Get file size
+            size_mb = db_path.stat().st_size / (1024 * 1024)
+
+            # Check WAL mode
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA journal_mode;")
+            journal_mode = cursor.fetchone()[0]
+
+            # Count recent inserts (last hour)
+            one_hour_ago = int((datetime.now(timezone.utc) - timedelta(hours=1)).timestamp())
+
+            # Try to find a table with observation_time
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            tables = [row[0] for row in cursor.fetchall()]
+
+            recent_count = 0
+            for table in tables:
+                if 'observation' in table.lower():
+                    try:
+                        cursor.execute(f"""
+                            SELECT COUNT(*) FROM {table}
+                            WHERE observation_time > ?
+                        """, (one_hour_ago,))
+                        recent_count += cursor.fetchone()[0]
+                    except:
+                        pass  # Table might not have observation_time column
+
+            conn.close()
+
+            log(f"  ✅ {name}: {size_mb:.1f}MB, {journal_mode} mode, {recent_count} recent writes")
+
+            db_status[name] = {
+                "exists": True,
+                "size_mb": round(size_mb, 1),
+                "journal_mode": journal_mode,
+                "recent_writes_1h": recent_count,
+                "status": "ok"
+            }
+
+        except Exception as e:
+            log(f"  ❌ {name}: Error - {e}")
+            db_status[name] = {
+                "exists": True,
+                "status": "error",
+                "error": str(e)
+            }
+            status = "error"
+
+    return {
+        "status": status,
+        "databases": db_status
+    }
+
+
+def check_export_freshness() -> Dict:
+    """Check that JSON exports are recent and valid."""
+    log("\n=== Checking Export Files ===")
+
+    exports = {
+        'latest_buoy': SITE_DATA / 'latest_buoy_v2.json',
+        'latest_wind': SITE_DATA / 'latest_wind.json',
+        'tide_latest': SITE_DATA / 'tide-latest.json',
+        'latest_lightstation': SITE_DATA / 'latest_lightstation.json',
+        'buoy_48hr': SITE_DATA / 'buoy_timeseries_48h.json',
+        'wind_48hr': SITE_DATA / 'wind_timeseries_48hr.json',
+        'lightstation_24hr': SITE_DATA / 'lightstation_timeseries_24hr.json',
+        'tide_timeseries': SITE_DATA / 'tide-timeseries.json',
+        'marine_forecast': SITE_DATA / 'marine_forecast.json',
+        'stations': SITE_DATA / 'stations.json',
+    }
+
+    status = "ok"
+    export_status = {}
+
+    for name, path in exports.items():
+        if not path.exists():
+            log(f"  ⚠️  {name}: File not found")
+            export_status[name] = {
+                "exists": False,
+                "status": "warning"
+            }
+            status = "warning"
+            continue
+
+        try:
+            # Check file age
+            mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+            age_minutes = (datetime.now(timezone.utc) - mtime).total_seconds() / 60
+
+            # Check file size
+            size_kb = path.stat().st_size / 1024
+
+            # Validate JSON
+            with open(path, 'r') as f:
+                data = json.load(f)
+
+            # Flag if file is stale (>1 hour old)
+            file_status = "ok"
+            if age_minutes > 60:
+                file_status = "warning"
+                status = "warning"
+                log(f"  ⚠️  {name}: {age_minutes:.0f}min old (stale), {size_kb:.1f}KB")
+            else:
+                log(f"  ✅ {name}: {age_minutes:.0f}min old, {size_kb:.1f}KB")
+
+            export_status[name] = {
+                "exists": True,
+                "age_minutes": round(age_minutes, 1),
+                "size_kb": round(size_kb, 1),
+                "valid_json": True,
+                "status": file_status
+            }
+
+        except json.JSONDecodeError as e:
+            log(f"  ❌ {name}: Invalid JSON - {e}")
+            export_status[name] = {
+                "exists": True,
+                "status": "error",
+                "error": "Invalid JSON"
+            }
+            status = "error"
+        except Exception as e:
+            log(f"  ❌ {name}: Error - {e}")
+            export_status[name] = {
+                "exists": True,
+                "status": "error",
+                "error": str(e)
+            }
+            status = "error"
+
+    return {
+        "status": status,
+        "exports": export_status
+    }
+
+
+def main():
+    """Run all health checks and generate report."""
+    global VERBOSE
+
+    if "--verbose" in sys.argv:
+        VERBOSE = True
+
+    log("🏥 Health Check Started")
+    log(f"Time: {datetime.now(timezone.utc).isoformat()}")
+
+    # Run all checks
+    data_freshness = check_data_freshness()
+    db_integrity = check_database_integrity()
+    export_freshness = check_export_freshness()
+
+    # Determine overall status
+    statuses = [
+        data_freshness['status'],
+        db_integrity['status'],
+        export_freshness['status']
+    ]
+
+    if 'error' in statuses:
+        overall_status = 'error'
+    elif 'warning' in statuses:
+        overall_status = 'warning'
+    else:
+        overall_status = 'ok'
+
+    # Build report
+    report = {
+        "generated_utc": datetime.now(timezone.utc).isoformat(),
+        "overall_status": overall_status,
+        "checks": {
+            "data_freshness": data_freshness,
+            "database_integrity": db_integrity,
+            "export_freshness": export_freshness
+        }
+    }
+
+    # Write to output file
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(OUTPUT_FILE, 'w') as f:
+        json.dump(report, f, indent=2)
+
+    log(f"\n✅ Health check complete: {overall_status.upper()}")
+    log(f"Report saved to: {OUTPUT_FILE}")
+
+    # Exit with appropriate code
+    if overall_status == 'error':
+        sys.exit(2)
+    elif overall_status == 'warning':
+        sys.exit(1)
+    else:
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

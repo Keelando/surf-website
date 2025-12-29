@@ -127,3 +127,6 @@ SURREY_API_PASSWORD=surreyrain
 
 # Export sunlight times (sunrise/sunset/twilight) for all webcams and tide stations - daily at 12:06 AM
 6 0 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_sunlight_times.py >> /home/keelando/envcan_wave/logs/sunlight_export.log 2>&1
+
+# Health monitoring - runs hourly to detect stale data and system issues
+0 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/monitoring/health_check.py >> /home/keelando/envcan_wave/logs/health_check.log 2>&1

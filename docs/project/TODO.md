@@ -245,3 +245,66 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
   - Documented new scripts and cron jobs
   - Added frontend structure documentation
 
+
+---
+
+## UI/UX Improvements (Future)
+
+### Tide Charts
+- [ ] Add current time indicator on tide plots when viewing "today"
+  - Option 1: Large dot at current position on the prediction/observation line
+  - Option 2: Vertical dashed line spanning the chart at current time
+  - Should only show when `currentDayOffset === 0` (viewing today)
+  - File: `/home/keelando/site/assets/js/tides.js` - `displayTideChart()` function
+
+### Mobile ECharts Issues
+- [ ] Fix cursor/touch behavior on mobile for all ECharts plots
+  - Currently "funky" - investigate specific issues
+  - Affects: tide charts, buoy charts, wind charts, lightstation charts
+  - May need to adjust ECharts touch/tooltip configuration
+  - Test on actual mobile devices after fixing
+
+---
+
+## Wave Direction Vector Visualization (Future Feature)
+
+### Feature Description
+Create a visual vector representation of wave/swell direction showing the directional spread.
+
+### Visual Design
+```
+        ↑ (small arrow at max angle)
+       /
+      /
+     ↑ (main arrow at average direction - larger)
+      \
+       \
+        ↑ (small arrow at min angle)
+```
+
+### Implementation
+- **Main vector arrow**: Points in the average wave direction (larger, prominent)
+- **Spread indicators**: Two smaller arrows showing the angular range
+- Use SVG for rendering
+- Display options: In buoy cards, dedicated panel, map markers, or charts
+
+### Data Available
+From EC buoys (Halibut Bank, Sentry Shoal):
+- ✅ `wave_direction_avg` - Average wave direction
+- ✅ `wave_direction_peak` - Peak wave direction
+- ✅ `wave_direction_spread_avg` - Average directional spread
+- ✅ `wave_direction_spread_peak` - Peak directional spread
+
+### Benefits
+1. Intuitive visualization - users immediately understand directional spread
+2. Quick assessment - see at a glance if seas are organized or confused
+3. Better than text - Visual > "E to ESE (84° to 120°)"
+4. Professional appearance
+5. Educational - helps users understand wave mechanics
+
+### Estimated Effort
+~6-8 hours total (design, implementation, integration, testing)
+
+### Priority
+**Medium** - Nice to have, enhances UX significantly
+
