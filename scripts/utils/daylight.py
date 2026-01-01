@@ -61,7 +61,7 @@ def calculate_sunrise_sunset(lat, lon, date=None):
         # Fix for timezone crossing midnight: if sunset appears before sunrise in UTC,
         # it's actually on the next day
         if sunset_time < sunrise_time:
-            sunset_time = sunset_time.replace(day=sunset_time.day + 1)
+            sunset_time = sunset_time + timedelta(days=1)
 
         return sunrise_time, sunset_time
     except ValueError as e:
