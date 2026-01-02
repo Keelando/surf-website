@@ -91,6 +91,19 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
 
 ---
 
+## Completed (2026-01-02)
+
+✅ **Current Time Indicator on Tide Charts**
+  - Added prominent marker showing current tide level on "Today" view
+  - Interpolates predicted tide at current time
+  - Applies tide residual (observed - predicted) for improved accuracy
+  - Even with 1-hour-old observations, residual provides better estimate than prediction alone
+  - Red marker when residual available, orange when prediction-only
+  - Tooltip shows breakdown: current tide, predicted value, residual offset
+  - File: `/home/keelando/site/assets/js/tides.js:1440-1527`
+
+---
+
 ## Completed (2025-12-18)
 
 ✅ **White Rock Station ID Rename**
@@ -249,13 +262,6 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
 ---
 
 ## UI/UX Improvements (Future)
-
-### Tide Charts
-- [ ] Add current time indicator on tide plots when viewing "today"
-  - Option 1: Large dot at current position on the prediction/observation line
-  - Option 2: Vertical dashed line spanning the chart at current time
-  - Should only show when `currentDayOffset === 0` (viewing today)
-  - File: `/home/keelando/site/assets/js/tides.js` - `displayTideChart()` function
 
 ### Mobile ECharts Issues
 - [ ] Fix cursor/touch behavior on mobile for all ECharts plots
