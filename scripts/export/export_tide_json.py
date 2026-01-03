@@ -459,9 +459,10 @@ def export_highlow(conn, station_metadata):
 
     # Start from beginning of today (Pacific)
     today_start = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
-    # End at end of day after tomorrow (3 full days)
+    # End at 2 hours past midnight on day 3 (captures early morning tides on final day)
+    # This ensures we get the complete tide cycle for day after tomorrow
     query_start = today_start
-    query_end = today_start + timedelta(days=3)
+    query_end = today_start + timedelta(days=3, hours=2)
 
     # Convert to UTC timestamps
     start_ts = int(query_start.astimezone(timezone.utc).timestamp())
@@ -519,7 +520,7 @@ def export_highlow(conn, station_metadata):
             "query_start": query_start.isoformat(),
             "query_end": query_end.isoformat(),
             "timezone": "America/Vancouver",
-            "window": "3 full calendar days (today, tomorrow, day after tomorrow)",
+            "window": "3 full calendar days (today, tomorrow, day after tomorrow) + 2hr buffer for complete tide cycles",
             "days_included": 3
         },
         "stations": highlow_data
