@@ -2,6 +2,46 @@
 
 ## Upcoming Tasks
 
+### Tide Page Refactoring (TOP PRIORITY)
+
+**Goal:** Break down the 1886-line tides.js monolith into maintainable modules
+
+**Current issues:**
+- Single 1886-line file handling everything
+- Geodetic station logic mixed with regular tide logic
+- Chart rendering, data management, UI controls all intertwined
+- Hard to test, hard to modify without breaking things
+
+**Proposed modules:**
+- Station data management (loading, caching, transforming)
+- Geodetic calibration (two methodologies)
+- Chart rendering (series configuration, mark lines, options)
+- Sunlight times (loading, display, integration)
+- UI controls (navigation, selectors, buttons)
+- High/low table logic
+- Storm surge calculations
+- Current time indicator
+
+**Priority:** HIGH - Code maintainability and future development
+
+---
+
+### Dark Mode Implementation
+
+**Goal:** Add dark color scheme with user preference storage
+
+**Implementation approach:**
+- Create dark color palette (dark blues, muted colors for ocean theme)
+- Use CSS `prefers-color-scheme` media query for automatic detection
+- Add manual toggle button with localStorage persistence
+- Update all charts (ECharts theme configuration)
+- Test accessibility (contrast ratios in dark mode)
+- Apply site-wide to all pages
+
+**Priority:** MEDIUM - Popular feature request, enhances late-night usability
+
+---
+
 ### Lighthouse Performance Reports (Next Session)
 
 Add Lighthouse performance auditing to monitor frontend performance and accessibility.

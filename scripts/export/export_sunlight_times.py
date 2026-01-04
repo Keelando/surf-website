@@ -109,12 +109,27 @@ def get_sunlight_times(lat, lon, date=None, tz_name='America/Vancouver'):
             bh = None
 
         # Fix for timezone crossing midnight: if sunset appears before sunrise in UTC,
-        # it's actually on the next day
+        # it's actually on the next day. Same for dusk events.
         sunrise_time = s["sunrise"]
         sunset_time = s["sunset"]
+
+        # Fix sunset if it wrapped to previous day
         if sunset_time < sunrise_time:
             # Sunset is on the next UTC day
             sunset_time = sunset_time.replace(day=sunset_time.day + 1)
+
+        # Fix dusk times if they wrapped to previous day
+        # Dusk events should all be after sunset
+        dusk_civil_time = dusk_civil
+        dusk_nautical_time = dusk_nautical
+        dusk_astronomical_time = dusk_astronomical
+
+        if dusk_civil_time < sunset_time:
+            dusk_civil_time = dusk_civil_time.replace(day=dusk_civil_time.day + 1)
+        if dusk_nautical_time < sunset_time:
+            dusk_nautical_time = dusk_nautical_time.replace(day=dusk_nautical_time.day + 1)
+        if dusk_astronomical_time < sunset_time:
+            dusk_astronomical_time = dusk_astronomical_time.replace(day=dusk_astronomical_time.day + 1)
 
         result = {
             "date": date.date().isoformat(),
@@ -131,9 +146,9 @@ def get_sunlight_times(lat, lon, date=None, tz_name='America/Vancouver'):
             "dawn_civil": dawn_civil.isoformat(),  # Civil twilight begins
 
             # Dusk events (in order of occurrence)
-            "dusk_civil": dusk_civil.isoformat(),  # Civil twilight ends
-            "dusk_nautical": dusk_nautical.isoformat(),
-            "dusk_astronomical": dusk_astronomical.isoformat(),  # Last light
+            "dusk_civil": dusk_civil_time.isoformat(),  # Civil twilight ends
+            "dusk_nautical": dusk_nautical_time.isoformat(),
+            "dusk_astronomical": dusk_astronomical_time.isoformat(),  # Last light
 
             # Photography times (if available)
             # Golden hour and blue hour in astral library return (start, end)
@@ -217,59 +232,119 @@ def load_tide_stations():
         return {}
 
 
-def export_all_locations():
-    """Export sunlight times for all configured locations (webcams and tide stations)"""
+def export_all_locations(days_ahead=3):
+    """
+    Export sunlight times for all configured locations (webcams and tide stations).
+
+    Args:
+        days_ahead: Number of days to calculate ahead (default: 3 to match tide data)
+    """
+    local_tz = pytz.timezone('America/Vancouver')
+    today = datetime.now(local_tz).date()
+
     results = {
-        "webcams": {},
-        "tides": {}
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "days_ahead": days_ahead,
+        "stations": {}
     }
 
-    # Export webcam locations
-    print("=== Exporting Webcam Locations ===")
+    # Combine webcams and tide stations into one structure
+    all_locations = {}
+
+    # Add webcams
+    print("=== Preparing Webcam Locations ===")
     for location_key, location in WEBCAM_LOCATIONS.items():
-        print(f"Generating sunlight times for {location['name']}...")
+        all_locations[location_key] = {
+            'name': location['name'],
+            'lat': location['lat'],
+            'lon': location['lon'],
+            'type': 'webcam'
+        }
+        print(f"  Added: {location['name']}")
 
-        sunlight_data = get_sunlight_times(location['lat'], location['lon'])
-        results["webcams"][location_key] = sunlight_data
-
-        # Write to location-specific file
-        output_file = location['output_file']
-        output_file.parent.mkdir(parents=True, exist_ok=True)
-
-        with open(output_file, 'w') as f:
-            json.dump(sunlight_data, f, indent=2)
-
-        print(f"  Written to: {output_file}")
-
-        # Show some key times
-        if 'error' not in sunlight_data:
-            print(f"  Sunrise: {sunlight_data['sunrise']}")
-            print(f"  Sunset:  {sunlight_data['sunset']}")
-            print(f"  Current phase: {sunlight_data['current_phase']}")
-
-    # Export tide station locations
-    print("\n=== Exporting Tide Station Locations ===")
+    # Add tide stations
+    print("\n=== Preparing Tide Station Locations ===")
     tide_stations = load_tide_stations()
-
     for station_key, station in tide_stations.items():
         if 'lat' in station and 'lon' in station:
-            print(f"Generating sunlight times for {station.get('name', station_key)}...")
+            all_locations[station_key] = {
+                'name': station.get('name', station_key),
+                'lat': station['lat'],
+                'lon': station['lon'],
+                'type': 'tide'
+            }
+            print(f"  Added: {station.get('name', station_key)}")
 
-            sunlight_data = get_sunlight_times(station['lat'], station['lon'])
-            results["tides"][station_key] = sunlight_data
+    # Calculate sunlight times for each location for the next N days
+    print(f"\n=== Calculating Sunlight Times for {days_ahead} Days ===")
+    for station_key, location in all_locations.items():
+        print(f"\n{location['name']} ({location['type']})...")
 
-            if 'error' not in sunlight_data:
-                print(f"  Sunrise: {sunlight_data['sunrise']}")
-                print(f"  Sunset:  {sunlight_data['sunset']}")
+        station_data = {
+            "name": location['name'],
+            "lat": location['lat'],
+            "lon": location['lon'],
+            "days": {}
+        }
 
-    # Write combined file with both webcams and tides
+        # Calculate for each day
+        for day_offset in range(days_ahead):
+            target_date = today + timedelta(days=day_offset)
+            date_str = target_date.isoformat()
+
+            print(f"  {date_str}...", end=' ')
+
+            # Get sunlight times for this day
+            sunlight = get_sunlight_times(location['lat'], location['lon'],
+                                         date=local_tz.localize(datetime.combine(target_date, datetime.min.time())))
+
+            # Extract only the times we need for plotting
+            if 'error' not in sunlight:
+                station_data["days"][date_str] = {
+                    "first_light": sunlight["dawn_civil"],
+                    "sunrise": sunlight["sunrise"],
+                    "sunset": sunlight["sunset"],
+                    "last_light": sunlight["dusk_civil"]
+                }
+                print("✓")
+            else:
+                station_data["days"][date_str] = {"error": sunlight["error"]}
+                print(f"✗ ({sunlight['error']})")
+
+        results["stations"][station_key] = station_data
+
+    # Write combined file
     combined_file = Path.home() / "site" / "data" / "sunlight_times.json"
+    combined_file.parent.mkdir(parents=True, exist_ok=True)
+
     with open(combined_file, 'w') as f:
         json.dump(results, f, indent=2)
 
-    print(f"\nCombined data written to: {combined_file}")
-    print(f"  Webcam locations: {len(results['webcams'])}")
-    print(f"  Tide stations: {len(results['tides'])}")
+    print(f"\n{'='*60}")
+    print(f"✓ Combined data written to: {combined_file}")
+    print(f"  Stations: {len(results['stations'])}")
+    print(f"  Days calculated: {days_ahead}")
+    print(f"  Total data points: {len(results['stations']) * days_ahead * 4}")
+
+    # Also write individual webcam files for backwards compatibility
+    print(f"\n=== Writing Individual Webcam Files ===")
+    for location_key, location in WEBCAM_LOCATIONS.items():
+        if location_key in results["stations"]:
+            # Just write today's data to individual files (backwards compat)
+            today_str = today.isoformat()
+            today_data = results["stations"][location_key]["days"].get(today_str, {})
+
+            output_file = location['output_file']
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(output_file, 'w') as f:
+                json.dump({
+                    "date": today_str,
+                    "generated_at": results["generated_at"],
+                    **today_data
+                }, f, indent=2)
+
+            print(f"  {location['name']}: {output_file}")
 
     return results
 
