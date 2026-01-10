@@ -27,9 +27,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 import logging
 
-# Import daylight detection
+# Import shared utilities
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.daylight import is_daylight
+from lib.logging_config import setup_logging
 
 # Webcam configurations
 WEBCAM_CONFIGS = {
@@ -80,18 +81,8 @@ SLIDESHOW_IMAGES_COUNT = 7
 
 
 def setup_logger(config_name):
-    """Setup logging for this webcam"""
-    log_path = Path(__file__).parent / "logs" / f"webcam_{config_name}.log"
-    log_path.parent.mkdir(exist_ok=True)  # Ensure logs/ directory exists
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_path),
-            logging.StreamHandler()
-        ]
-    )
-    return logging.getLogger(__name__)
+    """Setup logging for this webcam using centralized logging config"""
+    return setup_logging(f'webcam_{config_name}')
 
 
 def get_stream_url(youtube_url, logger):

@@ -364,7 +364,7 @@ def fetch_and_store(api, station_key, station_config, conn, is_wind_station=Fals
         total_inserted += inserted
 
         if inserted > 0:
-            logger.info(f"  {field_name}: {inserted} points")
+            logger.debug(f"  {field_name}: {inserted} points")
 
         time.sleep(1.0)  # Rate limiting - increased to reduce API load
 
@@ -458,7 +458,7 @@ def push_to_windy(station_key, data, windy_config):
 
         # Log response details for debugging
         response_text = response.text.strip()
-        logger.info(f"{station_key}: Windy response - HTTP {response.status_code}: {response_text}")
+        logger.debug(f"{station_key}: Windy response - HTTP {response.status_code}: {response_text}")
         logger.debug(f"{station_key}: Sent params: {params}")
 
         # Check for success indicators in response

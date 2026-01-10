@@ -194,7 +194,7 @@ def query_and_export_timeseries():
                             station_data["timeseries"][json_key] = hourly
 
                 wr_conn.close()
-                logger.info(f"Exported 48hr timeseries for {station_id} ({station_name})")
+                logger.debug(f"Exported 48hr timeseries for {station_id} ({station_name})")
             else:
                 logger.warning(f"White Rock database not found: {WHITEROCK_DATABASE}")
         else:
@@ -242,7 +242,7 @@ def query_and_export_timeseries():
 
             # Log if we got data for this station
             if station_data["timeseries"]:
-                logger.info(f"Exported 48hr timeseries for {station_id} ({station_name})")
+                logger.debug(f"Exported 48hr timeseries for {station_id} ({station_name})")
 
         # Only include stations with actual data
         if station_data["timeseries"]:

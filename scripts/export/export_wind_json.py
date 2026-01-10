@@ -188,11 +188,11 @@ def query_and_export():
 
             # Skip stations with no actual data (only name + observation_time + stale flag)
             if len(station_json.keys()) <= 3:
-                logger.info(f"Skipped {station_id} (no data within freshness window)")
+                logger.debug(f"Skipped {station_id} (no data within freshness window)")
                 continue
 
             latest_json[station_id] = station_json
-            logger.info(f"Exported {station_id} ({station_name})")
+            logger.debug(f"Exported {station_id} ({station_name})")
 
     # Include White Rock East Beach weather station data
     whiterock_json_path = EXPORT_DIR / "whiterock_weather.json"
@@ -218,7 +218,7 @@ def query_and_export():
             }
             # Remove None values
             latest_json["whiterock_east"] = {k: v for k, v in latest_json["whiterock_east"].items() if v is not None}
-            logger.info(f"Exported whiterock_east (White Rock East Beach)")
+            logger.debug(f"Exported whiterock_east (White Rock East Beach)")
         except Exception as e:
             logger.warning(f"Failed to include White Rock East Beach data: {e}")
 

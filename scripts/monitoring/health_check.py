@@ -25,6 +25,10 @@ from typing import Dict, List, Tuple
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from lib.stations import get_all_buoys, get_all_tides, get_all_wind
 from lib.config import PROJECT_ROOT
+from lib.logging_config import setup_logging
+
+# Setup logging (console disabled for cron, file only)
+logger = setup_logging('health_check', console=False)
 
 # Database paths
 DB_DIR = Path.home() / ".local" / "share"
@@ -56,9 +60,10 @@ VERBOSE = False
 
 
 def log(msg: str):
-    """Print if verbose mode enabled."""
+    """Print if verbose mode enabled, also log at debug level."""
+    logger.debug(msg)  # Always log to file at DEBUG level
     if VERBOSE:
-        print(msg)
+        print(msg)  # Print to console only if verbose
 
 
 def check_data_freshness() -> Dict:
@@ -561,6 +566,7 @@ def main():
     if "--verbose" in sys.argv:
         VERBOSE = True
 
+    logger.info("Health Check Started")
     log("🏥 Health Check Started")
     log(f"Time: {datetime.now(timezone.utc).isoformat()}")
 
@@ -599,13 +605,27 @@ def main():
     with open(OUTPUT_FILE, 'w') as f:
         json.dump(report, f, indent=2)
 
+    # Log summary at INFO level
+    logger.info(f"Health check complete: {overall_status.upper()} | "
+                f"Data: {data_freshness['status']} ({data_freshness['stale_count']} stale/{data_freshness['total_stations']} total) | "
+                f"DB: {db_integrity['status']} | "
+                f"Exports: {export_freshness['status']}")
+
+    # Log any issues
+    if overall_status != 'ok':
+        stale_critical = [s for s in data_freshness['stale_stations'] if s['severity'] in ['error', 'warning']]
+        if stale_critical:
+            logger.warning(f"Stale stations: {', '.join([s['name'] for s in stale_critical])}")
+
     log(f"\n✅ Health check complete: {overall_status.upper()}")
     log(f"Report saved to: {OUTPUT_FILE}")
 
     # Exit with appropriate code
     if overall_status == 'error':
+        logger.error("Health check failed with errors")
         sys.exit(2)
     elif overall_status == 'warning':
+        logger.warning("Health check completed with warnings")
         sys.exit(1)
     else:
         sys.exit(0)

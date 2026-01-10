@@ -149,7 +149,7 @@ def export_observed_surge():
         station_id = station["id"]
         station_name = station["name"]
 
-        logger.info(f"Processing {station_name} ({tide_key})...")
+        logger.debug(f"Processing {station_name} ({tide_key})...")
 
         # Fetch observations and predictions
         observations = fetch_observations(conn, station_id, start_time)
@@ -181,7 +181,7 @@ def export_observed_surge():
                     "end": surge_data[-1]["time"]
                 }
             }
-            logger.info(f"  Exported {len(surge_data)} data points for {station_name}")
+            logger.debug(f"  Exported {len(surge_data)} data points for {station_name}")
         else:
             logger.warning(f"  No matching observation/prediction pairs for {station_name}")
 

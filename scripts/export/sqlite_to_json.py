@@ -151,11 +151,11 @@ def query_and_export():
 
             # Skip buoys with no actual data (only name + observation_time + stale flag)
             if len(buoy_json.keys()) <= 3:
-                logger.info(f"Skipped {buoy_id} (no data within freshness window)")
+                logger.debug(f"Skipped {buoy_id} (no data within freshness window)")
                 continue
 
             latest_json[buoy_id] = buoy_json
-            logger.info(f"Exported {buoy_id} ({BUOYS[buoy_id]['name']})")
+            logger.debug(f"Exported {buoy_id} ({BUOYS[buoy_id]['name']})")
 
     # Add metadata about this export
     latest_json["_meta"] = {

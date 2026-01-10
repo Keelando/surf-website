@@ -252,9 +252,9 @@ def query_and_export_timeseries():
                 # Only add buoy if it has at least one timeseries
                 if buoy_data["timeseries"]:
                     timeseries_json[buoy_id] = buoy_data
-                    logger.info(f"Exported {buoy_id} ({BUOYS[buoy_id]['name']})")
+                    logger.debug(f"Exported {buoy_id} ({BUOYS[buoy_id]['name']})")
                 else:
-                    logger.info(f"Skipped {buoy_id} (no data in last 48h)")
+                    logger.debug(f"Skipped {buoy_id} (no data in last 48h)")
 
     except sqlite3.OperationalError as e:
         logger.error(f"SQLite error: {e}")

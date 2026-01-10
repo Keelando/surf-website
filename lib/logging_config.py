@@ -27,7 +27,7 @@ import sys
 # Use project root logs directory, not lib/logs
 LOGS_DIR = Path(__file__).parent.parent / "logs"
 DEFAULT_LOG_LEVEL = logging.INFO
-MAX_LOG_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_LOG_SIZE = 20 * 1024 * 1024  # 20 MB (increased from 10MB for high-frequency scripts)
 BACKUP_COUNT = 5  # Keep 5 old log files
 
 # Log format
@@ -68,6 +68,9 @@ def setup_logging(
     # Create logger
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
+
+    # Prevent propagation to parent loggers (avoid duplicate log entries)
+    logger.propagate = False
 
     # Remove existing handlers to avoid duplicates
     logger.handlers.clear()

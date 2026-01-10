@@ -2,6 +2,10 @@
 """
 Grab stills from Hollyburn Sailing Club Yawcam webcam.
 Handles the session handshake that Yawcam requires.
+
+NOTE: This code is functional and tested, but we are currently waiting for
+direct approval from Hollyburn Sailing Club to parse their webcam feed.
+Do not enable in production until explicit permission is granted.
 """
 import requests
 import time
