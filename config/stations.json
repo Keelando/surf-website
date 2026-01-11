@@ -811,14 +811,15 @@
     },
     "COLEB": {
       "id": "COLEB",
-      "name": "Colebrook",
-      "location": "Boundary Bay (Land)",
+      "name": "Colebrook Pump House",
+      "location": "Boundary Bay (LAND-BASED)",
       "lat": 49.0858,
       "lon": -122.845,
       "source": "Surrey FlowWorks",
-      "type": "wind_monitoring_station",
+      "type": "land_based_wind_station",
       "flowworks_site_id": 18507,
       "update_frequency_minutes": 10,
+      "is_buoy": false,
       "data_types": [
         "wind_speed",
         "wind_gust",
@@ -831,7 +832,7 @@
         "wind_gust": 1427,
         "air_temp": 1439
       },
-      "note": "Wind monitoring station - no wave data"
+      "note": "LAND-BASED wind monitoring station at pump house - NOT a buoy, NO wave data"
     },
     "CPMW1": {
       "id": "CPMW1",

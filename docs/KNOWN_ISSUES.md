@@ -1,5 +1,54 @@
 # Known Issues
 
+## ✅ Colebrook Windy Push Using Wrong Database (Jan 11, 2026) - RESOLVED
+
+### Issue
+Colebrook station was successfully reporting "3/3 stations updated" to Windy API, but was pushing **month-old data** (Dec 15, 2025) instead of current data.
+
+### Root Cause
+**Colebrook is a LAND-BASED wind station, NOT a buoy!**
+
+The data was being collected correctly into the `wind_observation` table, but the Windy push code was querying the `buoy_observation` table which had stale data.
+
+```python
+# WRONG - Always queried buoy_observation table for ALL stations
+data = get_latest_station_data(buoy_conn, buoy_id)  # Returns Dec 15, 2025 data for COLEB
+```
+
+### Solution (Jan 11, 2026)
+1. Created `get_latest_wind_station_data()` function to query `wind_observation` table
+2. Updated Windy push logic to route to correct database based on station type:
+```python
+# CORRECT - Route to appropriate database
+is_wind_only = (station_key == "colebrook")
+if is_wind_only:
+    data = get_latest_wind_station_data(wind_conn, station_id)  # Current data from wind table
+else:
+    data = get_latest_station_data(buoy_conn, station_id)
+```
+
+3. Updated `config/stations.json` to make Colebrook's land-based nature crystal clear:
+   - Changed type: `"land_based_wind_station"` (not `"wind_monitoring_station"`)
+   - Added explicit flag: `"is_buoy": false`
+   - Location: `"Boundary Bay (LAND-BASED)"` (all caps)
+   - Note: `"LAND-BASED wind monitoring station at pump house - NOT a buoy, NO wave data"`
+
+4. Added comment in `fetch_surrey_wave_v2.py` configuration:
+```python
+"buoy_id": "COLEB",  # Station ID (NOT a buoy - land-based wind station, uses wind_observation table)
+```
+
+### Files Changed
+- `scripts/fetch/fetch_surrey_wave_v2.py` (lines 417-565)
+- `config/stations.json` (lines 812-836)
+
+### Result
+- ✅ Colebrook now pushes current data to Windy (was Dec 15, now Jan 11)
+- ✅ Clear documentation prevents future "buoy" confusion
+- ✅ Architecture properly separates land stations from marine buoys
+
+---
+
 ## 📍 Database Locations (Reference)
 
 **IMPORTANT:** All databases are in `/home/keelando/.local/share/`, NOT in the project directory!

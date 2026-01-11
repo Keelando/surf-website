@@ -95,7 +95,7 @@ STATIONS = {
     "colebrook": {
         "site_id": 18507,
         "name": "Colebrook",
-        "buoy_id": "COLEB",
+        "buoy_id": "COLEB",  # Station ID (NOT a buoy - land-based wind station, uses wind_observation table)
         "channels": {
             "wind_speed": 1425,
             "wind_direction": 1426,
@@ -414,6 +414,49 @@ def get_latest_station_data(conn, buoy_id):
     }
 
 
+def get_latest_wind_station_data(conn, station_id):
+    """Get the most recent observation for a wind station from SQLite."""
+    cur = conn.cursor()
+
+    # Get the latest observation with required wind data
+    cur.execute("""
+        SELECT observation_time, wind_speed_kmh, wind_direction_deg, wind_gust_kmh, air_temp_c
+        FROM wind_observation
+        WHERE station_id = ?
+          AND wind_speed_kmh IS NOT NULL
+          AND wind_direction_deg IS NOT NULL
+          AND wind_gust_kmh IS NOT NULL
+        ORDER BY observation_time DESC
+        LIMIT 1
+    """, (station_id,))
+
+    row = cur.fetchone()
+    if not row:
+        return None
+
+    # If air_temp is NULL, try to get the most recent non-null value
+    air_temp = row[4]
+    if air_temp is None:
+        cur.execute("""
+            SELECT air_temp_c
+            FROM wind_observation
+            WHERE station_id = ? AND air_temp_c IS NOT NULL
+            ORDER BY observation_time DESC
+            LIMIT 1
+        """, (station_id,))
+        temp_row = cur.fetchone()
+        if temp_row:
+            air_temp = temp_row[0]
+
+    return {
+        'timestamp': row[0],
+        'wind_speed': row[1],
+        'wind_direction': row[2],
+        'wind_gust': row[3],
+        'air_temp': air_temp
+    }
+
+
 def push_to_windy(station_key, data, windy_config):
     """Push station data to Windy API."""
     if not WINDY_API_KEY:
@@ -512,9 +555,14 @@ def main():
             if station_key not in WINDY_STATIONS:
                 continue
 
-            buoy_id = station_config["buoy_id"]
-            # Get data from buoy database (COLEB not in Windy anyway)
-            data = get_latest_station_data(buoy_conn, buoy_id)
+            station_id = station_config["buoy_id"]
+
+            # Route to appropriate database (wind-only stations use wind database)
+            is_wind_only = (station_key == "colebrook")
+            if is_wind_only:
+                data = get_latest_wind_station_data(wind_conn, station_id)
+            else:
+                data = get_latest_station_data(buoy_conn, station_id)
 
             if data and push_to_windy(station_key, data, WINDY_STATIONS[station_key]):
                 windy_success += 1
