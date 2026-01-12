@@ -1,7 +1,39 @@
 # Next Session Plan
 
-**Last updated:** 2025-12-19
-**Status:** Health monitoring + geodetic tide fixes
+**Last updated:** 2026-01-12
+**Status:** Simplifying geodetic tide corrections
+
+---
+
+## 🎯 CURRENT PRIORITY: Simplify Surrey Tide Handling
+
+**Date:** 2026-01-12
+**Status:** In progress
+
+### Background
+
+Surrey FlowWorks provides **Tidal Residual** channel (observed - predicted) which is their own calculation. We're currently fetching this but may be duplicating effort with our own residual calculations.
+
+### Backup Created
+
+**Branch:** `archive/geodetic-tide-corrections-2026-01-12`
+- Preserves all current geodetic correction logic before simplification
+- Can be referenced later if needed: `git checkout archive/geodetic-tide-corrections-2026-01-12`
+
+### Goals
+
+1. Simplify tide handling by using Surrey's pre-calculated Tidal Residual
+2. Remove redundant geodetic correction logic
+3. Maintain functionality while reducing complexity
+
+### Data Already Available
+
+**Currently fetching from FlowWorks API:**
+- `tidal_residual` (channel 2414) - Surrey's own calculation
+- Stored in `surrey_geodetic_data` table via `fetch_surrey_tides.py`
+- Fetched every 20 minutes with observations
+
+**Next steps:** Determine what corrections to simplify/remove
 
 ---
 

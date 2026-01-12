@@ -1,5 +1,5 @@
 # Surrey FlowWorks API - Tide/Water Level Channels Reference
-**Generated:** 2025-12-13 00:41:20
+**Generated:** 2025-12-13 00:41:20 (Updated: 2026-01-12)
 **Purpose:** Document all available tide/water level channels for reference when configuring fetch_surrey_tides.py
 ---
 
@@ -106,8 +106,9 @@
 **Currently configured:**
 - Prediction channel: `2621`
 - Observation channel: `2279`
+- Tidal residual channel: `3660` ✓ **ADDED 2026-01-12**
 
-### Available Tide/Water Level Channels (41 total)
+### Available Tide/Water Level Channels (79 total as of 2026-01-12)
 
 | ID   | Channel Name | Unit | Type | Status |
 |------|--------------|------|------|--------|
@@ -152,6 +153,7 @@
 | 2606 | Tp PT-radar | sec | Calculated |  |
 | 2607 | GVRD PT-radar | m | Calculated |  |
 | 2621 | Tidal_Prediction_CGVD28_GVRD | m | Raw | ✓ **PREDICTION** |
+| 3660 | Tidal Residual | m | Calculated | ✓ **RESIDUAL** (added 2026-01-12) |
 
 ---
 
@@ -202,6 +204,12 @@ These channels help understand the offsets between different measurement systems
   - Negative values = water lower than predicted (inverse surge)
 
 **Crescent Channel (Site 20183):**
+- **3660**: `Tidal Residual` - Observed minus predicted water level (added 2026-01-12)
+  - **Storm surge component** for Crescent Channel
+  - Same calculation as channel 2414 for Crescent Beach
+  - Positive values = water higher than predicted
+  - Negative values = water lower than predicted
+
 - **2455**: `Geodifference_CC_PTvsRadar` - Difference between Pressure Transducer and Radar measurements at Crescent Channel
   - Helps validate sensor accuracy and consistency
   - Useful for identifying sensor drift or calibration issues

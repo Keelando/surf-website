@@ -61,6 +61,7 @@ SURREY_STATIONS = {
         "channels": {
             "water_level_predicted": 2621,  # Tidal_Prediction_CGVD28_GVRD
             "water_level_observed": 2279,   # PT - CGVD28 GVRD Stage
+            "tidal_residual": 3660,          # Tidal Residual (observed - predicted, Surrey's calculation)
             "geodiff_pt_vs_radar": 2455,     # Geodifference_CC_PTvsRadar
         }
     }

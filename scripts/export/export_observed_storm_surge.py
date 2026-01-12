@@ -33,7 +33,10 @@ TIDE_TO_SURGE_MAP = {
     "point_atkinson": "Point_Atkinson",
     "campbell_river": "Campbell_River",
     "crescent_pile": "Crescent_Beach_Channel",
-    "tofino": "Tofino"
+    "tofino": "Tofino",
+    # Surrey stations - use pre-calculated tidal residuals
+    "crescent_beach_ocean": "Crescent_Beach_Ocean",
+    "crescent_channel_ocean": "Crescent_Channel_Ocean"
 }
 
 # Number of days back to export (9 days back + today = 10 days total, matching hindcast)
@@ -71,6 +74,51 @@ def fetch_predictions(conn, station_id, start_time):
     """, (station_id, start_time))
 
     return cur.fetchall()
+
+
+def fetch_surrey_tidal_residual(conn, station_id, start_time):
+    """
+    Fetch Surrey's pre-calculated tidal residual from geodetic data table.
+
+    Returns list of tuples: (observation_time, tidal_residual)
+    """
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT observation_time, tidal_residual
+        FROM surrey_geodetic_data
+        WHERE station_id = ?
+        AND observation_time >= ?
+        AND tidal_residual IS NOT NULL
+        ORDER BY observation_time ASC
+    """, (station_id, start_time))
+
+    return cur.fetchall()
+
+
+def format_surrey_residual_data(residual_rows):
+    """
+    Format Surrey's pre-calculated tidal residual for export.
+
+    IMPORTANT: Downsamples to 15-minute intervals to match DFO data format.
+    """
+    surge_data = []
+    for row in residual_rows:
+        timestamp = int(row[0])
+        residual = float(row[1])
+
+        dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+
+        # Downsample: Only include at 15-minute intervals
+        if dt.minute % 15 != 0 or dt.second != 0:
+            continue
+
+        surge_data.append({
+            "time": dt.isoformat(),
+            "observed_surge_m": round(residual, 4),
+            "source": "surrey_calculated"
+        })
+
+    return surge_data
 
 
 def calculate_observed_surge(observations, predictions):
@@ -151,20 +199,32 @@ def export_observed_surge():
 
         logger.debug(f"Processing {station_name} ({tide_key})...")
 
-        # Fetch observations and predictions
-        observations = fetch_observations(conn, station_id, start_time)
-        predictions = fetch_predictions(conn, station_id, start_time)
+        # Check if this is a Surrey station
+        is_surrey = station_id.startswith("surrey_")
 
-        if not observations:
-            logger.warning(f"  No observations found for {station_name}")
-            continue
+        if is_surrey:
+            # Surrey: Fetch pre-calculated tidal residual
+            residual_rows = fetch_surrey_tidal_residual(conn, station_id, start_time)
 
-        if not predictions:
-            logger.warning(f"  No predictions found for {station_name}")
-            continue
+            if not residual_rows:
+                logger.warning(f"  No tidal residual data found for {station_name}")
+                continue
 
-        # Calculate observed surge
-        surge_data = calculate_observed_surge(observations, predictions)
+            surge_data = format_surrey_residual_data(residual_rows)
+        else:
+            # DFO: Calculate surge from observations and predictions
+            observations = fetch_observations(conn, station_id, start_time)
+            predictions = fetch_predictions(conn, station_id, start_time)
+
+            if not observations:
+                logger.warning(f"  No observations found for {station_name}")
+                continue
+
+            if not predictions:
+                logger.warning(f"  No predictions found for {station_name}")
+                continue
+
+            surge_data = calculate_observed_surge(observations, predictions)
 
         if surge_data:
             stations_data[surge_name] = {

@@ -178,54 +178,62 @@ def export_latest(conn, station_metadata):
             }
 
         # Calculate tide offset (observed - predicted = residual/storm surge)
-        # For ALL stations with observations, calculate actual residual using matched timestamps
-        # This is the real observed storm surge/tide offset
+        # For Surrey stations: Use their pre-calculated tidal residual from geodetic data table
+        # For DFO stations: Calculate residual using matched timestamps
         if "observation" in station_data and obs_row:
             obs_time_for_offset = obs_row[0]  # Use observation timestamp
             obs_val = station_data["observation"].get("value")
 
             if obs_val is not None:
-                # Find prediction at the SAME time as observation
-                # DFO: ±10 min tolerance (1-5 min sampling)
-                # Surrey: ±8 hours tolerance (20-min sampling, future-only data)
-                offset_tolerance = 28800 if is_surrey else 600  # 8 hours vs 10 minutes
+                if is_surrey:
+                    # Surrey: Fetch pre-calculated tidal residual from geodetic data
+                    cur.execute("""
+                        SELECT observation_time, tidal_residual
+                        FROM surrey_geodetic_data
+                        WHERE station_id = ?
+                        AND tidal_residual IS NOT NULL
+                        ORDER BY observation_time DESC
+                        LIMIT 1
+                    """, (station_id,))
 
-                cur.execute("""
-                    SELECT prediction_time, water_level
-                    FROM tide_prediction
-                    WHERE station_id = ?
-                      AND prediction_time >= ?
-                      AND prediction_time <= ?
-                    ORDER BY ABS(prediction_time - ?)
-                    LIMIT 1
-                """, (station_id, obs_time_for_offset - offset_tolerance, obs_time_for_offset + offset_tolerance, obs_time_for_offset))
+                    residual_row = cur.fetchone()
+                    if residual_row:
+                        residual_time, residual_value = residual_row
+                        if residual_value is not None:
+                            station_data["tide_offset"] = {
+                                "value": round(residual_value, 3),
+                                "observation_time": datetime.fromtimestamp(residual_time, tz=timezone.utc).isoformat(),
+                                "source": "surrey_calculated",
+                                "description": "Tidal residual (Surrey FlowWorks calculation)"
+                            }
+                else:
+                    # DFO: Calculate offset by matching observation with prediction
+                    cur.execute("""
+                        SELECT prediction_time, water_level
+                        FROM tide_prediction
+                        WHERE station_id = ?
+                          AND prediction_time >= ?
+                          AND prediction_time <= ?
+                        ORDER BY ABS(prediction_time - ?)
+                        LIMIT 1
+                    """, (station_id, obs_time_for_offset - 600, obs_time_for_offset + 600, obs_time_for_offset))
 
-                pred_at_obs_time = cur.fetchone()
-                if pred_at_obs_time:
-                    pred_time_matched, pred_val_matched = pred_at_obs_time
-                    time_diff_sec = abs(pred_time_matched - obs_time_for_offset)
+                    pred_at_obs_time = cur.fetchone()
+                    if pred_at_obs_time:
+                        pred_time_matched, pred_val_matched = pred_at_obs_time
+                        time_diff_sec = abs(pred_time_matched - obs_time_for_offset)
 
-                    # Only calculate offset if timestamps are reasonably close
-                    # Don't calculate for Surrey - their future-only predictions mean
-                    # we'd be comparing observation NOW to prediction 6-8h FUTURE (meaningless)
-                    # Actual storm surge for Surrey comes from GDSPS forecast (combined water level)
-                    max_diff = 600  # 10 minutes for all stations
-                    if time_diff_sec <= max_diff and pred_val_matched is not None:
-                        offset = obs_val - pred_val_matched
+                        # Only calculate offset if timestamps are close (within 10 minutes)
+                        if time_diff_sec <= 600 and pred_val_matched is not None:
+                            offset = obs_val - pred_val_matched
 
-                        # Description depends on time matching quality
-                        if time_diff_sec <= 600:
-                            description = "Observed minus predicted (actual tide residual)"
-                        else:
-                            description = f"Observed minus predicted (times differ by {time_diff_sec//3600:.0f}h - approximate)"
-
-                        station_data["tide_offset"] = {
-                            "value": round(offset, 3),
-                            "observation_time": station_data["observation"]["time"],
-                            "prediction_time": datetime.fromtimestamp(pred_time_matched, tz=timezone.utc).isoformat(),
-                            "time_diff_seconds": time_diff_sec,
-                            "description": description
-                        }
+                            station_data["tide_offset"] = {
+                                "value": round(offset, 3),
+                                "observation_time": station_data["observation"]["time"],
+                                "prediction_time": datetime.fromtimestamp(pred_time_matched, tz=timezone.utc).isoformat(),
+                                "time_diff_seconds": time_diff_sec,
+                                "description": "Observed minus predicted (actual tide residual)"
+                            }
 
         # Only add if we have at least one data point
         if "observation" in station_data or "prediction_now" in station_data:
@@ -336,83 +344,34 @@ def export_timeseries(conn, station_metadata):
                 "quality": quality
             })
 
-        # Calculate residuals (observed - predicted) for geodetic tide stations ONLY
-        # This is the tide residual for Surrey stations using CGVD28 datum
-        # Regular DFO Chart Datum stations use ECCC storm surge forecast instead
+        # Export tidal residual timeseries for Surrey stations
+        # Use Surrey's pre-calculated tidal residual (observed - predicted within their datum)
         is_surrey_geodetic = station_id.startswith("surrey_")
-        if is_surrey_geodetic and station_data["predictions"] and station_data["observations"]:
-            # Create lookup dict of predictions by timestamp for fast matching
-            pred_dict = {ts: val for ts, val in pred_downsampled}
+        if is_surrey_geodetic:
+            # Fetch Surrey's pre-calculated tidal residual from geodetic data
+            cur.execute("""
+                SELECT observation_time, tidal_residual
+                FROM surrey_geodetic_data
+                WHERE station_id = ?
+                  AND observation_time >= ?
+                  AND observation_time <= ?
+                  AND tidal_residual IS NOT NULL
+                ORDER BY observation_time ASC
+            """, (station_id, start_ts, end_ts))
+
+            residual_rows = cur.fetchall()
+            residual_downsampled = downsample_to_15min(residual_rows)
 
             residuals = []
-            for ts, obs_val, quality in obs_downsampled:
-                # Look for matching prediction at exact same timestamp
-                if ts in pred_dict:
-                    pred_val = pred_dict[ts]
-                    residual = obs_val - pred_val
-                    residuals.append({
-                        "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
-                        "value": round(residual, 3),
-                        "quality": quality
-                    })
+            for ts, residual_val in residual_downsampled:
+                residuals.append({
+                    "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+                    "value": round(residual_val, 3),
+                    "source": "surrey_calculated"
+                })
 
             if residuals:
                 station_data["residuals"] = residuals
-
-            # Export geodetic offset data for calibration testing
-            # This allows testing if predictions need datum offset correction
-            if station_id == "surrey_crescent_ocean":
-                # Channel 2126: CB vs CC (PT) - THE MAIN CALIBRATION CHANNEL (-0.34m)
-                # Applied to PREDICTIONS for Crescent Beach
-                cur.execute("""
-                    SELECT observation_time, geodiff_cbvscc_pt
-                    FROM surrey_geodetic_data
-                    WHERE station_id = ?
-                      AND observation_time >= ?
-                      AND observation_time <= ?
-                      AND geodiff_cbvscc_pt IS NOT NULL
-                    ORDER BY observation_time ASC
-                """, (station_id, start_ts, end_ts))
-
-                geodiff_pt_rows = cur.fetchall()
-                geodiff_pt_downsampled = downsample_to_15min(geodiff_pt_rows)
-
-                geodetic_offsets = []
-                for ts, offset_val in geodiff_pt_downsampled:
-                    geodetic_offsets.append({
-                        "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
-                        "value": round(offset_val, 3)
-                    })
-
-                if geodetic_offsets:
-                    station_data["geodetic_offsets"] = geodetic_offsets
-
-            elif station_id == "surrey_crescent_channel":
-                # Channel 2126: CB vs CC (PT) - SAME CHANNEL AS CRESCENT BEACH
-                # Applied to OBSERVATIONS for Crescent Channel (vs predictions for CB)
-                # NOTE: This channel is fetched from Crescent Beach site but used for both stations!
-                cur.execute("""
-                    SELECT observation_time, geodiff_cbvscc_pt
-                    FROM surrey_geodetic_data
-                    WHERE station_id = 'surrey_crescent_ocean'
-                      AND observation_time >= ?
-                      AND observation_time <= ?
-                      AND geodiff_cbvscc_pt IS NOT NULL
-                    ORDER BY observation_time ASC
-                """, (start_ts, end_ts))
-
-                geodiff_cc_rows = cur.fetchall()
-                geodiff_cc_downsampled = downsample_to_15min(geodiff_cc_rows)
-
-                geodetic_offsets = []
-                for ts, offset_val in geodiff_cc_downsampled:
-                    geodetic_offsets.append({
-                        "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
-                        "value": round(offset_val, 3)
-                    })
-
-                if geodetic_offsets:
-                    station_data["geodetic_offsets"] = geodetic_offsets
 
         # Add station if it has any data
         if station_data["predictions"] or station_data["observations"]:
