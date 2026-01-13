@@ -34,6 +34,8 @@ MAX_DAYS_BACK = 12  # Show predictions for last 12 days (today + 11 back)
 STATIONS = {
     "Point_Atkinson": {"name": "Point Atkinson", "lat": 49.3375, "lon": -123.253583},
     "Crescent_Beach_Channel": {"name": "Crescent Beach Channel", "lat": 49.0536, "lon": -122.8969},
+    "Crescent_Channel_Ocean": {"name": "Crescent Channel Ocean", "lat": 49.0536, "lon": -122.8969, "reuses": "Crescent_Beach_Channel"},
+    "Crescent_Beach_Ocean": {"name": "Crescent Beach Ocean", "lat": 49.0122, "lon": -122.9411, "reuses": "Crescent_Beach_Channel"},
     "Campbell_River": {"name": "Campbell River", "lat": 50.042, "lon": -125.247},
     "Neah_Bay": {"name": "Neah Bay", "lat": 48.495, "lon": -124.728},
     "New_Dungeness": {"name": "New Dungeness", "lat": 48.333, "lon": -123.167},
@@ -83,6 +85,9 @@ def export_hindcast():
         for station_id, station_info in STATIONS.items():
             logger.info(f"Processing {station_info['name']}...")
 
+            # Check if this station reuses another station's forecast
+            query_station_id = station_info.get("reuses", station_id)
+
             # Query: Get forecasts for hours 38-61 FROM 18Z RUN (hours 56-79 from midnight)
             # Goal: Show predictions FOR the last 10 days (today + 9 days back)
             # Since forecasts are ~2 days ahead (38-62 hrs), to get predictions FOR day X,
@@ -127,7 +132,7 @@ def export_hindcast():
                   AND valid_time >= ?
                   AND valid_time <= ?
                 ORDER BY valid_time ASC
-            """, (station_id, forecast_start_str, valid_start_str, today_end_str))
+            """, (query_station_id, forecast_start_str, valid_start_str, today_end_str))
             
             rows = cur.fetchall()
 

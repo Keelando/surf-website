@@ -1249,6 +1249,18 @@
       "update_frequency_minutes": 10,
       "stream_delay_minutes": 20,
       "page_url": "/webcams.html#coxbay"
+    },
+    "mudbay": {
+      "id": "mudbay",
+      "name": "Mud Bay HD",
+      "location": "Mud Bay, BC",
+      "lat": 49.07138649092664,
+      "lon": -122.95538135838513,
+      "source": "Mud Bay HD - OxBlue Archive",
+      "type": "webcam",
+      "update_frequency_minutes": 10,
+      "stream_delay_minutes": 0,
+      "page_url": "/webcams.html#mudbay"
     }
   }
 }

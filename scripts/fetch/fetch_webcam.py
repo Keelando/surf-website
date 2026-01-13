@@ -70,6 +70,20 @@ WEBCAM_CONFIGS = {
         "lon": -125.9000,
         "check_daylight": True,  # Only capture during daylight
         "daylight_margin_minutes": 60  # Stop 1 hour after sunset, start 1 hour before sunrise
+    },
+    "mudbay": {
+        "name": "Mud Bay HD",
+        "image_url": "https://oxblue.com/archive/c6713f391eef15e5c1dbfc6a003b83a0/1024x768.jpg",
+        "archive_dir": Path("/mnt/storage/mudbay_cam"),
+        "website_dir": Path.home() / "site" / "data" / "mudbay",
+        "prefix": "MB",
+        "crop": "in_w:in_h:0:0",  # Full frame, no cropping
+        "source_text": "Mud Bay HD - OxBlue Archive",
+        "lat": 49.07138649092664,
+        "lon": -122.95538135838513,
+        "check_daylight": True,  # Only capture during daylight
+        "daylight_margin_minutes": 60,  # Stop 1 hour after sunset, start 1 hour before sunrise
+        "annotate_timestamp": True  # Add timestamp annotation to images
     }
 }
 
@@ -155,6 +169,104 @@ def capture_frame(stream_url, output_path, timestamp, crop_filter, logger):
         return False
     except Exception as e:
         logger.error(f"Failed to capture frame: {e}")
+        return False
+
+
+def download_image(image_url, output_path, logger):
+    """Download an image directly from a URL using curl"""
+    try:
+        logger.info(f"Downloading image from: {image_url}")
+        logger.info(f"Saving to: {output_path}")
+
+        result = subprocess.run(
+            [
+                "curl",
+                "-f",  # Fail silently on HTTP errors
+                "-L",  # Follow redirects
+                "-o", str(output_path),
+                "--max-time", "30",
+                "--connect-timeout", "10",
+                image_url
+            ],
+            capture_output=True,
+            text=True,
+            timeout=40
+        )
+
+        if result.returncode != 0:
+            logger.error(f"curl failed with code {result.returncode}: {result.stderr}")
+            return False
+
+        if output_path.exists():
+            size_kb = output_path.stat().st_size / 1024
+            logger.info(f"Image downloaded successfully ({size_kb:.1f} KB)")
+            return True
+        else:
+            logger.error("curl completed but output file not found")
+            return False
+
+    except subprocess.TimeoutExpired:
+        logger.error("curl timed out after 40 seconds")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to download image: {e}")
+        return False
+
+
+def annotate_image(image_path, timestamp, logger):
+    """Add timestamp annotation to image using Pillow"""
+    try:
+        import pytz
+        from PIL import Image, ImageDraw, ImageFont
+
+        # Convert UTC timestamp to PST
+        pst = pytz.timezone('America/Vancouver')
+        timestamp_pst = timestamp.astimezone(pst)
+
+        # Format as "Retrieval time: 2026-01-13T11:40PST"
+        timestamp_str = f"Retrieval time: {timestamp_pst.strftime('%Y-%m-%dT%H:%M')}PST"
+
+        logger.info(f"Annotating image with: {timestamp_str}")
+
+        # Open the image
+        img = Image.open(image_path)
+        draw = ImageDraw.Draw(img)
+
+        # Try to use a nice font, fall back to default if not available
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+        except:
+            try:
+                font = ImageFont.truetype("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 24)
+            except:
+                # Use default font if no system fonts available
+                font = ImageFont.load_default()
+                logger.warning("Using default font (system fonts not found)")
+
+        # Position for text (top left with some padding)
+        position = (10, 10)
+
+        # Draw text with black outline for readability
+        outline_width = 2
+        x, y = position
+
+        # Draw outline (black)
+        for offset_x in range(-outline_width, outline_width + 1):
+            for offset_y in range(-outline_width, outline_width + 1):
+                if offset_x != 0 or offset_y != 0:
+                    draw.text((x + offset_x, y + offset_y), timestamp_str, font=font, fill='black')
+
+        # Draw main text (white)
+        draw.text(position, timestamp_str, font=font, fill='white')
+
+        # Save the annotated image (overwrite original)
+        img.save(image_path, 'JPEG', quality=95)
+
+        logger.info("Image annotation successful")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to annotate image: {e}")
         return False
 
 
@@ -308,12 +420,6 @@ def main():
     config["archive_dir"].mkdir(parents=True, exist_ok=True)
     config["website_dir"].mkdir(parents=True, exist_ok=True)
 
-    # Get stream URL
-    stream_url = get_stream_url(config["youtube_url"], logger)
-    if not stream_url:
-        logger.error("Failed to get stream URL - aborting")
-        sys.exit(1)
-
     # Generate timestamp-based filename
     timestamp = datetime.now(timezone.utc)
     timestamp_readable = timestamp.strftime("%Y%m%d_%H%M%S")
@@ -322,9 +428,31 @@ def main():
 
     # Capture to archive directory first
     archive_path = config["archive_dir"] / filename
-    if not capture_frame(stream_url, archive_path, timestamp, config["crop"], logger):
-        logger.error("Failed to capture frame - aborting")
+
+    # Check if this is a direct image URL or YouTube stream
+    if "image_url" in config:
+        # Direct image download
+        if not download_image(config["image_url"], archive_path, logger):
+            logger.error("Failed to download image - aborting")
+            sys.exit(1)
+    elif "youtube_url" in config:
+        # YouTube livestream capture
+        stream_url = get_stream_url(config["youtube_url"], logger)
+        if not stream_url:
+            logger.error("Failed to get stream URL - aborting")
+            sys.exit(1)
+
+        if not capture_frame(stream_url, archive_path, timestamp, config["crop"], logger):
+            logger.error("Failed to capture frame - aborting")
+            sys.exit(1)
+    else:
+        logger.error("Config must have either 'image_url' or 'youtube_url'")
         sys.exit(1)
+
+    # Annotate image with timestamp if enabled
+    if config.get("annotate_timestamp", False):
+        if not annotate_image(archive_path, timestamp, logger):
+            logger.warning("Failed to annotate image, continuing anyway")
 
     # Atomically update latest.jpg
     website_latest = config["website_dir"] / "latest.jpg"
@@ -346,7 +474,7 @@ def main():
         "timestamp": timestamp.isoformat(),
         "timestamp_unix": timestamp_unix,
         "source": config["source_text"],
-        "url": config["youtube_url"]
+        "url": config.get("youtube_url") or config.get("image_url")
     }
 
     metadata_path = config["website_dir"] / "latest.json"

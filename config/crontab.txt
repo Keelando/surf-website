@@ -116,6 +116,9 @@ SURREY_API_PASSWORD=surreyrain
 # Cox Bay webcam (slideshow-enabled, offset by 4 minutes)
 4,14,24,34,44,54 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py coxbay >> /home/keelando/envcan_wave/logs/webcam_coxbay.log 2>&1
 
+# Mud Bay HD webcam (slideshow-enabled, offset by 6 minutes, daylight-only)
+6,16,26,36,46,56 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py mudbay >> /home/keelando/envcan_wave/logs/webcam_mudbay.log 2>&1
+
 # NWS Weather Stations (KBLI Bellingham, KORS Orcas Island)
 */10 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_nws_weather.py >> /home/keelando/envcan_wave/logs/nws_fetch.log 2>&1
 # Surrey water level sync to tide database - runs after Surrey fetch (every 20 min + 2)

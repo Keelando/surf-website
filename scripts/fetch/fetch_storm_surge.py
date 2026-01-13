@@ -28,6 +28,7 @@ TESTING = False  # Set to True for verbose output and progress tracking
 STATIONS = {
     "Point_Atkinson": {"lat": 49.3375, "lon": -123.253583, "name": "Point Atkinson"},
     "Crescent_Beach_Channel": {"lat": 49.0536, "lon": -122.8969, "name": "Crescent Beach Channel"},
+    # Note: Crescent_Beach_Ocean reuses Crescent_Beach_Channel forecast (same location, ~5km apart)
     "Campbell_River": {"lat": 50.042, "lon": -125.247, "name": "Campbell River"},
     "Neah_Bay": {"lat": 48.495, "lon": -124.728, "name": "Neah Bay"},
     "New_Dungeness": {"lat": 48.333, "lon": -123.167, "name": "New Dungeness"},
@@ -242,12 +243,12 @@ def fetch_station_forecast(wms, layer, station_id, station_info, time_list):
     return forecast_data
 
 
-def save_forecast(station_id, forecast_data, station_info):
+def save_forecast(station_id, forecast_data, station_info, model_run_time=None):
     """Save forecast data to JSON file with atomic write."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     output_file = OUTPUT_DIR / f"{station_id}.json"
-    
+
     output_data = {
         "station_id": station_id,
         "station_name": station_info["name"],
@@ -256,6 +257,7 @@ def save_forecast(station_id, forecast_data, station_info):
             "lon": station_info["lon"]
         },
         "generated_utc": datetime.now(timezone.utc).isoformat(),
+        "model_run_time": model_run_time.isoformat() if model_run_time else None,
         "forecast": forecast_data,
         "unit": "meters"
     }
@@ -272,6 +274,7 @@ def create_combined_forecast():
     """Combine all station forecasts into single file."""
     combined = {
         "generated_utc": datetime.now(timezone.utc).isoformat(),
+        "model_run_time": None,
         "stations": {}
     }
 
@@ -286,6 +289,10 @@ def create_combined_forecast():
             station_data = json.loads(station_file.read_text())
             station_id = station_data["station_id"]
             combined["stations"][station_id] = station_data
+
+            # Get model run time from first station
+            if combined["model_run_time"] is None and "model_run_time" in station_data:
+                combined["model_run_time"] = station_data["model_run_time"]
         except Exception as e:
             logger.info(f"⚠️  Error reading {station_file.name}: {e}")
     
@@ -347,13 +354,13 @@ def main():
                 forecast_data = fetch_station_forecast(
                     wms, LAYER, station_id, station_info, time_list
                 )
-                
+
                 if forecast_data:
-                    save_forecast(station_id, forecast_data, station_info)
+                    save_forecast(station_id, forecast_data, station_info, start_time)
                     all_forecasts[station_id] = forecast_data
                 else:
                     logger.info(f"    ❌ No data retrieved for {station_id}")
-            
+
             except Exception as e:
                 logger.info(f"    ❌ Error processing {station_id}: {e}")
         
