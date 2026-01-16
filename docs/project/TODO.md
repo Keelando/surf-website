@@ -2,30 +2,6 @@
 
 ## Upcoming Tasks
 
-### Tide Page Refactoring (TOP PRIORITY)
-
-**Goal:** Break down the 1886-line tides.js monolith into maintainable modules
-
-**Current issues:**
-- Single 1886-line file handling everything
-- Geodetic station logic mixed with regular tide logic
-- Chart rendering, data management, UI controls all intertwined
-- Hard to test, hard to modify without breaking things
-
-**Proposed modules:**
-- Station data management (loading, caching, transforming)
-- Geodetic calibration (two methodologies)
-- Chart rendering (series configuration, mark lines, options)
-- Sunlight times (loading, display, integration)
-- UI controls (navigation, selectors, buttons)
-- High/low table logic
-- Storm surge calculations
-- Current time indicator
-
-**Priority:** HIGH - Code maintainability and future development
-
----
-
 ### Dark Mode Implementation
 
 **Goal:** Add dark color scheme with user preference storage
@@ -128,6 +104,46 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
   - Charts may connect lines across data gaps in some scenarios
   - Not currently observed as a problem in production
   - Would require injecting explicit null values at gap timestamps if needed
+
+---
+
+## Completed (2026-01-15)
+
+✅ **24-Hour Time Format Standardization**
+  - Updated all frontend time displays to use strict 24-hour format
+  - Fixed Leaflet map popups (stations-map.js, winds-map.js)
+  - Fixed tide displays (tides.js, tides-modules/display.js, sunlight.js)
+  - All times now Vancouver timezone-aware with DST handling
+
+✅ **Mud Bay Webcam Interval Update**
+  - Increased snapshot interval from 15 to 20 minutes to prevent duplicates
+  - Updated crontab and frontend webcams.html
+
+---
+
+## Completed (2026-01-12)
+
+✅ **Tide Page Refactoring**
+  - Broke down 1886-line tides.js monolith into modules
+  - Created tides-modules/ directory with focused components
+
+✅ **Wave Direction Vectors on Map**
+  - Directional arrows on buoy cards and map markers
+  - Blue arrows for wave direction, red for wind
+  - Shows direction data is coming FROM (meteorological convention)
+
+✅ **Surrey Geodetic Tide Simplification**
+  - Now using Surrey/FlowWorks pre-calculated tidal residual
+  - Removed redundant geodetic offset calculations
+  - Archived previous logic to `archive/geodetic-tide-corrections-2026-01-12`
+
+✅ **Storm Surge Page Fixes**
+  - Fixed "Invalid Date" on storm surge card
+  - Added Surrey stations (Crescent Beach Ocean/Channel) to hindcast plot
+
+✅ **Station Registry Enforcement**
+  - All scripts now use `lib/stations.py` as single source of truth
+  - Removed hardcoded station lists
 
 ---
 
@@ -311,46 +327,4 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
   - Test on actual mobile devices after fixing
 
 ---
-
-## Wave Direction Vector Visualization (Future Feature)
-
-### Feature Description
-Create a visual vector representation of wave/swell direction showing the directional spread.
-
-### Visual Design
-```
-        ↑ (small arrow at max angle)
-       /
-      /
-     ↑ (main arrow at average direction - larger)
-      \
-       \
-        ↑ (small arrow at min angle)
-```
-
-### Implementation
-- **Main vector arrow**: Points in the average wave direction (larger, prominent)
-- **Spread indicators**: Two smaller arrows showing the angular range
-- Use SVG for rendering
-- Display options: In buoy cards, dedicated panel, map markers, or charts
-
-### Data Available
-From EC buoys (Halibut Bank, Sentry Shoal):
-- ✅ `wave_direction_avg` - Average wave direction
-- ✅ `wave_direction_peak` - Peak wave direction
-- ✅ `wave_direction_spread_avg` - Average directional spread
-- ✅ `wave_direction_spread_peak` - Peak directional spread
-
-### Benefits
-1. Intuitive visualization - users immediately understand directional spread
-2. Quick assessment - see at a glance if seas are organized or confused
-3. Better than text - Visual > "E to ESE (84° to 120°)"
-4. Professional appearance
-5. Educational - helps users understand wave mechanics
-
-### Estimated Effort
-~6-8 hours total (design, implementation, integration, testing)
-
-### Priority
-**Medium** - Nice to have, enhances UX significantly
 

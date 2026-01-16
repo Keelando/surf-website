@@ -61,7 +61,10 @@ STATIONS_FILE = PROJECT_ROOT / "config" / "stations.json"
 # =============================================================================
 
 # How long to keep buoy observations
-BUOY_RETENTION_DAYS = 2
+BUOY_RETENTION_DAYS = 30
+
+# How long to keep wind observations
+WIND_RETENTION_DAYS = 30
 
 # How long to keep tide observations (used for storm surge calculation)
 TIDE_OBS_RETENTION_DAYS = 11

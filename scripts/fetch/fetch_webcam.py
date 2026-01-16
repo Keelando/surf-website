@@ -26,6 +26,11 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 import logging
+import requests
+
+# Determine yt-dlp path (use venv's yt-dlp if running in venv)
+_venv_bin = Path(sys.executable).parent
+YT_DLP_PATH = str(_venv_bin / "yt-dlp") if (_venv_bin / "yt-dlp").exists() else "yt-dlp"
 
 # Import shared utilities
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -37,6 +42,7 @@ WEBCAM_CONFIGS = {
     "whiterock": {
         "name": "White Rock Pier Cam",
         "youtube_url": "https://www.youtube.com/watch?v=4MK3E9EWDSY",
+        "video_id": "4MK3E9EWDSY",
         "archive_dir": Path("/mnt/storage/whiterock_cam"),
         "website_dir": Path.home() / "site" / "data" / "wrcam",
         "prefix": "WR",
@@ -44,11 +50,14 @@ WEBCAM_CONFIGS = {
         "source_text": "White Rock Pier - YouTube Livestream",
         "lat": 49.0253,
         "lon": -122.8031,
-        "check_daylight": False  # Capture 24/7
+        "check_daylight": False,  # Capture 24/7
+        "interval_minutes": 10,  # Snapshot every 10 minutes
+        "cron_offset": 0  # No offset (runs at :00, :10, :20, etc.)
     },
     "boundarybay": {
         "name": "White Rock East Beach",
         "youtube_url": "https://www.youtube.com/watch?v=O8RsAq9RUlA",
+        "video_id": "O8RsAq9RUlA",
         "archive_dir": Path("/mnt/storage/boundarybay_cam"),
         "website_dir": Path.home() / "site" / "data" / "bbcam",
         "prefix": "BB",
@@ -56,11 +65,14 @@ WEBCAM_CONFIGS = {
         "source_text": "White Rock East Beach - YouTube Livestream",
         "lat": 49.0042,
         "lon": -123.0128,
-        "check_daylight": False  # Capture 24/7
+        "check_daylight": False,  # Capture 24/7
+        "interval_minutes": 10,  # Snapshot every 10 minutes
+        "cron_offset": 2  # Offset by 2 minutes (runs at :02, :12, :22, etc.)
     },
     "coxbay": {
         "name": "Cox Bay",
         "youtube_url": "https://www.youtube.com/watch?v=LqaP8m2OIqM",
+        "video_id": "LqaP8m2OIqM",
         "archive_dir": Path("/mnt/storage/coxbay_cam"),
         "website_dir": Path.home() / "site" / "data" / "coxbay",
         "prefix": "CB",
@@ -69,7 +81,9 @@ WEBCAM_CONFIGS = {
         "lat": 49.1167,
         "lon": -125.9000,
         "check_daylight": True,  # Only capture during daylight
-        "daylight_margin_minutes": 60  # Stop 1 hour after sunset, start 1 hour before sunrise
+        "daylight_margin_minutes": 75,  # Stop 1.25 hours after sunset, start 1.25 hours before sunrise
+        "interval_minutes": 10,  # Snapshot every 10 minutes
+        "cron_offset": 4  # Offset by 4 minutes (runs at :04, :14, :24, etc.)
     },
     "mudbay": {
         "name": "Mud Bay HD",
@@ -82,7 +96,9 @@ WEBCAM_CONFIGS = {
         "lat": 49.07138649092664,
         "lon": -122.95538135838513,
         "check_daylight": True,  # Only capture during daylight
-        "daylight_margin_minutes": 60,  # Stop 1 hour after sunset, start 1 hour before sunrise
+        "daylight_margin_minutes": 75,  # Stop 1.25 hours after sunset, start 1.25 hours before sunrise
+        "interval_minutes": 30,  # Snapshot every 30 minutes
+        "cron_offset": 6,  # Offset by 6 minutes (runs at :06, :36)
         "annotate_timestamp": True  # Add timestamp annotation to images
     }
 }
@@ -99,40 +115,150 @@ def setup_logger(config_name):
     return setup_logging(f'webcam_{config_name}')
 
 
-def get_stream_url(youtube_url, logger):
-    """Get the actual stream URL from YouTube using yt-dlp"""
-    try:
-        logger.info(f"Fetching stream URL from YouTube: {youtube_url}")
+def capture_youtube_thumbnail(video_id, output_path, crop_filter, logger):
+    """Capture frame using YouTube's live thumbnail (fastest, lowest bandwidth).
 
+    YouTube generates live thumbnails for active streams that update every 10-30 seconds.
+    This is much faster and uses less bandwidth than downloading video segments.
+
+    Returns True if successful, False if thumbnail unavailable.
+    """
+    import tempfile
+    import os
+
+    # YouTube live thumbnail URLs (try higher quality first)
+    thumbnail_urls = [
+        f"https://i.ytimg.com/vi/{video_id}/sddefault_live.jpg",   # 640x480
+        f"https://i.ytimg.com/vi/{video_id}/hqdefault_live.jpg",   # 480x360
+        f"https://i.ytimg.com/vi/{video_id}/mqdefault_live.jpg",   # 320x180
+    ]
+
+    for thumb_url in thumbnail_urls:
+        try:
+            logger.info(f"Trying YouTube thumbnail: {thumb_url.split('/')[-1]}")
+            response = requests.get(thumb_url, timeout=10)
+
+            # Check for valid image (not a placeholder)
+            # Real thumbnails are usually >5 KB, placeholders are tiny
+            if response.status_code == 200 and len(response.content) > 5000:
+                # Save to temp file first for cropping
+                temp_fd, temp_thumb = tempfile.mkstemp(suffix='.jpg')
+                os.close(temp_fd)
+
+                try:
+                    with open(temp_thumb, 'wb') as f:
+                        f.write(response.content)
+
+                    logger.info(f"Thumbnail downloaded ({len(response.content)/1024:.1f} KB)")
+
+                    # Apply crop filter if needed
+                    if crop_filter and crop_filter != "in_w:in_h:0:0":
+                        result = subprocess.run(
+                            [
+                                "ffmpeg",
+                                "-hide_banner",
+                                "-loglevel", "error",
+                                "-i", temp_thumb,
+                                "-vf", f"crop={crop_filter}",
+                                "-q:v", "3",
+                                "-y",
+                                str(output_path)
+                            ],
+                            capture_output=True,
+                            text=True,
+                            timeout=10
+                        )
+                        if result.returncode != 0:
+                            logger.warning(f"Crop failed: {result.stderr}")
+                            # Fall back to uncropped
+                            import shutil
+                            shutil.copy2(temp_thumb, output_path)
+                    else:
+                        # No crop needed, just copy
+                        import shutil
+                        shutil.copy2(temp_thumb, output_path)
+
+                    if output_path.exists():
+                        size_kb = output_path.stat().st_size / 1024
+                        logger.info(f"Thumbnail capture successful ({size_kb:.1f} KB)")
+                        return True
+
+                finally:
+                    if os.path.exists(temp_thumb):
+                        os.unlink(temp_thumb)
+
+        except requests.Timeout:
+            logger.warning(f"Thumbnail request timed out")
+            continue
+        except Exception as e:
+            logger.warning(f"Thumbnail fetch failed: {e}")
+            continue
+
+    return False
+
+
+def capture_youtube_frame_ytdlp(youtube_url, output_path, crop_filter, logger):
+    """Fallback: Capture frame using yt-dlp + ffmpeg.
+
+    Downloads a short video segment and extracts a frame.
+    Uses web_embedded player client which doesn't require Deno/JS runtime.
+    """
+    import tempfile
+    import os
+
+    temp_video = None
+    try:
+        # Create temp file for video segment
+        temp_fd, temp_video = tempfile.mkstemp(suffix='.mp4')
+        os.close(temp_fd)
+
+        # Download 0.5-second video segment using yt-dlp
+        # web_embedded client works without Deno and avoids most 403 errors
+        logger.info("Downloading video segment via yt-dlp (web_embedded)...")
         result = subprocess.run(
-            ["yt-dlp", "-f", "best", "-g", youtube_url],
+            [
+                YT_DLP_PATH,
+                "--extractor-args", "youtube:player_client=web_embedded",
+                "-f", "worst",
+                "--downloader-args", "ffmpeg:-t 0.5",
+                "--no-continue",
+                "-o", temp_video,
+                youtube_url
+            ],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=60
         )
 
         if result.returncode != 0:
-            logger.error(f"yt-dlp failed: {result.stderr}")
-            return None
+            logger.warning(f"yt-dlp web_embedded failed: {result.stderr[:200]}")
+            # Try fallback with request-no-ads
+            logger.info("Trying fallback: request-no-ads=false...")
+            result = subprocess.run(
+                [
+                    YT_DLP_PATH,
+                    "--extractor-args", "youtube:request-no-ads=false",
+                    "-f", "worst",
+                    "--downloader-args", "ffmpeg:-t 0.5",
+                    "--no-continue",
+                    "-o", temp_video,
+                    youtube_url
+                ],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            if result.returncode != 0:
+                logger.error(f"yt-dlp fallback also failed: {result.stderr[:200]}")
+                return False
 
-        stream_url = result.stdout.strip()
-        logger.info(f"Got stream URL (length: {len(stream_url)} chars)")
-        return stream_url
+        if not os.path.exists(temp_video) or os.path.getsize(temp_video) == 0:
+            logger.error("yt-dlp completed but video file is missing or empty")
+            return False
 
-    except subprocess.TimeoutExpired:
-        logger.error("yt-dlp timed out after 30 seconds")
-        return None
-    except Exception as e:
-        logger.error(f"Failed to get stream URL: {e}")
-        return None
+        logger.info(f"Video segment downloaded ({os.path.getsize(temp_video) / 1024:.1f} KB)")
 
-
-def capture_frame(stream_url, output_path, timestamp, crop_filter, logger):
-    """Capture a single frame from the stream using ffmpeg with cropping"""
-    try:
-        logger.info(f"Capturing frame to: {output_path}")
-
-        # Build filter: crop only (stream already has its own timestamp)
+        # Extract frame from downloaded video
         filter_complex = f"crop={crop_filter}"
 
         result = subprocess.run(
@@ -140,7 +266,7 @@ def capture_frame(stream_url, output_path, timestamp, crop_filter, logger):
                 "ffmpeg",
                 "-hide_banner",
                 "-loglevel", "error",
-                "-i", stream_url,
+                "-i", temp_video,
                 "-vf", filter_complex,
                 "-frames:v", "1",
                 "-q:v", "3",
@@ -149,27 +275,61 @@ def capture_frame(stream_url, output_path, timestamp, crop_filter, logger):
             ],
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=30
         )
 
         if result.returncode != 0:
-            logger.error(f"ffmpeg failed: {result.stderr}")
+            logger.error(f"ffmpeg frame extraction failed: {result.stderr}")
             return False
 
         if output_path.exists():
             size_kb = output_path.stat().st_size / 1024
-            logger.info(f"Frame captured successfully ({size_kb:.1f} KB)")
+            logger.info(f"Frame extracted successfully ({size_kb:.1f} KB)")
             return True
         else:
             logger.error("ffmpeg completed but output file not found")
             return False
 
     except subprocess.TimeoutExpired:
-        logger.error("ffmpeg timed out after 60 seconds")
+        logger.error("yt-dlp capture timed out")
         return False
     except Exception as e:
         logger.error(f"Failed to capture frame: {e}")
         return False
+    finally:
+        # Clean up temp video file
+        if temp_video and os.path.exists(temp_video):
+            try:
+                os.unlink(temp_video)
+            except:
+                pass
+
+
+def capture_youtube_frame(youtube_url, output_path, crop_filter, logger, video_id=None):
+    """Capture a frame from YouTube livestream.
+
+    Strategy (bandwidth-optimized):
+    1. Try YouTube's live thumbnail first (fast, ~20KB, 10-30s latency)
+    2. Fall back to yt-dlp if thumbnail unavailable (slower, ~5KB video segment)
+    """
+    logger.info(f"Capturing frame from YouTube: {youtube_url}")
+
+    # Extract video_id from URL if not provided
+    if not video_id:
+        if "watch?v=" in youtube_url:
+            video_id = youtube_url.split("watch?v=")[-1].split("&")[0]
+        elif "youtu.be/" in youtube_url:
+            video_id = youtube_url.split("youtu.be/")[-1].split("?")[0]
+
+    # Strategy 1: Try YouTube thumbnail (fastest, lowest bandwidth)
+    if video_id:
+        logger.info("Attempting thumbnail capture (preferred)...")
+        if capture_youtube_thumbnail(video_id, output_path, crop_filter, logger):
+            return True
+        logger.warning("Thumbnail capture failed, falling back to yt-dlp...")
+
+    # Strategy 2: Fall back to yt-dlp
+    return capture_youtube_frame_ytdlp(youtube_url, output_path, crop_filter, logger)
 
 
 def download_image(image_url, output_path, logger):
@@ -437,13 +597,9 @@ def main():
             sys.exit(1)
     elif "youtube_url" in config:
         # YouTube livestream capture
-        stream_url = get_stream_url(config["youtube_url"], logger)
-        if not stream_url:
-            logger.error("Failed to get stream URL - aborting")
-            sys.exit(1)
-
-        if not capture_frame(stream_url, archive_path, timestamp, config["crop"], logger):
-            logger.error("Failed to capture frame - aborting")
+        video_id = config.get("video_id")
+        if not capture_youtube_frame(config["youtube_url"], archive_path, config["crop"], logger, video_id):
+            logger.error("Failed to capture YouTube frame - aborting")
             sys.exit(1)
     else:
         logger.error("Config must have either 'image_url' or 'youtube_url'")

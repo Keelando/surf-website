@@ -1,125 +1,13 @@
 # Next Session Plan
 
-**Last updated:** 2026-01-12
-**Status:** Simplifying geodetic tide corrections
+**Last updated:** 2026-01-15
+**Status:** Maintenance mode - major features complete
 
 ---
 
-## 🎯 CURRENT PRIORITY: Simplify Surrey Tide Handling
+## 🎯 POTENTIAL NEXT PRIORITIES
 
-**Date:** 2026-01-12
-**Status:** In progress
-
-### Background
-
-Surrey FlowWorks provides **Tidal Residual** channel (observed - predicted) which is their own calculation. We're currently fetching this but may be duplicating effort with our own residual calculations.
-
-### Backup Created
-
-**Branch:** `archive/geodetic-tide-corrections-2026-01-12`
-- Preserves all current geodetic correction logic before simplification
-- Can be referenced later if needed: `git checkout archive/geodetic-tide-corrections-2026-01-12`
-
-### Goals
-
-1. Simplify tide handling by using Surrey's pre-calculated Tidal Residual
-2. Remove redundant geodetic correction logic
-3. Maintain functionality while reducing complexity
-
-### Data Already Available
-
-**Currently fetching from FlowWorks API:**
-- `tidal_residual` (channel 2414) - Surrey's own calculation
-- Stored in `surrey_geodetic_data` table via `fetch_surrey_tides.py`
-- Fetched every 20 minutes with observations
-
-**Next steps:** Determine what corrections to simplify/remove
-
----
-
-## 🎯 TOMORROW'S PRIORITIES (2025-12-19)
-
-### Priority 1: Geodetic Tide Offset Fixes (URGENT)
-
-**Effort:** 1-2 hours
-**Impact:** HIGH - User-facing bug + missing data on storm surge page
-
-#### Task 1.1: Fix "Invalid Date" on Storm Surge Card
-**Issue:** Storm surge card shows "Invalid time date" for calculation timestamp
-
-**Quick fix:**
-```python
-# export_tide_json.py:171-174
-station_data["tide_offset"] = {
-    "value": round(offset, 2),  # Reduce from 3 to 2 decimals
-    "observation_time": station_data["observation"]["time"],  # ADD THIS
-    "description": "Observed minus predicted (storm surge + forecast error)"
-}
-```
-
-**Files to modify:**
-- `scripts/export/export_tide_json.py` (lines 165-174)
-- Test: Check `/data/tide-latest.json` has `tide_offset.observation_time`
-- Frontend should display timestamp correctly
-
-#### Task 1.2: Add Surrey Stations to Hindcast Plot
-**Issue:** Crescent Beach Ocean and Crescent Channel Ocean missing from storm surge comparison
-
-**Implementation:**
-```python
-# export_observed_storm_surge.py - Add to TIDE_TO_SURGE_MAP
-TIDE_TO_SURGE_MAP = {
-    "point_atkinson": "Point_Atkinson",
-    "campbell_river": "Campbell_River",
-    "crescent_pile": "Crescent_Beach_Channel",
-    "tofino": "Tofino",
-    "crescent_beach_ocean": "Crescent_Beach_Ocean",      # NEW
-    "crescent_channel_ocean": "Crescent_Channel_Ocean"   # NEW
-}
-```
-
-**Files to modify:**
-- `scripts/export/export_observed_storm_surge.py` (line 29-34)
-- `/home/keelando/site/assets/js/storm_surge_page.js` - Handle stations with obs but no hindcast
-- Test: Verify Surrey stations appear on /storm_surge.html hindcast plot
-
-**Success criteria:**
-- [ ] Storm surge card shows valid timestamp
-- [ ] Surrey geodetic stations appear on hindcast comparison plot
-- [ ] Observed surge line displays for Surrey stations (no forecast line - expected)
-
-#### Task 1.3: Validate Geodetic Tide Offset Calculation
-**Issue:** Need to verify the tide residual calculation is correct for geodetic stations
-
-**Investigation plan:**
-1. **Use measured offset channel** between Crescent Beach Channel and Crescent Beach Ocean/Pile
-   - Both stations are geodetic (CGVD28)
-   - Measure the actual offset between the two stations
-   - Compare against what we're calculating
-
-2. **Plot internally calculated tide residual**
-   - Calculate: `tide_residual = observed - predicted`
-   - Plot this against the hindcast data
-   - Verify our calculation matches expected storm surge values
-
-3. **Debug offset alignment**
-   - Check if geodetic vs chart datum conversions are correct
-   - Verify the offset is being applied in the right direction
-   - Ensure hindcast comparison accounts for geodetic datum
-
-**Files to investigate:**
-- `scripts/export/export_tide_json.py` - Where `tide_offset` is calculated
-- `scripts/export/export_observed_storm_surge.py` - Hindcast export logic
-- `~/site/assets/js/storm_surge_page.js` - Frontend plotting
-
-**Success criteria:**
-- [ ] Measured offset between Surrey stations matches calculated offset
-- [ ] Tide residual plot matches hindcast expectations
-- [ ] Geodetic stations align properly on hindcast comparison chart
-
----
-
-### Priority 2: Health Monitoring System (Phase 1)
+### Priority 1: Health Monitoring System (Phase 1)
 
 **Effort:** 2-3 hours
 **Impact:** HIGH - Makes future refactors painless
@@ -327,26 +215,24 @@ TIDE_TO_SURGE_MAP = {
 ## 📋 Technical Debt Items (Future Sessions)
 
 ### High Priority
-1. **Database Schema Audit** (4-6 hours) - **NEXT UP** ⬆️
+1. **Database Schema Audit** (4-6 hours)
    - `buoy_observation` has 58+ columns, many unused
    - Review what's actually used vs what's cruft
    - Opportunity to clean up and optimize
 
-### Medium Priority
-3. **Export Script Consolidation** (3-5 hours)
-   - Many export scripts share similar patterns
-   - Create base exporter class with common logic
-   - Reduce code duplication
-
-4. **Station Registry Enforcement** (2-3 hours)
-   - Some scripts hardcode station lists
-   - Enforce using `stations.py` everywhere
-   - Single source of truth
-
 ### Low Priority
-5. **Type Hints & Testing**
+2. **Export Script Consolidation** (3-5 hours) - LOW VALUE
+   - Export scripts already use shared `lib/` utilities (units, directions, config, stations, logging_config)
+   - Remaining duplication is SQLite connection boilerplate and staleness logic
+   - Scripts have legitimate differences (per-field freshness, different databases)
+   - Moderate effort for modest benefit - not urgent
+
+3. **Type Hints & Testing**
    - Add type annotations for better IDE support
    - Create pytest suite for critical functions
+
+### ✅ Completed
+- **Station Registry Enforcement** - All scripts now use `lib/stations.py`
 
 ## Bugs Fixed This Session (2025-12-18)
 

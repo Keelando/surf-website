@@ -20,7 +20,7 @@ from datetime import datetime
 import sqlite3
 
 # Shared utilities
-from lib.config import WIND_DATABASE
+from lib.config import WIND_DATABASE, WIND_RETENTION_DAYS
 from lib.logging_config import setup_logging
 
 # Disable console logging (runs from cron, file logging only)
@@ -327,6 +327,15 @@ def main():
             logger.warning(f"Error processing {xml_path.name}: {e}")
 
     processed_file.write_text("\n".join(sorted(processed)))
+
+    # Purge old data based on retention policy
+    import time
+    cutoff_timestamp = int(time.time()) - (WIND_RETENTION_DAYS * 86400)
+    cur.execute("DELETE FROM wind_observation WHERE observation_time < ?", (cutoff_timestamp,))
+    deleted = cur.rowcount
+    if deleted > 0:
+        logger.info(f"Purged {deleted} observations older than {WIND_RETENTION_DAYS} days")
+    conn.commit()
     conn.close()
 
     logger.info("=" * 60)

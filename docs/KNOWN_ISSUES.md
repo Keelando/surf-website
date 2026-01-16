@@ -1,5 +1,113 @@
 # Known Issues
 
+## ✅ YouTube Webcam Capture 403 Forbidden Errors (Jan 16, 2026) - RESOLVED
+
+### Issue
+YouTube webcam captures (White Rock Pier, White Rock East Beach, Cox Bay) stopped working around Jan 16, 2026. All captures failed with HTTP 403 Forbidden errors when trying to download HLS video segments.
+
+**Symptoms:**
+- yt-dlp successfully retrieves stream URL and metadata
+- ffmpeg/yt-dlp fails with "HTTP error 403 Forbidden" on video segment downloads
+- Thumbnails and stream info work fine, only video segments blocked
+- Affects all quality levels initially, but lowest quality (144p) works with workaround
+
+**Error example:**
+```
+[hls @ 0x...] Opening 'https://rr3---sn-uxa0n-t8ge7.googlevideo.com/videoplayback/...' for reading
+[https @ 0x...] HTTP error 403 Forbidden
+[hls @ 0x...] Failed to open segment 17341888 of playlist 0
+```
+
+### Root Cause
+YouTube changed their HLS segment delivery to block automated access. This is a recurring issue tracked in yt-dlp GitHub:
+- [Issue #15212](https://github.com/yt-dlp/yt-dlp/issues/15212) - Dec 2025
+- [Issue #14680](https://github.com/yt-dlp/yt-dlp/issues/14680) - Oct 2025
+- [Issue #14456](https://github.com/yt-dlp/yt-dlp/issues/14456) - Sep 2025
+
+Two factors contributed to the failure:
+1. **Old yt-dlp version** - System had 2024.04.09, needed 2025.12.08+
+2. **YouTube ad-request handling** - New yt-dlp versions default to ad-request behavior that YouTube blocks
+
+### Solution (Jan 16, 2026)
+
+**1. Updated yt-dlp in venv:**
+```bash
+.venv/bin/pip install -U yt-dlp  # Updated to 2025.12.08
+```
+
+**2. Added workaround flag to disable ad-request:**
+```python
+["yt-dlp", "--extractor-args", "youtube:request-no-ads=false", ...]
+```
+
+**3. Changed capture approach - download segment first, then extract frame:**
+```python
+# OLD (broken): Get URL, pass to ffmpeg
+stream_url = subprocess.run(["yt-dlp", "-g", url])
+subprocess.run(["ffmpeg", "-i", stream_url, "-frames:v", "1", output])
+
+# NEW (working): Download short segment, then extract frame
+subprocess.run(["yt-dlp", "--extractor-args", "youtube:request-no-ads=false",
+                "-f", "worst", "--downloader-args", "ffmpeg:-t 2",
+                "-o", temp_video, url])
+subprocess.run(["ffmpeg", "-i", temp_video, "-frames:v", "1", output])
+```
+
+**4. Fixed venv path resolution:**
+```python
+# Script now finds yt-dlp in venv instead of using outdated system version
+_venv_bin = Path(sys.executable).parent
+YT_DLP_PATH = str(_venv_bin / "yt-dlp") if (_venv_bin / "yt-dlp").exists() else "yt-dlp"
+```
+
+### Current Limitations
+
+**144p quality only:** Higher quality formats (360p, 720p, 1080p) still get 403 blocked. Using `-f worst` (144p, 256x144) as workaround.
+
+**Frame sizes:**
+- White Rock Pier: ~6 KB (192x144 after crop)
+- East Beach: ~0.6 KB when camera content is dark
+
+### Potential Future Improvements
+
+1. **Install deno JS runtime** - yt-dlp warns about missing JS runtime:
+   ```
+   WARNING: [youtube] No supported JavaScript runtime could be found.
+   YouTube extraction without a JS runtime has been deprecated.
+   See https://github.com/yt-dlp/yt-dlp/wiki/EJS
+   ```
+   Installing deno may enable better format extraction.
+
+2. **Test higher quality formats** - Periodically test if 360p/480p work:
+   ```bash
+   .venv/bin/yt-dlp --extractor-args "youtube:request-no-ads=false" -f 93 ...
+   ```
+   Format IDs: 91=144p, 92=240p, 93=360p, 94=480p, 95=720p
+
+3. **Monitor yt-dlp releases** - YouTube frequently changes, yt-dlp releases fixes. Keep venv yt-dlp updated:
+   ```bash
+   .venv/bin/pip install -U yt-dlp
+   ```
+
+### Files Changed
+- `scripts/fetch/fetch_webcam.py`:
+  - Added `YT_DLP_PATH` detection for venv
+  - Replaced `get_stream_url()` + `capture_frame()` with unified `capture_youtube_frame()`
+  - Added `--extractor-args "youtube:request-no-ads=false"`
+  - Changed format from `best[height<=720]` to `worst`
+
+### Testing
+```bash
+# Test single capture
+.venv/bin/python3 scripts/fetch/fetch_webcam.py whiterock
+
+# Test yt-dlp directly
+.venv/bin/yt-dlp --extractor-args "youtube:request-no-ads=false" -f worst \
+  --downloader-args "ffmpeg:-t 2" -o /tmp/test.mp4 "https://www.youtube.com/watch?v=4MK3E9EWDSY"
+```
+
+---
+
 ## ✅ Colebrook Windy Push Using Wrong Database (Jan 11, 2026) - RESOLVED
 
 ### Issue

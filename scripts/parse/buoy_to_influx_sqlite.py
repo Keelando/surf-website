@@ -8,7 +8,7 @@ from datetime import datetime
 import sqlite3
 
 # Shared utilities
-from lib.config import BUOY_DATABASE
+from lib.config import BUOY_DATABASE, BUOY_RETENTION_DAYS
 from lib.logging_config import setup_logging
 
 logger = setup_logging('parser')
@@ -367,6 +367,15 @@ def main():
             logger.warning(f"Error processing {xml_path.name}: {e}")
 
     processed_file.write_text("\n".join(sorted(processed)))
+
+    # Purge old data based on retention policy
+    import time
+    cutoff_timestamp = int(time.time()) - (BUOY_RETENTION_DAYS * 86400)
+    cur.execute("DELETE FROM buoy_observation WHERE observation_time < ?", (cutoff_timestamp,))
+    deleted = cur.rowcount
+    if deleted > 0:
+        logger.info(f"Purged {deleted} observations older than {BUOY_RETENTION_DAYS} days")
+    conn.commit()
     conn.close()
 
     logger.info("=" * 60)
