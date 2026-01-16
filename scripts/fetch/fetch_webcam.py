@@ -38,6 +38,8 @@ from utils.daylight import is_daylight
 from lib.logging_config import setup_logging
 
 # Webcam configurations
+# YouTube streams support: max_height (resolution), interval_minutes, check_daylight, crop
+# Direct image URLs (like mudbay) just fetch the image as-is
 WEBCAM_CONFIGS = {
     "whiterock": {
         "name": "White Rock Pier Cam",
@@ -50,9 +52,10 @@ WEBCAM_CONFIGS = {
         "source_text": "White Rock Pier - YouTube Livestream",
         "lat": 49.0253,
         "lon": -122.8031,
-        "check_daylight": False,  # Capture 24/7
-        "interval_minutes": 10,  # Snapshot every 10 minutes
-        "cron_offset": 0  # No offset (runs at :00, :10, :20, etc.)
+        "max_height": 720,          # 720p for detail
+        "check_daylight": False,    # Capture 24/7
+        "interval_minutes": 10,     # Snapshot every 10 minutes
+        "cron_offset": 0            # Runs at :00, :10, :20, etc.
     },
     "boundarybay": {
         "name": "White Rock East Beach",
@@ -61,13 +64,14 @@ WEBCAM_CONFIGS = {
         "archive_dir": Path("/mnt/storage/boundarybay_cam"),
         "website_dir": Path.home() / "site" / "data" / "bbcam",
         "prefix": "BB",
-        "crop": "in_w:in_h:0:0",  # Full frame, no cropping
+        "crop": "in_w:in_h:0:0",    # Full frame
         "source_text": "White Rock East Beach - YouTube Livestream",
         "lat": 49.0042,
         "lon": -123.0128,
-        "check_daylight": False,  # Capture 24/7
-        "interval_minutes": 10,  # Snapshot every 10 minutes
-        "cron_offset": 2  # Offset by 2 minutes (runs at :02, :12, :22, etc.)
+        "max_height": 480,          # 480p default
+        "check_daylight": False,    # Capture 24/7
+        "interval_minutes": 10,     # Snapshot every 10 minutes
+        "cron_offset": 2            # Runs at :02, :12, :22, etc.
     },
     "coxbay": {
         "name": "Cox Bay",
@@ -76,14 +80,15 @@ WEBCAM_CONFIGS = {
         "archive_dir": Path("/mnt/storage/coxbay_cam"),
         "website_dir": Path.home() / "site" / "data" / "coxbay",
         "prefix": "CB",
-        "crop": "in_w:in_h:0:0",  # Full frame initially - adjust after testing
+        "crop": "in_w:in_h:0:0",    # Full frame
         "source_text": "Cox Bay (Tofino) - Pacific Sands Beach Resort Livestream",
         "lat": 49.1167,
         "lon": -125.9000,
-        "check_daylight": True,  # Only capture during daylight
-        "daylight_margin_minutes": 75,  # Stop 1.25 hours after sunset, start 1.25 hours before sunrise
-        "interval_minutes": 10,  # Snapshot every 10 minutes
-        "cron_offset": 4  # Offset by 4 minutes (runs at :04, :14, :24, etc.)
+        "max_height": 720,          # 720p for surf detail
+        "check_daylight": True,     # Only capture during daylight
+        "daylight_margin_minutes": 75,
+        "interval_minutes": 10,     # Snapshot every 10 minutes
+        "cron_offset": 4            # Runs at :04, :14, :24, etc.
     },
     "mudbay": {
         "name": "Mud Bay HD",
@@ -91,15 +96,16 @@ WEBCAM_CONFIGS = {
         "archive_dir": Path("/mnt/storage/mudbay_cam"),
         "website_dir": Path.home() / "site" / "data" / "mudbay",
         "prefix": "MB",
-        "crop": "in_w:in_h:0:0",  # Full frame, no cropping
-        "source_text": "Mud Bay HD - OxBlue Archive",
+        "crop": "in_w:in_h:0:0",    # Full frame
+        "source_text": "Mud Bay HD - OxBlue Construction Cam",
         "lat": 49.07138649092664,
         "lon": -122.95538135838513,
-        "check_daylight": True,  # Only capture during daylight
-        "daylight_margin_minutes": 75,  # Stop 1.25 hours after sunset, start 1.25 hours before sunrise
-        "interval_minutes": 30,  # Snapshot every 30 minutes
-        "cron_offset": 6,  # Offset by 6 minutes (runs at :06, :36)
-        "annotate_timestamp": True  # Add timestamp annotation to images
+        # No max_height - direct image URL, fetched as-is (1024x768)
+        "check_daylight": True,     # Only capture during daylight
+        "daylight_margin_minutes": 75,
+        "interval_minutes": 30,     # Snapshot every 30 minutes
+        "cron_offset": 6,           # Runs at :06, :36
+        "annotate_timestamp": True  # Add timestamp overlay
     }
 }
 
@@ -151,34 +157,40 @@ def capture_youtube_thumbnail(video_id, output_path, crop_filter, logger):
 
                     logger.info(f"Thumbnail downloaded ({len(response.content)/1024:.1f} KB)")
 
-                    # Apply crop filter if needed
+                    # Always crop thumbnail to 16:9 to match Deno output (avoid black bars)
+                    # Thumbnails are 4:3 (640x480), crop to 16:9 (640x360)
+                    # Then apply any additional config crop filter
+                    crop_16_9 = "in_w:in_w*9/16:0:(in_h-in_w*9/16)/2"
                     if crop_filter and crop_filter != "in_w:in_h:0:0":
-                        result = subprocess.run(
-                            [
-                                "ffmpeg",
-                                "-hide_banner",
-                                "-loglevel", "error",
-                                "-i", temp_thumb,
-                                "-vf", f"crop={crop_filter}",
-                                "-q:v", "3",
-                                "-y",
-                                str(output_path)
-                            ],
-                            capture_output=True,
-                            text=True,
-                            timeout=10
-                        )
-                        if result.returncode != 0:
-                            logger.warning(f"Crop failed: {result.stderr}")
-                            # Fall back to uncropped
-                            import shutil
-                            shutil.copy2(temp_thumb, output_path)
+                        # Chain 16:9 crop with config crop
+                        vf_filter = f"crop={crop_16_9},crop={crop_filter}"
                     else:
-                        # No crop needed, just copy
+                        vf_filter = f"crop={crop_16_9}"
+
+                    result = subprocess.run(
+                        [
+                            "ffmpeg",
+                            "-hide_banner",
+                            "-loglevel", "error",
+                            "-i", temp_thumb,
+                            "-vf", vf_filter,
+                            "-q:v", "3",
+                            "-y",
+                            str(output_path)
+                        ],
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    if result.returncode != 0:
+                        logger.warning(f"Crop to 16:9 failed: {result.stderr}")
+                        # Fall back to uncropped (better than nothing)
                         import shutil
                         shutil.copy2(temp_thumb, output_path)
 
                     if output_path.exists():
+                        # Ensure web-readable permissions (0644)
+                        os.chmod(output_path, 0o644)
                         size_kb = output_path.stat().st_size / 1024
                         logger.info(f"Thumbnail capture successful ({size_kb:.1f} KB)")
                         return True
@@ -197,8 +209,102 @@ def capture_youtube_thumbnail(video_id, output_path, crop_filter, logger):
     return False
 
 
-def capture_youtube_frame_ytdlp(youtube_url, output_path, crop_filter, logger):
-    """Fallback: Capture frame using yt-dlp + ffmpeg.
+def capture_youtube_frame_deno(youtube_url, output_path, crop_filter, logger, max_height=480):
+    """Primary: Capture frame using yt-dlp with Deno.
+
+    Uses Deno JavaScript runtime to handle YouTube's PO token authentication.
+    Returns True if successful, False if Deno unavailable or capture fails.
+    """
+    import tempfile
+    import os
+    import shutil
+
+    # Check if Deno is available
+    deno_path = os.path.expanduser("~/.deno/bin/deno")
+    if not os.path.exists(deno_path) and not shutil.which("deno"):
+        logger.info("Deno not installed, skipping Deno method")
+        return False
+
+    temp_video = None
+    try:
+        temp_fd, temp_video = tempfile.mkstemp(suffix='.mp4')
+        os.close(temp_fd)
+
+        logger.info(f"Downloading video via yt-dlp + Deno ({max_height}p)...")
+
+        # Use Deno for JS challenges, explicitly specify path
+        result = subprocess.run(
+            [
+                YT_DLP_PATH,
+                "--js-runtimes", f"deno:{deno_path}",
+                "-f", f"best[height<={max_height}]",
+                "--downloader-args", "ffmpeg:-t 2",  # 2 seconds of video
+                "--no-continue",
+                "-o", temp_video,
+                youtube_url
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+
+        if result.returncode != 0:
+            logger.warning(f"yt-dlp Deno failed: {result.stderr[:300] if result.stderr else 'no error output'}")
+            return False
+
+        if not os.path.exists(temp_video) or os.path.getsize(temp_video) == 0:
+            logger.warning("yt-dlp Deno completed but video file is missing or empty")
+            return False
+
+        logger.info(f"Video segment downloaded ({os.path.getsize(temp_video) / 1024:.1f} KB)")
+
+        # Extract frame with optional crop
+        filter_complex = f"crop={crop_filter}" if crop_filter and crop_filter != "in_w:in_h:0:0" else None
+        ffmpeg_cmd = [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel", "error",
+            "-i", temp_video,
+        ]
+        if filter_complex:
+            ffmpeg_cmd.extend(["-vf", filter_complex])
+        ffmpeg_cmd.extend([
+            "-frames:v", "1",
+            "-q:v", "3",
+            "-y",
+            str(output_path)
+        ])
+
+        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=30)
+
+        if result.returncode != 0:
+            logger.warning(f"ffmpeg frame extraction failed: {result.stderr}")
+            return False
+
+        if output_path.exists():
+            os.chmod(output_path, 0o644)
+            size_kb = output_path.stat().st_size / 1024
+            logger.info(f"Deno capture successful ({size_kb:.1f} KB)")
+            return True
+
+        return False
+
+    except subprocess.TimeoutExpired:
+        logger.warning("yt-dlp Deno capture timed out")
+        return False
+    except Exception as e:
+        logger.warning(f"Deno capture failed: {e}")
+        return False
+    finally:
+        if temp_video and os.path.exists(temp_video):
+            try:
+                os.unlink(temp_video)
+            except:
+                pass
+
+
+def capture_youtube_frame_web_embedded(youtube_url, output_path, crop_filter, logger):
+    """Last resort: Capture frame using yt-dlp web_embedded client (144p).
 
     Downloads a short video segment and extracts a frame.
     Uses web_embedded player client which doesn't require Deno/JS runtime.
@@ -283,6 +389,8 @@ def capture_youtube_frame_ytdlp(youtube_url, output_path, crop_filter, logger):
             return False
 
         if output_path.exists():
+            # Ensure web-readable permissions (0644)
+            os.chmod(output_path, 0o644)
             size_kb = output_path.stat().st_size / 1024
             logger.info(f"Frame extracted successfully ({size_kb:.1f} KB)")
             return True
@@ -305,12 +413,13 @@ def capture_youtube_frame_ytdlp(youtube_url, output_path, crop_filter, logger):
                 pass
 
 
-def capture_youtube_frame(youtube_url, output_path, crop_filter, logger, video_id=None):
+def capture_youtube_frame(youtube_url, output_path, crop_filter, logger, video_id=None, max_height=480):
     """Capture a frame from YouTube livestream.
 
-    Strategy (bandwidth-optimized):
-    1. Try YouTube's live thumbnail first (fast, ~20KB, 10-30s latency)
-    2. Fall back to yt-dlp if thumbnail unavailable (slower, ~5KB video segment)
+    Strategy (3-tier, quality-optimized):
+    1. yt-dlp + Deno (configurable resolution) - requires Deno runtime
+    2. YouTube live thumbnail (640x360 cropped to 16:9, 10-30s delay)
+    3. yt-dlp web_embedded (144p) - last resort
     """
     logger.info(f"Capturing frame from YouTube: {youtube_url}")
 
@@ -321,15 +430,24 @@ def capture_youtube_frame(youtube_url, output_path, crop_filter, logger, video_i
         elif "youtu.be/" in youtube_url:
             video_id = youtube_url.split("youtu.be/")[-1].split("?")[0]
 
-    # Strategy 1: Try YouTube thumbnail (fastest, lowest bandwidth)
+    # Strategy 1: Try yt-dlp + Deno (best quality)
+    logger.info(f"Attempting yt-dlp + Deno capture ({max_height}p)...")
+    if capture_youtube_frame_deno(youtube_url, output_path, crop_filter, logger, max_height):
+        return True
+
+    # Strategy 2: Fall back to thumbnail (good quality, reliable)
     if video_id:
-        logger.info("Attempting thumbnail capture (preferred)...")
+        logger.info("Deno failed, trying thumbnail capture (640x360)...")
         if capture_youtube_thumbnail(video_id, output_path, crop_filter, logger):
             return True
-        logger.warning("Thumbnail capture failed, falling back to yt-dlp...")
 
-    # Strategy 2: Fall back to yt-dlp
-    return capture_youtube_frame_ytdlp(youtube_url, output_path, crop_filter, logger)
+    # Strategy 3: Last resort - web_embedded (low quality but works)
+    logger.info("Thumbnail failed, trying web_embedded (144p last resort)...")
+    if capture_youtube_frame_web_embedded(youtube_url, output_path, crop_filter, logger):
+        return True
+
+    logger.error("All capture methods failed")
+    return False
 
 
 def download_image(image_url, output_path, logger):
@@ -510,10 +628,13 @@ def manage_slideshow_images(website_dir, new_image_path, logger):
 
         # Copy new image to slideshow directory with numbered name
         import shutil
+        import os
         timestamp = datetime.now(timezone.utc)
         slideshow_filename = f"img_{int(timestamp.timestamp())}.jpg"
         slideshow_path = slideshow_dir / slideshow_filename
         shutil.copy2(new_image_path, slideshow_path)
+        # Ensure web-readable permissions (0644)
+        os.chmod(slideshow_path, 0o644)
         logger.info(f"Added to slideshow: {slideshow_filename}")
 
         # Re-get list with new image
@@ -598,7 +719,8 @@ def main():
     elif "youtube_url" in config:
         # YouTube livestream capture
         video_id = config.get("video_id")
-        if not capture_youtube_frame(config["youtube_url"], archive_path, config["crop"], logger, video_id):
+        max_height = config.get("max_height", 480)  # Default 480p
+        if not capture_youtube_frame(config["youtube_url"], archive_path, config["crop"], logger, video_id, max_height):
             logger.error("Failed to capture YouTube frame - aborting")
             sys.exit(1)
     else:
@@ -615,8 +737,11 @@ def main():
     website_temp = config["website_dir"] / f"latest.tmp.{timestamp_unix}.jpg"
     try:
         import shutil
+        import os
         shutil.copy2(archive_path, website_temp)
         website_temp.rename(website_latest)
+        # Ensure web-readable permissions (0644)
+        os.chmod(website_latest, 0o644)
         logger.info(f"Atomically updated: {website_latest}")
     except Exception as e:
         logger.error(f"Failed to copy to website directory: {e}")
