@@ -106,6 +106,24 @@ WEBCAM_CONFIGS = {
         "interval_minutes": 30,     # Snapshot every 30 minutes
         "cron_offset": 6,           # Runs at :06, :36
         "annotate_timestamp": True  # Add timestamp overlay
+    },
+    "englishbay": {
+        "name": "English Bay (Hollyburn Sailing Club)",
+        "yawcam_url": "http://onsite.hollyburnsailingclub.ca:8081/",
+        "archive_dir": Path("/mnt/storage/englishbay_cam"),
+        "website_dir": Path.home() / "site" / "data" / "englishbay",
+        "prefix": "EB",
+        "crop": "in_w:in_h:0:0",    # Full frame
+        "source_text": "Hollyburn Sailing Club Webcam",
+        "source_url": "https://www.hollyburnsailingclub.ca/webcam",
+        "lat": 49.2997,
+        "lon": -123.1594,
+        # Yawcam quality setting (1-100)
+        "yawcam_quality": 50,
+        "check_daylight": True,     # Only capture during daylight
+        "daylight_margin_minutes": 60,
+        "interval_minutes": 20,     # Snapshot every 20 minutes (conservative rate)
+        "cron_offset": 8            # Runs at :08, :28, :48
     }
 }
 
@@ -491,6 +509,92 @@ def download_image(image_url, output_path, logger):
         return False
 
 
+def capture_yawcam_image(base_url, output_path, quality, logger):
+    """Capture an image from a Yawcam server.
+
+    Yawcam requires a session handshake before serving images.
+    1. GET /get?id=<session_id>&r=<random> - establish session
+    2. GET /out.jpg?q=<quality>&id=<session_id>&r=<timestamp> - grab image
+    """
+    import random
+    import time
+    import os
+
+    session = requests.Session()
+
+    try:
+        # Generate random session ID (like the JavaScript does)
+        session_id = random.random()
+
+        # Step 1: Handshake
+        logger.info(f"Yawcam handshake with {base_url}")
+        handshake_url = f"{base_url}get"
+        handshake_params = {
+            'id': session_id,
+            'r': random.random()
+        }
+
+        response = session.get(handshake_url, params=handshake_params, timeout=10)
+        response.raise_for_status()
+
+        status = response.text.strip()
+        if status == "2many":
+            logger.warning("Yawcam: Too many viewers - try again later")
+            return False
+        elif status == "pass":
+            logger.error("Yawcam: Webcam requires password")
+            return False
+        elif status != "ok":
+            logger.warning(f"Yawcam handshake response: '{status}'")
+            # Continue anyway in case it's still a valid session
+
+        # Small delay between handshake and image grab
+        time.sleep(0.5)
+
+        # Step 2: Grab image
+        logger.info(f"Yawcam grabbing image (quality={quality})")
+        image_url = f"{base_url}out.jpg"
+        image_params = {
+            'q': quality,
+            'id': session_id,
+            'r': int(time.time() * 1000)
+        }
+
+        response = session.get(image_url, params=image_params, timeout=15)
+        response.raise_for_status()
+
+        # Validate image
+        if len(response.content) < 1000:
+            logger.warning(f"Yawcam: Response too small ({len(response.content)} bytes)")
+            return False
+
+        if not response.content.startswith(b'\xff\xd8'):
+            logger.warning("Yawcam: Not a valid JPEG")
+            return False
+
+        # Write image atomically
+        tmp_path = output_path.with_suffix(".jpg.tmp")
+        tmp_path.write_bytes(response.content)
+        tmp_path.replace(output_path)
+
+        # Ensure web-readable permissions (0644)
+        os.chmod(output_path, 0o644)
+
+        size_kb = len(response.content) / 1024
+        logger.info(f"Yawcam image captured successfully ({size_kb:.1f} KB)")
+        return True
+
+    except requests.Timeout:
+        logger.error("Yawcam request timed out")
+        return False
+    except requests.RequestException as e:
+        logger.error(f"Yawcam request failed: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Yawcam capture failed: {e}")
+        return False
+
+
 def annotate_image(image_path, timestamp, logger):
     """Add timestamp annotation to image using Pillow"""
     try:
@@ -710,7 +814,7 @@ def main():
     # Capture to archive directory first
     archive_path = config["archive_dir"] / filename
 
-    # Check if this is a direct image URL or YouTube stream
+    # Check if this is a direct image URL, YouTube stream, or Yawcam
     if "image_url" in config:
         # Direct image download
         if not download_image(config["image_url"], archive_path, logger):
@@ -723,8 +827,14 @@ def main():
         if not capture_youtube_frame(config["youtube_url"], archive_path, config["crop"], logger, video_id, max_height):
             logger.error("Failed to capture YouTube frame - aborting")
             sys.exit(1)
+    elif "yawcam_url" in config:
+        # Yawcam server capture
+        quality = config.get("yawcam_quality", 50)
+        if not capture_yawcam_image(config["yawcam_url"], archive_path, quality, logger):
+            logger.error("Failed to capture Yawcam image - aborting")
+            sys.exit(1)
     else:
-        logger.error("Config must have either 'image_url' or 'youtube_url'")
+        logger.error("Config must have 'image_url', 'youtube_url', or 'yawcam_url'")
         sys.exit(1)
 
     # Annotate image with timestamp if enabled
@@ -755,7 +865,7 @@ def main():
         "timestamp": timestamp.isoformat(),
         "timestamp_unix": timestamp_unix,
         "source": config["source_text"],
-        "url": config.get("youtube_url") or config.get("image_url")
+        "url": config.get("youtube_url") or config.get("image_url") or config.get("source_url")
     }
 
     metadata_path = config["website_dir"] / "latest.json"
