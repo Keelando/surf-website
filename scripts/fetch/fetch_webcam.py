@@ -116,8 +116,8 @@ WEBCAM_CONFIGS = {
         "crop": "in_w:in_h:0:0",    # Full frame
         "source_text": "Hollyburn Sailing Club Webcam",
         "source_url": "https://www.hollyburnsailingclub.ca/webcam",
-        "lat": 49.33,
-        "lon": -123.15,
+        "lat": 49.326635134999776,
+        "lon": -123.1529396759124,
         # Yawcam quality setting (1-100)
         "yawcam_quality": 50,
         "check_daylight": True,     # Only capture during daylight
