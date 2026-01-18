@@ -87,8 +87,8 @@ WEBCAM_CONFIGS = {
         "max_height": 720,          # 720p for surf detail
         "check_daylight": True,     # Only capture during daylight
         "daylight_margin_minutes": 75,
-        "interval_minutes": 10,     # Snapshot every 10 minutes
-        "cron_offset": 4            # Runs at :04, :14, :24, etc.
+        "interval_minutes": 15,     # Snapshot every 15 minutes
+        "cron_offset": 4            # Runs at :04, :19, :34, :49
     },
     "mudbay": {
         "name": "Mud Bay HD",
