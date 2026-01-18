@@ -1246,7 +1246,7 @@
       "lon": -125.872949,
       "source": "Cox Bay - YouTube Livestream",
       "type": "webcam",
-      "update_frequency_minutes": 10,
+      "update_frequency_minutes": 15,
       "stream_delay_minutes": 20,
       "page_url": "/webcams.html#coxbay"
     },
@@ -1258,9 +1258,21 @@
       "lon": -122.95538135838513,
       "source": "Mud Bay HD - OxBlue Archive",
       "type": "webcam",
-      "update_frequency_minutes": 10,
+      "update_frequency_minutes": 30,
       "stream_delay_minutes": 0,
       "page_url": "/webcams.html#mudbay"
+    },
+    "englishbay": {
+      "id": "englishbay",
+      "name": "English Bay / Ambleside",
+      "location": "West Vancouver, BC",
+      "lat": 49.33,
+      "lon": -123.15,
+      "source": "Hollyburn Sailing Club",
+      "type": "webcam",
+      "update_frequency_minutes": 20,
+      "stream_delay_minutes": 1,
+      "page_url": "/webcams.html#englishbay"
     }
   }
 }
