@@ -107,12 +107,19 @@ WEBCAM_CONFIGS = {
         "cron_offset": 6,           # Runs at :06, :36
         "annotate_timestamp": True  # Add timestamp overlay
     },
-    "englishbay": {
-        "name": "English Bay (Hollyburn Sailing Club)",
+    # -------------------------------------------------------------------------
+    # HOLLYBURN SAILING CLUB WEBCAM - PERMISSION REQUIRED
+    # Approval granted to halibutbank.ca by Hollyburn Sailing Club (Jan 2026).
+    # If you fork this project, you MUST obtain your own permission from
+    # Hollyburn Sailing Club before fetching from their webcam feed.
+    # Contact: https://www.hollyburnsailingclub.ca/
+    # -------------------------------------------------------------------------
+    "ambleside": {
+        "name": "Ambleside (Hollyburn Sailing Club)",
         "yawcam_url": "http://onsite.hollyburnsailingclub.ca:8081/",
-        "archive_dir": Path("/mnt/storage/englishbay_cam"),
-        "website_dir": Path.home() / "site" / "data" / "englishbay",
-        "prefix": "EB",
+        "archive_dir": Path("/mnt/storage/ambleside_cam"),
+        "website_dir": Path.home() / "site" / "data" / "ambleside",
+        "prefix": "AB",
         "crop": "in_w:in_h:0:0",    # Full frame
         "source_text": "Hollyburn Sailing Club Webcam",
         "source_url": "https://www.hollyburnsailingclub.ca/webcam",

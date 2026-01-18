@@ -128,8 +128,8 @@ SURREY_API_PASSWORD=surreyrain
 # Mud Bay HD (30 min interval, offset :06, daylight-only)
 6,36 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py mudbay >> /home/keelando/envcan_wave/logs/webcam_mudbay.log 2>&1
 
-# English Bay / Hollyburn Sailing Club (20 min interval, offset :08, daylight-only)
-8,28,48 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py englishbay >> /home/keelando/envcan_wave/logs/webcam_englishbay.log 2>&1
+# Ambleside / Hollyburn Sailing Club (20 min interval, offset :08, daylight-only)
+8,28,48 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py ambleside >> /home/keelando/envcan_wave/logs/webcam_ambleside.log 2>&1
 
 # ==================== SUNLIGHT TIMES ====================
 # Export sunrise/sunset/twilight (daily at 00:06)
