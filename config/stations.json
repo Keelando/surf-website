@@ -1262,9 +1262,9 @@
       "stream_delay_minutes": 0,
       "page_url": "/webcams.html#mudbay"
     },
-    "englishbay": {
-      "id": "englishbay",
-      "name": "English Bay / Ambleside",
+    "ambleside": {
+      "id": "ambleside",
+      "name": "Ambleside Beach",
       "location": "West Vancouver, BC",
       "lat": 49.326635134999776,
       "lon": -123.1529396759124,
@@ -1272,7 +1272,7 @@
       "type": "webcam",
       "update_frequency_minutes": 20,
       "stream_delay_minutes": 1,
-      "page_url": "/webcams.html#englishbay"
+      "page_url": "/webcams.html#ambleside"
     }
   }
 }
