@@ -1,0 +1,148 @@
+"""
+Archive cleanup and slideshow management utilities.
+"""
+
+import json
+import os
+import shutil
+from datetime import datetime, timezone
+
+# Default constants
+DEFAULT_DISK_USAGE_THRESHOLD_PERCENT = 80
+DEFAULT_SLIDESHOW_IMAGES_COUNT = 7
+
+
+def cleanup_old_archives(archive_dir, prefix, logger, threshold_percent=DEFAULT_DISK_USAGE_THRESHOLD_PERCENT):
+    """Remove oldest archive images when disk usage exceeds threshold.
+
+    Deletes oldest images until disk usage is below threshold, but always
+    keeps at least 24 hours of images.
+
+    Args:
+        archive_dir: Path to the archive directory
+        prefix: Image filename prefix (e.g., "WR" for White Rock)
+        logger: Logger instance for output
+        threshold_percent: Disk usage percentage threshold (default 80%)
+    """
+    try:
+        # Get disk usage for the archive directory's filesystem
+        disk_usage = shutil.disk_usage(archive_dir)
+        usage_percent = (disk_usage.used / disk_usage.total) * 100
+
+        logger.info(f"Disk usage: {usage_percent:.1f}% ({disk_usage.used / (1024**3):.1f}GB / {disk_usage.total / (1024**3):.1f}GB)")
+
+        # Only cleanup if above threshold
+        if usage_percent < threshold_percent:
+            logger.info(f"Disk usage below {threshold_percent}% threshold - no cleanup needed")
+            return
+
+        logger.info(f"Disk usage above {threshold_percent}% threshold - cleaning up oldest images")
+
+        # Get all archive images sorted by modification time (oldest first)
+        all_images = sorted(
+            archive_dir.glob(f"{prefix}_*.jpg"),
+            key=lambda p: p.stat().st_mtime
+        )
+
+        if not all_images:
+            logger.warning("No images found to cleanup")
+            return
+
+        deleted_count = 0
+        deleted_size_mb = 0
+
+        # Delete oldest images until we're below threshold (with 5% buffer)
+        target_percent = threshold_percent - 5
+
+        for img_path in all_images:
+            # Re-check disk usage after each deletion
+            disk_usage = shutil.disk_usage(archive_dir)
+            current_percent = (disk_usage.used / disk_usage.total) * 100
+
+            if current_percent <= target_percent:
+                break
+
+            # Keep at least the most recent 24 hours of images
+            age_hours = (datetime.now().timestamp() - img_path.stat().st_mtime) / 3600
+            if age_hours < 24:
+                logger.info(f"Stopped cleanup - remaining images are less than 24 hours old")
+                break
+
+            size_mb = img_path.stat().st_size / (1024 * 1024)
+            img_path.unlink()
+            deleted_count += 1
+            deleted_size_mb += size_mb
+
+        if deleted_count > 0:
+            disk_usage = shutil.disk_usage(archive_dir)
+            final_percent = (disk_usage.used / disk_usage.total) * 100
+            logger.info(f"Cleaned up {deleted_count} old images ({deleted_size_mb:.1f} MB)")
+            logger.info(f"New disk usage: {final_percent:.1f}%")
+        else:
+            logger.warning(f"Disk usage still above threshold but no images old enough to delete")
+
+    except Exception as e:
+        logger.warning(f"Failed to cleanup old archives: {e}")
+
+
+def manage_slideshow_images(website_dir, new_image_path, logger, max_images=DEFAULT_SLIDESHOW_IMAGES_COUNT):
+    """Manage slideshow images - keep only the last N images.
+
+    Copies the new image to the slideshow directory, removes old images
+    beyond the limit, and updates the manifest JSON.
+
+    Args:
+        website_dir: Path to the website directory
+        new_image_path: Path to the newly captured image
+        logger: Logger instance for output
+        max_images: Maximum number of slideshow images to keep (default 7)
+    """
+    try:
+        slideshow_dir = website_dir / "slideshow"
+        slideshow_dir.mkdir(exist_ok=True)
+
+        # Get all existing slideshow images sorted by modification time
+        existing_images = sorted(
+            slideshow_dir.glob("*.jpg"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True
+        )
+
+        # Copy new image to slideshow directory with numbered name
+        timestamp = datetime.now(timezone.utc)
+        slideshow_filename = f"img_{int(timestamp.timestamp())}.jpg"
+        slideshow_path = slideshow_dir / slideshow_filename
+        shutil.copy2(new_image_path, slideshow_path)
+        # Ensure web-readable permissions (0644)
+        os.chmod(slideshow_path, 0o644)
+        logger.info(f"Added to slideshow: {slideshow_filename}")
+
+        # Re-get list with new image
+        existing_images = sorted(
+            slideshow_dir.glob("*.jpg"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True
+        )
+
+        # Keep only the last N images, delete older ones
+        if len(existing_images) > max_images:
+            for old_image in existing_images[max_images:]:
+                old_image.unlink()
+                logger.info(f"Removed old slideshow image: {old_image.name}")
+
+        # Create manifest of current slideshow images (newest to oldest)
+        manifest = []
+        for img in existing_images[:max_images]:
+            manifest.append({
+                "filename": img.name,
+                "timestamp": datetime.fromtimestamp(img.stat().st_mtime, tz=timezone.utc).isoformat(),
+                "path": f"slideshow/{img.name}"
+            })
+
+        manifest_path = website_dir / "slideshow_manifest.json"
+        with open(manifest_path, 'w') as f:
+            json.dump(manifest, f, indent=2)
+        logger.info(f"Updated slideshow manifest: {len(manifest)} images")
+
+    except Exception as e:
+        logger.error(f"Failed to manage slideshow images: {e}")
