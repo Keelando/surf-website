@@ -95,11 +95,11 @@ SURREY_API_PASSWORD=surreyrain
 
 # ==================== STORM SURGE ====================
 # Fetch GeoMet storm surge (every 6 hours at :30)
-30 1,7,13,19 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_storm_surge.py >> /home/keelando/envcan_wave/logs/storm_surge.log 2>&1
+30 1,13 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_storm_surge.py >> /home/keelando/envcan_wave/logs/storm_surge.log 2>&1
 
 # Combined water level (every 5 min + after storm surge)
 */5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_combined_water_level.py >> /home/keelando/envcan_wave/logs/combined_water_level.log 2>&1
-35 1,7,13,19 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_combined_water_level.py >> /home/keelando/envcan_wave/logs/combined_water_level.log 2>&1
+35 1,13 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_combined_water_level.py >> /home/keelando/envcan_wave/logs/combined_water_level.log 2>&1
 
 # Export observed storm surge (every 5 min)
 */5 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_observed_storm_surge.py >> /home/keelando/envcan_wave/logs/observed_surge_export.log 2>&1

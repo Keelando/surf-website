@@ -291,13 +291,13 @@ ps aux | grep sr3                        # Check process status
 
 **Model details:**
 - 15 km horizontal resolution
-- Updates 4x daily (00Z, 06Z, 12Z, 18Z)
+- Updates 2x daily (00Z, 12Z)
 - 10-day hourly forecasts
 - Storm surge = water level anomaly above astronomical tide
 
 **Data pipeline:**
-1. `fetch_storm_surge.py` - Fetch forecasts from GeoMet WMS (every 6 hours)
-2. Store 18Z run to `~/.local/share/storm_surge_forecast.sqlite` for hindcast analysis (closest to noon Pacific)
+1. `fetch_storm_surge.py` - Fetch forecasts from GeoMet WMS (twice daily after 00Z and 12Z runs)
+2. Store 12Z run to `~/.local/share/storm_surge_forecast.sqlite` for hindcast analysis
 3. `export_hindcast_json.py` - Export 38-61h predictions (full Pacific calendar day 2 days ahead, daily)
 
 **Outputs:**

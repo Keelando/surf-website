@@ -367,13 +367,14 @@ def main():
         # Create combined forecast
         create_combined_forecast()
         
-        # Store to database if this is the 18Z run (hour 19)
+        # Store to database if this is the 12Z run (hour 13)
+        # GDWPS only runs twice daily at 00Z and 12Z
         current_hour = datetime.now(timezone.utc).hour
-        if current_hour == 19:
-            logger.info("\n🎯 This is the 18Z run - storing to database for hindcast...")
+        if current_hour == 13:
+            logger.info("\n🎯 This is the 12Z run - storing to database for hindcast...")
             store_forecast_to_db(start_time, all_forecasts)
         else:
-            logger.info(f"\n⏭️  Skipping database storage (hour={current_hour}, not 18Z run)")
+            logger.info(f"\n⏭️  Skipping database storage (hour={current_hour}, not 12Z run)")
         
         logger.info("\n✅ Storm surge forecast update complete!")
         return 0

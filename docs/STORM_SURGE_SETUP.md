@@ -26,7 +26,7 @@ This system fetches storm surge forecasts from Environment Canada's GeoMet WMS s
 - Downloads hourly surge predictions for specific locations
 - Stores historical forecasts for accuracy analysis (hindcasting)
 - Exports data as JSON for frontend visualization
-- Runs automatically via cron every 6 hours
+- Runs automatically via cron twice daily (after 00Z and 12Z model runs)
 
 **Stations monitored:**
 - Point Atkinson (49.338°N, -123.254°W) - Inner Strait, tide observations
@@ -55,7 +55,7 @@ This system fetches storm surge forecasts from Environment Canada's GeoMet WMS s
 **GDSPS Model:**
 - Global Deterministic Surge and Prediction System
 - 15km horizontal resolution
-- Updates 4 times daily (00Z, 06Z, 12Z, 18Z)
+- Updates 2 times daily (00Z, 12Z)
 - Provides 10-day forecasts
 - Combines ocean circulation model with atmospheric forcing
 

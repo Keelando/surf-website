@@ -34,7 +34,7 @@ Total Water Level = Astronomical Tide + Storm Surge (GDSPS)
 - GDSPS uses ocean circulation models (15km horizontal resolution)
 - Driven by weather forecast inputs (wind, pressure fields)
 - Simulates large-scale water movement
-- Updates 4x daily (00Z, 06Z, 12Z, 18Z)
+- Updates 2x daily (00Z, 12Z)
 - Provides 10-day hourly forecasts
 
 **Typical magnitudes (Salish Sea):**
