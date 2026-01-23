@@ -232,12 +232,14 @@ def load_tide_stations():
         return {}
 
 
-def export_all_locations(days_ahead=3):
+def export_all_locations(days_ahead=4):
     """
     Export sunlight times for all configured locations (webcams and tide stations).
 
     Args:
-        days_ahead: Number of days to calculate ahead (default: 3 to match tide data)
+        days_ahead: Number of days to calculate ahead (default: 4 to account for
+                    timezone offset - cron runs at 00:06 UTC which is still previous
+                    day in Pacific time, so we need an extra day buffer)
     """
     local_tz = pytz.timezone('America/Vancouver')
     today = datetime.now(local_tz).date()

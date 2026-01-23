@@ -1,61 +1,21 @@
 # Next Session Plan
 
-**Last updated:** 2026-01-15
+**Last updated:** 2026-01-22
 **Status:** Maintenance mode - major features complete
 
 ---
 
-## 🎯 POTENTIAL NEXT PRIORITIES
+## ✅ COMPLETED: Health Monitoring System
 
-### Priority 1: Health Monitoring System (Phase 1)
+**Status:** Fully operational - running hourly via cron
 
-**Effort:** 2-3 hours
-**Impact:** HIGH - Makes future refactors painless
-
-#### Create Health Check Script
-
-**File:** `scripts/monitoring/health_check.py`
-
-**Checks to implement:**
-1. **Data Freshness** - Flag stations >2hrs old (warning), >4hrs old (error)
-2. **Cron Job Monitoring** - Verify critical jobs ran recently via syslog
-3. **Database Integrity** - Check size, recent writes, WAL mode
-4. **Export File Freshness** - Verify JSON exports are recent and parseable
-
-**Output:** `/home/keelando/site/data/system_health.json`
-
-```json
-{
-  "generated_utc": "2025-12-19T12:00:00Z",
-  "overall_status": "warning",
-  "checks": {
-    "data_freshness": {
-      "status": "warning",
-      "stale_stations": [
-        {"id": "CPMW1", "name": "Cherry Point", "age_hours": 4.5}
-      ]
-    },
-    "cron_jobs": {"status": "ok", ...},
-    "database_integrity": {"status": "ok", ...},
-    "export_files": {"status": "ok", ...}
-  }
-}
-```
-
-**Add to crontab:**
-```bash
-0 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/monitoring/health_check.py >> /home/keelando/envcan_wave/logs/health_check.log 2>&1
-```
-
-**Success criteria:**
-- [ ] Script runs successfully in <5 seconds
-- [ ] Detects stale data (e.g., Cherry Point at 4+ hours)
-- [ ] Identifies missing/overdue cron jobs
-- [ ] JSON validates against expected schema
-- [ ] Running hourly via cron
-
-**Documentation:**
-- See `docs/project/HEALTH_MONITORING_PLAN.md` for full implementation details
+**Features:**
+- ✅ Data freshness monitoring (warning >2h, error >4h)
+- ✅ Cron job monitoring
+- ✅ Database integrity checks
+- ✅ Export file freshness validation
+- ✅ JSON output: `/home/keelando/site/data/system_health.json`
+- ✅ Running hourly via cron
 
 ---
 
@@ -186,42 +146,24 @@
 
 ---
 
-## 🎯 CURRENT PRIORITY: Database Schema Cleanup
+## ✅ COMPLETED: Database Schema Audit (2026-01-22)
 
-**Effort:** 4-6 hours
-**Impact:** MEDIUM-HIGH - Reduces bloat, improves performance
-**Status:** Ready to execute
+**Result:** All 54 columns in `buoy_observation` are intentionally used, but 12 diagnostic fields were being exported to JSON without frontend display.
 
-### Next Up: Database Schema Audit
+**Actions taken:**
+1. ✅ Audited all 54 columns in `buoy_observation` table
+2. ✅ Found 12 fields exported but never displayed on frontend
+3. ✅ Removed from export (saves 16% JSON bandwidth): compass_heading_1/2, watchman_boot_count, obstruction_lamp_current, wind_samples_bad_1/2, battery_voltage, solar_current, pressure_sensor_2, wind_speed/gust/direction_sensor_2
+4. ✅ Data still collected in DB for potential future use (e.g., plotting battery voltage for fun)
 
-**Why now:** With field unification complete, we can safely audit and clean up unused columns.
-
-**Goals:**
-1. Review `buoy_observation` table (58+ columns, many unused)
-2. Review `wind_observation` table - identify deprecated fields
-3. Document which columns are actually used vs cruft
-4. Create migration plan to drop unused columns
-5. Update any scripts that might reference old fields
-
-**Approach:**
-1. Query actual column usage in export scripts
-2. Check frontend JavaScript for field references
-3. Identify safe-to-remove columns (never used, deprecated)
-4. Create SQL migration script with DROP COLUMN statements
-5. Test thoroughly before applying
+**Files modified:** `scripts/export/sqlite_to_json.py`
 
 ---
 
 ## 📋 Technical Debt Items (Future Sessions)
 
-### High Priority
-1. **Database Schema Audit** (4-6 hours)
-   - `buoy_observation` has 58+ columns, many unused
-   - Review what's actually used vs what's cruft
-   - Opportunity to clean up and optimize
-
 ### Low Priority
-2. **Export Script Consolidation** (3-5 hours) - LOW VALUE
+1. **Export Script Consolidation** (3-5 hours) - LOW VALUE
    - Export scripts already use shared `lib/` utilities (units, directions, config, stations, logging_config)
    - Remaining duplication is SQLite connection boilerplate and staleness logic
    - Scripts have legitimate differences (per-field freshness, different databases)

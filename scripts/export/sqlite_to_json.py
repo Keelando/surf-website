@@ -21,6 +21,7 @@ OUT_PATH = EXPORT_DIR / "latest_buoy_v2.json"
 BUOYS = get_all_buoys()
 
 # Fields to query individually (each gets most recent non-null value within 2 hours)
+# Note: Diagnostic/backup sensor fields kept in DB but not exported (not displayed on frontend)
 ALL_FIELDS = [
     # Wave heights
     "wave_height_sig", "wave_height_peak", "wave_height_max", "wave_height_avg",
@@ -35,24 +36,15 @@ ALL_FIELDS = [
     # NOAA spectral data (swell vs wind waves)
     "swell_height", "swell_period", "swell_direction",
     "wind_wave_height", "wind_wave_period", "wind_wave_direction",
-    # Wind (primary sensor)
+    # Wind (primary sensor only - secondary sensor data kept in DB but not exported)
     "wind_speed", "wind_gust", "wind_direction", "wind_sensor_height",
-    # Wind (secondary sensor for redundancy)
-    "wind_speed_sensor_2", "wind_gust_sensor_2", "wind_direction_sensor_2",
-    "wind_samples_bad_1", "wind_samples_bad_2",
     # Temperature
     "air_temp", "sea_temp",
-    # Pressure
-    "pressure", "pressure_msl", "pressure_sensor_2",
+    # Pressure (primary only - secondary sensor data kept in DB but not exported)
+    "pressure", "pressure_msl",
     "pressure_trend_char", "pressure_trend_amount",
     # Position
     "buoy_lat_current", "buoy_lon_current",
-    # Solar (cloudiness indicator)
-    "solar_current",
-    # System health & monitoring (added 2025-12-06)
-    "battery_voltage", "watchman_boot_count", "obstruction_lamp_current",
-    # Orientation (compass headings, added 2025-12-06)
-    "compass_heading_1", "compass_heading_2",
 ]
 
 def query_and_export():
