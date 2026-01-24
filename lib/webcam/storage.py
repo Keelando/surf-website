@@ -85,7 +85,16 @@ def cleanup_old_archives(archive_dir, prefix, logger, threshold_percent=DEFAULT_
         logger.warning(f"Failed to cleanup old archives: {e}")
 
 
-def manage_slideshow_images(website_dir, new_image_path, logger, max_images=DEFAULT_SLIDESHOW_IMAGES_COUNT):
+def get_timestamp_from_filename(filepath):
+    """Extract unix timestamp from slideshow image filename (img_TIMESTAMP.jpg)."""
+    try:
+        name = filepath.stem  # img_1769281562
+        return int(name.split('_')[1])
+    except (IndexError, ValueError):
+        return 0
+
+
+def manage_slideshow_images(website_dir, new_image_path, timestamp_unix, logger, max_images=DEFAULT_SLIDESHOW_IMAGES_COUNT):
     """Manage slideshow images - keep only the last N images.
 
     Copies the new image to the slideshow directory, removes old images
@@ -94,6 +103,7 @@ def manage_slideshow_images(website_dir, new_image_path, logger, max_images=DEFA
     Args:
         website_dir: Path to the website directory
         new_image_path: Path to the newly captured image
+        timestamp_unix: Unix timestamp of when image was captured
         logger: Logger instance for output
         max_images: Maximum number of slideshow images to keep (default 7)
     """
@@ -101,26 +111,25 @@ def manage_slideshow_images(website_dir, new_image_path, logger, max_images=DEFA
         slideshow_dir = website_dir / "slideshow"
         slideshow_dir.mkdir(exist_ok=True)
 
-        # Get all existing slideshow images sorted by modification time
+        # Get all existing slideshow images sorted by timestamp in filename (newest first)
         existing_images = sorted(
-            slideshow_dir.glob("*.jpg"),
-            key=lambda p: p.stat().st_mtime,
+            slideshow_dir.glob("img_*.jpg"),
+            key=get_timestamp_from_filename,
             reverse=True
         )
 
-        # Copy new image to slideshow directory with numbered name
-        timestamp = datetime.now(timezone.utc)
-        slideshow_filename = f"img_{int(timestamp.timestamp())}.jpg"
+        # Copy new image to slideshow directory with capture timestamp in filename
+        slideshow_filename = f"img_{timestamp_unix}.jpg"
         slideshow_path = slideshow_dir / slideshow_filename
-        shutil.copy2(new_image_path, slideshow_path)
+        shutil.copy(new_image_path, slideshow_path)
         # Ensure web-readable permissions (0644)
         os.chmod(slideshow_path, 0o644)
         logger.info(f"Added to slideshow: {slideshow_filename}")
 
-        # Re-get list with new image
+        # Re-get list with new image, sorted by timestamp in filename (newest first)
         existing_images = sorted(
-            slideshow_dir.glob("*.jpg"),
-            key=lambda p: p.stat().st_mtime,
+            slideshow_dir.glob("img_*.jpg"),
+            key=get_timestamp_from_filename,
             reverse=True
         )
 
@@ -133,9 +142,10 @@ def manage_slideshow_images(website_dir, new_image_path, logger, max_images=DEFA
         # Create manifest of current slideshow images (newest to oldest)
         manifest = []
         for img in existing_images[:max_images]:
+            img_timestamp = get_timestamp_from_filename(img)
             manifest.append({
                 "filename": img.name,
-                "timestamp": datetime.fromtimestamp(img.stat().st_mtime, tz=timezone.utc).isoformat(),
+                "timestamp": datetime.fromtimestamp(img_timestamp, tz=timezone.utc).isoformat(),
                 "path": f"slideshow/{img.name}"
             })
 

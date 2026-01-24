@@ -224,7 +224,7 @@ def main():
         logger.error(f"Failed to copy to website directory: {e}")
 
     # Manage slideshow images
-    manage_slideshow_images(config["website_dir"], archive_path, logger)
+    manage_slideshow_images(config["website_dir"], archive_path, timestamp_unix, logger)
 
     # Create metadata JSON for website
     metadata = {
