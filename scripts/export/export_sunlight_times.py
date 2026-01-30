@@ -113,10 +113,10 @@ def get_sunlight_times(lat, lon, date=None, tz_name='America/Vancouver'):
         sunrise_time = s["sunrise"]
         sunset_time = s["sunset"]
 
-        # Fix sunset if it wrapped to previous day
+        # Fix sunset if it wrapped to previous day (UTC timezone handling)
         if sunset_time < sunrise_time:
-            # Sunset is on the next UTC day
-            sunset_time = sunset_time.replace(day=sunset_time.day + 1)
+            # Sunset is on the next UTC day - use timedelta to handle month boundaries
+            sunset_time = sunset_time + timedelta(days=1)
 
         # Fix dusk times if they wrapped to previous day
         # Dusk events should all be after sunset
@@ -125,11 +125,11 @@ def get_sunlight_times(lat, lon, date=None, tz_name='America/Vancouver'):
         dusk_astronomical_time = dusk_astronomical
 
         if dusk_civil_time < sunset_time:
-            dusk_civil_time = dusk_civil_time.replace(day=dusk_civil_time.day + 1)
+            dusk_civil_time = dusk_civil_time + timedelta(days=1)
         if dusk_nautical_time < sunset_time:
-            dusk_nautical_time = dusk_nautical_time.replace(day=dusk_nautical_time.day + 1)
+            dusk_nautical_time = dusk_nautical_time + timedelta(days=1)
         if dusk_astronomical_time < sunset_time:
-            dusk_astronomical_time = dusk_astronomical_time.replace(day=dusk_astronomical_time.day + 1)
+            dusk_astronomical_time = dusk_astronomical_time + timedelta(days=1)
 
         result = {
             "date": date.date().isoformat(),

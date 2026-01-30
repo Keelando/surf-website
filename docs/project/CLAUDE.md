@@ -13,6 +13,8 @@ All data stored in SQLite, published to MQTT/Home Assistant, and exported as JSO
 
 **Live site:** https://halibutbank.ca
 
+**Frontend directory:** `~/site/` (separate git repo: surf-website-front-end)
+
 ---
 
 ## Architecture (High-Level)
