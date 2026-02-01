@@ -29,6 +29,10 @@ logs/
 .vscode/
 .idea/
 
+# Private deployment docs (contain server-specific details)
+docs/BACKUP_STATUS.md
+docs/DEPLOYMENT.md
+
 # Allow example data
 !examples/
 !examples/*.json
