@@ -40,6 +40,9 @@ config/crontab_clean.txt
 # Archive backups (may contain sensitive info)
 archive/backups/
 
+# Migration guide (contains server-specific info)
+docs/MIGRATION.md
+
 # Allow example data
 !examples/
 !examples/*.json
