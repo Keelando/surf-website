@@ -191,7 +191,7 @@ Optional: InfluxDB Integration
 
 Create ~/.config/buoy_influx_1.env:
 
-INFLUX_HOST=192.168.1.98
+INFLUX_HOST=<YOUR_INFLUX_HOST>
 INFLUX_PORT=8086
 INFLUX_USER=your_user
 INFLUX_PASS=your_password

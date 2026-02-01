@@ -293,7 +293,7 @@ sudo systemctl status influxdb
 cat ~/.config/buoy_influx_1.env
 
 # Test connection
-curl -I http://192.168.1.98:8086/ping
+curl -I http://<YOUR_INFLUX_HOST>:8086/ping
 
 # Start InfluxDB if stopped
 sudo systemctl start influxdb

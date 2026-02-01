@@ -33,6 +33,13 @@ logs/
 docs/BACKUP_STATUS.md
 docs/DEPLOYMENT.md
 
+# Crontab exports (contain API keys)
+config/crontab.txt
+config/crontab_clean.txt
+
+# Archive backups (may contain sensitive info)
+archive/backups/
+
 # Allow example data
 !examples/
 !examples/*.json
