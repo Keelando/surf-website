@@ -49,6 +49,7 @@ THRESHOLDS = {
     'wind': {'warning': 2, 'error': 4},
     'tide': {'warning': 2, 'error': 4},
     'lightstation': {'warning': 6, 'error': 12},
+    'webcam': {'warning': 2, 'error': 24},  # 24h error threshold for daylight-only cams
 }
 
 # Stations known to be intermittent (report but don't flag as critical)
@@ -97,6 +98,12 @@ def check_data_freshness() -> Dict:
     lightstation_stale = check_lightstation_freshness()
     stale_stations.extend(lightstation_stale)
     # We don't have a station registry for lightstations yet, so count from DB
+
+    # Check webcams
+    log("Checking webcams...")
+    webcam_stale = check_webcam_freshness()
+    stale_stations.extend(webcam_stale)
+    total_checked += 5  # 5 webcams total
 
     # Determine overall status (ignore 'info' severity for intermittent stations)
     error_stations = [s for s in stale_stations if s['severity'] == 'error']
@@ -391,6 +398,101 @@ def check_lightstation_freshness() -> List[Dict]:
         conn.close()
     except Exception as e:
         log(f"  ❌ Error checking lightstations: {e}")
+
+    return stale
+
+
+def check_webcam_freshness() -> List[Dict]:
+    """Check webcam image freshness."""
+    stale = []
+    now = datetime.now(timezone.utc)
+
+    webcams = {
+        'whiterock': {'name': 'White Rock Pier', 'path': SITE_DATA / 'wrcam' / 'latest.json', 'interval': 10},
+        'boundarybay': {'name': 'White Rock East Beach', 'path': SITE_DATA / 'bbcam' / 'latest.json', 'interval': 10, 'disabled': True},
+        'coxbay': {'name': 'Cox Bay', 'path': SITE_DATA / 'coxbay' / 'latest.json', 'interval': 15, 'daylight_only': True},
+        'mudbay': {'name': 'Mud Bay HD', 'path': SITE_DATA / 'mudbay' / 'latest.json', 'interval': 30, 'daylight_only': True},
+        'ambleside': {'name': 'Ambleside', 'path': SITE_DATA / 'ambleside' / 'latest.json', 'interval': 20, 'daylight_only': True},
+    }
+
+    for webcam_id, webcam_meta in webcams.items():
+        if webcam_meta.get('disabled'):
+            log(f"  ⏭️  {webcam_meta['name']}: Disabled in cron")
+            continue
+
+        if not webcam_meta['path'].exists():
+            log(f"  ❌ {webcam_meta['name']}: Metadata file not found")
+            stale.append({
+                "id": webcam_id,
+                "name": webcam_meta['name'],
+                "type": "webcam",
+                "age_hours": None,
+                "severity": "error",
+                "message": "Metadata file not found"
+            })
+            continue
+
+        try:
+            with open(webcam_meta['path'], 'r') as f:
+                metadata = json.load(f)
+
+            last_update_str = metadata.get('timestamp')
+            if not last_update_str:
+                log(f"  ❌ {webcam_meta['name']}: No timestamp in metadata")
+                stale.append({
+                    "id": webcam_id,
+                    "name": webcam_meta['name'],
+                    "type": "webcam",
+                    "age_hours": None,
+                    "severity": "error",
+                    "message": "No timestamp"
+                })
+                continue
+
+            # Parse ISO timestamp
+            last_update = datetime.fromisoformat(last_update_str.replace('Z', '+00:00'))
+            age = (now - last_update).total_seconds() / 3600
+
+            # Daylight-only cams: use relaxed thresholds
+            if webcam_meta.get('daylight_only'):
+                # Warning at 2x interval, error at 24h (full day missed)
+                warning_threshold = max(webcam_meta['interval'] / 60 * 2, THRESHOLDS['webcam']['warning'])
+                error_threshold = THRESHOLDS['webcam']['error']
+            else:
+                # 24/7 cams: use stricter thresholds
+                warning_threshold = webcam_meta['interval'] / 60 * 2  # 2x interval
+                error_threshold = webcam_meta['interval'] / 60 * 4    # 4x interval
+
+            if age > error_threshold:
+                severity = 'error'
+                log(f"  ❌ {webcam_meta['name']}: {age:.1f}h old (ERROR)")
+            elif age > warning_threshold:
+                severity = 'warning'
+                log(f"  ⚠️  {webcam_meta['name']}: {age:.1f}h old (WARNING)")
+            else:
+                log(f"  ✅ {webcam_meta['name']}: {age:.1f}h old (OK)")
+                continue
+
+            stale.append({
+                "id": webcam_id,
+                "name": webcam_meta['name'],
+                "type": "webcam",
+                "age_hours": round(age, 1),
+                "last_update": last_update.isoformat(),
+                "severity": severity,
+                "daylight_only": webcam_meta.get('daylight_only', False)
+            })
+
+        except Exception as e:
+            log(f"  ❌ {webcam_meta['name']}: Error reading metadata - {e}")
+            stale.append({
+                "id": webcam_id,
+                "name": webcam_meta['name'],
+                "type": "webcam",
+                "age_hours": None,
+                "severity": "error",
+                "message": str(e)
+            })
 
     return stale
 

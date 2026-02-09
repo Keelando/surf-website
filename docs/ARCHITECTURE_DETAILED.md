@@ -744,6 +744,39 @@ marine_forecast.json
          └→ forecasts.js (forecast page)
 ```
 
+### Webcam Data Flow
+
+```
+YouTube Livestreams / Direct URLs / Yawcam Servers
+         ↓ (fetch_webcam.py, various intervals)
+         ├→ yt-dlp + Deno (YouTube)
+         ├→ HTTP GET (Direct URLs)
+         └→ Yawcam API (Yawcam servers)
+/mnt/storage/[webcam]_cam/[PREFIX]_[TIMESTAMP].jpg (archive)
+         ↓ (atomic copy)
+~/site/data/[webcam]/latest.jpg (website)
+         ↓ (slideshow management)
+~/site/data/[webcam]/slideshow/img_[TIMESTAMP].jpg (last 7)
+         ↓
+~/site/data/[webcam]/slideshow_manifest.json
+         ↓ (browser, page load)
+webcams.html (latest image + slideshow carousel)
+```
+
+**Webcam sources (5 total):**
+- White Rock Pier (YouTube, 10 min, 24/7)
+- White Rock East Beach (YouTube, 10 min, DISABLED)
+- Cox Bay (YouTube, 15 min, daylight only)
+- Mud Bay HD (Direct URL, 30 min, daylight only)
+- Ambleside - Hollyburn Sailing Club (Yawcam, 20 min, daylight only)
+
+**Storage:**
+- Archive: `/mnt/storage/` (external USB SATA, 223.6GB)
+- Website: `~/site/data/[webcam]/`
+- Cleanup: Automatic when disk usage > 80%
+
+**Complete documentation:** See [WEBCAM_PIPELINE.md](WEBCAM_PIPELINE.md)
+
 ---
 
 ## Important Data Handling Notes

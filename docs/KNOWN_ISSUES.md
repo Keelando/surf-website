@@ -1,5 +1,38 @@
 # Known Issues
 
+## 🔧 Storm Surge Hindcast Missing Tide Observations (Feb 8, 2026) - OPEN
+
+### Issue
+Storm surge hindcast page (`/storm_surge.html`) only shows predicted water levels, not actual observed tide data. This prevents comparison of forecast accuracy vs reality.
+
+**What works:**
+- ✅ Tide observations being fetched every 30 minutes (tide_to_sqlite.py)
+- ✅ Observations stored in tide_data.sqlite
+- ✅ Observations displayed on tide charts (fixed 2026-02-08)
+
+**What's missing:**
+- ❌ Observations not included in `combined-water-level.json` export
+- ❌ Storm surge page can't show "predicted vs actual" comparison
+- ❌ Can't validate forecast accuracy for past dates
+
+### Root Cause
+`export_combined_water_level.py` only exports:
+- Astronomical tide predictions (from SQLite)
+- Storm surge forecasts (from GeoMet)
+- Combined total water level (prediction + forecast)
+
+It does NOT load or export tide observations, even though they're available in the database.
+
+### Solution
+Add tide observation loading to `export_combined_water_level.py`:
+1. Query `tide_observation` table for recent data
+2. Include observations in JSON output
+3. Update chart renderer to display as scatter points
+
+**See:** `docs/project/NEXT_SESSION.md` for implementation details
+
+---
+
 ## ✅ YouTube Webcam Capture 403 Forbidden Errors (Jan 16, 2026) - RESOLVED
 
 ### Issue

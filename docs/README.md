@@ -20,6 +20,7 @@ Setup, configuration, and operational guides:
 
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Server deployment and cron setup
 - **[../config/crontab.txt](../config/crontab.txt)** - Complete production cron schedule
+- **[WEBCAM_PIPELINE.md](WEBCAM_PIPELINE.md)** - Webcam capture, storage, and display system
 - **[STORM_SURGE_SETUP.md](STORM_SURGE_SETUP.md)** - Storm surge forecast setup (GDSPS/GeoMet)
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Debugging guide and common issues
 - **[BACKUP_STATUS.md](BACKUP_STATUS.md)** - Backup configuration and status
@@ -92,7 +93,7 @@ The Salish Sea Marine Monitoring System now includes:
 - **13 Wind Stations** - Environment Canada, US airports (KBLI, KORS), and JSCA Jericho
 - **12 Tide Stations** - DFO IWLS with observations, predictions, and high/low events
 - **23 Lightstations** - DFO manual weather reports (every 3 hours)
-- **3 Webcams** - White Rock Pier, White Rock East Beach, Cox Bay (30-day archive)
+- **5 Webcams** - White Rock Pier, White Rock East Beach, Cox Bay, Mud Bay HD, Ambleside (Hollyburn Sailing Club)
 - **Storm Surge Forecasts** - GeoMet GDSPS with combined water level modeling
 - **Marine Forecasts** - Environment Canada zone forecasts and warnings
 

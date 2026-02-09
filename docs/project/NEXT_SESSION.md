@@ -1,7 +1,33 @@
 # Next Session Plan
 
-**Last updated:** 2026-01-22
+**Last updated:** 2026-02-08
 **Status:** Maintenance mode - major features complete
+
+---
+
+## 🔧 TODO: Storm Surge Hindcast - Add Tide Observations
+
+**Issue:** Storm surge hindcast page only shows predictions, missing actual tide observations for comparison
+
+**Current state:**
+- ✅ Tide observations ARE being fetched (tide_to_sqlite.py every 30 min)
+- ✅ Tide observations ARE in database (tide_data.sqlite)
+- ✅ Tide observations ARE on tide charts (fixed 2026-02-08)
+- ❌ Tide observations NOT in combined-water-level.json
+- ❌ Storm surge hindcast cannot show actual vs predicted comparison
+
+**What needs to be done:**
+1. Add `load_tide_observations()` function to `export_combined_water_level.py`
+2. Query observations from SQLite for stations with real-time data
+3. Include observations in JSON export alongside forecasts
+4. Update storm surge chart renderer to display observations as points
+5. Test with Point Atkinson, Campbell River, etc. (stations with sensors)
+
+**Files to modify:**
+- `scripts/export/export_combined_water_level.py` - Add observation export (~50-100 lines)
+- `site/assets/js/storm_surge_page.js` - Update chart to render observation points (if needed)
+
+**Estimated effort:** 1-2 hours
 
 ---
 
