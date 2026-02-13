@@ -90,7 +90,10 @@ def query_and_export():
 
             # Calculate staleness for UI indicators
             age_minutes = (now_ts - latest_time) / 60
-            buoy_json["stale"] = age_minutes > 180  # >3 hours old
+            age_hours = age_minutes / 60
+            buoy_json["stale"] = age_minutes > 180  # >3 hours old (legacy flag)
+            buoy_json["age_minutes"] = round(age_minutes, 1)
+            buoy_json["age_hours"] = round(age_hours, 2)
 
             # Query each field individually - get most recent non-null value within freshness window
             cutoff_time = latest_time - BUOY_FRESHNESS_WINDOW
