@@ -47,19 +47,29 @@ WEBCAM_ARCHIVES = {
         "name": "Boundary Bay"
     },
     "hollyburn": {
-        "path": Path("/mnt/storage/hollyburn_cam"),
-        "prefix": "HB",
+        "path": Path("/mnt/storage/ambleside_cam"),
+        "prefix": "AB",
         "name": "Hollyburn/Ambleside"
     },
     "coxbay": {
         "path": Path("/mnt/storage/coxbay_cam"),
         "prefix": "CB",
         "name": "Cox Bay"
+    },
+    "mudbay": {
+        "path": Path("/mnt/storage/mudbay_cam"),
+        "prefix": "MB",
+        "name": "Mud Bay"
     }
 }
 
 # Storage mount point
 STORAGE_PATH = Path("/mnt/storage")
+
+# Set to True to publish MQTT discovery messages (only needed once).
+# Comment out the line below after the first successful run.
+PUBLISH_DISCOVERY = False
+# PUBLISH_DISCOVERY = True  # Comment out this line after first successful run
 
 
 def get_disk_metrics():
@@ -276,7 +286,8 @@ def main():
     disk_metrics = get_disk_metrics()
 
     if disk_metrics:
-        publish_disk_discovery(mqtt_client)
+        if PUBLISH_DISCOVERY:
+            publish_disk_discovery(mqtt_client)
 
         mqtt_client.publish("storage/storage_total", disk_metrics["total_gb"], retain=True)
         mqtt_client.publish("storage/storage_used", disk_metrics["used_gb"], retain=True)
@@ -291,7 +302,8 @@ def main():
         cam_metrics = get_webcam_metrics(cam_config)
 
         if cam_metrics:
-            publish_webcam_discovery(mqtt_client, cam_id, cam_config["name"])
+            if PUBLISH_DISCOVERY:
+                publish_webcam_discovery(mqtt_client, cam_id, cam_config["name"])
 
             mqtt_client.publish(
                 f"storage/webcam/{cam_id}/image_count",
