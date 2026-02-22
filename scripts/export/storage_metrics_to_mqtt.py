@@ -45,6 +45,16 @@ WEBCAM_ARCHIVES = {
         "path": Path("/mnt/storage/boundarybay_cam"),
         "prefix": "BB",
         "name": "Boundary Bay"
+    },
+    "hollyburn": {
+        "path": Path("/mnt/storage/hollyburn_cam"),
+        "prefix": "HB",
+        "name": "Hollyburn/Ambleside"
+    },
+    "coxbay": {
+        "path": Path("/mnt/storage/coxbay_cam"),
+        "prefix": "CB",
+        "name": "Cox Bay"
     }
 }
 
