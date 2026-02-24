@@ -2,6 +2,33 @@
 
 ## Upcoming Tasks
 
+### Monorepo Merge (Future)
+
+**Goal:** Combine `envcan_wave` (backend) and `site` (frontend) into a single repo.
+
+**Rationale:** Both repos are public, the only "credential" (Surrey FlowWorks) is a
+shared public access account already in docs. Coordinated changes currently require
+two PRs; a monorepo simplifies this.
+
+**Proposed structure:**
+```
+halibutbank/
+├── backend/    (was ~/envcan_wave/)
+├── frontend/   (was ~/site/)
+└── README.md
+```
+
+**Migration steps:**
+1. Merge git histories using `git subtree` (or start fresh if history isn't critical)
+2. Update all hardcoded absolute paths in scripts (`/home/keelando/envcan_wave/` → new paths)
+3. Update cron jobs
+4. Update Caddy config if needed
+5. Archive/redirect old repos on GitHub
+
+**Priority:** Low — no functional benefit, pure quality-of-life for development
+
+---
+
 ### Dark Mode Implementation
 
 **Goal:** Add dark color scheme with user preference storage

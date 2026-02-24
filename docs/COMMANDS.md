@@ -16,6 +16,7 @@ pip install -r requirements.txt
 
 # Start sr3 to begin downloading Environment Canada XML files
 sr3 start subscribe/bc_buoys
+sr3 start subscribe/bc_wind_stations
 sr3 start subscribe/marine_forecast
 ```
 
@@ -370,25 +371,25 @@ cat ~/site/data/marine_forecast.json | jq '[.locations | .[] | .warnings | .[] |
 
 ```bash
 # Tail all logs in real-time
-tail -f ~/envcan_wave/*.log
+tail -f ~/envcan_wave/logs/*.log
 
 # View specific log
-tail -f ~/envcan_wave/buoy_sqlite.log
-tail -f ~/envcan_wave/noaa.log
-tail -f ~/envcan_wave/tide_obs.log
-tail -f ~/envcan_wave/tide_pred.log
-tail -f ~/envcan_wave/tide_highlow.log
-tail -f ~/envcan_wave/marine_forecast.log
+tail -f ~/envcan_wave/logs/buoy_sqlite.log
+tail -f ~/envcan_wave/logs/noaa.log
+tail -f ~/envcan_wave/logs/tide_obs.log
+tail -f ~/envcan_wave/logs/tide_pred.log
+tail -f ~/envcan_wave/logs/tide_highlow.log
+tail -f ~/envcan_wave/logs/marine_forecast.log
 ```
 
 ### List Recent Log Activity
 
 ```bash
 # Show last 20 lines of all logs
-find ~/envcan_wave -name "*.log" -exec echo "=== {} ===" \; -exec tail -20 {} \;
+find ~/envcan_wave/logs -name "*.log" -exec echo "=== {} ===" \; -exec tail -20 {} \;
 
 # Check log file sizes
-ls -lh ~/envcan_wave/*.log
+ls -lh ~/envcan_wave/logs/*.log
 ```
 
 ---
