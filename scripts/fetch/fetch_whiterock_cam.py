@@ -27,7 +27,7 @@ import logging
 # Configuration
 YOUTUBE_URL = "https://www.youtube.com/watch?v=4MK3E9EWDSY"
 ARCHIVE_DIR = Path("/mnt/storage/whiterock_cam")
-WEBSITE_DIR = Path.home() / "site" / "data" / "wrcam"
+WEBSITE_DIR = Path(__file__).parent.parent.parent / "site" / "data" / "wrcam"
 LOG_PATH = Path(__file__).parent / "whiterock_cam.log"
 
 # Disk space management - cleanup when disk usage exceeds this percentage

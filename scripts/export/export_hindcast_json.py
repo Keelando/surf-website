@@ -27,7 +27,8 @@ logger = setup_logging('hindcast_export')
 
 # Configuration
 DB_PATH = Path("~/.local/share/storm_surge_forecast.sqlite").expanduser()
-OUTPUT_PATH = Path("~/site/data/storm_surge/hindcast.json").expanduser()
+from lib.config import EXPORT_DIR
+OUTPUT_PATH = EXPORT_DIR / "storm_surge" / "hindcast.json"
 MAX_DAYS_BACK = 12  # Show predictions for last 12 days (today + 11 back)
 # Note: Forecast runs go back ~14 days to capture predictions for the full 12-day window
 

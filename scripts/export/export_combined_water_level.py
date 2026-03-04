@@ -237,7 +237,7 @@ def update_latest_with_surge(surge_dir):
     Update tide-latest.json with current storm surge info.
     Adds surge and total water level to current conditions.
     """
-    latest_tide_file = Path("~/site/data/tide-latest.json").expanduser()
+    latest_tide_file = EXPORT_DIR / "tide-latest.json"
 
     if not latest_tide_file.exists():
         logger.warning(f"tide-latest.json not found: {latest_tide_file}")

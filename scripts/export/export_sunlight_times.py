@@ -17,6 +17,7 @@ from datetime import datetime, timezone, timedelta
 from astral import LocationInfo, Depression
 from astral.sun import sun, dawn, dusk, golden_hour, blue_hour
 import pytz
+from lib.config import EXPORT_DIR
 
 
 # Webcam locations (same as in fetch_webcam.py)
@@ -25,19 +26,19 @@ WEBCAM_LOCATIONS = {
         "name": "White Rock, BC",
         "lat": 49.0253,
         "lon": -122.8031,
-        "output_file": Path.home() / "site" / "data" / "wrcam" / "sunlight.json"
+        "output_file": EXPORT_DIR / "wrcam" / "sunlight.json"
     },
     "boundarybay": {
         "name": "Boundary Bay, BC",
         "lat": 49.0042,
         "lon": -123.0128,
-        "output_file": Path.home() / "site" / "data" / "bbcam" / "sunlight.json"
+        "output_file": EXPORT_DIR / "bbcam" / "sunlight.json"
     },
     "coxbay": {
         "name": "Cox Bay (Tofino), BC",
         "lat": 49.1167,
         "lon": -125.9000,
-        "output_file": Path.home() / "site" / "data" / "coxbay" / "sunlight.json"
+        "output_file": EXPORT_DIR / "coxbay" / "sunlight.json"
     }
 }
 
@@ -222,7 +223,7 @@ def get_current_phase(sunrise, sunset, dawn_astro, dawn_naut, dawn_civil,
 
 def load_tide_stations():
     """Load tide station coordinates from stations.json"""
-    stations_file = Path.home() / "site" / "data" / "stations.json"
+    stations_file = EXPORT_DIR / "stations.json"
     try:
         with open(stations_file, 'r') as f:
             data = json.load(f)
@@ -316,7 +317,7 @@ def export_all_locations(days_ahead=4):
         results["stations"][station_key] = station_data
 
     # Write combined file
-    combined_file = Path.home() / "site" / "data" / "sunlight_times.json"
+    combined_file = EXPORT_DIR / "sunlight_times.json"
     combined_file.parent.mkdir(parents=True, exist_ok=True)
 
     with open(combined_file, 'w') as f:

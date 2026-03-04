@@ -20,7 +20,8 @@ logger = setup_logging('marine_forecast')
 
 # Directories
 DATA_DIR = Path.home() / "envcan_wave" / "data" / "marine_forecast"
-OUTPUT_FILE = Path.home() / "site" / "data" / "marine_forecast.json"
+from lib.config import EXPORT_DIR
+OUTPUT_FILE = EXPORT_DIR / "marine_forecast.json"
 
 # Zone mapping - normalize location names to internal keys
 ZONE_MAP = {

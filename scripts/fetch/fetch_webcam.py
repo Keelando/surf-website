@@ -47,7 +47,7 @@ WEBCAM_CONFIGS = {
         "youtube_url": "https://www.youtube.com/watch?v=4MK3E9EWDSY",
         "video_id": "4MK3E9EWDSY",
         "archive_dir": Path("/mnt/storage/whiterock_cam"),
-        "website_dir": Path.home() / "site" / "data" / "wrcam",
+        "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "wrcam",
         "prefix": "WR",
         "crop": "in_w*0.75:in_h:in_w*0.25:0",  # Crop left 25% (street), keep right 75% (pier/sea)
         "source_text": "White Rock Pier - YouTube Livestream",
@@ -63,7 +63,7 @@ WEBCAM_CONFIGS = {
         "youtube_url": "https://www.youtube.com/watch?v=O8RsAq9RUlA",
         "video_id": "O8RsAq9RUlA",
         "archive_dir": Path("/mnt/storage/boundarybay_cam"),
-        "website_dir": Path.home() / "site" / "data" / "bbcam",
+        "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "bbcam",
         "prefix": "BB",
         "crop": "in_w:in_h:0:0",    # Full frame
         "source_text": "White Rock East Beach - YouTube Livestream",
@@ -79,7 +79,7 @@ WEBCAM_CONFIGS = {
         "youtube_url": "https://www.youtube.com/watch?v=LqaP8m2OIqM",
         "video_id": "LqaP8m2OIqM",
         "archive_dir": Path("/mnt/storage/coxbay_cam"),
-        "website_dir": Path.home() / "site" / "data" / "coxbay",
+        "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "coxbay",
         "prefix": "CB",
         "crop": "in_w:in_h:0:0",    # Full frame
         "source_text": "Cox Bay (Tofino) - Pacific Sands Beach Resort Livestream",
@@ -95,7 +95,7 @@ WEBCAM_CONFIGS = {
         "name": "Mud Bay HD",
         "image_url": "https://oxblue.com/archive/c6713f391eef15e5c1dbfc6a003b83a0/1024x768.jpg",
         "archive_dir": Path("/mnt/storage/mudbay_cam"),
-        "website_dir": Path.home() / "site" / "data" / "mudbay",
+        "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "mudbay",
         "prefix": "MB",
         "crop": "in_w:in_h:0:0",    # Full frame
         "source_text": "Mud Bay HD - OxBlue Construction Cam",
@@ -119,7 +119,7 @@ WEBCAM_CONFIGS = {
         "name": "Ambleside (Hollyburn Sailing Club)",
         "yawcam_url": "http://onsite.hollyburnsailingclub.ca:8081/",
         "archive_dir": Path("/mnt/storage/ambleside_cam"),
-        "website_dir": Path.home() / "site" / "data" / "ambleside",
+        "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "ambleside",
         "prefix": "AB",
         "crop": "in_w:in_h:0:0",    # Full frame
         "source_text": "Hollyburn Sailing Club Webcam",

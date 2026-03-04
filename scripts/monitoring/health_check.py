@@ -24,7 +24,7 @@ from typing import Dict, List, Tuple
 # Add lib to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from lib.stations import get_all_buoys, get_all_tides, get_all_wind
-from lib.config import PROJECT_ROOT
+from lib.config import PROJECT_ROOT, EXPORT_DIR
 from lib.logging_config import setup_logging
 
 # Setup logging (console disabled for cron, file only)
@@ -40,7 +40,7 @@ STORM_SURGE_DB = DB_DIR / "storm_surge_forecast.sqlite"
 WEATHER_DB = DB_DIR / "weather_data.sqlite"
 
 # Export paths
-SITE_DATA = Path.home() / "site" / "data"
+SITE_DATA = EXPORT_DIR
 OUTPUT_FILE = SITE_DATA / "system_health.json"
 
 # Freshness thresholds (in hours)

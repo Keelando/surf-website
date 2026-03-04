@@ -16,8 +16,8 @@ set -euo pipefail
 
 # Configuration
 CADDY_LOG="/var/log/caddy/halibutbank-access.log"
-CONVERTER="/home/keelando/site/scripts/caddy_to_clf.py"
-REPORT_OUTPUT="/home/keelando/site/analytics.html"
+CONVERTER="/home/keelando/envcan_wave/site/scripts/caddy_to_clf.py"
+REPORT_OUTPUT="/home/keelando/envcan_wave/site/analytics.html"
 TEMP_LOG="/tmp/caddy-clf-$$.log"
 TEMP_FILTERED="/tmp/caddy-filtered-$$.log"
 

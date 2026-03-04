@@ -16,7 +16,8 @@ import time
 
 # Configuration
 SQLITE_PATH = Path("~/.local/share/weather_data.sqlite").expanduser()
-OUT_PATH = Path("~/site/data/whiterock_weather.json").expanduser()
+from lib.config import EXPORT_DIR
+OUT_PATH = EXPORT_DIR / "whiterock_weather.json"
 API_URL = "https://maps.whiterockcity.ca/weather/weatherResults.txt"
 LOCKFILE = Path("/tmp/whiterock_weather.lock")
 
