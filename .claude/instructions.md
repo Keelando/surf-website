@@ -33,6 +33,7 @@ This is an environmental data collection and visualization system for marine/coa
 - Keep Surrey-specific corrections isolated to Surrey station code paths
 
 **Data Flow:**
-- Fetch scripts → SQLite databases → Export scripts → JSON for website
+- Fetch scripts → SQLite databases → Export scripts → JSON for website (`site/data/`)
+- Frontend lives in `site/` (same repo)
 - Logs go in `logs/` directory
 - Crontab backed up daily to `config/crontab.txt`

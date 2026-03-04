@@ -1,0 +1,80 @@
+<nav class="main-nav">
+  <div class="nav-links">
+    <a href="/" class="nav-link" data-page="buoys">Buoys</a>
+    <a href="/tides.html" class="nav-link" data-page="tides">Tides</a>
+    <a href="/winds.html" class="nav-link" data-page="winds">Winds</a>
+    <a href="/forecasts.html" class="nav-link" data-page="forecasts">Forecasts</a>
+    <a href="/storm_surge.html" class="nav-link" data-page="storm_surge">Storm Surge</a>
+    <a href="/webcams.html" class="nav-link" data-page="webcams">Webcams</a>
+    <a href="/lightstations.html" class="nav-link" data-page="lightstations">Lightstations</a>
+  </div>
+  <div class="nav-clock" id="nav-clock"></div>
+</nav>
+
+<script>
+  (function() {
+    // Use setTimeout to ensure nav is in DOM after swap
+    setTimeout(() => {
+      const path = window.location.pathname;
+      let activePage = 'buoys';
+
+      if (path === '/' || path === '/index.html') activePage = 'buoys';
+      else if (path.includes('tides')) activePage = 'tides';
+      else if (path.includes('winds')) activePage = 'winds';
+      else if (path.includes('lightstations')) activePage = 'lightstations';
+      else if (path.includes('webcams')) activePage = 'webcams';
+      else if (path.includes('forecasts')) activePage = 'forecasts';
+      else if (path.includes('storm_surge')) activePage = 'storm_surge';
+
+      document.querySelectorAll('.nav-link').forEach(link => {
+        if (link.dataset.page === activePage) {
+          link.classList.add('active');
+        }
+      });
+
+      // Update clock (handles multiple nav instances on same page)
+      function updateClock() {
+        const clocks = document.querySelectorAll('.nav-clock');
+        if (clocks.length === 0) return;
+
+        const now = new Date();
+        const options = {
+          timeZone: 'America/Vancouver',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        };
+        const timeString = now.toLocaleTimeString('en-US', options);
+
+        // Update all clock instances
+        clocks.forEach(clock => {
+          clock.textContent = `PST ${timeString}`;
+        });
+      }
+
+      // Update immediately and then every second
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      // Sticky navbar scroll effect (disabled - uncomment to re-enable)
+      /*
+      const nav = document.querySelector('.main-nav');
+      let lastScroll = 0;
+
+      window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset;
+
+        // Add scrolled class when user scrolls down more than 50px
+        if (currentScroll > 50) {
+          nav.classList.add('scrolled');
+        } else {
+          nav.classList.remove('scrolled');
+        }
+
+        lastScroll = currentScroll;
+      });
+      */
+    }, 0);
+  })();
+</script>

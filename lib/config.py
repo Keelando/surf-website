@@ -27,11 +27,11 @@ import json
 # Data storage directory (SQLite databases)
 DATA_DIR = Path("~/.local/share").expanduser()
 
-# Export directory (JSON files for website)
-EXPORT_DIR = Path("~/site/data").expanduser()
-
 # Project root directory (lib/config.py -> lib/ -> project root)
 PROJECT_ROOT = Path(__file__).parent.parent
+
+# Export directory (JSON files for website)
+EXPORT_DIR = PROJECT_ROOT / "site" / "data"
 
 # =============================================================================
 # Database Paths

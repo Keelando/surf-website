@@ -2,7 +2,7 @@
 
 Real-time marine weather monitoring system for the Salish Sea region.
 
-**Live site:** [halibutbank.ca](https://halibutbank.ca) · **Frontend repo:** [surf-website-front-end](https://github.com/Keelando/surf-website-front-end)
+**Live site:** [halibutbank.ca](https://halibutbank.ca) · **Frontend:** `site/`
 
 ---
 
@@ -46,6 +46,7 @@ envcan_wave/
 │   ├── sr3/          # Sarracenia subscription configs
 │   ├── stations.json # Master station registry
 │   └── tide_stations.json
+├── site/             # Static frontend (HTML/JS/CSS, served by Caddy)
 ├── data/             # Raw XML/text files from EC (auto-purged after 2 days)
 ├── docs/             # Documentation
 ├── tests/
@@ -59,7 +60,7 @@ envcan_wave/
 - `storm_surge_forecast.sqlite` — GDSPS storm surge forecasts
 - `lightstation_data.sqlite` — lightstation reports
 
-**JSON exports** go to `~/site/data/` for the frontend to read.
+**JSON exports** go to `site/data/` for the frontend to read.
 
 ---
 

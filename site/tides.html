@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Tide Conditions | Salish Sea Marine Forecasts</title>
+
+  <meta name="description" content="Real-time tide observations and predictions for Salish Sea stations including Point Atkinson, Vancouver, and Strait of Georgia. Updated every 30 minutes from DFO sources." />
+  <meta name="keywords" content="Salish Sea, tides, tide predictions, Point Atkinson, Vancouver tides, Strait of Georgia, DFO, marine forecast, BC coast tides, tide tables, tide chart, water level, high tide, low tide, tidal predictions, British Columbia tides, Pacific tide forecast, tide times, ocean tides, coastal tides, real-time water level, astronomical tide, fishing tides, boating tides, kayaking tides" />
+  <meta name="author" content="Salish Sea Wave Conditions Project" />
+  <meta name="robots" content="index, follow" />
+
+  <meta property="og:title" content="Tide Conditions | Salish Sea Marine Forecasts" />
+  <meta property="og:description" content="Real-time tide observations and predictions for Salish Sea stations including Point Atkinson, Vancouver, and Strait of Georgia. Updated every 30 minutes from DFO sources." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://halibutbank.ca/tides.html" />
+  <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
+
+  <link rel="canonical" href="https://halibutbank.ca/tides.html" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css" />
+  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css" />
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+  <style>
+    header {
+      margin-bottom: 0;
+    }
+
+    /* Geodetic station styling in dropdown */
+    option.geodetic-station {
+      color: #666;
+      padding-left: 1.5rem;
+      font-style: italic;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Warning Banner Container -->
+  <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
+
+  <!-- Navigation -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+
+  <div hx-get="/components/header-tides.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 80px;"></div>
+
+  <div hx-get="/components/tagline-tides.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
+
+  <main class="tide-main-content">
+    
+    <!-- Station Selector -->
+    <section class="tide-selector-section">
+      <label for="tide-station-select" style="font-size: 1.2rem; font-weight: bold; margin-right: 1rem;">
+        Select Tide Station:
+      </label>
+      <select id="tide-station-select" style="padding: 0.75rem; font-size: 1rem; min-width: 250px;">
+        <option value="">Loading stations...</option>
+      </select>
+      <a href="javascript:void(0)" id="show-tide-on-map-btn" onclick="showSelectedTideOnMap()" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
+    </section>
+
+    <!-- Current Conditions Card -->
+    <section id="tide-current-section" class="tide-card" style="display: none;">
+      <h2 id="station-name">Station Name</h2>
+
+      <!-- Station Metadata -->
+      <div id="station-metadata" class="station-metadata">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Current Values - Compact Grid -->
+      <div class="tide-metrics-grid">
+        <div class="tide-metric-card">
+          <div class="tide-metric-label">Current Observation</div>
+          <div id="current-observation" class="tide-metric-value">
+            <p>Loading...</p>
+          </div>
+        </div>
+
+        <div class="tide-metric-card">
+          <div class="tide-metric-label">Current Prediction</div>
+          <div id="current-prediction" class="tide-metric-value">
+            <p>Loading...</p>
+          </div>
+        </div>
+
+        <div class="tide-metric-card">
+          <div class="tide-metric-label">Storm Surge</div>
+          <div id="storm-surge" class="tide-metric-value">
+            <p>Loading...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- High/Low Events -->
+      <div class="tide-data-group">
+        <h3>Today's High & Low Tides for <span id="highlow-station-name">Station Name</span></h3>
+        <div class="data-table">
+          <table id="highlow-table">
+            <thead>
+              <tr>
+                <th>Time (Pacific)</th>
+                <th>Height</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="3">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sunlight Times Widget -->
+      <div id="sunlight-widget" style="display: none;"></div>
+
+      <!-- Tide Prediction Chart -->
+      <div class="tide-data-group">
+        <h3>Tide & Water Level Forecast for <span id="chart-station-name">Station Name</span></h3>
+        <div class="chart-date-controls">
+          <div class="chart-date-label-container">
+            <span id="chart-date-label">Today</span>
+          </div>
+          <div class="chart-nav-buttons">
+            <button id="prev-day-btn" title="Previous day">◀</button>
+            <button id="next-day-btn" title="Next day">▶</button>
+          </div>
+        </div>
+        <div id="tide-chart" style="width: 100%; height: 500px;"></div>
+      </div>
+    </section>
+
+    <!-- Loading/Error Messages -->
+    <div id="tide-loading" style="text-align: center; padding: 2rem; color: #666;">
+      <p>Select a tide station to view current conditions and predictions.</p>
+    </div>
+
+    <div id="tide-error" style="display: none; text-align: center; padding: 2rem; color: #e53935;">
+      <p>Error loading tide data. Please try again later.</p>
+    </div>
+
+    <!-- Bottom Station Selector -->
+    <section class="tide-selector-section" style="margin-top: 2rem;">
+      <label for="tide-station-select-bottom" style="font-size: 1.2rem; font-weight: bold; margin-right: 1rem;">
+        Select Tide Station:
+      </label>
+      <select id="tide-station-select-bottom" style="padding: 0.75rem; font-size: 1rem; min-width: 250px;">
+        <option value="">Loading stations...</option>
+      </select>
+      <a href="javascript:void(0)" onclick="showSelectedTideOnMap()" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
+    </section>
+
+  </main>
+
+  <!-- About Section -->
+  <div hx-get="/components/about-tides.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Navigation (Bottom) -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <div hx-get="/components/footer.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Load logger first for global availability -->
+  <script src="/assets/js/logger.js?v=20251117"></script>
+  <script src="/assets/js/warning-banner.js?v=20251117"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=20251117"></script>
+  <!-- Modular tide display logic -->
+  <script type="module" src="/assets/js/tides-refactored.js?v=20260122"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</body>
+</html>

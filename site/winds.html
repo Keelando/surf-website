@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Salish Sea Wind Conditions | Real-time Wind Observations</title>
+
+  <meta name="description" content="Real-time wind observations from coastal weather stations across the Salish Sea, Strait of Georgia, and Juan de Fuca Strait. Auto-updated from Environment Canada sources." />
+  <meta name="keywords" content="Salish Sea, wind conditions, coastal weather, marine wind, Environment Canada, BC coast, wind speed, wind direction, weather stations, real-time wind, wind forecast, gust speed, wind gusts, Vancouver wind, British Columbia wind, Pacific Northwest wind, sailing wind, windsurfing, kiteboarding, wind observations, coastal wind, offshore wind, onshore wind, wind data, weather buoy, atmospheric conditions" />
+  <meta name="author" content="Salish Sea Wave Conditions Project" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph for social sharing -->
+  <meta property="og:title" content="Salish Sea Wind Conditions | Real-time Wind Data" />
+  <meta property="og:description" content="Hourly updated wind conditions from coastal weather stations across the Salish Sea and Strait of Georgia." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://halibutbank.ca/winds.html" />
+  <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
+
+  <link rel="canonical" href="https://halibutbank.ca/winds.html" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20251112" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css" />
+  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css" />
+  <link rel="stylesheet" href="/assets/css/stations-map-v4.css" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+
+  <style>
+    header {
+      margin-bottom: 0;
+    }
+
+    .data-table {
+      overflow-x: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .data-table table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    .data-table th {
+      background: linear-gradient(to bottom, #004b7c, #003d66);
+      color: white;
+      padding: 0.65rem 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .data-table th.sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .data-table th.sortable:hover {
+      background: linear-gradient(to bottom, #005a94, #004b7c);
+    }
+
+    .data-table th .sort-indicator {
+      font-size: 1.1em;
+      margin-left: 0.25rem;
+      opacity: 0.9;
+    }
+
+    .data-table th.sortable .sort-indicator::before {
+      content: '⇅';
+      opacity: 0.4;
+    }
+
+    .data-table th.sortable:hover .sort-indicator::before {
+      opacity: 0.7;
+    }
+
+    /* Hide the default indicator when actively sorting */
+    .data-table th.sortable.sorting .sort-indicator::before {
+      content: '';
+    }
+
+    .data-table td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #e0e7ee;
+      font-size: 0.95rem;
+    }
+
+    /* Reduce horizontal padding on mobile */
+    @media (max-width: 768px) {
+      .data-table th,
+      .data-table td {
+        padding: 0.5rem 0.5rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    .data-table tbody tr:nth-child(even) {
+      background: rgba(0, 75, 124, 0.03);
+    }
+
+    .data-table tbody tr:hover {
+      background: #f5f9fc;
+    }
+
+    .data-table tbody tr.stale {
+      opacity: 0.6;
+      background: #f9fafb;
+      color: #6b7280;
+    }
+
+    .data-table tbody tr.stale:hover {
+      background: #f3f4f6;
+    }
+
+    .w-full {
+      width: 100%;
+    }
+
+    .h-500 {
+      height: 500px;
+    }
+
+    @media (max-width: 768px) {
+      .wind-cards-grid {
+        grid-template-columns: 1fr;
+      }
+
+      /* Hide extra columns on mobile */
+      .data-table th.hide-mobile,
+      .data-table td.hide-mobile {
+        display: none;
+      }
+
+      /* Fix dropdown overflow on mobile */
+      #wind-station-select {
+        min-width: 200px !important;
+        max-width: 100% !important;
+      }
+
+      #wind-station-search {
+        width: 200px !important;
+        max-width: 100% !important;
+      }
+    }
+
+    /* Wind time range toggle buttons */
+    .wind-time-range-btn {
+      padding: 0.5rem 1rem;
+      margin: 0 0.25rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .wind-time-range-btn:hover {
+      background: #d0d0d0;
+      transform: translateY(-1px);
+    }
+
+    .wind-time-range-btn.active {
+      background: #0077be;
+      color: white;
+    }
+
+    .wind-time-range-btn.active:hover {
+      background: #005a94;
+    }
+
+    /* Wind table collapsed rows - hidden by default */
+    .collapsed-row {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Warning Banner Container -->
+  <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
+
+  <!-- Navigation -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+
+  <div hx-get="/components/header-winds.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 80px;"></div>
+
+  <div hx-get="/components/tagline-winds.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
+
+  <!-- Current Conditions Table -->
+  <section id="wind-table-section" style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem;">
+    <h2>Current Wind Conditions</h2>
+    <p style="text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+      <em>Click column headers to sort</em>
+    </p>
+    <div class="data-table">
+      <table id="wind-conditions-table">
+        <thead>
+          <tr>
+            <th>Station</th>
+            <th>Wind Speed</th>
+            <th>Gust</th>
+            <th>Direction</th>
+            <th>Temp</th>
+            <th>Pressure</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 2rem;">Loading wind data...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Offline stations list (populated by JavaScript) -->
+    <div id="offline-stations-list"></div>
+
+    <p style="margin-top: 1rem; padding: 0.75rem; background: #f0f7ff; border-left: 3px solid #4299e1; border-radius: 4px; max-width: 1200px; margin-left: auto; margin-right: auto;">
+      <strong>Missing your favorite station?</strong> <a href="mailto:windwaves604@outlook.com?subject=Wind%20Station%20Suggestion" class="color-primary">Let me know so I can add it!</a>
+    </p>
+  </section>
+
+  <!-- Stations Map Section -->
+  <section id="map-section" style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem;">
+    <h2>Station Locations</h2>
+    <div id="winds-map" style="width: 100%; height: 400px; border-radius: 8px; border: 1px solid #e0e7ee;"></div>
+    <div class="map-legend" style="margin-top: 1rem; text-align: center; font-size: 0.9rem;">
+      <span style="margin-right: 1.5rem;">💨 Weather Station</span>
+      <span>🌊 Buoy (with wind data)</span>
+    </div>
+  </section>
+
+  <!-- Wind Chart Section -->
+  <section id="wind-chart-section" style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem;">
+    <h2>24-Hour Wind Trends</h2>
+    <div id="station-selector" style="margin-bottom: 1rem; text-align: center;">
+      <div style="margin-bottom: 0.5rem;">
+        <label for="wind-station-search" style="font-weight: 600; margin-right: 0.5rem;">Search:</label>
+        <input type="text" id="wind-station-search" placeholder="Type to jump to station..."
+               style="padding: 0.5rem; font-size: 1rem; border-radius: 4px; border: 1px solid #ccc; width: 250px;">
+      </div>
+      <div>
+        <label for="wind-station-select" style="font-weight: 600; margin-right: 0.5rem;">Station:</label>
+        <select id="wind-station-select" size="1" style="padding: 0.5rem; font-size: 1rem; border-radius: 4px; border: 1px solid #ccc; min-width: 300px;">
+          <option value="">Loading stations...</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Time Range Toggle -->
+    <div style="margin: 1rem 0; text-align: center;">
+      <label style="margin-right: 0.5rem; font-weight: 600; color: #004b7c;">Time Range:</label>
+      <button class="wind-time-range-btn active" data-wind-hours="24" onclick="setWindTimeRange(24)">24 Hours</button>
+      <button class="wind-time-range-btn" data-wind-hours="48" onclick="setWindTimeRange(48)">48 Hours</button>
+    </div>
+
+    <div id="wind-trend-chart" class="w-full h-500" style="width: 100%; height: 500px;"></div>
+  </section>
+
+  <!-- 24-Hour Data Table -->
+  <section id="wind-data-table-section" style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem;">
+    <h2>24-Hour Wind Data</h2>
+
+    <!-- Time Range Toggle (By Table) -->
+    <div style="margin: 1rem 0; text-align: center;">
+      <label style="margin-right: 0.5rem; font-weight: 600; color: #004b7c;">Time Range:</label>
+      <button class="wind-time-range-btn active" data-wind-hours="24" onclick="setWindTimeRange(24)">24 Hours</button>
+      <button class="wind-time-range-btn" data-wind-hours="48" onclick="setWindTimeRange(48)">48 Hours</button>
+    </div>
+
+    <div class="data-table">
+      <table id="wind-24hr-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Wind Speed</th>
+            <th>Gust</th>
+            <th>Direction</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="4" style="text-align: center; padding: 2rem;">Select a station to view 24-hour data</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <div hx-get="/components/about-winds.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Navigation (Bottom) -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <div hx-get="/components/footer.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+
+  <!-- Load logger first for global availability -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+  <script src="/assets/js/logger.js?v=20251117"></script>
+  <script src="/assets/js/warning-banner.js?v=20251117"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=20251224"></script>
+  <script src="/assets/js/wind-stations.js?v=20251120n"></script>
+  <script src="/assets/js/winds-map.js?v=20251209"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</body>
+</html>

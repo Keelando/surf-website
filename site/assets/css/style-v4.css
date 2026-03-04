@@ -1,0 +1,1172 @@
+/* -----------------------------
+   CSS Variables - Color Palette
+----------------------------- */
+
+:root {
+  /* Primary Colors */
+  --color-primary-dark: #004b7c;
+  --color-primary: #0077be;
+  --color-primary-light: #0066a1;
+  --color-primary-lighter: #005a8f;
+
+  /* Background Colors */
+  --color-background: #eef4f8;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f7fafc;
+  --color-surface-light: #f5f9fc;
+
+  /* Border Colors */
+  --color-border: #ddd;
+  --color-border-light: #e0e7ee;
+
+  /* Text Colors */
+  --color-text: #222;
+  --color-text-muted: #666;
+  --color-text-light: #555;
+
+  /* Accent Colors */
+  --color-accent-blue: #4299e1;
+  --color-accent-green: #43a047;
+  --color-accent-orange: #ff9800;
+  --color-accent-red: #e53935;
+
+  /* Spacing Scale */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+}
+
+/* -----------------------------
+   Base Styles -- october
+----------------------------- */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
+}
+
+footer {
+  background-color: var(--color-primary-dark);
+  color: white;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.footer-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.footer-section {
+  margin-bottom: 1.25rem;
+}
+
+.footer-section:last-child {
+  margin-bottom: 0;
+}
+
+.footer-section h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+  font-weight: 500;
+}
+
+.footer-sources {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  font-size: 0.95rem;
+}
+
+.footer-sources span {
+  opacity: 0.9;
+}
+
+.footer-sources a {
+  color: #90cdf4;
+  text-decoration: none;
+}
+
+.footer-sources a:hover {
+  text-decoration: underline;
+}
+
+.footer-disclaimer {
+  font-size: 0.9rem;
+  opacity: 0.85;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.land-acknowledgement {
+  font-size: 1rem;
+  font-style: italic;
+  opacity: 1;
+  max-width: 650px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.footer-bottom {
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.system-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: help;
+  transition: background 0.2s;
+}
+
+.system-status-badge:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b7280;
+  transition: background 0.3s;
+}
+
+.status-ok .status-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.status-warning .status-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.status-error .status-dot {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.status-text {
+  color: white;
+  opacity: 0.9;
+}
+
+footer .github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  text-decoration: none;
+  font-size: 0.85rem;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+footer .github-link:hover {
+  opacity: 1;
+}
+
+/* -----------------------------
+   Buoy Cards Container
+----------------------------- */
+
+#buoy-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Last Updated header styling */
+.last-updated-header {
+  max-width: 600px;
+  margin: 0 auto 2rem auto;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-surface);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  text-align: center;
+  font-size: 1.1em;
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+/* Region groups */
+.region-group {
+  margin-bottom: 1.5rem;
+}
+
+/* Region headers - styled as section dividers */
+.region-header {
+  margin: 0 0 1.5rem 0;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(to right, var(--color-primary-dark), var(--color-primary));
+  color: white;
+  font-size: 1.3em;
+  font-weight: bold;
+  border-radius: 8px;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(0,75,124,0.2);
+  transition: background 0.2s;
+}
+
+.region-header:hover {
+  background: linear-gradient(to right, #003a5d, #005a96);
+}
+
+.region-toggle-btn {
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 0.9em;
+  transition: transform 0.2s;
+}
+
+/* Cards grid layout */
+.buoy-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.buoy-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 1.25rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: fadeIn 0.4s ease-in;
+  display: flex;
+  flex-direction: column;
+  max-width: 450px; /* Constrain card width */
+}
+
+.buoy-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Responsive grid adjustments */
+@media (min-width: 768px) and (max-width: 1200px) {
+  /* Tablets: 2 columns */
+  .buoy-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1201px) {
+  /* Desktop: 3 columns */
+  .buoy-cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  /* Mobile: 1 column */
+  .buoy-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .region-header {
+    font-size: 1.15em;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  #buoy-container {
+    padding: 0.75rem;
+  }
+
+  .last-updated-header {
+    font-size: 1em;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .region-group {
+    margin-bottom: 2rem;
+  }
+
+  .buoy-card {
+    padding: 1rem;
+    max-width: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  /* Fix buoy selector overflow on mobile (Firefox) */
+  #buoy-selector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  #buoy-selector label {
+    display: block;
+    margin: 0;
+  }
+
+  #chart-buoy-select {
+    max-width: 100%;
+    width: 100%;
+    margin-left: 0;
+    font-size: 0.9rem;
+  }
+}
+
+.buoy-card h2 {
+  margin-top: 0;
+  color: #0066a1;
+  font-size: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.buoy-metric {
+  margin: 0.4rem 0;
+  font-size: 0.95em;
+}
+
+.buoy-metric.section-header {
+  margin-top: 0.75rem;
+  font-size: 1.05em;
+  color: var(--color-primary-dark);
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.25rem;
+}
+
+.buoy-metric.indent {
+  margin-left: 1.5rem;
+  font-size: 0.95em;
+}
+
+.section-divider {
+  margin: 0.75rem 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eee;
+}
+
+.error {
+  color: red;
+  text-align: center;
+  margin-top: 2rem;
+}
+
+/* NOAA buoy styling */
+.noaa-card {
+  border-left: 4px solid #003087;
+  background: linear-gradient(to right, #f8f9ff 0%, #ffffff 10%);
+}
+
+/* Environment Canada styling */
+.envcan-card {
+  border-left: 4px solid #006400;
+  background: linear-gradient(to right, #f8fff8 0%, #ffffff 10%);
+}
+
+/* Wave section container */
+.wave-section {
+  background: #f5f8ff;
+  padding: 1rem;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+  border: 1px solid #e0e8f0;
+}
+
+/* Data source badges */
+.source-badge {
+  font-size: 0.7em;
+  font-weight: normal;
+  padding: 0.2em 0.5em;
+  border-radius: 3px;
+  margin-left: 0.5em;
+}
+
+.source-badge.envcan {
+  color: #006400;
+  background: rgba(0, 100, 0, 0.1);
+}
+
+.source-badge.noaa {
+  color: #003087;
+  background: rgba(0, 48, 135, 0.1);
+}
+
+/* Staleness warning */
+.stale-warning {
+  color: #f57c00;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+/* Expand button */
+.expand-btn {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: #f0f4f8;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  color: var(--color-primary-dark);
+  font-weight: 600;
+  width: 100%;
+  text-align: center;
+  transition: background 0.2s;
+}
+
+.expand-btn:hover {
+  background: #e1e8ed;
+}
+
+.expand-btn:active {
+  background: #d0d7e0;
+}
+
+/* -----------------------------
+   Charts Section
+----------------------------- */
+
+#charts-section {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+#charts-section h2 {
+  text-align: center;
+  color: var(--color-primary-dark);
+  margin-bottom: 1.5rem;
+}
+
+#buoy-selector {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+#chart-buoy-select {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 2px solid var(--color-primary-dark);
+  border-radius: 4px;
+  margin-left: 0.5rem;
+}
+
+/* Chart containers - consistent styling */
+#wave-chart, 
+#wave-period-chart,
+#wind-chart, 
+#temp-chart, 
+#wave-comparison-chart,
+#surge-chart {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+
+/* Active buoy indicator */
+.active-indicator {
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--color-primary-dark);
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #e3f2fd;
+  border-radius: 4px;
+  display: inline-block;
+  min-width: 200px;
+}
+
+.active-indicator.active {
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* -----------------------------
+   Wave Height Table
+----------------------------- */
+
+#wave-height-table-section {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+#wave-height-table-section h2 {
+  text-align: center;
+  color: var(--color-primary-dark);
+  margin-bottom: 1.5rem;
+}
+
+.data-table {
+  background: white;
+  border-radius: 8px;
+  overflow-x: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.data-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  background: var(--color-primary-dark);
+  color: white;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.data-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.data-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+.data-table tbody tr:nth-child(even) {
+  background: rgba(0, 75, 124, 0.03);
+}
+
+.data-table tr:hover {
+  background: #f5f5f5;
+}
+
+/* -----------------------------
+   About Section
+----------------------------- */
+
+.about-section {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 30px 20px;
+  background: var(--color-surface-alt);
+  color: #1a1a1a;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.about-section h3 {
+  text-align: center;
+  color: var(--color-primary-dark);
+  margin-bottom: 1em;
+  font-size: 1.4rem;
+}
+
+.about-section p {
+  margin: 0.8em 0;
+  text-align: center;
+}
+
+/* -----------------------------
+   Storm Surge Section
+----------------------------- */
+
+#storm-surge-section {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 1rem;
+}
+
+#storm-surge-section h2 {
+  text-align: center;
+  color: var(--color-primary-dark);
+  margin-bottom: 1.5rem;
+}
+
+#surge-metadata {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--color-surface-light);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+  line-height: 1.6;
+}
+
+/* -----------------------------
+   Direction Arrows - Basic Implementation
+   NOTE: Firefox on Android tablets has rendering issues with rotated Unicode arrows
+   This is a simplified version for maximum compatibility
+----------------------------- */
+
+.dir-arrow {
+  display: inline-block;
+  margin-left: 0.25rem;
+  color: var(--color-primary-dark);
+}
+
+/* -----------------------------
+   Navigation Links (Card → Map/Charts)
+----------------------------- */
+
+.buoy-nav-links {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e0e0e0;
+  justify-content: center;
+}
+
+.buoy-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.8rem;
+  background: #f0f4f8;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85em;
+  color: var(--color-primary-dark);
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.buoy-nav-link:hover {
+  background: #e1e8ed;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.buoy-nav-link:active {
+  transform: translateY(0);
+}
+
+/* -----------------------------
+   Animations
+----------------------------- */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 75, 124, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(0, 75, 124, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 75, 124, 0);
+  }
+}
+
+.highlight-pulse {
+  animation: pulse 1s ease-in-out 2;
+}
+
+/* -----------------------------
+   Responsive Design
+----------------------------- */
+
+@media (max-width: 600px) {
+  #charts-section,
+  #storm-surge-section,
+  #wind-table-section,
+  #map-section,
+  #wind-chart-section,
+  #wind-data-table-section {
+    padding: 0 0.25rem !important;
+  }
+  
+  .buoy-metric.indent {
+    margin-left: 1rem;
+    font-size: 0.9em;
+  }
+  
+  .wave-section {
+    padding: 0.75rem;
+  }
+  
+  .buoy-metric.section-header {
+    font-size: 1em;
+  }
+  
+  .buoy-card h2 {
+    font-size: 1.3em;
+  }
+  
+  #wave-chart,
+  #wave-period-chart,
+  #wind-chart,
+  #temp-chart,
+  #wave-comparison-chart,
+  #surge-chart {
+    padding: 0.5rem;
+  }
+}
+
+/* -----------------------------
+   Banner
+----------------------------- */
+
+header {
+  background-image:
+    linear-gradient(135deg,
+      rgba(0, 75, 124, 0.5) 0%,
+      rgba(0, 102, 161, 0.4) 100%
+    ),
+    url('../images/noaa-waves-1989.jpg');
+  background-position: center 60%;  /* Changed from 'center' */
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  padding: 3rem 1rem;
+  text-align: center;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Disable parallax on mobile for better performance and compatibility */
+@media (max-width: 768px) {
+  header {
+    background-attachment: scroll;
+  }
+}
+
+header h1 {
+  color: white;
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+header h2 {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.3rem;
+  font-weight: 400;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+  margin: 0.5rem 0 0 0;
+}
+
+@media (max-width: 600px) {
+  header {
+    padding: 2rem 1rem;
+    min-height: 180px;
+    background-attachment: scroll;
+  }
+
+  header h1 {
+    font-size: 1.8rem;
+  }
+
+  header h2 {
+    font-size: 1rem;
+  }
+}
+
+/* -----------------------------
+   Site Tagline
+----------------------------- */
+
+.site-tagline {
+  background: linear-gradient(to bottom, rgba(224, 242, 255, 0.5), rgba(224, 242, 255, 0.8));
+  text-align: center;
+  font-size: 1rem;
+  font-style: italic;
+  color: #2c5282;
+  padding: 1rem 1.5rem;
+  margin: 0;
+  border-bottom: 1px solid rgba(66, 153, 225, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+  .site-tagline {
+    font-size: 0.9rem;
+    padding: 0.85rem 1rem;
+  }
+}
+
+/* -----------------------------
+   Stations Map Section
+----------------------------- */
+
+#map-section {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+#map-section h2 {
+  text-align: center;
+  color: var(--color-primary-dark);
+  margin-bottom: 1.5rem;
+}
+
+#stations-map {
+  height: 600px;
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.map-legend {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.legend-icon {
+  font-size: 1.5rem;
+}
+
+/* Lightstation permanent labels */
+.lightstation-label {
+  font-size: 13px !important;
+  font-weight: 600;
+  color: #2c3e50;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(0, 75, 124, 0.2) !important;
+  border-radius: 4px;
+  padding: 2px 6px !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
+}
+
+/* Custom marker styles */
+.station-marker {
+  background: none;
+  border: none;
+}
+
+.marker-icon {
+  font-size: 24px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.station-marker:hover .marker-icon {
+  transform: scale(1.2);
+}
+
+/* Leaflet popup customization */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+}
+
+.station-popup {
+  font-family: system-ui, sans-serif;
+  min-width: 250px;
+}
+
+.station-popup h3 {
+  margin: 0 0 0.75rem 0;
+  color: var(--color-primary-dark);
+  font-size: 1.2rem;
+  border-bottom: 2px solid var(--color-primary-dark);
+  padding-bottom: 0.5rem;
+}
+
+.station-popup p {
+  margin: 0.4rem 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.station-popup strong {
+  color: var(--color-text-light);
+}
+
+.data-types-list {
+  margin: 0.5rem 0 0 0;
+  padding-left: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.data-types-list li {
+  margin: 0.25rem 0;
+  text-transform: capitalize;
+}
+
+/* Responsive map */
+/* Tablet layout for map legend */
+@media (max-width: 1024px) and (min-width: 601px) {
+  .map-legend {
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    padding: 0.75rem;
+  }
+
+  .legend-item {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 600px) {
+  #stations-map {
+    height: 400px;
+  }
+
+  .map-legend {
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    justify-content: flex-start;
+    padding: 0.75rem;
+  }
+
+  .legend-item {
+    font-size: 0.85rem;
+    flex: 0 0 calc(50% - 0.5rem); /* Two items per row on mobile */
+    min-width: 0; /* Allow items to shrink */
+  }
+
+  .legend-icon {
+    font-size: 1.2rem;
+  }
+
+  .station-popup {
+    min-width: 200px;
+  }
+}
+
+/* -----------------------------
+   Reusable Link & Button Styles
+----------------------------- */
+
+/* GitHub link hover effect (replaces inline onmouseover/onmouseout) */
+.github-link {
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.github-link:hover {
+  opacity: 1;
+}
+
+/* Button primary (replaces inline button styles) */
+.button-primary {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.button-primary:hover {
+  background: var(--color-primary-lighter);
+}
+
+/* -----------------------------
+   Utility Classes
+----------------------------- */
+
+/* Flexbox utilities */
+.flex {
+  display: flex;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Text alignment */
+.text-center {
+  text-align: center;
+}
+
+/* Margin utilities */
+.mt-0 { margin-top: 0; }
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
+
+.mb-0 { margin-bottom: 0; }
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+
+/* Padding utilities */
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+
+/* Border utilities */
+.border-top {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--spacing-md);
+}
+
+/* Width utilities */
+.w-full {
+  width: 100%;
+}
+
+/* Height utilities */
+.h-400 {
+  height: 400px;
+}
+
+.h-500 {
+  height: 500px;
+}
+
+/* Color utilities */
+.color-primary {
+  color: var(--color-primary);
+}
+
+.color-muted {
+  color: var(--color-text-muted);
+}
+
+/* Font size utilities */
+.text-sm {
+  font-size: 0.9rem;
+}
+
+.text-xs {
+  font-size: 0.8rem;
+}
+
+/* Inline flex utilities */
+.inline-flex {
+  display: inline-flex;
+  align-items: center;
+}
+
+.gap-sm {
+  gap: 0.3rem;
+}
+
+.gap-md {
+  gap: 0.5rem;
+}
+
+/* Background utilities */
+.bg-surface-light {
+  background: var(--color-surface-light);
+}
+
+/* Border radius utilities */
+.rounded {
+  border-radius: 4px;
+}
+
+.rounded-md {
+  border-radius: 6px;
+}
+
+/* Line height utilities */
+.leading-relaxed {
+  line-height: 1.6;
+}
+
+/* Display utilities */
+.hidden {
+  display: none;
+}
+
+/* Text decoration */
+.no-underline {
+  text-decoration: none;
+}
+
+/* Vertical alignment */
+.align-middle {
+  vertical-align: middle;
+}
+
+/* Font weight */
+.font-semibold {
+  font-weight: 600;
+}
+
+/* Color utilities (extended) */
+.color-white {
+  color: white;
+}
+
+.color-warning {
+  color: #ff9800;
+}
+
+.color-error {
+  color: #e53935;
+}

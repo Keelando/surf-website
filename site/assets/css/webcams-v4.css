@@ -1,0 +1,873 @@
+/* ==========================================================================
+   Webcams Page Styles
+   ========================================================================== */
+
+/* CSS Custom Properties */
+:root {
+  --webcam-primary: #2c5282;
+  --webcam-primary-light: #2b6cb0;
+  --webcam-primary-dark: #2a4a75;
+  --webcam-accent: #4299e1;
+  --webcam-accent-hover: #3182ce;
+  --webcam-text: #4a5568;
+  --webcam-text-muted: #718096;
+  --webcam-text-light: #9ca3af;
+  --webcam-bg: #f7fafc;
+  --webcam-bg-alt: #edf2f7;
+  --webcam-border: #e2e8f0;
+  --webcam-border-light: #f0f0f0;
+  --webcam-error: #c53030;
+  --webcam-error-bg: #fff5f5;
+  --webcam-warning: #856404;
+  --webcam-warning-bg: #fff3cd;
+  --webcam-warning-border: #ffc107;
+}
+
+/* ==========================================================================
+   Region Sections
+   ========================================================================== */
+
+.webcam-region {
+  margin: 2rem auto;
+  max-width: 1200px;
+  padding: 0 1rem;
+}
+
+.webcam-region-header {
+  background: linear-gradient(to right, var(--webcam-primary), var(--webcam-primary-light));
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.webcam-region-header:hover {
+  background: linear-gradient(to right, var(--webcam-primary-dark), #295fa0);
+}
+
+.webcam-region-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.webcam-region-toggle-btn {
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 0.9em;
+  transition: transform 0.2s;
+}
+
+.webcam-region.collapsed .webcam-region-toggle-btn {
+  transform: rotate(-90deg);
+}
+
+.webcam-region-content {
+  max-height: 5000px;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.webcam-region.collapsed .webcam-region-content {
+  max-height: 0;
+}
+
+.webcam-region-count {
+  font-size: 0.8em;
+  font-weight: normal;
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   Webcam Grid & Cards
+   ========================================================================== */
+
+.webcam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  gap: 2rem;
+  padding: 2rem 0;
+  justify-content: center;
+}
+
+.webcam-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  max-width: 100%;
+}
+
+.webcam-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.webcam-header {
+  background: linear-gradient(to right, #004b7c, #005a94);
+  color: white;
+  padding: 1rem 1.5rem;
+}
+
+.webcam-header h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.3rem;
+}
+
+.webcam-location {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Webcam Image & Slideshow
+   ========================================================================== */
+
+.webcam-image-container {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  background: var(--webcam-border-light);
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.webcam-image {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.slideshow-controls {
+  display: none;
+  padding: 0.75rem;
+  background: var(--webcam-bg);
+  border-top: 1px solid var(--webcam-border);
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.slideshow-controls.visible {
+  display: flex;
+}
+
+.slideshow-nav {
+  background: var(--webcam-accent);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 1.2rem;
+  border-radius: 4px;
+  transition: background 0.2s, opacity 0.2s;
+  min-width: 40px;
+}
+
+.slideshow-nav:hover:not(:disabled) {
+  background: var(--webcam-accent-hover);
+}
+
+.slideshow-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: #cbd5e0;
+}
+
+.slideshow-dots {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.slideshow-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #cbd5e0;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.slideshow-dot:hover {
+  transform: scale(1.2);
+}
+
+.slideshow-dot.active {
+  background: var(--webcam-accent);
+}
+
+.slideshow-age-indicator {
+  font-size: 0.8rem;
+  color: var(--webcam-text-muted);
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+/* ==========================================================================
+   Webcam Info Section
+   ========================================================================== */
+
+.webcam-info {
+  padding: 1rem 1.5rem;
+  background: var(--webcam-bg);
+}
+
+.webcam-loading {
+  color: var(--webcam-text-muted);
+  font-style: italic;
+}
+
+.webcam-update-notice {
+  font-size: 0.9rem;
+  color: var(--webcam-primary);
+  background: #e6f2ff;
+  padding: 0.5rem;
+  margin-bottom: 0.75rem;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.webcam-timestamp {
+  font-size: 0.85rem;
+  color: var(--webcam-text);
+  margin-bottom: 0.5rem;
+}
+
+.stale-indicator {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  background: var(--webcam-warning-bg);
+  border: 1px solid var(--webcam-warning-border);
+  border-radius: 4px;
+  color: var(--webcam-warning);
+  font-weight: 600;
+  font-size: 0.8em;
+  vertical-align: middle;
+}
+
+.webcam-card.webcam-stale {
+  border: 2px solid var(--webcam-warning-border);
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+.webcam-card.webcam-stale .webcam-header {
+  background: linear-gradient(to bottom, var(--webcam-warning-bg), white);
+  border-bottom: 1px solid var(--webcam-warning-border);
+}
+
+.webcam-source {
+  font-size: 0.85rem;
+  color: var(--webcam-text);
+}
+
+.webcam-source a {
+  color: var(--webcam-accent);
+  text-decoration: none;
+}
+
+.webcam-source a:hover {
+  text-decoration: underline;
+}
+
+.webcam-error {
+  padding: 1rem;
+  background: var(--webcam-error-bg);
+  color: var(--webcam-error);
+  border-radius: 4px;
+  margin: 1rem;
+  text-align: center;
+}
+
+.webcam-down-notice {
+  background: var(--webcam-warning-bg);
+  color: var(--webcam-warning);
+  border-left: 4px solid var(--webcam-warning-border);
+}
+
+.webcam-attribution {
+  background: linear-gradient(to right, var(--webcam-primary), var(--webcam-primary-light));
+  color: white;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.webcam-attribution a {
+  color: #90cdf4;
+  text-decoration: underline;
+}
+
+.webcam-map-link {
+  margin-top: 0.5rem;
+}
+
+.webcam-map-link a {
+  color: var(--webcam-primary);
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-block;
+  padding: 0.5rem 0;
+}
+
+.webcam-map-link a:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   Marine Conditions Banner
+   ========================================================================== */
+
+.marine-conditions-banner {
+  background: white;
+  padding: 1.25rem 1.5rem;
+  margin: 0 auto 1.5rem auto;
+  max-width: 1200px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--webcam-border);
+}
+
+.marine-conditions-banner h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--webcam-primary);
+}
+
+.marine-conditions-banner.region-conditions {
+  margin: 0 0 1.5rem 0;
+}
+
+.conditions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.condition-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--webcam-border-light);
+}
+
+.condition-row:last-child {
+  border-bottom: none;
+}
+
+.condition-station-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--webcam-text);
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+.condition-data {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.condition-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.condition-section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--webcam-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.condition-timestamp {
+  font-size: 0.8rem;
+  color: var(--webcam-text-light);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.condition-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.condition-link {
+  font-size: 0.85rem;
+  color: #0077be;
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.condition-link:hover {
+  background: #e6f2ff;
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   Wind & Wave Display
+   ========================================================================== */
+
+.condition-wind,
+.condition-waves {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.condition-wind-arrow,
+.wave-arrow-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.condition-wind-details {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.wind-cardinal {
+  font-weight: 600;
+  color: var(--webcam-primary);
+}
+
+.wind-degrees {
+  color: var(--webcam-text-muted);
+  font-size: 0.9rem;
+}
+
+.wind-speed {
+  font-weight: 600;
+  color: var(--webcam-primary);
+}
+
+.wind-gust {
+  color: var(--webcam-text-muted);
+}
+
+.wave-icon {
+  font-size: 1.1rem;
+}
+
+.wave-details {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.wave-height {
+  font-weight: 600;
+  color: var(--webcam-primary);
+}
+
+.wave-period {
+  color: var(--webcam-text-muted);
+}
+
+/* Extended wave details (for detailed buoy data) */
+.wave-details-extended {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.wave-icon-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.wave-data-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.wave-metric {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.wave-label {
+  font-weight: 600;
+  color: var(--webcam-text);
+  min-width: 48px;
+}
+
+.wave-value {
+  color: var(--webcam-primary);
+  font-weight: 500;
+}
+
+.wave-spread-vectors {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 4px;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.wave-spread-vector {
+  text-align: center;
+}
+
+.wave-spread-vector-label {
+  font-size: 0.75em;
+  color: #666;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.wave-spread-vector-caption {
+  font-size: 0.7em;
+  color: #999;
+  margin-top: 0.25rem;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.refresh-button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: var(--webcam-accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  transition: background 0.2s;
+}
+
+.refresh-button:hover {
+  background: var(--webcam-accent-hover);
+}
+
+/* ==========================================================================
+   Intro Sections (Collapsible)
+   ========================================================================== */
+
+.intro-section {
+  background: var(--webcam-bg-alt);
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.intro-section.bordered {
+  background: white;
+  border: 1px solid #e0e7ee;
+}
+
+.intro-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.intro-section-header:hover {
+  opacity: 0.85;
+}
+
+.intro-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 0.8rem;
+  color: var(--webcam-primary);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.intro-section.collapsed .intro-section-toggle {
+  transform: rotate(-90deg);
+}
+
+.intro-section h2 {
+  margin: 0;
+  color: var(--webcam-primary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  flex: 1;
+}
+
+.intro-section-hint {
+  font-size: 0.8rem;
+  color: var(--webcam-text-muted);
+  font-weight: normal;
+  margin-left: auto;
+  padding-left: 0.5rem;
+}
+
+.intro-section.collapsed .intro-content {
+  display: none;
+}
+
+.intro-content {
+  margin-top: 0.75rem;
+  padding-left: 1.5rem;
+  border-left: 2px solid var(--webcam-border);
+}
+
+.intro-content p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.intro-content p:last-child {
+  margin-bottom: 0;
+}
+
+.webcam-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  padding-left: 0;
+  border-left: none;
+}
+
+.webcam-links-grid a {
+  color: var(--webcam-accent);
+}
+
+/* ==========================================================================
+   Refresh Notice (Toast)
+   ========================================================================== */
+
+.refresh-notice {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--webcam-primary);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  font-size: 0.95rem;
+  text-align: center;
+  transition: opacity 0.5s;
+}
+
+.refresh-notice button {
+  margin-left: 1rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  color: var(--webcam-primary);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Responsive: Tablet
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .webcam-grid {
+    grid-template-columns: 1fr;
+    padding: 0 0.5rem;
+  }
+}
+
+/* ==========================================================================
+   Responsive: Mobile
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .webcam-region {
+    margin: 1rem auto;
+    padding: 0 0.5rem;
+  }
+
+  .webcam-region-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .webcam-region-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .webcam-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem 0;
+  }
+
+  .webcam-card {
+    border-radius: 6px;
+  }
+
+  .webcam-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .webcam-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .webcam-image-container {
+    min-height: 180px;
+  }
+
+  .webcam-info {
+    padding: 0.75rem 1rem;
+  }
+
+  .webcam-update-notice {
+    font-size: 0.8rem;
+    padding: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .slideshow-controls {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .slideshow-nav {
+    padding: 0.4rem 0.75rem;
+    font-size: 1rem;
+    min-width: 36px;
+  }
+
+  .slideshow-dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .marine-conditions-banner {
+    padding: 0.75rem 1rem;
+    margin: 0 0 1rem 0;
+  }
+
+  .marine-conditions-banner h3 {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .conditions-stack {
+    gap: 0.5rem;
+  }
+
+  .condition-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.4rem 0;
+  }
+
+  .condition-station-name {
+    font-size: 0.85rem;
+    min-width: auto;
+  }
+
+  .condition-data {
+    gap: 0.75rem;
+  }
+
+  .condition-timestamp {
+    margin-left: 0;
+    font-size: 0.75rem;
+  }
+
+  .intro-section {
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .intro-section h2 {
+    font-size: 1rem;
+  }
+
+  .intro-section-hint {
+    font-size: 0.7rem;
+  }
+
+  .intro-content {
+    padding-left: 1rem;
+  }
+
+  .refresh-button {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* ==========================================================================
+   Responsive: Small Mobile
+   ========================================================================== */
+
+@media (max-width: 480px) {
+  .webcam-region {
+    margin: 0.75rem auto;
+    padding: 0 0.25rem;
+  }
+
+  .webcam-grid {
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+  }
+
+  .webcam-header {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .webcam-header h3 {
+    font-size: 1rem;
+  }
+
+  .webcam-location {
+    font-size: 0.8rem;
+  }
+
+  .webcam-info {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .condition-section-label {
+    font-size: 0.7rem;
+  }
+}

@@ -13,7 +13,7 @@ All data stored in SQLite, published to MQTT/Home Assistant, and exported as JSO
 
 **Live site:** https://halibutbank.ca
 
-**Frontend directory:** `~/site/` (separate git repo: surf-website-front-end)
+**Frontend directory:** `site/` (in this repo)
 
 ---
 
@@ -208,7 +208,7 @@ Live webcam feeds with automated screen capture:
 - `coxbay` - Cox Bay (Tofino)
 
 **Update frequency:** Every 10 minutes (with 6-20 min livestream delay)
-**Output:** `~/site/data/{webcam_id}/latest.jpg` + slideshow manifest
+**Output:** `site/data/{webcam_id}/latest.jpg` + slideshow manifest
 **Page:** `/webcams.html`
 
 ### Lightstations (23)
@@ -273,7 +273,7 @@ ps aux | grep sr3                        # Check process status
 - **Gale Warning**: 34-47 knots
 - **Storm Warning**: 48+ knots
 
-**Output:** `~/site/data/marine_forecast.json`
+**Output:** `site/data/marine_forecast.json`
 
 **Frontend:** Dismissible warning banners on all pages + dedicated forecasts page
 
@@ -303,9 +303,9 @@ ps aux | grep sr3                        # Check process status
 3. `export_hindcast_json.py` - Export 38-61h predictions (full Pacific calendar day 2 days ahead, daily)
 
 **Outputs:**
-- `~/site/data/storm_surge/<station_id>.json` - Individual station forecasts (6 files)
-- `~/site/data/storm_surge/combined_forecast.json` - All stations combined
-- `~/site/data/storm_surge/hindcast.json` - Historical +48h predictions
+- `site/data/storm_surge/<station_id>.json` - Individual station forecasts (6 files)
+- `site/data/storm_surge/combined_forecast.json` - All stations combined
+- `site/data/storm_surge/hindcast.json` - Historical +48h predictions
 
 **Units:** Meters (above/below predicted tide)
 
@@ -343,8 +343,8 @@ python3 export_wind_json.py
 # Check if data arrived
 sqlite3 ~/.local/share/buoy_data.sqlite "SELECT COUNT(*) FROM buoy_observation;"
 sqlite3 ~/.local/share/wind_data.sqlite "SELECT COUNT(*) FROM wind_observation;"
-cat ~/site/data/latest_buoy_v2.json | jq '.["4600146"]'
-cat ~/site/data/latest_wind.json | jq '.CWSB'
+cat site/data/latest_buoy_v2.json | jq '.["4600146"]'
+cat site/data/latest_wind.json | jq '.CWSB'
 ```
 
 **See `docs/COMMANDS.md` for more examples.**
@@ -356,13 +356,13 @@ cat ~/site/data/latest_wind.json | jq '.CWSB'
 1. **If EC buoy:** Update `~/.config/sr3/subscribe/bc_buoys.conf` with new subtopic, restart sr3
 2. **Add to `stations.json`** - Master registry
 3. **Update scripts:** `buoy_to_influx_sqlite.py`, `fetch_noaa_buoy.py`, `sqlite_to_json.py`, `export_24hr_timeseries.py`, `influx_to_mqtt.py`
-4. **Update frontend:** `~/site/assets/js/main.js`, `charts.js`
+4. **Update frontend:** `site/assets/js/main.js`, `charts.js`
 5. **Test pipeline:**
    ```bash
    python3 buoy_to_influx_sqlite.py  # or fetch_noaa_buoy.py
    sqlite3 ~/.local/share/buoy_data.sqlite "SELECT * FROM buoy_observation WHERE buoy_id='NEW_ID' LIMIT 5;"
    python3 sqlite_to_json.py
-   cat ~/site/data/latest_buoy_v2.json | jq .NEW_ID
+   cat site/data/latest_buoy_v2.json | jq .NEW_ID
    ```
 
 ---
@@ -439,7 +439,7 @@ When modifying data processing logic:
 - `docs/ARCHITECTURE_DETAILED.md` - Full database schemas, script details
 - `docs/STORM_SURGE_SETUP.md` - Storm surge forecast setup guide (GDSPS/GeoMet)
 
-**Frontend docs (`~/site/`):**
+**Frontend docs (`site/`):**
 - `docs/FRONTEND_CHANGELOG.md` - UI/UX changes, feature history
 - `docs/FRAMEWORK_DISCUSSION.md` - Framework evaluation notes
 - `docs/BROWSER_STATE_EXPLAINED.md` - localStorage usage guide

@@ -1,0 +1,149 @@
+/**
+ * Stations Map Styles
+ * CSS for the Leaflet map and station popups
+ */
+
+/* Brighten the map tiles slightly */
+.leaflet-tile {
+  filter: brightness(1.15) contrast(0.95);
+}
+
+/* Make Leaflet popups scrollable on mobile/tablet */
+.leaflet-popup-content-wrapper {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Smaller max-height for mobile devices */
+@media (max-width: 768px) {
+  .leaflet-popup-content-wrapper {
+    max-height: 60vh;
+    max-width: 80vw;
+  }
+}
+
+/* Ensure popup content has proper spacing */
+.station-popup {
+  padding: 0.5rem;
+  min-width: 200px;
+}
+
+.station-popup h3 {
+  margin: 0 0 0.5rem 0;
+  color: #004b7c;
+  font-size: 1.1rem;
+}
+
+.station-popup p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.station-popup strong {
+  color: #333;
+}
+
+/* Data types list styling */
+.data-types-list {
+  margin: 0.5rem 0 0.5rem 1.2rem;
+  padding: 0;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.data-types-list li {
+  margin: 0.2rem 0;
+  text-transform: capitalize;
+}
+
+/* View Data button styling */
+.view-data-btn {
+  display: inline-block;
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: #0077be;
+  color: white !important;
+  text-decoration: none !important;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  text-align: center;
+  transition: background 0.2s ease;
+}
+
+.view-data-btn:hover {
+  background: #005a8e;
+  color: white !important;
+}
+
+.view-data-btn:active {
+  background: #004570;
+  color: white !important;
+}
+
+.view-data-btn:visited {
+  color: white !important;
+}
+
+/* Station markers */
+.station-marker {
+  background: transparent;
+  border: none;
+}
+
+.marker-icon {
+  font-size: 24px;
+  text-align: center;
+  line-height: 30px;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: transform 0.2s ease;
+}
+
+.station-marker:hover .marker-icon {
+  transform: scale(1.2);
+}
+
+/* Buoy markers - wave emoji */
+.buoy-marker .marker-icon {
+  filter: drop-shadow(0 2px 4px rgba(0, 119, 190, 0.4));
+}
+
+/* Tide markers - pin emoji */
+.tide-marker .marker-icon {
+  filter: drop-shadow(0 2px 4px rgba(220, 53, 69, 0.4));
+}
+
+/* Enhanced buoy markers with data */
+.buoy-marker-enhanced {
+  background: white;
+  border: 2px solid #004b7c;
+  border-radius: 8px;
+  padding: 4px 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  font-family: system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.buoy-marker-enhanced:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+}
+
+.wave-arrow {
+  display: inline-block;
+  font-size: 18px;
+  color: #004b7c;
+  margin-right: 4px;
+  transition: transform 0.3s ease;
+}
+
+.wave-height {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: bold;
+  color: #004b7c;
+}

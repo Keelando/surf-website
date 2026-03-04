@@ -1,0 +1,623 @@
+/* =====================================================
+   Navigation Bar Styles
+   ===================================================== */
+
+/* Normalize text sizing across mobile browsers (Chrome vs Firefox) */
+.main-nav,
+.main-nav * {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.main-nav {
+  /* Modern ocean gradient */
+  background: linear-gradient(135deg, #1a365d 0%, #2c5282 50%, #1e6b8c 100%);
+  padding: 0.5rem;
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-bottom: 3px solid #4299e1; /* Accent border on bottom */
+
+  /* Sticky disabled - uncomment below to re-enable */
+  /* position: sticky; */
+  /* top: 0; */
+  /* z-index: 1000; */
+  position: relative; /* Keep relative positioning */
+  z-index: 100; /* Lower z-index to avoid overlapping map */
+  transition: all 0.3s ease;
+}
+
+.nav-links {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.nav-clock {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  min-width: 140px;
+  text-align: center;
+  display: none; /* Hidden by default (mobile) */
+}
+
+/* Show clock on desktop only */
+@media (min-width: 1024px) {
+  .nav-clock {
+    display: block;
+  }
+}
+
+.nav-link {
+  color: #fff;
+  text-decoration: none;
+  padding: 0.75rem 1.25rem;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  position: relative;
+  border: 2px solid transparent;
+}
+
+/* Remove old border dividers */
+.nav-link:last-child {
+  border: 2px solid transparent;
+}
+
+/* Modern hover effect - lift with glow */
+.nav-link:hover {
+  background: rgba(255,255,255,0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Modern active state - pill with accent glow */
+.nav-link.active {
+  background: rgba(66, 153, 225, 0.3);
+  border: 2px solid rgba(66, 153, 225, 0.5);
+  box-shadow:
+    0 0 12px rgba(66, 153, 225, 0.4),
+    0 2px 8px rgba(0,0,0,0.15);
+  font-weight: 600;
+}
+
+/* Tablet - reduce padding slightly */
+@media (max-width: 768px) {
+  .nav-link {
+    padding: 0.65rem 1rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* Mobile responsive - allow wrapping */
+@media (max-width: 600px) {
+  .main-nav {
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    padding: 0.4rem;
+    justify-content: center;
+  }
+
+  .nav-links {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .nav-link {
+    padding: 0.55rem 0.7rem;
+    font-size: 0.85rem;
+    border-radius: 4px;
+  }
+}
+
+/* Small mobile screens - even tighter */
+@media (max-width: 480px) {
+  .main-nav {
+    gap: 0.25rem;
+    padding: 0.35rem;
+  }
+
+  .nav-link {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.85rem;
+    border-radius: 3px;
+  }
+}
+
+/* Extra small screens - minimal padding */
+@media (max-width: 380px) {
+  .main-nav {
+    gap: 0.2rem;
+    padding: 0.3rem;
+  }
+
+  .nav-link {
+    padding: 0.45rem 0.5rem;
+    font-size: 0.8rem;
+    border-radius: 3px;
+  }
+}
+
+/* Tide chart container styling */
+#tide-chart {
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  overflow: visible;
+}
+
+/* Chart date controls */
+.chart-date-controls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chart-date-label-container {
+  text-align: center;
+}
+
+#chart-date-label {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.chart-nav-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+#prev-day-btn,
+#next-day-btn {
+  padding: 0.5rem 1rem;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+#prev-day-btn:hover,
+#next-day-btn:hover {
+  background: #f5f5f5;
+}
+
+/* =====================================================
+   Tide Page Styles
+   ===================================================== */
+
+.tide-main-content {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.tide-selector-section {
+  text-align: center;
+  padding: 1rem 0;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.tide-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.tide-card h2 {
+  color: #004b7c;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  font-size: 1.6rem;
+}
+
+/* Station metadata */
+.station-metadata {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: #f5f9fc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.metadata-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.metadata-item strong {
+  color: #333;
+}
+
+.station-type-badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.station-type-permanent {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.station-type-temporary {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffcc80;
+}
+
+@media (max-width: 600px) {
+  .station-metadata {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+  }
+}
+
+/* Compact Metrics Grid */
+.tide-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.tide-metric-card {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  transition: box-shadow 0.2s;
+}
+
+.tide-metric-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.tide-metric-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0077be;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.tide-metric-value {
+  /* Content populated by JavaScript */
+}
+
+/* Mobile: Stack cards vertically */
+@media (max-width: 768px) {
+  .tide-metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .tide-metric-card {
+    padding: 0.75rem;
+  }
+
+  .tide-metric-label {
+    font-size: 0.8rem;
+  }
+}
+
+/* Legacy styles for high/low section */
+.tide-data-group {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tide-data-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.tide-data-group h3 {
+  color: #0077be;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.tide-value {
+  text-align: center;
+  padding: 0.5rem;
+}
+
+/* High/Low Table Styling */
+#highlow-table {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+#highlow-table th {
+  background: #004b7c;
+  color: #fff;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+#highlow-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+#highlow-table tr:last-child td {
+  border-bottom: none;
+}
+
+#highlow-table tr:hover {
+  background: #f5f5f5;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .tide-main-content {
+    padding: 0 0.25rem;
+  }
+
+  .tide-card {
+    padding: 1rem;
+  }
+
+  .tide-card h2 {
+    font-size: 1.4rem;
+  }
+
+  .tide-data-group h3 {
+    font-size: 1.1rem;
+  }
+
+  .tide-value {
+    font-size: 0.9rem;
+  }
+
+  #highlow-table th,
+  #highlow-table td {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  /* Stack date selection controls vertically */
+  .chart-date-controls {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  #chart-date-label {
+    font-size: 0.95rem;
+  }
+
+  #prev-day-btn,
+  #next-day-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 1.1rem;
+  }
+
+  /* Fix tide selector overflow on mobile */
+  .tide-selector-section {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 1rem 0.5rem;
+  }
+
+  .tide-selector-section label {
+    font-size: 1rem !important;
+    margin-right: 0 !important;
+    text-align: center;
+  }
+
+  .tide-selector-section select {
+    min-width: 0 !important;
+    width: 100%;
+    max-width: 100%;
+    font-size: 0.9rem !important;
+    padding: 0.6rem !important;
+  }
+
+  .tide-selector-section a {
+    margin-left: 0 !important;
+    width: 100%;
+    text-align: center;
+    padding: 0.6rem 1rem !important;
+    font-size: 0.85rem !important;
+  }
+}
+
+/* =====================================================
+   Select Dropdown Styling
+   ===================================================== */
+
+#tide-station-select {
+  border: 2px solid #0077be;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+#tide-station-select:hover {
+  border-color: #004b7c;
+}
+
+#tide-station-select:focus {
+  outline: none;
+  border-color: #004b7c;
+  box-shadow: 0 0 0 3px rgba(0,119,190,0.1);
+}
+
+/* =====================================================
+   Sunlight Times Cards
+   ===================================================== */
+
+.sunlight-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.sunlight-card {
+  color: white;
+  padding: 0.6rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.sunlight-card-icon {
+  font-size: 1.3rem;
+  margin-bottom: 0.15rem;
+}
+
+.sunlight-card-label {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  margin-bottom: 0.15rem;
+}
+
+.sunlight-card-time {
+  font-size: 1.15rem;
+  font-weight: bold;
+}
+
+.sunlight-card-sublabel {
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-top: 0.15rem;
+}
+
+/* Gradient backgrounds */
+.sunlight-card-first-light {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.sunlight-card-sunrise {
+  background: linear-gradient(135deg, #d88ab8 0%, #d97685 100%);
+}
+
+.sunlight-card-sunset {
+  background: linear-gradient(135deg, #e8945f 0%, #f5c563 100%);
+}
+
+.sunlight-card-last-light {
+  background: linear-gradient(135deg, #6ba3d4 0%, #5cb5d1 100%);
+}
+
+/* Daylight duration summary */
+.sunlight-duration {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: #f7fafc;
+  border-radius: 6px;
+  border-left: 3px solid #0077be;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sunlight-duration-icon {
+  font-size: 1.2rem;
+}
+
+.sunlight-duration-label {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.sunlight-duration-value {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #0077be;
+}
+
+/* Tablet: 2x2 grid */
+@media (max-width: 768px) {
+  .sunlight-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+}
+
+/* Mobile: compact but readable */
+@media (max-width: 480px) {
+  .sunlight-cards-grid {
+    gap: 0.4rem;
+  }
+
+  .sunlight-card {
+    padding: 0.5rem 0.4rem;
+  }
+
+  .sunlight-card-icon {
+    font-size: 1.1rem;
+  }
+
+  .sunlight-card-label {
+    font-size: 0.75rem;
+  }
+
+  .sunlight-card-time {
+    font-size: 1rem;
+  }
+
+  .sunlight-card-sublabel {
+    font-size: 0.65rem;
+  }
+
+  .sunlight-duration {
+    padding: 0.4rem;
+  }
+
+  .sunlight-duration-icon {
+    font-size: 1.1rem;
+  }
+
+  .sunlight-duration-label {
+    font-size: 0.75rem;
+  }
+
+  .sunlight-duration-value {
+    font-size: 1rem;
+  }
+}

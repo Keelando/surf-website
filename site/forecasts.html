@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Marine Forecasts | Salish Sea Wave Conditions</title>
+
+  <meta name="description" content="Marine weather forecasts for Strait of Georgia including wind warnings, gale watches, and extended forecasts from Environment Canada." />
+  <meta name="keywords" content="marine forecast, Strait of Georgia, gale warning, wind forecast, Environment Canada, BC marine weather, Salish Sea forecast, weather warning, marine weather, ocean forecast, sailing forecast, boating weather, coastal forecast, storm warning, wind warning, British Columbia marine forecast, Pacific Northwest weather, sea conditions, marine safety, nautical forecast, extended forecast, weather bulletin, aviation weather, TAF, METAR, airport weather, RASP forecast, YVR weather, Bellingham airport weather" />
+  <meta name="author" content="Salish Sea Wave Conditions Project" />
+  <meta name="robots" content="index, follow" />
+
+  <meta property="og:title" content="Marine Forecasts | Salish Sea Wave Conditions" />
+  <meta property="og:description" content="Marine weather forecasts for Strait of Georgia including wind warnings, gale watches, and extended forecasts from Environment Canada." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://halibutbank.ca/forecasts.html" />
+  <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
+
+  <link rel="canonical" href="https://halibutbank.ca/forecasts.html" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20251112" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css" />
+  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css" />
+
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+
+    .forecast-main-content {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .forecast-zone {
+      background: #fff;
+      border: 1px solid #e0e7ee;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .forecast-zone h2 {
+      margin-top: 0;
+      color: #2c5282;
+      border-bottom: 3px solid #4299e1;
+      padding-bottom: 0.5rem;
+    }
+
+    .zone-warnings {
+      margin: 1.5rem 0;
+    }
+
+    .warning-card {
+      background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+      border-left: 4px solid #d97706;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+    }
+
+    .warning-card.warning-storm {
+      background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+      border-left-color: #b91c1c;
+    }
+
+    .warning-card.warning-gale {
+      background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+      border-left-color: #ea580c;
+    }
+
+    .warning-card h3 {
+      margin: 0 0 0.5rem 0;
+      color: #78350f;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .warning-card.warning-storm h3,
+    .warning-card.warning-gale h3 {
+      color: #7c2d12;
+    }
+
+    .warning-card p {
+      margin: 0;
+      color: #451a03;
+    }
+
+    .forecast-section {
+      margin: 1.5rem 0;
+    }
+
+    .forecast-section h3 {
+      color: #2d3748;
+      margin-bottom: 0.75rem;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .forecast-content {
+      background: #f7fafc;
+      padding: 1rem 1.5rem;
+      border-radius: 4px;
+      border-left: 3px solid #4299e1;
+      line-height: 1.8;
+    }
+
+    .forecast-period {
+      margin-bottom: 0.75rem;
+      color: #2d3748;
+    }
+
+    .extended-forecast {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .extended-day {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1rem;
+    }
+
+    .extended-day h4 {
+      margin: 0 0 0.5rem 0;
+      color: #2c5282;
+      font-size: 1rem;
+    }
+
+    .extended-day p {
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #4a5568;
+    }
+
+    .forecast-metadata {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e2e8f0;
+      font-size: 0.9rem;
+      color: #718096;
+    }
+
+    .no-warnings {
+      background: #f0fff4;
+      border-left: 3px solid #48bb78;
+      padding: 1rem 1.5rem;
+      border-radius: 4px;
+      color: #22543d;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #718096;
+    }
+
+    .error-state {
+      background: #fff5f5;
+      border: 1px solid #fc8181;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      color: #742a2a;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .forecast-zone {
+        padding: 1.5rem 1rem;
+      }
+
+      .extended-forecast {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    header {
+      margin-bottom: 0;
+    }
+
+    /* Resource links styling */
+    .resource-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .resource-item {
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    .resource-item strong {
+      color: #2c5282;
+      display: inline-block;
+      min-width: 200px;
+    }
+
+    .resource-links a {
+      color: #4299e1;
+      text-decoration: none;
+      padding: 0.25rem 0.5rem;
+      border-radius: 3px;
+      transition: background-color 0.2s;
+    }
+
+    .resource-links a:hover {
+      background-color: #ebf8ff;
+      text-decoration: underline;
+    }
+
+    .resource-links a::after {
+      content: " ↗";
+      font-size: 0.8em;
+      opacity: 0.6;
+    }
+
+    @media (max-width: 768px) {
+      .resource-item strong {
+        display: block;
+        margin-bottom: 0.25rem;
+        min-width: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Warning Banner Container (will be populated by warning-banner.js) -->
+  <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
+
+  <!-- Navigation -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+
+  <div hx-get="/components/header-forecasts.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 80px;"></div>
+
+  <div hx-get="/components/tagline-forecasts.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
+
+  <main class="forecast-main-content">
+    <div id="forecast-container">
+      <div class="loading-state">
+        <p>Loading marine forecasts...</p>
+      </div>
+    </div>
+
+    <!-- Related Resources Section -->
+    <div class="forecast-zone" style="margin-top: 2rem;">
+      <h2>🔗 Related Resources</h2>
+
+      <!-- Aviation Forecasts -->
+      <div class="forecast-section">
+        <h3>✈️ Aviation Forecasts (TAF/METAR)</h3>
+        <div class="resource-links">
+          <div class="resource-item">
+            <strong>YVR - Vancouver International:</strong>
+            <a href="https://metar-taf.com/taf/CYVR" target="_blank" rel="noopener">TAF</a> |
+            <a href="https://metar-taf.com/metar/CYVR" target="_blank" rel="noopener">METAR</a>
+          </div>
+          <div class="resource-item">
+            <strong>BLI - Bellingham International:</strong>
+            <a href="https://metar-taf.com/taf/KBLI" target="_blank" rel="noopener">TAF</a> |
+            <a href="https://metar-taf.com/metar/KBLI" target="_blank" rel="noopener">METAR</a>
+          </div>
+          <div class="resource-item">
+            <strong>CZBB - Boundary Bay:</strong>
+            <a href="https://metar-taf.com/taf/CZBB" target="_blank" rel="noopener">TAF</a> |
+            <a href="https://metar-taf.com/metar/CZBB" target="_blank" rel="noopener">METAR</a>
+          </div>
+          <div class="resource-item">
+            <strong>KORS - Orcas Island:</strong>
+            <a href="https://metar-taf.com/taf/KORS" target="_blank" rel="noopener">TAF</a> |
+            <a href="https://metar-taf.com/metar/KORS" target="_blank" rel="noopener">METAR</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wind & Pressure Maps -->
+      <div class="forecast-section">
+        <h3>🌬️ Wind & Pressure Maps</h3>
+        <div class="resource-links">
+          <div class="resource-item">
+            <strong>RASP Wind Forecast:</strong>
+            <a href="https://www.canadarasp.com/RASPtable.html?param=sfcwind3,opacity=50,zoom=10,lat=49.05,lon=-122.18,model=hrdps,twodaydynamic=false,windgrams=false,wind_checkbox=true" target="_blank" rel="noopener">Strait of Georgia</a>
+          </div>
+          <div class="resource-item">
+            <strong>NOAA Pressure Map:</strong>
+            <a href="https://ocean.weather.gov/Pac_tab.php" target="_blank" rel="noopener">Pacific Surface Analysis</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- About Section -->
+  <div hx-get="/components/about-generic.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Navigation (Bottom) -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <div hx-get="/components/footer.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Load logger first for global availability -->
+  <script src="/assets/js/logger.js?v=20251117"></script>
+  <script src="/assets/js/warning-banner.js?v=20251117"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=20251117"></script>
+  <script src="/assets/js/forecasts.js?v=20251117"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</body>
+</html>

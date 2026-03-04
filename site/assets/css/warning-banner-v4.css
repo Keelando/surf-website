@@ -1,0 +1,285 @@
+/**
+ * Warning Banner Styles
+ * Thin, prominent banners for marine weather warnings
+ */
+
+#warning-banner-container {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.warning-banner {
+  padding: 0.75rem 1rem;
+  margin: 0;
+  border-left: 4px solid;
+  animation: warningPulse 2s ease-in-out infinite;
+}
+
+.warning-banner-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.warning-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.warning-text {
+  flex: 1;
+  min-width: 200px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.warning-text strong {
+  display: inline;
+  margin-right: 0.5rem;
+}
+
+.warning-details-link {
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.warning-dismiss-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 300;
+}
+
+.warning-dismiss-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(1.1);
+}
+
+.warning-dismiss-btn:active {
+  transform: scale(0.95);
+}
+
+/* Storm Warning - Most Severe (48+ knots) - Intense Dark Red */
+.warning-storm {
+  background: linear-gradient(to right, #7f1d1d, #991b1b);
+  color: #fff;
+  border-left: 6px solid #450a0a; /* Very dark red border for urgency */
+  animation: stormPulse 2s ease-in-out infinite; /* More urgent animation */
+}
+
+.warning-storm .warning-details-link {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.warning-storm .warning-details-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Gale Warning - High Severity (34-47 knots) - Bright Orange */
+.warning-gale {
+  background: linear-gradient(to right, #ea580c, #f97316);
+  color: #fff;
+  border-left: 5px solid #c2410c; /* Dark orange border for high severity */
+}
+
+.warning-gale .warning-details-link {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.warning-gale .warning-details-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Strong Wind Warning - Moderate Severity (20-33 knots) - Yellow-Amber */
+.warning-strong-wind {
+  background: linear-gradient(to right, #d97706, #f59e0b);
+  color: #fff;
+  border-left: 4px solid #b45309; /* Dark amber border */
+}
+
+.warning-strong-wind .warning-details-link {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.warning-strong-wind .warning-details-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Waterspout Warning - Purple */
+.warning-waterspout {
+  background: linear-gradient(to right, #7c3aed, #a855f7);
+  color: #fff;
+  border-left: 4px solid #5b21b6; /* Dark purple border */
+}
+
+.warning-waterspout .warning-details-link {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.warning-waterspout .warning-details-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Default Warning Styles - Blue */
+.warning-default {
+  background: linear-gradient(to right, #1e40af, #2563eb);
+  color: #fff;
+  border-left-color: #1e3a8a;
+}
+
+.warning-default .warning-details-link {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.warning-default .warning-details-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Pulse Animation (subtle) - for gale/strong wind */
+@keyframes warningPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+/* Storm Pulse Animation (more urgent) - for storm warnings only */
+@keyframes stormPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(153, 27, 27, 0.4);
+  }
+  50% {
+    transform: scale(1.002);
+    box-shadow: 0 4px 16px rgba(153, 27, 27, 0.6);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  /* Non-sticky - warnings appear at top but scroll away naturally */
+  #warning-banner-container {
+    position: relative;
+  }
+
+  .warning-banner {
+    padding: 0.5rem 2.5rem 0.5rem 0.5rem; /* Less padding, room for X */
+    position: relative;
+  }
+
+  .warning-banner-content {
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+  }
+
+  .warning-icon {
+    font-size: 1.1rem;
+  }
+
+  .warning-text {
+    font-size: 0.8rem;
+    min-width: 0;
+    line-height: 1.3;
+  }
+
+  .warning-text strong {
+    display: inline;
+    margin-right: 0.25rem;
+  }
+
+  .warning-details-link {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+  }
+
+  .warning-dismiss-btn {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    font-size: 1.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .warning-banner {
+    padding: 0.4rem 2rem 0.4rem 0.4rem;
+  }
+
+  .warning-banner-content {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .warning-icon {
+    font-size: 1rem;
+  }
+
+  .warning-text {
+    flex: 1 1 100%;
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+
+  .warning-text strong {
+    font-size: 0.8rem;
+  }
+
+  .warning-details-link {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    flex: 0 0 auto;
+  }
+
+  .warning-dismiss-btn {
+    position: absolute;
+    top: 0.2rem;
+    right: 0.2rem;
+    width: 1.3rem;
+    height: 1.3rem;
+    font-size: 1.1rem;
+  }
+}
+
+/* Multiple warnings stacked */
+.warning-banner + .warning-banner {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Salish Sea Wave Conditions | Halibut Bank, Strait of Georgia, and Marine Forecasts</title>
+
+  <meta name="description" content="Live wave, wind, tide, and storm surge conditions across the Salish Sea, including Halibut Bank, English Bay, and the Strait of Georgia. Auto-updated from Environment Canada and NOAA sources." />
+  <meta name="keywords" content="Salish Sea, Halibut Bank, Strait of Georgia, English Bay, waves, surf, marine forecast, storm surge, tide, buoy data, Environment Canada, NOAA, marine conditions, BC coast, Vancouver waves, British Columbia marine weather, Pacific Northwest ocean conditions, wave forecast, sea state, boating conditions, sailing forecast, fishing weather, ocean buoy, wave height, swell forecast, coastal weather, Juan de Fuca, Boundary Bay, real-time wave data, marine safety" />
+  <meta name="author" content="Salish Sea Wave Conditions Project" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph for social sharing -->
+  <meta property="og:title" content="Salish Sea Wave Conditions | Real-time Marine Data" />
+  <meta property="og:description" content="Hourly updated marine conditions for Halibut Bank, English Bay, and the Strait of Georgia. Includes wave height, wind, temperature, and storm surge forecasts." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://halibutbank.ca/" />
+  <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
+
+  <link rel="canonical" href="https://halibutbank.ca/" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20251112" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css" />
+  <link rel="stylesheet" href="/assets/css/stations-map-v4.css" />
+  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+  
+  <style>
+    header {
+      margin-bottom: 0;
+    }
+
+    /* Time range toggle buttons */
+    .time-range-btn {
+      padding: 0.5rem 1rem;
+      margin: 0 0.25rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .time-range-btn:hover {
+      background: #d0d0d0;
+      transform: translateY(-1px);
+    }
+
+    .time-range-btn.active {
+      background: #0077be;
+      color: white;
+    }
+
+    .time-range-btn.active:hover {
+      background: #005a94;
+    }
+
+    /* Wave table collapsed rows - hidden by default */
+    .collapsed-row {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Warning Banner Container -->
+  <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
+
+  <!-- Navigation -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+
+  <div hx-get="/components/header-buoys.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 80px;"></div>
+
+  <div hx-get="/components/tagline-buoys.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
+
+  <!-- Stations Map Section -->
+  <section id="map-section">
+    <h2>Monitoring Stations</h2>
+    <div class="map-legend">
+      <div style="font-weight: 600; margin-bottom: 0.5rem; color: #2c5282;">Station Types:</div>
+
+      <!-- Directional markers (with current data) -->
+      <span class="legend-item">
+        <span class="legend-icon" aria-label="Blue wave direction arrow">
+          <svg width="16" height="18" viewBox="-6 -10 12 24" style="vertical-align: middle; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
+            <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="#1e88e5" fill-opacity="0.98" stroke="#1e88e5" stroke-width="1.5"/>
+          </svg>
+        </span> Wave Direction
+      </span>
+
+      <span class="legend-item">
+        <span class="legend-icon" aria-label="Red wind direction arrow">
+          <svg width="16" height="18" viewBox="-6 -10 12 24" style="vertical-align: middle; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
+            <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="#dc2626" fill-opacity="0.98" stroke="#dc2626" stroke-width="1.5"/>
+          </svg>
+        </span> Wind Direction
+      </span>
+
+      <span class="legend-item">
+        <span class="legend-icon" aria-label="Gray wind-on-wave arrow">
+          <svg width="16" height="18" viewBox="-6 -10 12 24" style="vertical-align: middle; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
+            <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="#718096" fill-opacity="0.98" stroke="#718096" stroke-width="1.5"/>
+          </svg>
+        </span> Wind (no wave dir)
+      </span>
+
+      <!-- Static markers -->
+      <span class="legend-item">
+        <span class="legend-icon" aria-label="Tide station icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+            <circle cx="12" cy="12" r="10" fill="#9333ea" stroke="#6b21a8" stroke-width="2"/>
+          </svg>
+        </span> Tide Station
+      </span>
+
+      <span class="legend-item">
+        <span class="legend-icon" aria-label="Lighthouse icon">
+          <svg width="16" height="18" viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+            <circle cx="14" cy="4" r="2.5" fill="#FFD700" stroke="#FFA500" stroke-width="1"/>
+            <path d="M11 7 L10.5 13 L17.5 13 L17 7 Z" fill="#FFFFFF" stroke="#2c3e50" stroke-width="0.5"/>
+            <path d="M10.5 13 L10 19 L18 19 L17.5 13 Z" fill="#E53935" stroke="#2c3e50" stroke-width="0.5"/>
+            <path d="M10 19 L9.5 25 L18.5 25 L18 19 Z" fill="#FFFFFF" stroke="#2c3e50" stroke-width="0.5"/>
+            <rect x="8" y="25" width="12" height="4" rx="1" fill="#C62828" stroke="#2c3e50" stroke-width="0.5"/>
+            <rect x="6" y="29" width="16" height="2" rx="1" fill="#5D4037" stroke="#3e2723" stroke-width="0.5"/>
+          </svg>
+        </span> Lightstation
+      </span>
+
+      <span class="legend-item">
+        <span class="legend-icon" aria-label="Webcam icon">
+          <svg width="16" height="16" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+            <circle cx="14" cy="14" r="13" fill="#2c5282" stroke="#1a365d" stroke-width="1.5"/>
+            <rect x="6" y="10" width="16" height="11" rx="1.5" fill="#ffffff" stroke="#1a365d" stroke-width="0.8"/>
+            <circle cx="14" cy="15.5" r="4" fill="#4a5568" stroke="#2d3748" stroke-width="0.8"/>
+            <circle cx="14" cy="15.5" r="2.5" fill="#718096"/>
+            <circle cx="14" cy="15.5" r="1.3" fill="#2d3748"/>
+            <circle cx="18.5" cy="12" r="1" fill="#e53e3e"/>
+          </svg>
+        </span> Webcam
+      </span>
+
+      <!-- Emoji fallbacks (no current data) -->
+      <span class="legend-item"><span class="legend-icon" role="img" aria-label="Wave icon">🌊</span> Wave (no data)</span>
+      <span class="legend-item"><span class="legend-icon" role="img" aria-label="Wind icon">💨</span> Wind (no data)</span>
+    </div>
+    <div id="stations-map"></div>
+  </section>
+
+  <main id="buoy-container" aria-live="polite" aria-label="Buoy data cards">
+    <p>Loading latest buoy data…</p>
+  </main>
+
+  <section id="charts-section">
+    <h2>24-Hour Trends</h2>
+
+    <!-- Time Range Toggle (Top) -->
+    <div style="margin: 1rem 0; text-align: center;">
+      <label style="margin-right: 0.5rem; font-weight: 600; color: #004b7c;">Time Range:</label>
+      <button class="time-range-btn active" data-hours="24" onclick="setTimeRange(24)">24 Hours</button>
+      <button class="time-range-btn" data-hours="48" onclick="setTimeRange(48)">48 Hours</button>
+    </div>
+
+    <div id="wave-comparison-chart" class="w-full h-400"></div>
+    <div class="mt-sm p-md bg-surface-light rounded-md text-sm color-muted text-center leading-relaxed">
+      <strong>Wave Breaking Thresholds:</strong>
+      <span class="color-warning font-semibold">0.7m</span> — Small wind-driven waves may begin to break on exposed sandy beaches |
+      <span class="color-error font-semibold">1.2m</span> — Moderate waves begin breaking on exposed sandy beaches
+    </div>
+    <div id="buoy-selector">
+      <label for="chart-buoy-select">Select Buoy:</label>
+      <select id="chart-buoy-select">
+        <optgroup label="Strait of Georgia">
+          <option value="4600146">Halibut Bank</option>
+          <option value="4600304">English Bay</option>
+          <option value="4600303">Southern Georgia Strait</option>
+          <option value="4600131">Sentry Shoal</option>
+        </optgroup>
+        <optgroup label="Boundary Bay">
+          <option value="CRPILE">Crescent Beach Ocean</option>
+          <option value="CRCHAN">Crescent Channel</option>
+        </optgroup>
+        <optgroup label="Juan de Fuca">
+          <option value="46087">Neah Bay</option>
+          <option value="46088">New Dungeness (Hein Bank)</option>
+          <option value="46267">Angeles Point</option>
+        </optgroup>
+        <optgroup label="West Coast Vancouver Island">
+          <option value="4600206">La Perouse Bank</option>
+        </optgroup>
+      </select>
+      <a href="#stations-map" id="show-buoy-on-map-btn" onclick="showSelectedBuoyOnMap(event)" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
+    </div>
+
+    <!-- Time Range Toggle -->
+    <div style="margin: 1rem 0; text-align: center;">
+      <label style="margin-right: 0.5rem; font-weight: 600; color: #004b7c;">Time Range:</label>
+      <button class="time-range-btn active" data-hours="24" onclick="setTimeRange(24)" style="padding: 0.5rem 1rem; margin: 0 0.25rem; background: #0077be; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.2s;">24 Hours</button>
+      <button class="time-range-btn" data-hours="48" onclick="setTimeRange(48)" style="padding: 0.5rem 1rem; margin: 0 0.25rem; background: #e0e0e0; color: #666; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.2s;">48 Hours</button>
+    </div>
+
+    <div id="wave-chart" class="w-full h-500"></div>
+    <!-- New Dungeness second chart (hidden by default) -->
+    <div id="wave-period-chart" class="w-full h-500 hidden mt-lg"></div>
+
+    <div id="wind-chart" class="w-full h-400"></div>
+    <div id="temp-chart" class="w-full h-400"></div>
+  </section>
+
+  <div id="wave-height-table-section">
+    <h2>24-Hour Wave Height Summary</h2>
+
+    <!-- Time Range Toggle (By Table) -->
+    <div style="margin: 1rem 0; text-align: center;">
+      <label style="margin-right: 0.5rem; font-weight: 600; color: #004b7c;">Time Range:</label>
+      <button class="time-range-btn active" data-hours="24" onclick="setTimeRange(24)">24 Hours</button>
+      <button class="time-range-btn" data-hours="48" onclick="setTimeRange(48)">48 Hours</button>
+    </div>
+
+    <div class="data-table">
+      <table id="wave-height-table">
+        <!-- Table will be populated by JavaScript -->
+      </table>
+    </div>
+  </div>
+
+  <!-- Storm Surge Forecast Section -->
+  <section id="storm-surge-section">
+    <div class="flex-between mb-md">
+      <h2 class="mt-0">Storm Surge Forecast</h2>
+      <a href="/storm_surge.html" class="button-primary" aria-label="View full storm surge forecast page">
+        View Full Forecast →
+      </a>
+    </div>
+
+    <div class="mb-md text-center">
+      <label for="surge-station-select">Select Station: </label>
+      <select id="surge-station-select" style="padding: 0.5rem; font-size: 1rem;">
+        <!-- Options populated by JavaScript -->
+      </select>
+      <a href="#stations-map" id="show-surge-on-map-btn" onclick="showSelectedSurgeOnMap(event)" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
+      <span id="active-surge-indicator" style="margin-left: 1rem; color: #0077be;"></span>
+    </div>
+
+    <div id="surge-chart" class="w-full h-500"></div>
+    <div id="surge-metadata" class="mt-md text-center text-sm color-muted"></div>
+  </section>
+
+  <!-- About Section -->
+  <div hx-get="/components/about-generic.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Navigation (Bottom) -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <div hx-get="/components/footer.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+  <!-- Load logger first for global availability -->
+  <script src="/assets/js/logger.js?v=20251117"></script>
+  <script src="/assets/js/warning-banner.js?v=20251117"></script>
+  <!-- Load chart utilities first to avoid race conditions -->
+  <script src="/assets/js/chart-utils-v4.js?v=20251205e"></script>
+  <script src="/assets/js/main.js?v=20251209f"></script>
+  <script src="/assets/js/stations-map.js?v=20251117"></script>
+  <script src="/assets/js/wave-chart-v4.js?v=20251205c"></script>
+  <script src="/assets/js/wind-chart-v4.js?v=20251205c"></script>
+  <script src="/assets/js/temperature-chart-v4.js"></script>
+  <script src="/assets/js/comparison-chart-v4.js?v=20251117"></script>
+  <script src="/assets/js/wave-table-v4.js?v=20251117"></script>
+  <script src="/assets/js/charts-v4.js?v=20251117"></script>
+  <script src="/assets/js/storm_surge_chart-v4.js?v=20251117"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</body>
+</html>

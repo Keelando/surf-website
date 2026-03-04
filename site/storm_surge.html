@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Storm Surge Forecasts | Salish Sea Wave Conditions</title>
+
+  <meta name="description" content="10-day storm surge forecasts and hindcast analysis for the Salish Sea region from Environment Canada GDSPS model." />
+  <meta name="keywords" content="storm surge, water level forecast, GDSPS, Salish Sea, tide forecast, Environment Canada, coastal flooding, storm surge prediction, total water level, surge forecast, coastal hazards, king tide, extreme water level, flood forecast, BC storm surge, Vancouver coastal flooding, atmospheric pressure, wind surge, ocean surge, marine hazards, coastal warning, 10-day forecast" />
+  <meta name="author" content="Salish Sea Wave Conditions Project" />
+  <meta name="robots" content="index, follow" />
+
+  <meta property="og:title" content="Storm Surge Forecasts | Salish Sea Wave Conditions" />
+  <meta property="og:description" content="10-day storm surge forecasts and hindcast analysis for the Salish Sea region from the Environment Canada GDSPS model." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://halibutbank.ca/storm_surge.html" />
+  <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
+
+  <link rel="canonical" href="https://halibutbank.ca/storm_surge.html" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css" />
+  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css" />
+
+  <style>
+    .storm-surge-content {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .section-container {
+      background: #fff;
+      border: 1px solid #e0e7ee;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .section-container h2 {
+      margin-top: 0;
+      color: #2c5282;
+      border-bottom: 3px solid #4299e1;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .station-selector {
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .station-selector label {
+      font-weight: 600;
+      margin-right: 0.5rem;
+      color: #2d3748;
+    }
+
+    .station-selector select {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border: 1px solid #cbd5e0;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+    }
+
+    .station-indicator {
+      margin-left: 1rem;
+      color: #0077be;
+      font-weight: 500;
+    }
+
+    .chart-container {
+      width: 100%;
+      height: 500px;
+      margin-bottom: 1rem;
+    }
+
+    .metadata-display {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f7fafc;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      color: #4a5568;
+      line-height: 1.8;
+    }
+
+    .info-box {
+      background: #ebf8ff;
+      border-left: 4px solid #4299e1;
+      padding: 1rem 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 4px;
+    }
+
+    .info-box h3 {
+      margin: 0 0 0.5rem 0;
+      color: #2c5282;
+      font-size: 1rem;
+    }
+
+    .info-box p {
+      margin: 0;
+      color: #2d3748;
+      line-height: 1.6;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #718096;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .section-container {
+        padding: 1.5rem 1rem;
+      }
+
+      .chart-container {
+        height: 400px;
+      }
+    }
+
+    header {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Warning Banner Container -->
+  <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
+
+  <!-- Navigation -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+
+  <div hx-get="/components/header-storm-surge.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 80px;"></div>
+
+  <div hx-get="/components/tagline-storm-surge.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
+
+  <main class="storm-surge-content">
+    <!-- Current Forecast Section -->
+    <section class="section-container">
+      <h2>10-Day Storm Surge Forecast</h2>
+
+      <div class="info-box">
+        <h3>What is Storm Surge?</h3>
+        <p>
+          Storm surge is the abnormal rise or fall in water level caused by weather patterns (wind, atmospheric pressure).
+          Values shown are <strong>relative to predicted astronomical tide</strong>. Positive values indicate higher water than predicted,
+          negative values indicate lower water than predicted. Total water level = Predicted tide + Storm surge.
+        </p>
+        <p style="margin-top: 0.75rem;">
+          Forecasts generated by Environment Canada's <strong>GDSPS</strong> (Global Deterministic Storm Surge Prediction System) model, which runs twice daily (00Z and 12Z UTC)*
+        </p>
+        <p style="margin-top: 0.5rem; font-size: 0.85rem; color: #718096;">
+          *Data fetched approximately 1.5 hours after each 00Z and 12Z model run
+        </p>
+      </div>
+
+      <div class="station-selector">
+        <label for="forecast-station-select">Select Station:</label>
+        <select id="forecast-station-select">
+          <!-- Options populated by JavaScript -->
+        </select>
+        <a href="javascript:void(0)" onclick="showSelectedForecastSurgeOnMap()" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
+        <span id="forecast-station-indicator" class="station-indicator"></span>
+      </div>
+
+      <!-- Peak Surge Display -->
+      <div id="peak-surge-display" style="display: none; margin: 0.75rem auto; padding: 0.6rem 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 6px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25); max-width: 600px;">
+        <div style="color: white; text-align: center; font-size: 0.7rem; font-weight: 600; opacity: 0.9; margin-bottom: 0.5rem; letter-spacing: 0.3px;">⚡ Peak Forecasts</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; color: white;">
+          <!-- 0-24 Hours Peak -->
+          <div style="text-align: center; padding: 0.4rem;">
+            <div style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85; margin-bottom: 0.3rem;">0-24hr</div>
+            <div id="peak-today-value" style="font-size: 1.4rem; font-weight: bold; margin-bottom: 0.15rem;">—</div>
+            <div id="peak-today-time" style="opacity: 0.8; font-size: 0.75rem;">—</div>
+          </div>
+          <!-- 24-72 Hours Peak -->
+          <div style="text-align: center; padding: 0.4rem; border-left: 1px solid rgba(255,255,255,0.2);">
+            <div style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85; margin-bottom: 0.3rem;">24-72hr</div>
+            <div id="peak-3day-value" style="font-size: 1.4rem; font-weight: bold; margin-bottom: 0.15rem;">—</div>
+            <div id="peak-3day-time" style="opacity: 0.8; font-size: 0.75rem;">—</div>
+          </div>
+          <!-- 72-168 Hours Peak (7 days) -->
+          <div style="text-align: center; padding: 0.4rem; border-left: 1px solid rgba(255,255,255,0.2);">
+            <div style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85; margin-bottom: 0.3rem;">72-168hr (7d)</div>
+            <div id="peak-7day-value" style="font-size: 1.4rem; font-weight: bold; margin-bottom: 0.15rem;">—</div>
+            <div id="peak-7day-time" style="opacity: 0.8; font-size: 0.75rem;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="forecast-chart" class="chart-container"></div>
+      <div id="forecast-metadata" class="metadata-display"></div>
+    </section>
+
+    <!-- Hindcast Section -->
+    <section class="section-container">
+      <h2>Forecast Accuracy Analysis (Hindcast)</h2>
+
+      <div class="info-box">
+        <h3>About Hindcast Data</h3>
+        <p>
+          This chart shows storm surge predictions made <strong>48 hours in advance</strong> and compares them to more recent forecasts
+          or actual conditions. This helps evaluate forecast accuracy and identify patterns in model performance.
+          Data is collected daily from the 12Z model run.
+        </p>
+      </div>
+
+      <div class="station-selector">
+        <label for="hindcast-station-select">Select Station:</label>
+        <select id="hindcast-station-select">
+          <!-- Options populated by JavaScript -->
+        </select>
+        <a href="javascript:void(0)" onclick="showSelectedHindcastSurgeOnMap()" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
+        <span id="hindcast-station-indicator" class="station-indicator"></span>
+      </div>
+
+      <div id="hindcast-chart" class="chart-container"></div>
+      <div id="hindcast-metadata" class="metadata-display"></div>
+    </section>
+
+    <!-- Model Information -->
+    <section class="section-container">
+      <h2>Model Information</h2>
+
+      <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 1.1rem;">About GDSPS</h3>
+      <p style="line-height: 1.6;">
+        The <strong>Global Deterministic Storm Surge Prediction System (GDSPS)</strong> is Environment Canada's operational
+        ocean model that forecasts storm surge conditions worldwide. The system generates 10-day (240-hour) predictions of water
+        level changes caused by atmospheric conditions including wind stress and barometric pressure. Running on a high-resolution
+        grid (approximately 3-9 km spacing), the model integrates atmospheric forcing data with ocean dynamics to predict how
+        weather patterns will affect coastal water levels.
+      </p>
+      <p style="line-height: 1.6; margin-top: 0.75rem;">
+        The model separates storm surge (weather-driven water level changes) from astronomical tides through harmonic analysis,
+        allowing forecasters and coastal communities to see how much higher or lower water will be compared to normal tide predictions.
+        This separation is crucial for coastal flood planning and marine safety.
+      </p>
+
+      <div style="background: #fff3cd; border-left: 4px solid #ff9800; padding: 0.75rem 1rem; margin: 1rem 0; border-radius: 4px;">
+        <p style="margin: 0; font-weight: 600; color: #856404;">⚠️ Important Note:</p>
+        <p style="margin: 0.5rem 0 0 0; color: #856404;">
+          Storm surge forecasts <strong>do not include wave action</strong> (wave setup, wave runup, or breaking waves).
+          Actual water levels during storms may be higher than predicted surge values due to wave effects.
+        </p>
+      </div>
+
+      <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 1.1rem;">Technical Details</h3>
+      <p><strong>Provider:</strong> Environment and Climate Change Canada</p>
+      <p><strong>Resolution:</strong> 1/12° (3-9 km)</p>
+      <p><strong>Update Frequency:</strong> Twice daily (00Z and 12Z model runs)</p>
+      <p><strong>Data Availability:</strong> Forecasts typically published ~6 hours after model initialization</p>
+      <p><strong>Forecast Horizon:</strong> 10 days (240 hours)</p>
+
+      <p style="margin-top: 1rem; font-size: 0.9rem; color: #718096;">
+        More information:
+        <a href="https://eccc-msc.github.io/open-data/msc-data/nwp_gdsps/readme_gdsps_en/" target="_blank" style="color: #4299e1;">GDSPS Documentation</a> |
+        <a href="https://open.canada.ca/data/en/dataset/d244c9fa-776f-446f-9ccf-1d575cc21a5c" target="_blank" style="color: #4299e1;">Open Canada Dataset</a>
+      </p>
+    </section>
+  </main>
+
+  <!-- About Section -->
+  <div hx-get="/components/about-generic.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Navigation (Bottom) -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <div hx-get="/components/footer.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+  <!-- Load logger first for global availability -->
+  <script src="/assets/js/logger.js?v=20251117"></script>
+  <script src="/assets/js/warning-banner.js?v=20251117"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=20251117"></script>
+  <script src="/assets/js/storm_surge_page.js?v=20251117"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</body>
+</html>
