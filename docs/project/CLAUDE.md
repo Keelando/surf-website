@@ -439,7 +439,7 @@ When modifying data processing logic:
 - `docs/ARCHITECTURE_DETAILED.md` - Full database schemas, script details
 - `docs/STORM_SURGE_SETUP.md` - Storm surge forecast setup guide (GDSPS/GeoMet)
 
-**Frontend docs (`site/`):**
+**Frontend docs (in `site/docs/`):**
 - `docs/FRONTEND_CHANGELOG.md` - UI/UX changes, feature history
 - `docs/FRAMEWORK_DISCUSSION.md` - Framework evaluation notes
 - `docs/BROWSER_STATE_EXPLAINED.md` - localStorage usage guide

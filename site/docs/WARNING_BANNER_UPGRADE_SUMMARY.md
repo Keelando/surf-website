@@ -3,7 +3,7 @@
 ## What Was Changed
 
 ### ✅ JavaScript: Variable Dismiss Durations
-**File:** `~/site/assets/js/warning-banner.js`
+**File:** `site/assets/js/warning-banner.js`
 
 **Before:** All warnings dismissed for 24 hours flat
 **After:** Variable durations based on severity:
@@ -14,7 +14,7 @@
 - **Safety backstop:** All dismissals expire after 24h maximum
 
 ### ✅ CSS: Enhanced Visual Hierarchy
-**File:** `~/site/assets/css/warning-banner-v3.css`
+**File:** `site/assets/css/warning-banner-v3.css`
 
 **Added:**
 1. **Severity-based border thickness:**
@@ -66,9 +66,9 @@
 ## Files Modified
 
 ```
-~/site/assets/js/warning-banner.js              - Upgraded (12 KB)
-~/site/assets/js/warning-banner-v3-backup.js    - Backup of old version (7.5 KB)
-~/site/assets/css/warning-banner-v3.css         - Enhanced (5.2 KB)
+site/assets/js/warning-banner.js              - Upgraded (12 KB)
+site/assets/js/warning-banner-v3-backup.js    - Backup of old version (7.5 KB)
+site/assets/css/warning-banner-v3.css         - Enhanced (5.2 KB)
 ```
 
 ## Behavior Comparison
@@ -96,7 +96,7 @@
 If issues arise:
 
 ```bash
-cd ~/site/assets/js
+cd site/assets/js
 cp warning-banner-v3-backup.js warning-banner.js
 ```
 

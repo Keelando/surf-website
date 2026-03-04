@@ -139,7 +139,7 @@ if station_id.startswith("surrey_"):
 ### 3. Update Frontend
 
 **Files to modify:**
-- `/home/keelando/site/assets/js/storm_surge_page.js`
+- `/home/keelando/envcan_wave/site/assets/js/storm_surge_page.js`
 
 **Changes:**
 - Handle Surrey stations in hindcast plot
@@ -186,7 +186,7 @@ After validation, can safely remove:
 3. `scripts/fetch/fetch_surrey_tides.py` - ✓ Already updated (channel 3660 added)
 
 ### Frontend
-1. `/home/keelando/site/assets/js/storm_surge_page.js` - Handle Surrey stations
+1. `/home/keelando/envcan_wave/site/assets/js/storm_surge_page.js` - Handle Surrey stations
 
 ### Documentation
 1. `docs/SURREY.md` - Update with simplified approach

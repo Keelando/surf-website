@@ -54,7 +54,7 @@
 ### ✅ Integration Layer Complete
 
 **File:** `tides-refactored.js` (~220 lines)
-**Location:** `/home/keelando/site/assets/js/tides-refactored.js`
+**Location:** `/home/keelando/envcan_wave/site/assets/js/tides-refactored.js`
 
 **Features:**
 - ES6 module imports
@@ -70,7 +70,7 @@
 **Changes made:**
 - Updated `tides.html` to use `tides-refactored.js` with ES6 modules
 - Original `tides.js` backup deleted (2026-01-22)
-- All modules in place at `/home/keelando/site/assets/js/tides-modules/`
+- All modules in place at `/home/keelando/envcan_wave/site/assets/js/tides-modules/`
 
 ## Benefits Achieved
 
@@ -85,7 +85,7 @@
 ## Files Structure
 
 ```
-/home/keelando/site/assets/js/
+/home/keelando/envcan_wave/site/assets/js/
 ├── tides-refactored.js          ✅ Main integration layer (ES6 module)
 └── tides-modules/
     ├── README.md                ✅ Documentation
@@ -99,7 +99,7 @@
     ├── display.js              ✅ Display logic
     └── chart-renderer.js       ✅ Chart visualization
 
-/home/keelando/site/
+/home/keelando/envcan_wave/site/
 └── tides.html                   ✅ Updated to use refactored version
 ```
 

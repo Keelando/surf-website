@@ -14,7 +14,7 @@ two PRs; a monorepo simplifies this.
 ```
 halibutbank/
 ├── backend/    (was ~/envcan_wave/)
-├── frontend/   (was ~/site/)
+├── frontend/   (was site/)
 └── README.md
 ```
 
@@ -183,7 +183,7 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
   - Even with 1-hour-old observations, residual provides better estimate than prediction alone
   - Red marker when residual available, orange when prediction-only
   - Tooltip shows breakdown: current tide, predicted value, residual offset
-  - File: `/home/keelando/site/assets/js/tides.js:1440-1527`
+  - File: `/home/keelando/envcan_wave/site/assets/js/tides.js:1440-1527`
 
 ---
 
@@ -245,7 +245,7 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
 
 ✅ **Combined water level forecasts (tide + storm surge)**
   - Created `export_combined_water_level.py` to merge astronomical tide predictions with storm surge forecasts
-  - Exports to `~/site/data/combined-water-level.json` (1.5MB covering next 2 days)
+  - Exports to `site/data/combined-water-level.json` (1.5MB covering next 2 days)
   - Added multi-series ECharts visualization on tides.html:
     - Astronomical Tide (blue solid line)
     - Observations (green dots, today only)
@@ -289,7 +289,7 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
 ## Completed (2025-11-04)
 
 ✅ **Marine forecasts & warning banners**
-  - Created dedicated forecasts page (`~/site/forecasts.html`)
+  - Created dedicated forecasts page (`site/forecasts.html`)
   - Dismissible warning banners across all pages
   - localStorage-based state management (24h expiry)
   - Severity-based color coding (Storm/Gale/Strong Wind)
@@ -323,7 +323,7 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
 
 ## Completed (2025-10-31)
 
-✅ Implemented tide monitoring page (`~/site/tides.html`)
+✅ Implemented tide monitoring page (`site/tides.html`)
   - Station selector dropdown
   - Auto-loads Point Atkinson by default
   - Current observation and prediction display

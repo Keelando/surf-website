@@ -22,7 +22,7 @@ echo -e "\n=== Database Status ==="
 sqlite3 ~/.local/share/buoy_data.sqlite "SELECT buoy_id, datetime(MAX(observation_time), 'unixepoch'), (strftime('%s','now') - MAX(observation_time))/3600.0 as hours_ago FROM buoy_observation GROUP BY buoy_id;"
 
 echo -e "\n=== JSON Exports ==="
-ls -lh ~/site/data/latest_buoy_v2.json ~/site/data/tide-latest.json ~/site/data/marine_forecast.json
+ls -lh site/data/latest_buoy_v2.json site/data/tide-latest.json site/data/marine_forecast.json
 
 echo -e "\n=== Recent Errors in Logs ==="
 tail -100 ~/envcan_wave/*.log | grep -i error | tail -10
@@ -256,7 +256,7 @@ python3 tide_to_sqlite.py --highlow
 python3 export_tide_json.py
 
 # Check if data now appears
-cat ~/site/data/tide-hi-low.json | jq .
+cat site/data/tide-hi-low.json | jq .
 ```
 
 **If API returns errors:**
@@ -342,15 +342,15 @@ sudo caddy reload --config /etc/caddy/Caddyfile
 # Verify path in Caddyfile
 grep "root" /etc/caddy/Caddyfile
 
-# Should show: root * /home/keelando/site
+# Should show: root * /home/keelando/envcan_wave/site
 ```
 
 4. **File permissions**
 ```bash
 # Ensure Caddy can read site files
-sudo chmod 755 /home/keelando/site
-sudo chmod 644 /home/keelando/site/index.html
-sudo chmod 644 /home/keelando/site/data/*.json
+sudo chmod 755 /home/keelando/envcan_wave/site
+sudo chmod 644 /home/keelando/envcan_wave/site/index.html
+sudo chmod 644 /home/keelando/envcan_wave/site/data/*.json
 ```
 
 ---
@@ -363,10 +363,10 @@ sudo chmod 644 /home/keelando/site/data/*.json
 **Diagnosis:**
 ```bash
 # Check if marine forecast JSON has warnings
-cat ~/site/data/marine_forecast.json | jq '.locations | .[] | .warnings'
+cat site/data/marine_forecast.json | jq '.locations | .[] | .warnings'
 
 # Check if warnings are active
-cat ~/site/data/marine_forecast.json | jq '[.locations | .[] | .warnings | .[] | select(.status == "IN EFFECT")]'
+cat site/data/marine_forecast.json | jq '[.locations | .[] | .warnings | .[] | select(.status == "IN EFFECT")]'
 
 # Check warning banner script loaded
 curl -s http://localhost:8090 | grep "warning-banner.js"
@@ -417,11 +417,11 @@ tail -50 ~/envcan_wave/marine_forecast.log
 **Diagnosis:**
 ```bash
 # Check if timeseries JSON files exist
-ls -lh ~/site/data/timeseries_*.json
-ls -lh ~/site/data/tide-timeseries.json
+ls -lh site/data/timeseries_*.json
+ls -lh site/data/tide-timeseries.json
 
 # Check JSON structure
-cat ~/site/data/timeseries_46087.json | jq '.data | length'
+cat site/data/timeseries_46087.json | jq '.data | length'
 
 # Check browser console for errors
 # F12 → Console → Look for ECharts errors or JSON parse errors
@@ -511,7 +511,7 @@ sqlite3 ~/.local/share/tide_data.sqlite "PRAGMA journal_mode=WAL;"
 ```bash
 # Check git backup logs
 tail -50 ~/envcan_wave/git_backup.log
-tail -50 ~/site/git_backup.log
+tail -50 site/git_backup.log
 
 # Test git push manually
 cd ~/envcan_wave

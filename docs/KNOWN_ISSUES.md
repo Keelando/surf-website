@@ -265,7 +265,7 @@ When changing the date on geodetic tide plots (Surrey stations), the graphs disa
 - **Workaround:** Refresh the page
 
 ### Files to Investigate
-- `/home/keelando/site/assets/js/tides.js` - Date picker event handlers
+- `/home/keelando/envcan_wave/site/assets/js/tides.js` - Date picker event handlers
 - Frontend chart rendering logic for geodetic stations
 
 ---
@@ -436,8 +436,8 @@ Change tide offset from 3 decimals (0.057 m) to 2 decimals (0.06 m) for cleaner 
 
 ### Files Affected
 - `export_tide_json.py` (lines 165-174) - Backend calculation
-- `/home/keelando/site/assets/js/tides.js` (line 464) - Frontend display
-- `/home/keelando/site/data/tide-latest.json` - Output JSON
+- `/home/keelando/envcan_wave/site/assets/js/tides.js` (line 464) - Frontend display
+- `/home/keelando/envcan_wave/site/data/tide-latest.json` - Output JSON
 
 ---
 
@@ -483,7 +483,7 @@ if (observations.length > 0 && predictions.length > 0) {  // Remove isGeodetic c
 This would display helpful residual lines for Point Atkinson, Campbell River, Tofino, etc.
 
 ### Files Affected
-- `/home/keelando/site/assets/js/tides.js` (lines 792-826, 1003-1020) - Frontend chart rendering
+- `/home/keelando/envcan_wave/site/assets/js/tides.js` (lines 792-826, 1003-1020) - Frontend chart rendering
 
 ---
 

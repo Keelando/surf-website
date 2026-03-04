@@ -45,22 +45,22 @@ If multiple files have wrong permissions:
 
 ```bash
 # Fix all JS files
-find /home/keelando/site/assets/js -type f -name "*.js" -exec chmod 644 {} \;
+find /home/keelando/envcan_wave/site/assets/js -type f -name "*.js" -exec chmod 644 {} \;
 
 # Fix all CSS files
-find /home/keelando/site/assets/css -type f -name "*.css" -exec chmod 644 {} \;
+find /home/keelando/envcan_wave/site/assets/css -type f -name "*.css" -exec chmod 644 {} \;
 
 # Fix all HTML files
-find /home/keelando/site -maxdepth 1 -type f -name "*.html" -exec chmod 644 {} \;
+find /home/keelando/envcan_wave/site -maxdepth 1 -type f -name "*.html" -exec chmod 644 {} \;
 ```
 
 ## Historical Issues
 
 ### 2025-11-17: Logger.js Permission Issue
-- **File**: `/home/keelando/site/assets/js/logger.js`
+- **File**: `/home/keelando/envcan_wave/site/assets/js/logger.js`
 - **Problem**: Created with `600` permissions, web server couldn't serve it
 - **Symptom**: `ReferenceError: logger is not defined` in browser console
-- **Solution**: `chmod 644 /home/keelando/site/assets/js/logger.js`
+- **Solution**: `chmod 644 /home/keelando/envcan_wave/site/assets/js/logger.js`
 - **Lesson**: Always set permissions immediately after file creation
 
 ## Code Quality Standards
@@ -244,7 +244,7 @@ If ANY arrow points wrong, DO NOT DEPLOY!
 
 ### Directory Structure
 ```
-/home/keelando/site/
+/home/keelando/envcan_wave/site/
 ├── assets/
 │   ├── js/          # JavaScript modules
 │   └── css/         # Stylesheets

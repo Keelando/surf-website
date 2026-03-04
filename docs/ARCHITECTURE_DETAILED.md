@@ -344,7 +344,7 @@ LIMIT 1
 
 **Frequency:** Every 5 minutes (cron)
 
-**Output:** `~/site/data/latest_wind.json`
+**Output:** `site/data/latest_wind.json`
 
 **JSON structure:**
 ```json
@@ -384,7 +384,7 @@ LIMIT 1
 
 **Frequency:** Every 10 minutes (cron)
 
-**Output:** `~/site/data/wind_timeseries_24hr.json`
+**Output:** `site/data/wind_timeseries_24hr.json`
 
 **JSON structure:**
 ```json
@@ -441,7 +441,7 @@ LIMIT 1
 
 **Frequency:** Every minute (cron)
 
-**Output:** `~/site/data/latest_buoy_v2.json`
+**Output:** `site/data/latest_buoy_v2.json`
 
 **JSON structure:**
 ```json
@@ -478,7 +478,7 @@ LIMIT 1
 
 **Frequency:** Every 5 minutes (cron)
 
-**Output:** `~/site/data/timeseries_[BUOY_ID].json`
+**Output:** `site/data/timeseries_[BUOY_ID].json`
 
 **JSON structure:**
 ```json
@@ -607,9 +607,9 @@ LIMIT 1
 **Frequency:** Every 5 minutes (cron)
 
 **Output:**
-- `~/site/data/tide-latest.json`
-- `~/site/data/tide-timeseries.json`
-- `~/site/data/tide-hi-low.json`
+- `site/data/tide-latest.json`
+- `site/data/tide-timeseries.json`
+- `site/data/tide-hi-low.json`
 
 **Logs:** `~/envcan_wave/tide_export.log`
 
@@ -647,7 +647,7 @@ ZONE_MAP = {
 
 **Frequency:** Every 30 minutes (cron)
 
-**Output:** `~/site/data/marine_forecast.json`
+**Output:** `site/data/marine_forecast.json`
 
 **Logs:** `~/envcan_wave/marine_forecast.log`
 
@@ -667,7 +667,7 @@ ZONE_MAP = {
 
 **Frequency:** Every 6 hours (at 1, 7, 13, 19h) - aligned with GeoMet updates
 
-**Output:** `~/site/data/storm_surge.json` (if implemented)
+**Output:** `site/data/storm_surge.json` (if implemented)
 
 **Logs:** `~/envcan_wave/storm_surge.log`
 
@@ -754,11 +754,11 @@ YouTube Livestreams / Direct URLs / Yawcam Servers
          └→ Yawcam API (Yawcam servers)
 /mnt/storage/[webcam]_cam/[PREFIX]_[TIMESTAMP].jpg (archive)
          ↓ (atomic copy)
-~/site/data/[webcam]/latest.jpg (website)
+site/data/[webcam]/latest.jpg (website)
          ↓ (slideshow management)
-~/site/data/[webcam]/slideshow/img_[TIMESTAMP].jpg (last 7)
+site/data/[webcam]/slideshow/img_[TIMESTAMP].jpg (last 7)
          ↓
-~/site/data/[webcam]/slideshow_manifest.json
+site/data/[webcam]/slideshow_manifest.json
          ↓ (browser, page load)
 webcams.html (latest image + slideshow carousel)
 ```
@@ -772,7 +772,7 @@ webcams.html (latest image + slideshow carousel)
 
 **Storage:**
 - Archive: `/mnt/storage/` (external USB SATA, 223.6GB)
-- Website: `~/site/data/[webcam]/`
+- Website: `site/data/[webcam]/`
 - Cleanup: Automatic when disk usage > 80%
 
 **Complete documentation:** See [WEBCAM_PIPELINE.md](WEBCAM_PIPELINE.md)

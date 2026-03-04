@@ -153,7 +153,7 @@ STATIONS = {
 }
 
 # Output directory for JSON files
-OUTPUT_DIR = Path("~/site/data/storm_surge").expanduser()
+OUTPUT_DIR = Path("site/data/storm_surge").expanduser()
 
 # Database for hindcast storage
 DB_PATH = Path("~/.local/share/storm_surge_forecast.sqlite").expanduser()
@@ -266,7 +266,7 @@ Output:
 
 ### JSON File Structure
 
-**Individual station files:** `~/site/data/storm_surge/Point_Atkinson.json`
+**Individual station files:** `site/data/storm_surge/Point_Atkinson.json`
 
 ```json
 {
@@ -287,7 +287,7 @@ Output:
 }
 ```
 
-**Combined forecast:** `~/site/data/storm_surge/combined_forecast.json`
+**Combined forecast:** `site/data/storm_surge/combined_forecast.json`
 
 ```json
 {
@@ -299,7 +299,7 @@ Output:
 }
 ```
 
-**Hindcast data:** `~/site/data/storm_surge/hindcast.json`
+**Hindcast data:** `site/data/storm_surge/hindcast.json`
 
 ```json
 {
@@ -420,22 +420,22 @@ tail -100 ~/envcan_wave/storm_surge.log
 
 ```bash
 # Verify files exist
-ls -lh ~/site/data/storm_surge/
+ls -lh site/data/storm_surge/
 
 # Check file age (should be recent if cron is working)
-ls -lht ~/site/data/storm_surge/ | head
+ls -lht site/data/storm_surge/ | head
 
 # View latest forecast (first 20 lines)
-head -20 ~/site/data/storm_surge/Point_Atkinson.json
+head -20 site/data/storm_surge/Point_Atkinson.json
 
 # Count timesteps
-cat ~/site/data/storm_surge/Point_Atkinson.json | jq '.forecast | length'
+cat site/data/storm_surge/Point_Atkinson.json | jq '.forecast | length'
 
 # Check latest value
-cat ~/site/data/storm_surge/Point_Atkinson.json | jq '.forecast | to_entries | last'
+cat site/data/storm_surge/Point_Atkinson.json | jq '.forecast | to_entries | last'
 
 # View combined forecast structure
-cat ~/site/data/storm_surge/combined_forecast.json | jq 'keys'
+cat site/data/storm_surge/combined_forecast.json | jq 'keys'
 ```
 
 ### Check Database
@@ -484,14 +484,14 @@ Crescent_Beach_Channel  2025-11-06
 python3 export_hindcast_json.py
 
 # Verify hindcast JSON
-cat ~/site/data/storm_surge/hindcast.json | jq '.actual_days_available'
-cat ~/site/data/storm_surge/hindcast.json | jq '.stations | keys'
+cat site/data/storm_surge/hindcast.json | jq '.actual_days_available'
+cat site/data/storm_surge/hindcast.json | jq '.stations | keys'
 ```
 
 ### Manual Testing Checklist
 
 - [ ] `fetch_storm_surge.py` runs without errors
-- [ ] JSON files created in `~/site/data/storm_surge/`
+- [ ] JSON files created in `site/data/storm_surge/`
 - [ ] Individual station files exist (e.g., `Point_Atkinson.json`)
 - [ ] `combined_forecast.json` exists and contains all stations
 - [ ] Database created at `~/.local/share/storm_surge_forecast.sqlite`
@@ -757,7 +757,7 @@ python3 export_hindcast_json.py
 sqlite3 ~/.local/share/storm_surge_forecast.sqlite "SELECT COUNT(*) FROM forecast_archive;"
 
 # View latest JSON
-cat ~/site/data/storm_surge/combined_forecast.json | jq '.generated_utc'
+cat site/data/storm_surge/combined_forecast.json | jq '.generated_utc'
 
 # Check cron log
 tail -50 ~/envcan_wave/storm_surge.log
@@ -769,7 +769,7 @@ tail -50 ~/envcan_wave/storm_surge.log
 |----------------|---------|
 | `fetch_storm_surge.py` | Main fetcher script |
 | `export_hindcast_json.py` | Hindcast exporter |
-| `~/site/data/storm_surge/` | JSON output directory |
+| `site/data/storm_surge/` | JSON output directory |
 | `~/.local/share/storm_surge_forecast.sqlite` | Forecast database |
 | `~/envcan_wave/storm_surge.log` | Fetch log |
 | `~/envcan_wave/hindcast_export.log` | Hindcast export log |

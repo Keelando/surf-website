@@ -11,7 +11,7 @@ Recent schema changes (wind_direction → wind_direction_deg) revealed gaps:
 
 **Location**: `scripts/monitoring/health_check.py`  
 **Run frequency**: Every hour via cron  
-**Output**: `/home/keelando/site/data/system_health.json`
+**Output**: `/home/keelando/envcan_wave/site/data/system_health.json`
 
 ### Checks to Implement
 

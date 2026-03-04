@@ -158,7 +158,7 @@ SELECT observation_time, wind_speed_kmh, wind_direction, ...
 
 **Files to update:**
 
-#### 1. `~/site/assets/js/stations-map.js`
+#### 1. `site/assets/js/stations-map.js`
 **Line ~370:** Remove fallback check
 ```javascript
 // OLD:
@@ -168,7 +168,7 @@ const windDir = station.wind_direction_deg || station.wind_direction;
 const windDir = station.wind_direction;
 ```
 
-#### 2. `~/site/assets/js/main.js`
+#### 2. `site/assets/js/main.js`
 **Search for:** `wind_direction_deg`
 ```javascript
 // OLD:
@@ -178,7 +178,7 @@ windDirection: data.wind_direction_deg
 windDirection: data.wind_direction
 ```
 
-#### 3. `~/site/assets/js/charts.js`
+#### 3. `site/assets/js/charts.js`
 **Search for:** `wind_direction_deg`
 ```javascript
 // OLD:
@@ -188,7 +188,7 @@ data.wind_direction_deg
 data.wind_direction
 ```
 
-#### 4. `~/site/wind.html` or `~/site/assets/js/wind.js`
+#### 4. `site/wind.html` or `site/assets/js/wind.js`
 **Search for:** `wind_direction_deg`
 ```javascript
 // Replace all instances with wind_direction
@@ -206,18 +206,18 @@ data.wind_direction
 python3 scripts/export/export_wind_json.py
 
 # Check JSON has wind_direction field
-cat ~/site/data/latest_wind.json | jq '.CWGT.wind_direction'
+cat site/data/latest_wind.json | jq '.CWGT.wind_direction'
 # Should return a number (not null)
 
 # Verify old field is gone
-cat ~/site/data/latest_wind.json | jq '.CWGT.wind_direction_deg'
+cat site/data/latest_wind.json | jq '.CWGT.wind_direction_deg'
 # Should return null
 ```
 
 **Test 2: Wind timeseries export**
 ```bash
 python3 scripts/export/export_wind_24hr_timeseries.py
-cat ~/site/data/wind_24hr_data.json | jq '.CWGT[0].wind_direction'
+cat site/data/wind_24hr_data.json | jq '.CWGT[0].wind_direction'
 # Should return a number
 ```
 
@@ -287,7 +287,7 @@ git push origin main
 
 **Frontend deployment:**
 ```bash
-cd ~/site
+cd ~/envcan_wave/site
 git add assets/js/stations-map.js
 git add assets/js/main.js
 git add assets/js/charts.js

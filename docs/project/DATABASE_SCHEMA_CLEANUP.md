@@ -271,8 +271,8 @@ Before applying migrations:
 After migration:
 
 - [ ] Run `python3 scripts/debug_station_status.py`
-- [ ] Check ~/site/data/latest_buoy_v2.json
-- [ ] Check ~/site/data/latest_wind.json
+- [ ] Check site/data/latest_buoy_v2.json
+- [ ] Check site/data/latest_wind.json
 - [ ] Visit website and verify all stations visible
 - [ ] Check for JavaScript console errors
 
@@ -285,7 +285,7 @@ After migration:
 
 ### Phase 2 (Wind export enhancement):
 - `scripts/export/export_wind_json.py` (add 4 fields to ALL_FIELDS)
-- `~/site/assets/js/wind-stations.js` (optional - display new fields)
+- `site/assets/js/wind-stations.js` (optional - display new fields)
 
 ### Phase 3 (Drop old wind_direction):
 - `scripts/parse/wind_to_sqlite.py` (remove wind_direction from CREATE TABLE if still there)

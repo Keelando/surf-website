@@ -320,7 +320,7 @@ The website is served using Caddy on port 8090. Cache headers are configured to:
 
 ```caddy
 :8090 {
-    root * /home/keelando/site
+    root * /home/keelando/envcan_wave/site
     file_server
 
     # Cache images for 1 month (includes banner)
@@ -347,7 +347,7 @@ sudo caddy reload --config /etc/caddy/Caddyfile
 
 ### Website Analytics
 
-**Analytics dashboard:** `/home/keelando/site/analytics.html`
+**Analytics dashboard:** `/home/keelando/envcan_wave/site/analytics.html`
 
 GoAccess-based analytics report generated hourly from Caddy access logs.
 

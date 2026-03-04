@@ -40,7 +40,7 @@
 - ✅ Cron job monitoring
 - ✅ Database integrity checks
 - ✅ Export file freshness validation
-- ✅ JSON output: `/home/keelando/site/data/system_health.json`
+- ✅ JSON output: `/home/keelando/envcan_wave/site/data/system_health.json`
 - ✅ Running hourly via cron
 
 ---
@@ -101,7 +101,7 @@
 3. ✅ Stale station links added to warning card
    - Users can now click station names in stale data warning to check source feeds
    - Reuses sourceLinks from main table for consistency
-   - File: `/home/keelando/site/assets/js/wind-stations.js`
+   - File: `/home/keelando/envcan_wave/site/assets/js/wind-stations.js`
 
 4. ✅ Wind direction field unification complete
    - Fixed last reference in `export_wind_24hr_timeseries.py`

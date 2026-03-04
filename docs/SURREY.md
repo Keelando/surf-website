@@ -211,7 +211,7 @@ now = datetime.now(ZoneInfo('America/Vancouver'))
 
 **Check:**
 1. Database: `sqlite3 ~/.local/share/buoy_data.sqlite "SELECT DISTINCT buoy_id FROM buoy_observation;"`
-2. Export: `cat /home/keelando/site/data/latest_buoy_v2.json | jq '.CRPILE'`
+2. Export: `cat /home/keelando/envcan_wave/site/data/latest_buoy_v2.json | jq '.CRPILE'`
 
 ---
 

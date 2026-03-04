@@ -59,10 +59,10 @@ The webcam capture script now supports per-webcam daylight checking.
 Exports comprehensive sunlight information for display on the website.
 
 **Output files:**
-- `~/site/data/wrcam/sunlight.json` - White Rock sunlight times
-- `~/site/data/bbcam/sunlight.json` - Boundary Bay sunlight times
-- `~/site/data/coxbay/sunlight.json` - Cox Bay sunlight times
-- `~/site/data/sunlight_times.json` - Combined data for all locations
+- `site/data/wrcam/sunlight.json` - White Rock sunlight times
+- `site/data/bbcam/sunlight.json` - Boundary Bay sunlight times
+- `site/data/coxbay/sunlight.json` - Cox Bay sunlight times
+- `site/data/sunlight_times.json` - Combined data for all locations
 
 **Data included:**
 - Sunrise and sunset times

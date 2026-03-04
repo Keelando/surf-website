@@ -338,7 +338,7 @@ git commit -m "feat(tide): implement combined water level predictions
 Combines DFO IWLS astronomical tides with EC GDSPS storm surge
 forecasts. Produces 2-day forecast with peak tracking.
 
-Output: ~/site/data/combined-water-level.json"
+Output: site/data/combined-water-level.json"
 
 git add tests/
 git commit -m "test: add offline testing infrastructure for tide data

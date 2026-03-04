@@ -53,7 +53,7 @@ External system integration documentation:
 Website and UI documentation:
 
 - **[MARINE_FORECAST_FRONTEND_SUMMARY.md](frontend/MARINE_FORECAST_FRONTEND_SUMMARY.md)** - Marine forecast UI implementation
-- **Front-end repository:** [surf-website-front-end](https://github.com/Keelando/surf-website-front-end) - HTML/CSS/JS for halibutbank.ca
+- **Frontend directory:** `site/` — HTML/CSS/JS for halibutbank.ca (merged into this repo 2026-03-04)
 
 ## Feature Planning
 

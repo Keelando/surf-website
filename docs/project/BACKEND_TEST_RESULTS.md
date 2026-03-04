@@ -49,7 +49,7 @@ STATIONS_FILE = PROJECT_ROOT / "config" / "stations.json"
 
 **Why it wasn't noticed before**:
 - Production scripts run from `/home/keelando/envcan_wave/` where the hardcoded path was correct
-- Website uses `~/site/data/stations.json` directly (not via Python stations module)
+- Website uses `site/data/stations.json` directly (not via Python stations module)
 - No one had run the scripts from a different directory before
 
 **Commit**: `25b98b4` - "Fix hardcoded path in stations.py causing FileNotFoundError"
@@ -106,7 +106,7 @@ From `docs/DEPLOYMENT.md`, stations.json exists in TWO locations:
    - Used by Python scripts via `stations.py` module
    - Now correctly references via `PROJECT_ROOT`
 
-2. **Frontend**: `~/site/data/stations.json`
+2. **Frontend**: `site/data/stations.json`
    - Used directly by website (fetch/AJAX)
    - Independent of Python stations module
    - TODO: Investigate frontend usage patterns

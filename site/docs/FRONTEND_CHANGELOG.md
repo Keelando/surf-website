@@ -177,9 +177,9 @@ Warnings now stick to top of screen while scrolling on mobile devices (position:
 - Dismiss buttons show duration in `aria-label` and `title`
 
 **Files modified:**
-- `~/site/assets/js/warning-banner.js` (12 KB - upgraded)
-- `~/site/assets/css/warning-banner-v3.css` (5.2 KB - enhanced)
-- `~/site/WARNING_BANNER_UPGRADE_SUMMARY.md` (docs)
+- `site/assets/js/warning-banner.js` (12 KB - upgraded)
+- `site/assets/css/warning-banner-v3.css` (5.2 KB - enhanced)
+- `site/WARNING_BANNER_UPGRADE_SUMMARY.md` (docs)
 
 ---
 
@@ -202,8 +202,8 @@ Created dedicated page for Environment Canada marine weather forecasts.
 - Zone highlight effect when navigating from warnings
 
 **Files created:**
-- `~/site/forecasts.html` (5.2 KB)
-- `~/site/assets/js/forecasts.js` (7.0 KB)
+- `site/forecasts.html` (5.2 KB)
+- `site/assets/js/forecasts.js` (7.0 KB)
 
 ### Warning Banner System
 
@@ -220,8 +220,8 @@ Dismissible warning banners at top of all pages (Buoys, Tides, Forecasts) when w
 - Automatic sorting by severity
 
 **Files created:**
-- `~/site/assets/js/warning-banner.js` (4.3 KB)
-- `~/site/assets/css/warning-banner-v3.css` (3.4 KB)
+- `site/assets/js/warning-banner.js` (4.3 KB)
+- `site/assets/css/warning-banner-v3.css` (3.4 KB)
 
 ### State Management (localStorage)
 
@@ -248,9 +248,9 @@ All pages now have 3-tab navigation:
 ```
 
 **Files modified:**
-- `~/site/index.html` - Added Forecasts link, warning banner container
-- `~/site/tides.html` - Added Forecasts link, warning banner container
-- `~/site/forecasts.html` - Full navigation with active state
+- `site/index.html` - Added Forecasts link, warning banner container
+- `site/tides.html` - Added Forecasts link, warning banner container
+- `site/forecasts.html` - Full navigation with active state
 
 ### Mobile UX Improvements
 
@@ -355,9 +355,9 @@ Each buoy card now has two navigation buttons:
 - Centers map with animation when navigating from card
 
 **Files modified:**
-- `~/site/assets/js/main.js` - Navigation functions
-- `~/site/assets/js/stations-map.js` - Map centering function
-- `~/site/assets/css/style-v2.css` - Nav buttons, pulse animation
+- `site/assets/js/main.js` - Navigation functions
+- `site/assets/js/stations-map.js` - Map centering function
+- `site/assets/css/style-v2.css` - Nav buttons, pulse animation
 
 ### Tide Page Improvements
 
@@ -379,9 +379,9 @@ Each buoy card now has two navigation buttons:
 - Styling in `nav-tide-styles.css` with `.station-metadata` classes
 
 **Files modified:**
-- `~/site/assets/js/tides.js` - Metadata display, stations.json integration
-- `~/site/assets/css/nav-tide-styles.css` - Reduced padding, metadata styles
-- `~/site/tides.html` - Added metadata container div
+- `site/assets/js/tides.js` - Metadata display, stations.json integration
+- `site/assets/css/nav-tide-styles.css` - Reduced padding, metadata styles
+- `site/tides.html` - Added metadata container div
 
 ### Wave Breaking Threshold Annotations
 
@@ -392,7 +392,7 @@ Added explanatory note below wave comparison chart.
 - **1.2m (red):** Moderate waves begin breaking on exposed sandy beaches
 
 **Files modified:**
-- `~/site/index.html` - Wave threshold explanation box
+- `site/index.html` - Wave threshold explanation box
 
 ---
 
@@ -416,8 +416,8 @@ Contains all monitored stations (6 buoys + 8 tide stations) with:
 - `validate_stations.py` - Validation script
 
 **Web integration:**
-- `~/site/data/stations.json` - Web-accessible copy (chmod 644)
-- `~/site/assets/js/stations-map.js` - Leaflet map displaying all stations
+- `site/data/stations.json` - Web-accessible copy (chmod 644)
+- `site/assets/js/stations-map.js` - Leaflet map displaying all stations
 - Map appears on index.html between buoy cards and charts section
 
 **Usage in Python:**
@@ -432,7 +432,7 @@ point_atk = get_tide_station("point_atkinson")
 
 ## Earlier Features
 
-### Tides Page (~/site/tides.html)
+### Tides Page (site/tides.html)
 
 Real-time tide monitoring page for DFO stations.
 
@@ -451,7 +451,7 @@ Real-time tide monitoring page for DFO stations.
 - Auto-refresh every 5 minutes
 - Responsive design (mobile, tablet, desktop)
 
-**JavaScript file:** `~/site/assets/js/tides.js`
+**JavaScript file:** `site/assets/js/tides.js`
 
 **Key functions:**
 - `loadTideData()` - Fetches all three JSON files
@@ -460,9 +460,9 @@ Real-time tide monitoring page for DFO stations.
 - `displayTideChart()` - Initializes ECharts tide chart
 
 **Data sources:**
-- `~/site/data/tide-latest.json` - Current conditions
-- `~/site/data/tide-timeseries.json` - 28-hour rolling window
-- `~/site/data/tide-hi-low.json` - Today's high/low events
+- `site/data/tide-latest.json` - Current conditions
+- `site/data/tide-timeseries.json` - 28-hour rolling window
+- `site/data/tide-hi-low.json` - Today's high/low events
 
 ### Chart Max-Width Standards
 

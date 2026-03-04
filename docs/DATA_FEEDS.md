@@ -75,7 +75,7 @@ https://dd.weather.gc.ca/today/bulletins/alphanumeric/YYYYMMDD/FP/CWVR/HH/
 **Protocol:** WMS 1.3.0 via OWSLib
 **Fetched by:** `scripts/fetch/fetch_storm_surge.py`
 **Schedule:** Every 6 hours, after 00Z and 12Z model runs (cron at 1, 7, 13, 19 UTC)
-**Stored in:** `storm_surge_forecast.sqlite` + exported JSON to `~/site/data/storm_surge/`
+**Stored in:** `storm_surge_forecast.sqlite` + exported JSON to `site/data/storm_surge/`
 
 ---
 

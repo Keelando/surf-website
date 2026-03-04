@@ -318,49 +318,49 @@ sqlite3 ~/.local/share/tide_data.sqlite "
 
 ```bash
 # View latest buoy snapshot
-cat ~/site/data/latest_buoy_v2.json | jq .
+cat site/data/latest_buoy_v2.json | jq .
 
 # Check specific buoy
-cat ~/site/data/latest_buoy_v2.json | jq '.["4600146"]'
+cat site/data/latest_buoy_v2.json | jq '.["4600146"]'
 
 # List all buoy IDs in export
-cat ~/site/data/latest_buoy_v2.json | jq 'keys'
+cat site/data/latest_buoy_v2.json | jq 'keys'
 
 # Check if buoy has data
-cat ~/site/data/latest_buoy_v2.json | jq '.["46087"] | has("wave_height_sig")'
+cat site/data/latest_buoy_v2.json | jq '.["46087"] | has("wave_height_sig")'
 
 # View timeseries for specific buoy
-cat ~/site/data/timeseries_46087.json | jq '.data | length'
+cat site/data/timeseries_46087.json | jq '.data | length'
 ```
 
 ### Check Tide JSON Exports
 
 ```bash
 # View tide latest snapshot
-cat ~/site/data/tide-latest.json | jq .
+cat site/data/tide-latest.json | jq .
 
 # Check specific station
-cat ~/site/data/tide-latest.json | jq '.point_atkinson'
+cat site/data/tide-latest.json | jq '.point_atkinson'
 
 # View tide timeseries data points
-cat ~/site/data/tide-timeseries.json | jq '.point_atkinson.observations | length'
-cat ~/site/data/tide-timeseries.json | jq '.point_atkinson.predictions | length'
+cat site/data/tide-timeseries.json | jq '.point_atkinson.observations | length'
+cat site/data/tide-timeseries.json | jq '.point_atkinson.predictions | length'
 
 # View today's high/low tides
-cat ~/site/data/tide-hi-low.json | jq '.point_atkinson'
+cat site/data/tide-hi-low.json | jq '.point_atkinson'
 ```
 
 ### Check Marine Forecast JSON
 
 ```bash
 # View marine forecast
-cat ~/site/data/marine_forecast.json | jq .
+cat site/data/marine_forecast.json | jq .
 
 # Check active warnings
-cat ~/site/data/marine_forecast.json | jq '.locations | to_entries | .[] | select(.value.warnings | length > 0) | {zone: .key, warnings: .value.warnings}'
+cat site/data/marine_forecast.json | jq '.locations | to_entries | .[] | select(.value.warnings | length > 0) | {zone: .key, warnings: .value.warnings}'
 
 # List all warnings currently in effect
-cat ~/site/data/marine_forecast.json | jq '[.locations | .[] | .warnings | .[] | select(.status == "IN EFFECT") | .type] | unique'
+cat site/data/marine_forecast.json | jq '[.locations | .[] | .warnings | .[] | select(.status == "IN EFFECT") | .type] | unique'
 ```
 
 ---
@@ -483,9 +483,9 @@ sqlite3 ~/.local/share/buoy_data.sqlite "SELECT COUNT(*) FROM buoy_observation;"
 sqlite3 ~/.local/share/tide_data.sqlite "SELECT COUNT(*) FROM tide_observation;"
 
 # 6. Verify JSON exports exist
-ls -lh ~/site/data/latest_buoy_v2.json
-ls -lh ~/site/data/tide-latest.json
-ls -lh ~/site/data/marine_forecast.json
+ls -lh site/data/latest_buoy_v2.json
+ls -lh site/data/tide-latest.json
+ls -lh site/data/marine_forecast.json
 
 # 7. Check for errors in logs
 tail -50 ~/envcan_wave/*.log | grep -i error
@@ -514,7 +514,7 @@ cat stations.json | jq '[.buoys, .tide_stations] | add | length'
 cd ~/envcan_wave
 git status
 
-cd ~/site
+cd site/
 git status
 ```
 
@@ -528,7 +528,7 @@ git commit -m "Description of changes"
 git push
 
 # Frontend repo
-cd ~/site
+cd site/
 git add .
 git commit -m "Description of changes"
 git push
@@ -620,7 +620,7 @@ df -h
 
 # Check project directories
 du -sh ~/envcan_wave
-du -sh ~/site
+du -sh site/
 du -sh ~/.local/share/*.sqlite
 
 # Check XML data directories

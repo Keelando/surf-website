@@ -14,7 +14,7 @@ The system captures images from 5 webcam sources (YouTube livestreams, direct UR
 - **Resolution:** 720p (cropped to remove street, keep pier/ocean)
 - **Capture interval:** Every 10 minutes (24/7)
 - **Archive:** `/mnt/storage/whiterock_cam/`
-- **Website:** `~/site/data/wrcam/`
+- **Website:** `site/data/wrcam/`
 - **Cron schedule:** `:00, :10, :20, :30, :40, :50` (every hour)
 
 ### 2. White Rock East Beach (`boundarybay`)
@@ -23,7 +23,7 @@ The system captures images from 5 webcam sources (YouTube livestreams, direct UR
 - **Resolution:** 480p (full frame)
 - **Capture interval:** Every 10 minutes (24/7)
 - **Archive:** `/mnt/storage/boundarybay_cam/`
-- **Website:** `~/site/data/bbcam/`
+- **Website:** `site/data/bbcam/`
 - **Cron schedule:** Currently disabled in cron
 
 ### 3. Cox Bay (`coxbay`)
@@ -33,7 +33,7 @@ The system captures images from 5 webcam sources (YouTube livestreams, direct UR
 - **Capture interval:** Every 15 minutes (daylight only)
 - **Daylight margin:** ±75 minutes from sunrise/sunset
 - **Archive:** `/mnt/storage/coxbay_cam/`
-- **Website:** `~/site/data/coxbay/`
+- **Website:** `site/data/coxbay/`
 - **Cron schedule:** `:04, :19, :34, :49` (every hour)
 
 ### 4. Mud Bay HD (`mudbay`)
@@ -43,7 +43,7 @@ The system captures images from 5 webcam sources (YouTube livestreams, direct UR
 - **Capture interval:** Every 30 minutes (daylight only)
 - **Daylight margin:** ±75 minutes from sunrise/sunset
 - **Archive:** `/mnt/storage/mudbay_cam/`
-- **Website:** `~/site/data/mudbay/`
+- **Website:** `site/data/mudbay/`
 - **Timestamp annotation:** Enabled
 - **Cron schedule:** `:06, :36` (every hour)
 
@@ -54,7 +54,7 @@ The system captures images from 5 webcam sources (YouTube livestreams, direct UR
 - **Capture interval:** Every 20 minutes (daylight only)
 - **Daylight margin:** ±60 minutes from sunrise/sunset
 - **Archive:** `/mnt/storage/ambleside_cam/`
-- **Website:** `~/site/data/ambleside/`
+- **Website:** `site/data/ambleside/`
 - **Cron schedule:** `:08, :28, :48` (every hour)
 - **Permission:** Approval granted to halibutbank.ca by Hollyburn Sailing Club (Jan 2026)
   - **IMPORTANT:** If you fork this project, you MUST obtain your own permission from Hollyburn Sailing Club
@@ -68,7 +68,7 @@ The system captures images from 5 webcam sources (YouTube livestreams, direct UR
 - Contains timestamped archive images for all webcams
 - Automatic cleanup when disk usage exceeds 80%
 
-**Website directory:** `~/site/data/`
+**Website directory:** `site/data/`
 - Contains latest images and slideshow for each webcam
 - Served by Caddy web server on port 8090
 
@@ -108,9 +108,9 @@ fetch_webcam.py (yt-dlp + ffmpeg / HTTP GET / Yawcam API)
          ↓
 /mnt/storage/[webcam]_cam/[PREFIX]_[TIMESTAMP].jpg (archive)
          ↓ (atomic copy)
-~/site/data/[webcam]/latest.jpg (website)
+site/data/[webcam]/latest.jpg (website)
          ↓ (slideshow management)
-~/site/data/[webcam]/slideshow/img_[TIMESTAMP].jpg (last 7 images)
+site/data/[webcam]/slideshow/img_[TIMESTAMP].jpg (last 7 images)
          ↓
 Website (webcams.html) displays latest + slideshow carousel
 ```
@@ -327,10 +327,10 @@ tail -50 ~/envcan_wave/logs/webcam_whiterock.log
 ls -lh /mnt/storage/whiterock_cam/ | tail -10
 
 # Check website directory
-ls -lh ~/site/data/wrcam/
+ls -lh site/data/wrcam/
 
 # View latest metadata
-cat ~/site/data/wrcam/latest.json | jq .
+cat site/data/wrcam/latest.json | jq .
 ```
 
 ### Test Webcam Capture Manually
@@ -346,7 +346,7 @@ python3 scripts/fetch/fetch_webcam.py whiterock
 # === White Rock Pier Cam Webcam Capture Started ===
 # Capturing frame from YouTube: https://www.youtube.com/watch?v=4MK3E9EWDSY
 # Deno capture successful (165.2 KB)
-# Atomically updated: /home/keelando/site/data/wrcam/latest.jpg
+# Atomically updated: /home/keelando/envcan_wave/site/data/wrcam/latest.jpg
 # === White Rock Pier Cam Webcam Capture Completed Successfully ===
 ```
 
@@ -409,9 +409,9 @@ mount | grep /mnt/storage
 
 ## Frontend Integration
 
-**Website:** `~/site/webcams.html`
+**Website:** `site/webcams.html`
 
-**JavaScript:** `~/site/assets/js/webcams-v4.js`
+**JavaScript:** `site/assets/js/webcams-v4.js`
 
 **Features:**
 - Display latest webcam images
@@ -448,7 +448,7 @@ sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backu
 ```
 
 **Website files:** Auto-backed up to git nightly at 11:04 PM
-- Repository: `~/site`
+- Repository: `~/envcan_wave` (frontend in `site/`)
 - Includes: `latest.jpg`, `slideshow/`, `latest.json`, etc.
 
 ## Adding a New Webcam
@@ -492,10 +492,10 @@ python3 scripts/fetch/fetch_webcam.py newcam
 4. **Verify storage created**:
 ```bash
 ls -lh /mnt/storage/newcam_cam/
-ls -lh ~/site/data/newcam/
+ls -lh site/data/newcam/
 ```
 
-5. **Add to frontend** (`~/site/webcams.html`)
+5. **Add to frontend** (`site/webcams.html`)
 
 ---
 
