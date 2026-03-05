@@ -45,6 +45,9 @@ for line in sys.stdin:
         ua = d.get('request', {}).get('headers', {}).get('User-Agent', [''])[0]
         if 'Uptime-Kuma' in ua:
             continue
+        uri = d.get('request', {}).get('uri', '')
+        if uri.startswith('/.git') or uri.startswith('/.env') or uri in ('/wp-login.php', '/xmlrpc.php'):
+            continue
         sys.stdout.write(line)
     except Exception:
         pass
