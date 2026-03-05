@@ -138,7 +138,7 @@ WEBCAM_CONFIGS = {
 
 def setup_logger(config_name):
     """Setup logging for this webcam using centralized logging config."""
-    return setup_logging(f'webcam_{config_name}')
+    return setup_logging(f'webcam_{config_name}', console=False)
 
 
 def main():

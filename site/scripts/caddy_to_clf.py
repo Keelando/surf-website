@@ -6,7 +6,7 @@ Usage: python3 caddy_to_clf.py < caddy.log > combined.log
 
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import quote
 
 def json_to_clf(json_line):
@@ -19,25 +19,22 @@ def json_to_clf(json_line):
             return None
 
         request = data.get('request', {})
+        headers = request.get('headers', {})
 
-        # Extract fields
-        remote_ip = request.get('remote_ip', '-')
-        # Convert IPv6 localhost to IPv4
-        if remote_ip == '::1':
-            remote_ip = '127.0.0.1'
+        # Use real visitor IP from Cloudflare header (remote_ip is always 127.0.0.1 behind CF)
+        cf_ip = headers.get('Cf-Connecting-Ip', [None])[0]
+        x_fwd = headers.get('X-Forwarded-For', [None])[0]
+        remote_ip = cf_ip or x_fwd or request.get('remote_ip', '-')
 
         timestamp = data.get('ts', 0)
-        dt = datetime.fromtimestamp(timestamp)
-        time_str = dt.strftime('%d/%b/%Y:%H:%M:%S %z') or dt.strftime('%d/%b/%Y:%H:%M:%S +0000')
+        dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+        time_str = dt.strftime('%d/%b/%Y:%H:%M:%S +0000')
 
         method = request.get('method', '-')
         uri = request.get('uri', '-')
         proto = request.get('proto', '-')
         status = data.get('status', 0)
         size = data.get('size', 0)
-
-        # Get user agent and referer from headers
-        headers = request.get('headers', {})
         user_agent = headers.get('User-Agent', ['-'])[0] if headers.get('User-Agent') else '-'
         referer = headers.get('Referer', ['-'])[0] if headers.get('Referer') else '-'
 

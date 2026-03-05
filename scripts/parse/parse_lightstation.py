@@ -74,7 +74,20 @@ def parse_report_time(header_line, report_time_line):
             if month == 0:
                 month = 12
                 year -= 1
-            dt = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
+            try:
+                dt = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
+            except ValueError:
+                # Day doesn't exist in previous month (e.g., day=31 rolled back to February).
+                # Roll back one more month.
+                month -= 1
+                if month == 0:
+                    month = 12
+                    year -= 1
+                try:
+                    dt = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
+                except ValueError:
+                    logger.warning(f"Cannot determine valid observation date for day={day}, giving up")
+                    return None
 
         return int(dt.timestamp())
 
