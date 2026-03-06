@@ -87,15 +87,15 @@ function renderComparisonChart(waveComparisonChart, chartData) {
 
   // Apply user threshold from localStorage to first series only
   const threshold = parseFloat(localStorage.getItem("waveThreshold"));
-  if (!isNaN(threshold) && series.length > 0) {
-    series[0].markLine = {
+  if (series.length > 0) {
+    series[0].markLine = !isNaN(threshold) ? {
       symbol: "none",
       data: [{
         yAxis: threshold,
         lineStyle: { type: "dashed", color: "#e53935", width: 1.5 },
         label: { formatter: `${threshold}m`, color: "#e53935" }
       }]
-    };
+    } : { data: [] };  // explicitly clear so ECharts doesn't keep the old line
   }
 
   waveComparisonChart.setOption({
