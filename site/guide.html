@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to Read Marine Data | Salish Sea Wave Conditions</title>
+  <meta name="description" content="A plain-language guide to reading marine data: knots vs km/h, wind and swell directions, wave height, and how to interpret the data cards on this site." />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20251112" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css" />
+  <style>
+    .guide-wrap {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1.5rem 3rem;
+    }
+
+    .guide-wrap h2 {
+      color: #004b7c;
+      border-bottom: 2px solid #bee3f8;
+      padding-bottom: 0.4rem;
+      margin-top: 2.5rem;
+    }
+
+    .guide-wrap h2:first-of-type {
+      margin-top: 1rem;
+    }
+
+    .guide-wrap p,
+    .guide-wrap li {
+      color: #2d3748;
+      line-height: 1.7;
+    }
+
+    .guide-wrap ul {
+      padding-left: 1.25rem;
+    }
+
+    /* Responsive table wrapper */
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 1rem 0;
+    }
+
+    .table-scroll table {
+      margin: 0;
+    }
+
+    /* Conversion table */
+    .conv-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    .conv-table th {
+      background: #2c5282;
+      color: white;
+      padding: 0.6rem 1rem;
+      text-align: left;
+    }
+
+    .conv-table td {
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .conv-table tr:nth-child(even) td {
+      background: #f7fafc;
+    }
+
+    /* Sea state table */
+    .sea-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    .sea-table th {
+      background: #2c5282;
+      color: white;
+      padding: 0.6rem 1rem;
+      text-align: left;
+    }
+
+    .sea-table td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    .sea-table tr:nth-child(even) td {
+      background: #f7fafc;
+    }
+
+    /* Compass rose diagram */
+    .compass-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.4rem;
+      max-width: 500px;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    .compass-grid div {
+      background: #ebf8ff;
+      border: 1px solid #bee3f8;
+      border-radius: 4px;
+      padding: 0.35rem 0.5rem;
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .compass-abbr {
+      font-weight: 700;
+      color: #2c5282;
+      min-width: 2.5rem;
+    }
+
+    /* Data card label table */
+    .label-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    .label-table th {
+      background: #2c5282;
+      color: white;
+      padding: 0.6rem 1rem;
+      text-align: left;
+    }
+
+    .label-table td {
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    .label-table td:first-child {
+      font-weight: 600;
+      color: #2c5282;
+      white-space: nowrap;
+      width: 9rem;
+    }
+
+    .label-table tr:nth-child(even) td {
+      background: #f7fafc;
+    }
+
+    .callout {
+      background: #ebf8ff;
+      border-left: 4px solid #0077be;
+      padding: 0.75rem 1rem;
+      border-radius: 0 4px 4px 0;
+      margin: 1rem 0;
+      font-size: 0.95rem;
+      color: #2d3748;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navigation -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+
+  <header>
+    <h1>How to Read Marine Data</h1>
+  </header>
+
+  <div class="site-tagline">
+    A plain-language guide to the numbers and abbreviations on this site.
+  </div>
+
+  <div class="guide-wrap">
+
+    <!-- ── 1. Units ─────────────────────────────────────────────── -->
+    <h2>1. Wind Speed Units: Knots, km/h, and mph</h2>
+
+    <p>Wind speed (and sometimes wave period) is often measured in <strong>knots</strong> by marine services. One knot is one nautical mile per hour.</p>
+
+    <div class="callout">
+      This site displays wind speeds in <strong>knots</strong> and wave heights in <strong>metres</strong>, matching the raw data from Environment Canada and NOAA buoys.
+    </div>
+
+    <div class="table-scroll">
+    <table class="conv-table">
+      <thead>
+        <tr><th>Knots (kt)</th><th>km/h</th><th>mph</th><th>Feels like</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>5 kt</td><td>9 km/h</td><td>6 mph</td><td>Light breeze, ripples on water</td></tr>
+        <tr><td>10 kt</td><td>19 km/h</td><td>11 mph</td><td>Gentle breeze, small wavelets</td></tr>
+        <tr><td>15 kt</td><td>28 km/h</td><td>17 mph</td><td>Moderate breeze, whitecaps begin</td></tr>
+        <tr><td>20 kt</td><td>37 km/h</td><td>23 mph</td><td>Fresh breeze, frequent whitecaps</td></tr>
+        <tr><td>25 kt</td><td>46 km/h</td><td>29 mph</td><td>Strong breeze, rough for small boats</td></tr>
+        <tr><td>30 kt</td><td>56 km/h</td><td>35 mph</td><td>Near gale, high waves, spray</td></tr>
+        <tr><td>40 kt</td><td>74 km/h</td><td>46 mph</td><td>Gale, very rough, dangerous seas</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Quick mental conversion: <strong>1 kt ≈ 1.85 km/h ≈ 1.15 mph</strong>. To go from knots to km/h, multiply by roughly 1.85 (or just double it for a quick estimate).</p>
+
+
+    <!-- ── 2. Directions ─────────────────────────────────────────── -->
+    <h2>2. Wind and Swell Directions</h2>
+
+    <p><strong>Wind direction</strong> is always reported as the direction the wind is blowing <em>from</em>. A "NW wind" means the wind is coming from the northwest and blowing toward the southeast.</p>
+
+    <p><strong>Swell/wave direction</strong> follows the same convention on this site: the reported direction is where the waves are coming <em>from</em>.</p>
+
+    <div class="callout">
+      A NW swell on the Strait of Georgia means waves are arriving from the northwest — they were generated further up the strait and are moving southeast toward the Fraser delta.
+    </div>
+
+    <h3>Cardinal and Intercardinal Abbreviations</h3>
+
+    <div class="compass-grid">
+      <div><span class="compass-abbr">N</span> North</div>
+      <div><span class="compass-abbr">NNE</span> North-northeast</div>
+      <div><span class="compass-abbr">NE</span> Northeast</div>
+      <div><span class="compass-abbr">ENE</span> East-northeast</div>
+      <div><span class="compass-abbr">E</span> East</div>
+      <div><span class="compass-abbr">ESE</span> East-southeast</div>
+      <div><span class="compass-abbr">SE</span> Southeast</div>
+      <div><span class="compass-abbr">SSE</span> South-southeast</div>
+      <div><span class="compass-abbr">S</span> South</div>
+      <div><span class="compass-abbr">SSW</span> South-southwest</div>
+      <div><span class="compass-abbr">SW</span> Southwest</div>
+      <div><span class="compass-abbr">WSW</span> West-southwest</div>
+      <div><span class="compass-abbr">W</span> West</div>
+      <div><span class="compass-abbr">WNW</span> West-northwest</div>
+      <div><span class="compass-abbr">NW</span> Northwest</div>
+      <div><span class="compass-abbr">NNW</span> North-northwest</div>
+    </div>
+
+    <p>Directions on the map are shown as arrows pointing <em>into</em> the direction the wind/waves are heading (i.e. away from their source).</p>
+
+
+    <!-- ── 3. Wave height / sea state ────────────────────────────── -->
+    <h2>3. Wave Height and Sea State</h2>
+
+    <p>Wave heights here are <strong>significant wave height (Hs)</strong> — the average height of the highest one-third of waves. Individual waves can be noticeably larger.</p>
+
+    <div class="table-scroll">
+    <table class="sea-table">
+      <thead>
+        <tr><th>Hs (metres)</th><th>Sea state</th><th>What it feels like</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0 – 0.1 m</td><td>Glassy / calm</td><td>Mirror-flat water, no swell</td></tr>
+        <tr><td>0.1 – 0.5 m</td><td>Rippled / slight</td><td>Small wavelets, pleasant for kayaking and paddleboarding</td></tr>
+        <tr><td>0.5 – 1.0 m</td><td>Slight</td><td>Small waves, occasional whitecaps; fine for most vessels</td></tr>
+        <tr><td>1.0 – 2.0 m</td><td>Moderate</td><td>Noticeable rolling motion; waves may break on sandy beaches</td></tr>
+        <tr><td>2.0 – 4.0 m</td><td>Rough</td><td>Large waves, spray; small craft should use caution</td></tr>
+        <tr><td>4.0 – 6.0 m</td><td>Very rough</td><td>Very large waves; challenging for all but large vessels</td></tr>
+        <tr><td>&gt; 6.0 m</td><td>High / phenomenal</td><td>Extreme open-ocean conditions; rarely seen in the Salish Sea</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>The Strait of Georgia is a semi-enclosed body of water, so wave heights rarely exceed 3–4 m even in strong storms. Juan de Fuca and offshore buoys regularly see larger swells from Pacific groundswell.</p>
+
+
+    <!-- ── 4. Data card labels ────────────────────────────────────── -->
+    <h2>4. Reading the Data Cards</h2>
+
+    <p>Each buoy card shows a snapshot of the latest observation. Here's what the labels mean:</p>
+
+    <div class="table-scroll">
+    <table class="label-table">
+      <thead>
+        <tr><th>Label</th><th>What it means</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hs</td>
+          <td><strong>Significant wave height</strong> — average of the highest third of waves, in metres. The most-used single measure of sea state.</td>
+        </tr>
+        <tr>
+          <td>Tp / Peak period</td>
+          <td><strong>Peak wave period</strong> — the time in seconds between successive wave crests of the dominant swell. Longer period (10–15 s+) = smooth groundswell from distant storms. Shorter period (3–6 s) = local chop driven by nearby wind.</td>
+        </tr>
+        <tr>
+          <td>Dominant dir.</td>
+          <td>Direction the dominant swell is coming <em>from</em>, in compass degrees or cardinal abbreviation.</td>
+        </tr>
+        <tr>
+          <td>Wind speed</td>
+          <td>Sustained wind speed at the buoy, in knots.</td>
+        </tr>
+        <tr>
+          <td>Wind gust</td>
+          <td>Highest wind speed recorded in the observation interval (usually 8 minutes). Gusts can be 30–50% higher than the sustained speed.</td>
+        </tr>
+        <tr>
+          <td>Wind dir.</td>
+          <td>Direction the wind is coming <em>from</em>.</td>
+        </tr>
+        <tr>
+          <td>Air temp</td>
+          <td>Air temperature at the buoy, in °C.</td>
+        </tr>
+        <tr>
+          <td>Water temp</td>
+          <td>Sea surface temperature, in °C. Useful for wetsuit planning and hypothermia risk assessment.</td>
+        </tr>
+        <tr>
+          <td>Pressure</td>
+          <td>Atmospheric (barometric) pressure in hPa (same as millibar). Average sea-level pressure is ~1013 hPa. Falling pressure often signals approaching weather.</td>
+        </tr>
+        <tr>
+          <td>Updated</td>
+          <td>Time of the most recent observation in Pacific time. Buoys typically report every hour.</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="callout">
+      <strong>Disclaimer:</strong> Always verify conditions independently before going out on the water. This site aggregates publicly available data for informational purposes and is not a substitute for official marine forecasts from <a href="https://weather.gc.ca/marine/index_e.html" target="_blank" rel="noopener">Environment Canada</a> or <a href="https://www.weather.gov/mtr/marine" target="_blank" rel="noopener">NOAA</a>.
+    </div>
+
+  </div>
+
+  <!-- Navigation (Bottom) -->
+  <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <div hx-get="/components/footer.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</body>
+</html>

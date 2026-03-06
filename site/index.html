@@ -80,11 +80,25 @@
 
   <div hx-get="/components/tagline-buoys.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
 
+  <details class="site-intro-details">
+    <summary class="site-intro-summary">How to read this data</summary>
+    <div class="site-intro">
+      This site pulls live data from ocean buoys, weather stations, and tide gauges so you can see current sea conditions at a glance — useful for boating, surfing, sailing, or just keeping an eye on the water.
+      <a href="/guide.html">New to marine data? Learn how to read it →</a>
+    </div>
+  </details>
+  <script>
+    (function() {
+      var d = document.querySelector('.site-intro-details');
+      if (d && window.innerWidth > 600) d.open = true;
+    })();
+  </script>
+
   <!-- Stations Map Section -->
   <section id="map-section">
     <h2>Monitoring Stations</h2>
     <div class="map-legend">
-      <div style="font-weight: 600; margin-bottom: 0.5rem; color: #2c5282;">Station Types:</div>
+      <div class="legend-title" style="font-weight: 600; margin-bottom: 0.5rem; color: #2c5282;">Station Types:</div>
 
       <!-- Directional markers (with current data) -->
       <span class="legend-item">
