@@ -16,6 +16,10 @@ logs/
 *.env
 .config/
 
+# MaxMind GeoIP config (contains license key)
+assets/GeoIP.conf
+assets/GeoIP.conf.txt
+
 # Cache
 .cache/
 *.lock

@@ -1,0 +1,12 @@
+# GeoIP.conf file for `geoipupdate` program, for versions >= 3.1.1.
+# Used to update GeoIP databases from https://www.maxmind.com.
+# For more information about this config file, visit the docs at
+# https://dev.maxmind.com/geoip/updating-databases.
+#
+# Copy this file to ~/.config/GeoIP.conf and fill in your credentials.
+# DO NOT commit the real config — it contains your license key.
+# See also: GEOIPUPDATE_ACCOUNT_ID and GEOIPUPDATE_LICENSE_KEY env vars.
+
+AccountID YOUR_ACCOUNT_ID
+LicenseKey YOUR_LICENSE_KEY
+EditionIDs GeoLite2-ASN GeoLite2-City GeoLite2-Country

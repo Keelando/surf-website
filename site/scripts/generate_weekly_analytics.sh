@@ -75,6 +75,7 @@ goaccess "$TEMP_LOG" \
     --no-term-resolver \
     --anonymize-ip \
     --ignore-crawlers \
+    --geoip-database=/var/lib/GeoIP/GeoLite2-City.mmdb \
     2>/dev/null
 
 # Clean up
