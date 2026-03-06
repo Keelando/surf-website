@@ -131,7 +131,9 @@
     .compass-abbr {
       font-weight: 700;
       color: #2c5282;
-      min-width: 2.5rem;
+      display: inline-block;
+      width: 2.5rem;
+      flex-shrink: 0;
     }
 
     /* Data card label table */
@@ -186,7 +188,7 @@
   </header>
 
   <div class="site-tagline">
-    A plain-language guide to the numbers and abbreviations on this site.
+    A plain-language guide to the numbers and abbreviations used on this site.
   </div>
 
   <div class="guide-wrap">
@@ -194,10 +196,10 @@
     <!-- ── 1. Units ─────────────────────────────────────────────── -->
     <h2>1. Wind Speed Units: Knots, km/h, and mph</h2>
 
-    <p>Wind speed (and sometimes wave period) is often measured in <strong>knots</strong> by marine services. One knot is one nautical mile per hour.</p>
+    <p>Wind speed is often measured in <strong>knots</strong> by marine services. One knot is one nautical mile per hour.</p>
 
     <div class="callout">
-      This site displays wind speeds in <strong>knots</strong> and wave heights in <strong>metres</strong>, matching the raw data from Environment Canada and NOAA buoys.
+      This site displays wind speeds in <strong>knots</strong> and wave heights in <strong>metres</strong>, matching the raw buoy data from Environment Canada and NOAA.
     </div>
 
     <div class="table-scroll">
@@ -217,15 +219,15 @@
     </table>
     </div>
 
-    <p>Quick mental conversion: <strong>1 kt ≈ 1.85 km/h ≈ 1.15 mph</strong>. To go from knots to km/h, multiply by roughly 1.85 (or just double it for a quick estimate).</p>
+    <p>Quick mental conversion: <strong>1 kt ≈ 1.85 km/h ≈ 1.15 mph</strong>. To convert knots to km/h, multiply by ~1.85 (or roughly double it for a quick estimate).</p>
 
 
     <!-- ── 2. Directions ─────────────────────────────────────────── -->
     <h2>2. Wind and Swell Directions</h2>
 
-    <p><strong>Wind direction</strong> is always reported as the direction the wind is blowing <em>from</em>. A "NW wind" means the wind is coming from the northwest and blowing toward the southeast.</p>
+    <p><strong>Wind direction</strong> is reported as the direction the wind is blowing <em>from</em>. A "NW wind" means the wind is coming from the northwest and blowing toward the southeast.</p>
 
-    <p><strong>Swell/wave direction</strong> follows the same convention on this site: the reported direction is where the waves are coming <em>from</em>.</p>
+    <p><strong>Swell (wave) direction</strong> follows the same convention on this site: the reported direction is where the waves are coming <em>from</em>.</p>
 
     <div class="callout">
       A NW swell on the Strait of Georgia means waves are arriving from the northwest — they were generated further up the strait and are moving southeast toward the Fraser delta.
@@ -252,13 +254,13 @@
       <div><span class="compass-abbr">NNW</span><span class="compass-label">North-northwest</span></div>
     </div>
 
-    <p>Directions on the map are shown as arrows pointing <em>into</em> the direction the wind/waves are heading (i.e. away from their source).</p>
+    <p>On the map, arrows point toward the direction the wind or waves are moving (away from their source).</p>
 
 
     <!-- ── 3. Wave height / sea state ────────────────────────────── -->
     <h2>3. Wave Height and Sea State</h2>
 
-    <p>Wave heights here are <strong>significant wave height (Hs)</strong> — the average height of the highest one-third of waves. Individual waves can be noticeably larger.</p>
+    <p>Wave heights here are <strong>significant wave height (Hs)</strong> — the average height of the highest one-third of waves. Individual waves can be significantly larger.</p>
 
     <div class="table-scroll">
     <table class="sea-table">
@@ -277,13 +279,13 @@
     </table>
     </div>
 
-    <p>The Strait of Georgia is a semi-enclosed body of water, so wave heights rarely exceed 3–4 m even in strong storms. Juan de Fuca and offshore buoys regularly see larger swells from Pacific groundswell.</p>
+    <p>The Strait of Georgia is a semi-enclosed body of water, so wave heights rarely exceed 3–4 m even in strong storms. Juan de Fuca and offshore buoys regularly see larger Pacific groundswell.</p>
 
 
     <!-- ── 4. Data card labels ────────────────────────────────────── -->
     <h2>4. Reading the Data Cards</h2>
 
-    <p>Each buoy card shows a snapshot of the latest observation. Here's what the labels mean:</p>
+    <p>Each buoy card shows the latest observation from that station. Here's what the labels mean:</p>
 
     <div class="table-scroll">
     <table class="label-table">
@@ -297,7 +299,7 @@
         </tr>
         <tr>
           <td>Tp / Peak period</td>
-          <td><strong>Peak wave period</strong> — the time in seconds between successive wave crests of the dominant swell. Longer period (10–15 s+) = smooth groundswell from distant storms. Shorter period (3–6 s) = local chop driven by nearby wind.</td>
+          <td><strong>Peak wave period</strong> — the time in seconds between successive wave crests of the dominant swell. Longer period (10–15 s+) = smooth groundswell from distant storms. Shorter period (3–6 s) = local chop driven by nearby wind. Longer periods mean waves carry more energy and feel more powerful even if they are not very tall.</td>
         </tr>
         <tr>
           <td>Dominant dir.</td>
@@ -309,7 +311,7 @@
         </tr>
         <tr>
           <td>Wind gust</td>
-          <td>Highest wind speed recorded in the observation interval (usually 8 minutes). Gusts can be 30–50% higher than the sustained speed.</td>
+          <td>Highest wind speed recorded in the observation interval (usually 8 minutes). Gusts can be 30–50% stronger than sustained wind.</td>
         </tr>
         <tr>
           <td>Wind dir.</td>
@@ -325,7 +327,7 @@
         </tr>
         <tr>
           <td>Pressure</td>
-          <td>Atmospheric (barometric) pressure in hPa (same as millibar). Average sea-level pressure is ~1013 hPa. Falling pressure often signals approaching weather.</td>
+          <td>Atmospheric (barometric) pressure in hPa (same as millibar). Average sea-level pressure is ~1013 hPa. Falling pressure often signals approaching storms or unsettled weather.</td>
         </tr>
         <tr>
           <td>Updated</td>
@@ -336,7 +338,7 @@
     </div>
 
     <div class="callout">
-      <strong>Disclaimer:</strong> Always verify conditions independently before going out on the water. This site aggregates publicly available data for informational purposes and is not a substitute for official marine forecasts from <a href="https://weather.gc.ca/marine/index_e.html" target="_blank" rel="noopener">Environment Canada</a> or <a href="https://www.weather.gov/mtr/marine" target="_blank" rel="noopener">NOAA</a>.
+      <strong>Disclaimer:</strong> Always verify conditions independently before going on the water. This site aggregates publicly available data for informational purposes and is not a substitute for official marine forecasts from <a href="https://weather.gc.ca/marine/index_e.html" target="_blank" rel="noopener">Environment Canada</a> or <a href="https://www.weather.gov/mtr/marine" target="_blank" rel="noopener">NOAA</a>.
     </div>
 
   </div>
