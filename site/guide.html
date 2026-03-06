@@ -110,6 +110,22 @@
       padding: 0.35rem 0.5rem;
       display: flex;
       gap: 0.4rem;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .compass-grid .compass-label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    @media (max-width: 600px) {
+      .compass-grid {
+        grid-template-columns: repeat(2, 1fr);
+        font-size: 0.85rem;
+      }
     }
 
     .compass-abbr {
@@ -218,22 +234,22 @@
     <h3>Cardinal and Intercardinal Abbreviations</h3>
 
     <div class="compass-grid">
-      <div><span class="compass-abbr">N</span> North</div>
-      <div><span class="compass-abbr">NNE</span> North-northeast</div>
-      <div><span class="compass-abbr">NE</span> Northeast</div>
-      <div><span class="compass-abbr">ENE</span> East-northeast</div>
-      <div><span class="compass-abbr">E</span> East</div>
-      <div><span class="compass-abbr">ESE</span> East-southeast</div>
-      <div><span class="compass-abbr">SE</span> Southeast</div>
-      <div><span class="compass-abbr">SSE</span> South-southeast</div>
-      <div><span class="compass-abbr">S</span> South</div>
-      <div><span class="compass-abbr">SSW</span> South-southwest</div>
-      <div><span class="compass-abbr">SW</span> Southwest</div>
-      <div><span class="compass-abbr">WSW</span> West-southwest</div>
-      <div><span class="compass-abbr">W</span> West</div>
-      <div><span class="compass-abbr">WNW</span> West-northwest</div>
-      <div><span class="compass-abbr">NW</span> Northwest</div>
-      <div><span class="compass-abbr">NNW</span> North-northwest</div>
+      <div><span class="compass-abbr">N</span><span class="compass-label">North</span></div>
+      <div><span class="compass-abbr">NNE</span><span class="compass-label">North-northeast</span></div>
+      <div><span class="compass-abbr">NE</span><span class="compass-label">Northeast</span></div>
+      <div><span class="compass-abbr">ENE</span><span class="compass-label">East-northeast</span></div>
+      <div><span class="compass-abbr">E</span><span class="compass-label">East</span></div>
+      <div><span class="compass-abbr">ESE</span><span class="compass-label">East-southeast</span></div>
+      <div><span class="compass-abbr">SE</span><span class="compass-label">Southeast</span></div>
+      <div><span class="compass-abbr">SSE</span><span class="compass-label">South-southeast</span></div>
+      <div><span class="compass-abbr">S</span><span class="compass-label">South</span></div>
+      <div><span class="compass-abbr">SSW</span><span class="compass-label">South-southwest</span></div>
+      <div><span class="compass-abbr">SW</span><span class="compass-label">Southwest</span></div>
+      <div><span class="compass-abbr">WSW</span><span class="compass-label">West-southwest</span></div>
+      <div><span class="compass-abbr">W</span><span class="compass-label">West</span></div>
+      <div><span class="compass-abbr">WNW</span><span class="compass-label">West-northwest</span></div>
+      <div><span class="compass-abbr">NW</span><span class="compass-label">Northwest</span></div>
+      <div><span class="compass-abbr">NNW</span><span class="compass-label">North-northwest</span></div>
     </div>
 
     <p>Directions on the map are shown as arrows pointing <em>into</em> the direction the wind/waves are heading (i.e. away from their source).</p>
