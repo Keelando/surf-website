@@ -186,9 +186,52 @@ function updateTimeRangeLabels() {
   }
 }
 
+/**
+ * Apply a user-defined wave threshold line to the comparison chart
+ */
+function applyWaveThreshold() {
+  const input = document.getElementById("wave-threshold-input");
+  const val = parseFloat(input.value);
+  if (isNaN(val) || val <= 0 || val > 10) return;
+
+  localStorage.setItem("waveThreshold", val);
+  const status = document.getElementById("wave-threshold-status");
+  if (status) status.textContent = `Threshold set: ${val}m`;
+
+  const filteredData = filterTimeseriesData(chartData, currentTimeRange);
+  renderComparisonChart(waveComparisonChart, filteredData);
+}
+
+/**
+ * Clear the user-defined wave threshold
+ */
+function clearWaveThreshold() {
+  localStorage.removeItem("waveThreshold");
+  const input = document.getElementById("wave-threshold-input");
+  if (input) input.value = "";
+  const status = document.getElementById("wave-threshold-status");
+  if (status) status.textContent = "";
+
+  const filteredData = filterTimeseriesData(chartData, currentTimeRange);
+  renderComparisonChart(waveComparisonChart, filteredData);
+}
+
+/**
+ * Restore threshold input from localStorage on page load
+ */
+function initThresholdControl() {
+  const stored = localStorage.getItem("waveThreshold");
+  if (!stored) return;
+  const input = document.getElementById("wave-threshold-input");
+  if (input) input.value = stored;
+  const status = document.getElementById("wave-threshold-status");
+  if (status) status.textContent = `Threshold set: ${stored}m`;
+}
+
 // Wait for HTMX to load footer (which contains timestamp element) before initializing
 document.addEventListener('htmx:load', function() {
   loadChartsData();
+  initThresholdControl();
 }, { once: true });
 
 // Auto-refresh every 15 minutes

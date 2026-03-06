@@ -182,6 +182,17 @@
     </div>
 
     <div id="wave-comparison-chart" class="w-full h-400"></div>
+    <div style="text-align: center; margin: 0.5rem 0 1rem; font-size: 0.875rem; color: #4a5568;">
+      <label for="wave-threshold-input">Personal wave threshold:</label>
+      <input type="number" id="wave-threshold-input" min="0.1" max="10" step="0.1" placeholder="e.g. 1.0"
+        style="width: 5rem; padding: 0.25rem 0.4rem; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 0.875rem; margin: 0 0.3rem;">
+      m
+      <button onclick="applyWaveThreshold()"
+        style="padding: 0.25rem 0.75rem; background: #0077be; color: white; border: none; border-radius: 4px; font-size: 0.875rem; cursor: pointer; margin-left: 0.3rem;">Set</button>
+      <button onclick="clearWaveThreshold()"
+        style="padding: 0.25rem 0.75rem; background: #e2e8f0; color: #4a5568; border: none; border-radius: 4px; font-size: 0.875rem; cursor: pointer; margin-left: 0.3rem;">Clear</button>
+      <span id="wave-threshold-status" style="margin-left: 0.5rem; color: #e53935; font-weight: 600;"></span>
+    </div>
     <div id="buoy-selector">
       <label for="chart-buoy-select">Select Buoy:</label>
       <select id="chart-buoy-select">

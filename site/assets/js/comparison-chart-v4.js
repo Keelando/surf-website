@@ -81,24 +81,22 @@ function renderComparisonChart(waveComparisonChart, chartData) {
         connectNulls: false,
         itemStyle: { color: buoyColors[buoyId] },
         emphasis: { focus: "series" },
-        markLine: {
-          symbol: "none",
-          data: [
-            {
-              yAxis: 0.7,
-              lineStyle: { type: "dashed", color: "orange", width: 1 },
-              label: { formatter: "0.7m" }
-            },
-            {
-              yAxis: 1.2,
-              lineStyle: { type: "dashed", color: "red", width: 1 },
-              label: { formatter: "1.2m" }
-            }
-          ]
-        }
       };
     })
     .filter(Boolean);
+
+  // Apply user threshold from localStorage to first series only
+  const threshold = parseFloat(localStorage.getItem("waveThreshold"));
+  if (!isNaN(threshold) && series.length > 0) {
+    series[0].markLine = {
+      symbol: "none",
+      data: [{
+        yAxis: threshold,
+        lineStyle: { type: "dashed", color: "#e53935", width: 1.5 },
+        label: { formatter: `${threshold}m`, color: "#e53935" }
+      }]
+    };
+  }
 
   waveComparisonChart.setOption({
     title: {
