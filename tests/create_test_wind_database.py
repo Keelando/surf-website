@@ -12,16 +12,16 @@ This creates: tests/databases/wind_data_test.sqlite
 """
 
 import sqlite3
+import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-import sys
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import wind parser logic
-from wind_to_sqlite import parse_and_collect_fields, EXPECTED_FIELDS
+from wind_to_sqlite import EXPECTED_FIELDS, parse_and_collect_fields
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent
@@ -256,11 +256,11 @@ def main():
         # Print summary
         print_summary(conn)
 
-        print(f"\n✅ Test database created successfully!")
+        print("\n✅ Test database created successfully!")
         print(f"   Location: {DB_PATH}")
-        print(f"\nNext steps:")
-        print(f"  1. Use this database for offline development and testing")
-        print(f"  2. Test export scripts with: export_wind_json.py --test-mode")
+        print("\nNext steps:")
+        print("  1. Use this database for offline development and testing")
+        print("  2. Test export scripts with: export_wind_json.py --test-mode")
         print(f"  3. Verify data: sqlite3 {DB_PATH} 'SELECT * FROM wind_observation LIMIT 5;'")
 
         return 0

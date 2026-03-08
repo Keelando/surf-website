@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Storage Metrics to MQTT for Home Assistant
 
@@ -21,7 +18,9 @@ import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
+
 import paho.mqtt.client as mqtt
+
 from lib.logging_config import setup_logging
 
 logger = setup_logging('storage_metrics')

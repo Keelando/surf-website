@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Export latest lightstation observations to JSON for website display.
 
@@ -27,10 +24,9 @@ Format:
 }
 """
 
-from pathlib import Path
 import sqlite3
-import json
 from datetime import datetime, timezone
+from pathlib import Path
 
 # Shared utilities
 from lib.config import EXPORT_DIR, safe_json_write

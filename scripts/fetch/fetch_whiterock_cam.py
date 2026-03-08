@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 White Rock East Beach Webcam Capture
 
@@ -18,11 +15,11 @@ Storage:
 """
 
 import json
+import logging
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-import logging
 
 # Configuration
 YOUTUBE_URL = "https://www.youtube.com/watch?v=4MK3E9EWDSY"
@@ -169,7 +166,7 @@ def cleanup_old_archives():
             # Keep at least the most recent 24 hours of images
             age_hours = (datetime.now().timestamp() - img_path.stat().st_mtime) / 3600
             if age_hours < 24:
-                logger.info(f"Stopped cleanup - remaining images are less than 24 hours old")
+                logger.info("Stopped cleanup - remaining images are less than 24 hours old")
                 break
 
             size_mb = img_path.stat().st_size / (1024 * 1024)
@@ -183,7 +180,7 @@ def cleanup_old_archives():
             logger.info(f"Cleaned up {deleted_count} old images ({deleted_size_mb:.1f} MB)")
             logger.info(f"New disk usage: {final_percent:.1f}%")
         else:
-            logger.warning(f"Disk usage still above threshold but no images old enough to delete")
+            logger.warning("Disk usage still above threshold but no images old enough to delete")
 
     except Exception as e:
         logger.warning(f"Failed to cleanup old archives: {e}")

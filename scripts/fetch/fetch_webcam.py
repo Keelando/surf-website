@@ -25,15 +25,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Setup path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 from lib.logging_config import setup_logging
 from lib.webcam import (
-    capture_youtube_frame,
-    download_image,
-    capture_yawcam_image,
     annotate_image,
+    capture_yawcam_image,
+    capture_youtube_frame,
     cleanup_old_archives,
+    download_image,
     manage_slideshow_images,
 )
 from scripts.utils.daylight import is_daylight

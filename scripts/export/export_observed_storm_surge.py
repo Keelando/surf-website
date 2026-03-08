@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Export observed storm surge (observation - prediction) to JSON for hindcast comparison.
 
@@ -11,17 +8,17 @@ to JSON for plotting alongside GDSPS hindcast predictions.
 Output: ~/site/data/storm_surge/observed_surge.json
 """
 
+
 import json
 import sqlite3
-from pathlib import Path
-from datetime import datetime, timezone, timedelta
-from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+
 import pytz
 
 # Shared utilities
-from lib.config import TIDE_DATABASE, EXPORT_DIR
-from lib.stations import STATIONS
+from lib.config import EXPORT_DIR, TIDE_DATABASE
 from lib.logging_config import setup_logging
+from lib.stations import STATIONS
 
 logger = setup_logging('observed_surge')
 

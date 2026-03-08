@@ -1,26 +1,23 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from lib.logging_config import setup_logging
-
-logger = setup_logging('storm_surge')
 """
 Storm Surge Forecast Fetcher for Surf Server
 Fetches GDSPS data from Environment Canada GeoMet WMS
 Stores 18Z run to database for hindcast analysis (closest to noon Pacific)
 """
-from pathlib import Path
-from datetime import datetime, timedelta, timezone
 import json
 import re
-import warnings
-import time
 import sqlite3
+import time
+import warnings
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
 from owslib.wms import WebMapService
 
-# Shared utilities
-from lib.config import STORM_SURGE_DATABASE, EXPORT_DIR, STORM_SURGE_RETENTION_DAYS
+from lib.config import EXPORT_DIR, STORM_SURGE_DATABASE, STORM_SURGE_RETENTION_DAYS
+from lib.logging_config import setup_logging
+
+logger = setup_logging('storm_surge')
 
 # Configuration
 TESTING = False  # Set to True for verbose output and progress tracking
@@ -189,7 +186,7 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
         # Check for "no feature" response
         if TESTING and "no feature" in text.lower():
             if not hasattr(fetch_pixel_value, '_no_feature_warned'):
-                logger.info(f"    ⚠️  'No feature' response - coordinates may be outside model domain")
+                logger.info("    ⚠️  'No feature' response - coordinates may be outside model domain")
                 fetch_pixel_value._no_feature_warned = True
         
         return None

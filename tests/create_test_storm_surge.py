@@ -10,8 +10,8 @@ Usage:
 """
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent
@@ -131,10 +131,10 @@ def main():
             print(f"   Time range: {start_time} to {end_time}")
 
     print("=" * 70)
-    print(f"✅ Test storm surge data ready!")
-    print(f"\nNext steps:")
-    print(f"  1. Generate test tide database: python3 tests/create_test_tide_database.py")
-    print(f"  2. Test combined water level: python3 export_combined_water_level.py --test-mode")
+    print("✅ Test storm surge data ready!")
+    print("\nNext steps:")
+    print("  1. Generate test tide database: python3 tests/create_test_tide_database.py")
+    print("  2. Test combined water level: python3 export_combined_water_level.py --test-mode")
 
     return 0
 

@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Fetch NOAA NDBC buoy data and store in local SQLite database.
 Uses 5-day feeds for both .txt (meteorological) and .spec (spectral wave) data.
 """
 
-import requests
+
 import sqlite3
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
+from datetime import datetime, timedelta, timezone
+
+import requests
+
+from lib.config import BUOY_DATABASE
+from lib.logging_config import setup_logging
+from lib.stations import STATIONS as STATION_REGISTRY
 
 # Shared utilities
 from lib.units import ms_to_kmh
-from lib.config import BUOY_DATABASE
-from lib.stations import STATIONS as STATION_REGISTRY
-from lib.logging_config import setup_logging
 
 # Disable console logging (runs from cron, file logging only)
 logger = setup_logging('noaa', console=False)

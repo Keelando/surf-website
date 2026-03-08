@@ -3,10 +3,11 @@
 Quick script to query FlowWorks API for channel list at a specific site.
 Usage: python3 query_surrey_channels.py <site_id>
 """
-import sys
-import requests
 import json
 import os
+import sys
+
+import requests
 
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
 
@@ -49,7 +50,7 @@ if __name__ == "__main__":
 
     site_id = sys.argv[1]
 
-    print(f"Authenticating...")
+    print("Authenticating...")
     token = authenticate()
 
     print(f"Fetching channels for site {site_id}...")

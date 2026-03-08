@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Fetch Surrey FlowWorks water level data and store to tide database.
 
@@ -17,13 +14,14 @@ IMPORTANT DATUM NOTES:
   2. Calculating tidal residuals (storm surge = observed - predicted)
 """
 
-import requests
-import sqlite3
+
 import argparse
 import os
-from datetime import datetime, timezone, timedelta
+import sqlite3
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
-from pathlib import Path
+
+import requests
 
 from lib.config import TIDE_DATABASE
 from lib.logging_config import setup_logging

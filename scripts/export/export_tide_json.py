@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Export tide data from SQLite to JSON for website display.
 
@@ -16,16 +13,15 @@ IMPORTANT: Two-stage downsampling strategy (DO NOT REMOVE):
 See function documentation for rationale.
 """
 
-import json
+
 import sqlite3
-from pathlib import Path
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 # Shared utilities
-from lib.config import TIDE_DATABASE, EXPORT_DIR, safe_json_write
-from lib.stations import STATIONS
+from lib.config import EXPORT_DIR, TIDE_DATABASE, safe_json_write
 from lib.logging_config import setup_logging
+from lib.stations import STATIONS
 
 logger = setup_logging('tide_export')
 

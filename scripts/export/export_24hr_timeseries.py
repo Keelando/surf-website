@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from pathlib import Path
 import sqlite3
-import json
-from datetime import datetime, timezone, timedelta
 import time
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+from lib.config import BUOY_DATABASE, EXPORT_DIR, safe_json_write
+from lib.logging_config import setup_logging
+from lib.stations import get_all_buoys
 
 # Shared utilities
 from lib.units import kmh_to_knots
-from lib.config import BUOY_DATABASE, EXPORT_DIR, safe_json_write
-from lib.stations import get_all_buoys
-from lib.logging_config import setup_logging
 
 logger = setup_logging('timeseries_export')
 

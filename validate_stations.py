@@ -216,7 +216,7 @@ def main():
     try:
         # Load data
         data = load_stations()
-        print(f"✅ JSON syntax is valid")
+        print("✅ JSON syntax is valid")
         
         # Track all IDs and names for duplicate detection
         all_buoy_ids = set()
@@ -239,7 +239,7 @@ def main():
                 print(f"  ❌ {e}")
                 return 1
         
-        print(f"  ✅ All buoy stations validated")
+        print("  ✅ All buoy stations validated")
         
         # Validate tide stations
         tides = data.get('tides', {})
@@ -256,15 +256,15 @@ def main():
                 print(f"  ❌ {e}")
                 return 1
         
-        print(f"  ✅ All tide stations validated")
+        print("  ✅ All tide stations validated")
         
         # Validate metadata
-        print(f"\n📋 Validating metadata...")
+        print("\n📋 Validating metadata...")
         meta_warnings = validate_metadata(data)
         all_warnings.extend(meta_warnings)
         
         if not meta_warnings:
-            print(f"  ✅ Metadata complete")
+            print("  ✅ Metadata complete")
         
         # Summary
         print("\n" + "=" * 70)

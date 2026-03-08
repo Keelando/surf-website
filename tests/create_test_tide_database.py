@@ -11,9 +11,9 @@ Usage:
 This creates: tests/databases/tide_data_test.sqlite
 """
 
-import sqlite3
-import json
 import datetime
+import json
+import sqlite3
 from pathlib import Path
 
 # Paths
@@ -384,11 +384,11 @@ def main():
         # Print summary
         print_summary(conn)
 
-        print(f"\n✅ Test database created successfully!")
+        print("\n✅ Test database created successfully!")
         print(f"   Location: {DB_PATH}")
-        print(f"\nNext steps:")
-        print(f"  1. Run calculate_storm_surge_observed.py with --test-mode to populate offsets")
-        print(f"  2. Use this database for offline development and testing")
+        print("\nNext steps:")
+        print("  1. Run calculate_storm_surge_observed.py with --test-mode to populate offsets")
+        print("  2. Use this database for offline development and testing")
 
         return 0
 

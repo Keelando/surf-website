@@ -8,17 +8,15 @@ for display on the website.
 Generates JSON files with sunlight information for each webcam location.
 """
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import json
-from datetime import datetime, timezone, timedelta
-from astral import LocationInfo, Depression
-from astral.sun import sun, dawn, dusk, golden_hour, blue_hour
-import pytz
-from lib.config import EXPORT_DIR
+from datetime import datetime, timedelta, timezone
 
+import pytz
+from astral import Depression, LocationInfo
+from astral.sun import blue_hour, dawn, dusk, golden_hour, sun
+
+from lib.config import EXPORT_DIR
 
 # Webcam locations (same as in fetch_webcam.py)
 WEBCAM_LOCATIONS = {
@@ -330,7 +328,7 @@ def export_all_locations(days_ahead=4):
     print(f"  Total data points: {len(results['stations']) * days_ahead * 4}")
 
     # Also write individual webcam files for backwards compatibility
-    print(f"\n=== Writing Individual Webcam Files ===")
+    print("\n=== Writing Individual Webcam Files ===")
     for location_key, location in WEBCAM_LOCATIONS.items():
         if location_key in results["stations"]:
             # Just write today's data to individual files (backwards compat)

@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Export latest wind station observations to JSON for website display.
 
@@ -26,17 +23,18 @@ Format:
 }
 """
 
-from pathlib import Path
-import sqlite3
+
 import json
+import sqlite3
 from datetime import datetime, timezone
+
+from lib.config import EXPORT_DIR, WIND_DATABASE, safe_json_write
+from lib.directions import degrees_to_cardinal
+from lib.logging_config import setup_logging
+from lib.stations import get_all_wind
 
 # Shared utilities
 from lib.units import kmh_to_knots
-from lib.directions import degrees_to_cardinal
-from lib.config import WIND_DATABASE, EXPORT_DIR, safe_json_write
-from lib.stations import get_all_wind
-from lib.logging_config import setup_logging
 
 logger = setup_logging('wind_json_export')
 
@@ -218,7 +216,7 @@ def query_and_export():
             }
             # Remove None values
             latest_json["whiterock_east"] = {k: v for k, v in latest_json["whiterock_east"].items() if v is not None}
-            logger.debug(f"Exported whiterock_east (White Rock East Beach)")
+            logger.debug("Exported whiterock_east (White Rock East Beach)")
         except Exception as e:
             logger.warning(f"Failed to include White Rock East Beach data: {e}")
 

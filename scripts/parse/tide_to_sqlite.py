@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Fetch recent tide data from DFO IWLS API and store to local SQLite.
 
@@ -11,17 +8,18 @@ Uses separate database (tide_data.sqlite) with three tables:
 - tide_highlow: High/low events (wlp-hilo series)
 """
 
-import requests
-import sqlite3
-import datetime
-import time
+
 import argparse
-from pathlib import Path
+import datetime
+import sqlite3
+import time
+
+import requests
 
 # Shared utilities
 from lib.config import TIDE_DATABASE
-from lib.stations import STATIONS
 from lib.logging_config import setup_logging
+from lib.stations import STATIONS
 
 logger = setup_logging('tide_obs')
 

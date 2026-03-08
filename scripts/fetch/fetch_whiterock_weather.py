@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 White Rock East Beach Weather Station - Direct JSON API Integration
 Fetches from https://maps.whiterockcity.ca/weather/weatherResults.txt
 """
 
-import requests
-import sqlite3
 import json
-from pathlib import Path
-from datetime import datetime, timezone
+import sqlite3
 import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+import requests
+
+from lib.config import EXPORT_DIR
 
 # Configuration
 SQLITE_PATH = Path("~/.local/share/weather_data.sqlite").expanduser()
-from lib.config import EXPORT_DIR
+
 OUT_PATH = EXPORT_DIR / "whiterock_weather.json"
 API_URL = "https://maps.whiterockcity.ca/weather/weatherResults.txt"
 LOCKFILE = Path("/tmp/whiterock_weather.lock")

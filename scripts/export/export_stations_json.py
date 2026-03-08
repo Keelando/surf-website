@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Export stations.json metadata from backend to frontend.
 
@@ -16,11 +13,10 @@ coordinates, names, types, and data sources for all buoys, tide stations,
 and wind stations.
 """
 
-import json
-import shutil
-from pathlib import Path
 
-from lib.config import PROJECT_ROOT, EXPORT_DIR
+import json
+
+from lib.config import EXPORT_DIR, PROJECT_ROOT
 from lib.logging_config import setup_logging
 
 logger = setup_logging('stations_json_export')

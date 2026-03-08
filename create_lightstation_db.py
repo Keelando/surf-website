@@ -61,7 +61,7 @@ def main():
     conn.commit()
     conn.close()
 
-    print(f"\n✓ Database initialized successfully!")
+    print("\n✓ Database initialized successfully!")
     print(f"Location: {DB_PATH}")
 
 if __name__ == "__main__":

@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Export 24-hour wind station timeseries for charts.
 
@@ -23,17 +20,17 @@ Format:
 }
 """
 
-from pathlib import Path
 import sqlite3
-import json
-from datetime import datetime, timezone, timedelta
 import time
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+from lib.config import EXPORT_DIR, WIND_DATABASE, safe_json_write
+from lib.logging_config import setup_logging
+from lib.stations import get_all_wind
 
 # Shared utilities
 from lib.units import kmh_to_knots
-from lib.config import WIND_DATABASE, EXPORT_DIR, safe_json_write
-from lib.stations import get_all_wind
-from lib.logging_config import setup_logging
 
 logger = setup_logging('wind_timeseries_export')
 

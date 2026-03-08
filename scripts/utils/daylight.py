@@ -16,7 +16,8 @@ Usage:
         pass
 """
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
+
 from astral import LocationInfo
 from astral.sun import sun
 
@@ -64,7 +65,7 @@ def calculate_sunrise_sunset(lat, lon, date=None):
             sunset_time = sunset_time + timedelta(days=1)
 
         return sunrise_time, sunset_time
-    except ValueError as e:
+    except ValueError:
         # Handle polar day/night cases where sun never rises or sets
         return None, None
 

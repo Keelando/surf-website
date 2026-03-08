@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Parse BC Lightstation Reports (FPCN61 format) into SQLite.
 
@@ -14,8 +11,9 @@ Usage:
 
 import re
 import sqlite3
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
 from lib.logging_config import setup_logging
 
 # Disable console logging (runs from cron, file logging only)

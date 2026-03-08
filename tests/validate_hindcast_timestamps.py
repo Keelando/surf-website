@@ -9,8 +9,9 @@ Checks that:
 4. All stations have same time range
 """
 import json
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
+
 
 def validate_hindcast_json(json_path):
     """Validate hindcast JSON file."""
@@ -50,7 +51,7 @@ def validate_hindcast_json(json_path):
             last_time = datetime.fromisoformat(last['time'].replace('Z', '+00:00'))
             forecast_time = datetime.fromisoformat(first['forecast_date'].replace('Z', '+00:00'))
 
-            print(f"   ✅ Timestamps are full ISO format")
+            print("   ✅ Timestamps are full ISO format")
         except Exception as e:
             print(f"   ❌ Timestamp format error: {e}")
             all_valid = False
@@ -67,7 +68,7 @@ def validate_hindcast_json(json_path):
         if len(hindcast) != 24:
             print(f"   ⚠️  Expected 24 hourly records, got {len(hindcast)}")
         else:
-            print(f"   ✅ Correct record count (24 hours)")
+            print("   ✅ Correct record count (24 hours)")
 
         # Verify hours_ahead calculation
         calculated_hours = (first_time - forecast_time).total_seconds() / 3600
@@ -77,7 +78,7 @@ def validate_hindcast_json(json_path):
             print(f"      Valid:    {first_time}")
             all_valid = False
         else:
-            print(f"   ✅ Hours ahead calculation correct")
+            print("   ✅ Hours ahead calculation correct")
 
         # Check for Pacific time alignment (if this is supposed to be PST)
         # 18Z Tuesday + 38h = Thursday 08:00 UTC = Thursday 00:00 PST
@@ -89,12 +90,12 @@ def validate_hindcast_json(json_path):
         print(f"   🕐 PST Range: {first_pst.strftime('%Y-%m-%d %H:%M')} to {last_pst.strftime('%Y-%m-%d %H:%M')}")
 
         if first_pst.hour == 0:
-            print(f"   ✅ Starts at midnight PST")
+            print("   ✅ Starts at midnight PST")
         else:
             print(f"   ⚠️  Should start at midnight PST, starts at {first_pst.hour}:00")
 
         if last_pst.hour == 23:
-            print(f"   ✅ Ends at 23:00 PST (full day)")
+            print("   ✅ Ends at 23:00 PST (full day)")
         else:
             print(f"   ⚠️  Should end at 23:00 PST, ends at {last_pst.hour}:00")
 

@@ -14,18 +14,18 @@ Usage:
     python3 health_check.py [--verbose]
 """
 
-import sys
 import json
 import sqlite3
+import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Tuple
+from typing import Dict, List
+
+from lib.config import EXPORT_DIR
+from lib.logging_config import setup_logging
 
 # Add lib to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from lib.stations import get_all_buoys, get_all_tides, get_all_wind
-from lib.config import PROJECT_ROOT, EXPORT_DIR
-from lib.logging_config import setup_logging
 
 # Setup logging (console disabled for cron, file only)
 logger = setup_logging('health_check', console=False)

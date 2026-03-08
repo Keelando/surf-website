@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Fetch Surrey FlowWorks wave/wind data (API v2) and store to SQLite.
 Based on v1 implementation - migrated to v2 API with JWT auth.
@@ -12,18 +9,20 @@ Stations:
 - Colebrook (18507): Wind + temp only
 """
 
-import requests
-import sqlite3
-from datetime import datetime, timezone, timedelta
-from zoneinfo import ZoneInfo
-from pathlib import Path
-import time
+
 import os
+import sqlite3
+import time
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+
+import requests
+
+from lib.config import BUOY_DATABASE, WIND_DATABASE
+from lib.logging_config import setup_logging
 
 # Shared utilities
 from lib.units import ms_to_kmh
-from lib.config import BUOY_DATABASE, WIND_DATABASE
-from lib.logging_config import setup_logging
 
 logger = setup_logging('surrey_fetch')
 

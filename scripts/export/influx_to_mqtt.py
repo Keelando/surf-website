@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from pathlib import Path
-from influxdb import InfluxDBClient
-import paho.mqtt.client as mqtt
 import json
 from datetime import datetime, timezone
+from pathlib import Path
+
+import paho.mqtt.client as mqtt
+from influxdb import InfluxDBClient
+
+from lib.directions import degrees_to_cardinal
+from lib.logging_config import setup_logging
+from lib.stations import get_all_buoys
 
 # Shared utilities
 from lib.units import kmh_to_knots
-from lib.directions import degrees_to_cardinal
-from lib.stations import get_all_buoys
-from lib.logging_config import setup_logging
 
 logger = setup_logging('mqtt')
 

@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Parse Environment Canada SWOB-ML wind station observations into SQLite.
 
@@ -14,10 +11,10 @@ Usage:
 Data is stored in ~/.local/share/wind_data.sqlite and optionally synced to InfluxDB.
 """
 
-from pathlib import Path
+import sqlite3
 import xml.etree.ElementTree as ET
 from datetime import datetime
-import sqlite3
+from pathlib import Path
 
 # Shared utilities
 from lib.config import WIND_DATABASE, WIND_RETENTION_DAYS

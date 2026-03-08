@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Fetch Jericho Sailing Centre wind station data and store to SQLite.
 
@@ -12,11 +9,12 @@ Update frequency: 30-minute intervals
 Integrates into existing wind_data.sqlite database.
 """
 
-import requests
+
 import sqlite3
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from pathlib import Path
+
+import requests
 
 # Shared utilities
 from lib.config import WIND_DATABASE

@@ -10,15 +10,14 @@ Usage:
     python3 debug_station_status.py --log     # Log stale stations to file
 """
 
-import sys
-import json
 import csv
-from pathlib import Path
+import json
+import sys
 from datetime import datetime, timezone
-from typing import Dict, List, Tuple
+from pathlib import Path
+from typing import List, Tuple
 
 # Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.config import EXPORT_DIR
 
 # Stale station log file
@@ -285,7 +284,7 @@ def main():
         active = total - stale
 
         print(f"\n{'=' * 100}")
-        print(f"OVERALL SUMMARY")
+        print("OVERALL SUMMARY")
         print(f"{'=' * 100}")
         print(f"Total Stations: {total}")
         print(f"Active: {active} ({active/total*100:.1f}%)")

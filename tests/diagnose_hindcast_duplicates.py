@@ -11,7 +11,7 @@ Checks for:
 import json
 from datetime import datetime
 from pathlib import Path
-from collections import defaultdict
+
 
 def analyze_hindcast(json_path):
     """Analyze hindcast JSON for duplicate/junk data."""

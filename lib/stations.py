@@ -23,6 +23,7 @@ from typing import Dict, List, Optional
 
 # Default path to stations.json (use PROJECT_ROOT from config)
 from lib.config import PROJECT_ROOT
+
 STATIONS_FILE = PROJECT_ROOT / "config" / "stations.json"
 
 class StationRegistry:
@@ -213,7 +214,7 @@ if __name__ == "__main__":
         print(f"    - {data['name']} ({data['code']})")
     
     # Test specific lookups
-    print(f"\n🔍 Test Lookups:")
+    print("\n🔍 Test Lookups:")
     halibut = get_buoy("4600146")
     if halibut:
         print(f"  ✅ Halibut Bank: {halibut['lat']}, {halibut['lon']}")

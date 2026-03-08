@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Fetch NOAA NDBC land/C-MAN station data and store in wind database.
 
@@ -13,15 +10,17 @@ Stations:
 - SISW1: Smith Island, WA
 """
 
-import requests
+
 import sqlite3
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
+from datetime import datetime, timedelta, timezone
+
+import requests
+
+from lib.config import WIND_DATABASE
+from lib.logging_config import setup_logging
 
 # Shared utilities
 from lib.units import ms_to_kmh
-from lib.config import WIND_DATABASE
-from lib.logging_config import setup_logging
 
 logger = setup_logging('noaa_land', console=False)
 

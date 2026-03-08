@@ -96,7 +96,7 @@ def capture_youtube_thumbnail(video_id, output_path, crop_filter, logger):
                         os.unlink(temp_thumb)
 
         except requests.Timeout:
-            logger.warning(f"Thumbnail request timed out")
+            logger.warning("Thumbnail request timed out")
             continue
         except Exception as e:
             logger.warning(f"Thumbnail fetch failed: {e}")

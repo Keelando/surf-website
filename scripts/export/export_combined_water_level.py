@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Export Combined Total Water Level Predictions
 
@@ -18,15 +15,15 @@ Architecture:
 Output: ~/site/data/combined-water-level.json
 """
 
-import sqlite3
-import json
 import argparse
+import json
+import sqlite3
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 
 # Shared utilities
-from lib.config import TIDE_DATABASE, EXPORT_DIR
+from lib.config import EXPORT_DIR, TIDE_DATABASE
 from lib.logging_config import setup_logging
 
 logger = setup_logging('combined_water_level')

@@ -1,26 +1,24 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 Marine Forecast Parser for Environment Canada XML files
 Parses marine weather forecast XMLs and stores as JSON
 """
 
-from defusedxml import ElementTree as ET
 import json
-import os
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
+
+from defusedxml import ElementTree as ET
 
 # Use centralized logging configuration
+from lib.config import EXPORT_DIR
 from lib.logging_config import setup_logging
 
 logger = setup_logging('marine_forecast')
 
 # Directories
 DATA_DIR = Path.home() / "envcan_wave" / "data" / "marine_forecast"
-from lib.config import EXPORT_DIR
+
 OUTPUT_FILE = EXPORT_DIR / "marine_forecast.json"
 
 # Zone mapping - normalize location names to internal keys
