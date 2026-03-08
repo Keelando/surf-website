@@ -19,7 +19,7 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20251112" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20260309" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css" />
@@ -87,12 +87,6 @@
       <a href="/guide.html">New to marine data? Learn how to read it →</a>
     </div>
   </details>
-  <script>
-    (function() {
-      var d = document.querySelector('.site-intro-details');
-      if (d && window.innerWidth > 600) d.open = true;
-    })();
-  </script>
 
   <!-- Stations Map Section -->
   <section id="map-section">
@@ -177,8 +171,8 @@
     <!-- Time Range Toggle (Top) -->
     <div style="margin: 1rem 0; text-align: center;">
       <label style="margin-right: 0.5rem; font-weight: 600; color: #004b7c;">Time Range:</label>
-      <button class="time-range-btn active" data-hours="24" onclick="setTimeRange(24)">24 Hours</button>
-      <button class="time-range-btn" data-hours="48" onclick="setTimeRange(48)">48 Hours</button>
+      <button class="time-range-btn active" data-hours="24">24 Hours</button>
+      <button class="time-range-btn" data-hours="48">48 Hours</button>
     </div>
 
     <div id="wave-comparison-chart" class="w-full h-400"></div>
@@ -187,9 +181,9 @@
       <input type="number" id="wave-threshold-input" min="0.1" max="10" step="0.1" placeholder="e.g. 1.0"
         style="width: 5rem; padding: 0.25rem 0.4rem; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 0.875rem; margin: 0 0.3rem;">
       m
-      <button onclick="applyWaveThreshold()"
+      <button id="apply-wave-threshold-btn"
         style="padding: 0.25rem 0.75rem; background: #0077be; color: white; border: none; border-radius: 4px; font-size: 0.875rem; cursor: pointer; margin-left: 0.3rem;">Set</button>
-      <button onclick="clearWaveThreshold()"
+      <button id="clear-wave-threshold-btn"
         style="padding: 0.25rem 0.75rem; background: #e2e8f0; color: #4a5568; border: none; border-radius: 4px; font-size: 0.875rem; cursor: pointer; margin-left: 0.3rem;">Clear</button>
       <span id="wave-threshold-status" style="margin-left: 0.5rem; color: #e53935; font-weight: 600;"></span>
     </div>
@@ -222,14 +216,14 @@
           <option value="4600206">La Perouse Bank</option>
         </optgroup>
       </select>
-      <a href="#stations-map" id="show-buoy-on-map-btn" onclick="showSelectedBuoyOnMap(event)" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
+      <a href="#stations-map" id="show-buoy-on-map-btn" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
     </div>
 
     <!-- Time Range Toggle -->
     <div style="margin: 1rem 0; text-align: center;">
       <label style="margin-right: 0.5rem; font-weight: 600; color: #004b7c;">Time Range:</label>
-      <button class="time-range-btn active" data-hours="24" onclick="setTimeRange(24)" style="padding: 0.5rem 1rem; margin: 0 0.25rem; background: #0077be; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.2s;">24 Hours</button>
-      <button class="time-range-btn" data-hours="48" onclick="setTimeRange(48)" style="padding: 0.5rem 1rem; margin: 0 0.25rem; background: #e0e0e0; color: #666; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.2s;">48 Hours</button>
+      <button class="time-range-btn active" data-hours="24" style="padding: 0.5rem 1rem; margin: 0 0.25rem; background: #0077be; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.2s;">24 Hours</button>
+      <button class="time-range-btn" data-hours="48" style="padding: 0.5rem 1rem; margin: 0 0.25rem; background: #e0e0e0; color: #666; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.2s;">48 Hours</button>
     </div>
 
     <div id="wave-chart" class="w-full h-500"></div>
@@ -246,8 +240,8 @@
     <!-- Time Range Toggle (By Table) -->
     <div style="margin: 1rem 0; text-align: center;">
       <label style="margin-right: 0.5rem; font-weight: 600; color: #004b7c;">Time Range:</label>
-      <button class="time-range-btn active" data-hours="24" onclick="setTimeRange(24)">24 Hours</button>
-      <button class="time-range-btn" data-hours="48" onclick="setTimeRange(48)">48 Hours</button>
+      <button class="time-range-btn active" data-hours="24">24 Hours</button>
+      <button class="time-range-btn" data-hours="48">48 Hours</button>
     </div>
 
     <div class="data-table">
@@ -271,7 +265,7 @@
       <select id="surge-station-select" style="padding: 0.5rem; font-size: 1rem;">
         <!-- Options populated by JavaScript -->
       </select>
-      <a href="#stations-map" id="show-surge-on-map-btn" onclick="showSelectedSurgeOnMap(event)" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
+      <a href="#stations-map" id="show-surge-on-map-btn" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
       <span id="active-surge-indicator" style="margin-left: 1rem; color: #0077be;"></span>
     </div>
 
@@ -302,13 +296,13 @@
   <script src="/assets/js/warning-banner.js?v=20251117"></script>
   <!-- Load chart utilities first to avoid race conditions -->
   <script src="/assets/js/chart-utils-v4.js?v=20251205e"></script>
-  <script src="/assets/js/main.js?v=20260308"></script>
+  <script src="/assets/js/main.js?v=20260308c"></script>
   <script src="/assets/js/stations-map.js?v=20251117"></script>
   <script src="/assets/js/wave-chart-v4.js?v=20251205c"></script>
   <script src="/assets/js/wind-chart-v4.js?v=20251205c"></script>
   <script src="/assets/js/temperature-chart-v4.js?v=20251117"></script>
   <script src="/assets/js/comparison-chart-v4.js?v=20251117"></script>
-  <script src="/assets/js/wave-table-v4.js?v=20251117"></script>
+  <script src="/assets/js/wave-table-v4.js?v=20260308b"></script>
   <script src="/assets/js/charts-v4.js?v=20251117"></script>
   <script src="/assets/js/storm_surge_chart-v4.js?v=20251117"></script>
   <script src="https://unpkg.com/htmx.org@1.9.10"

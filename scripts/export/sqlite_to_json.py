@@ -83,6 +83,8 @@ def query_and_export():
             latest_row = cur.fetchone()
 
             if not latest_row:
+                # No data in DB (buoy offline/purged) — emit stub so frontend card still renders
+                latest_json[buoy_id] = {"name": BUOYS[buoy_id]["name"], "no_data": True}
                 continue
 
             latest_time = latest_row["observation_time"]

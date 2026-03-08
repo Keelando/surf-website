@@ -991,7 +991,7 @@ function showRefreshNotice() {
   const notice = createElement('div', 'refresh-notice');
   notice.innerHTML = `
     Auto-refresh stopped after 30 minutes
-    <button onclick="location.reload()">Refresh Page</button>
+    <button type="button" class="reload-page-btn">Refresh Page</button>
   `;
   document.body.appendChild(notice);
 
@@ -1009,6 +1009,20 @@ function initWebcamsPage() {
   loadWebcams();
   startAutoRefresh();
 }
+
+// Event delegation for intro section collapse + refresh button (CSP compliance)
+document.addEventListener('click', function(e) {
+  var header = e.target.closest('.intro-section-header');
+  if (header) {
+    header.parentElement.classList.toggle('collapsed');
+  }
+
+  var reloadBtn = e.target.closest('.reload-page-btn');
+  if (reloadBtn) {
+    e.preventDefault();
+    window.location.reload();
+  }
+});
 
 // Start when DOM is ready
 if (document.readyState === 'loading') {

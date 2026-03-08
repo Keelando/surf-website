@@ -224,8 +224,15 @@ window.addEventListener('resize', handleResize);
    Global Exports (for HTML onclick handlers)
    ===================================================== */
 
-// Export showSelectedTideOnMap to window for onclick handler
+// Export showSelectedTideOnMap to window for external use
 window.showSelectedTideOnMap = showSelectedTideOnMap;
+
+// Event delegation for show-on-map buttons (replaces onclick= for CSP compliance)
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('show-tide-on-map-btn')) {
+    showSelectedTideOnMap();
+  }
+});
 
 // Export data stores for debugging (optional)
 window.__tideDataStore = tideDataStore;

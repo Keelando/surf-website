@@ -667,13 +667,26 @@ footer .github-link:hover {
 }
 
 .buoy-nav-link:hover {
-  background: #e1e8ed;
+  background: #003a5d !important;
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .buoy-nav-link:active {
   transform: translateY(0);
+}
+
+.toggle-details-btn:hover,
+.toggle-history-btn:hover {
+  background: #e1e8ed !important;
+}
+
+.hide-history-btn:hover {
+  background: #003a5d !important;
+}
+
+.wind-table-action-link:hover {
+  text-decoration: underline;
 }
 
 /* -----------------------------
@@ -1221,6 +1234,25 @@ header h2 {
 /* Font weight */
 .font-semibold {
   font-weight: 600;
+}
+
+/* Wind 24hr toggle button */
+.wind-24hr-toggle-btn {
+  padding: 0.5rem 1.5rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.wind-24hr-toggle-btn:hover,
+.wind-24hr-toggle-btn:focus-visible {
+  background: var(--color-primary-dark);
+  color: #fff;
 }
 
 /* Color utilities (extended) */

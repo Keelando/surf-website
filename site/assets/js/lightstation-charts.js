@@ -688,4 +688,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (windSpeedChart) windSpeedChart.resize();
     if (waveHeightChart) waveHeightChart.resize();
   });
+
+  // Event listener replacing onclick= attribute (CSP compliance)
+  var lightstationMapBtn = document.getElementById('show-lightstation-on-map-btn');
+  if (lightstationMapBtn) lightstationMapBtn.addEventListener('click', showSelectedLightstationOnMap);
 });

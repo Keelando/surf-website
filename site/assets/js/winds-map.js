@@ -240,7 +240,7 @@ function addWindStationMarker(station, currentData) {
       <div><strong>Source:</strong> ${station.source}</div>
       <div><strong>Type:</strong> Weather Station</div>
     </div>
-    <a href="#" onclick="selectStationAndShowChart('${station.id}'); return false;" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Wind Chart →</a>
+    <a href="#" class="view-data-btn" data-wind-station-id="${station.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Wind Chart →</a>
   </div>`;
 
   marker.bindPopup(popupContent);
@@ -339,7 +339,7 @@ function addBuoyWindMarker(buoy, currentData) {
       <div><strong>Source:</strong> ${buoy.source}</div>
       <div><strong>Type:</strong> ${typeLabel}</div>
     </div>
-    <a href="#" onclick="selectStationAndShowChart('${buoy.id}'); return false;" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Wind Chart →</a>
+    <a href="#" class="view-data-btn" data-wind-station-id="${buoy.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Wind Chart →</a>
   </div>`;
 
   marker.bindPopup(popupContent);
@@ -376,6 +376,20 @@ function focusStation(stationId) {
 window.windsMap = {
   focusStation: focusStation
 };
+
+// Event delegation for popup "View Wind Chart" links (CSP-safe)
+document.addEventListener('click', event => {
+  const target = event.target.closest('.view-data-btn[data-wind-station-id]');
+  if (!target) {
+    return;
+  }
+
+  event.preventDefault();
+  const stationId = target.getAttribute('data-wind-station-id');
+  if (stationId && typeof window.selectStationAndShowChart === 'function') {
+    window.selectStationAndShowChart(stationId);
+  }
+});
 
 // Initialize map when DOM is ready
 if (document.readyState === 'loading') {

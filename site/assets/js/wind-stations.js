@@ -399,9 +399,9 @@ async function loadWindTable() {
           <td>${pressure}</td>
           <td>${updated}</td>
           <td style="white-space: nowrap;">
-            <a href="#map-section" onclick="showStationOnMap('${id}'); return false;" style="color: #0077be; text-decoration: none; cursor: pointer; margin-right: 0.5rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Map</a>
+            <a href="#map-section" class="wind-table-action-link" data-action="map" data-station-id="${id}" style="color: #0077be; text-decoration: none; cursor: pointer; margin-right: 0.5rem;">Map</a>
             <span style="color: #ccc;">/</span>
-            <a href="#wind-chart-section" onclick="viewStationChart('${id}'); return false;" style="color: #0077be; text-decoration: none; cursor: pointer; margin-left: 0.5rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Chart</a>
+            <a href="#wind-chart-section" class="wind-table-action-link" data-action="chart" data-station-id="${id}" style="color: #0077be; text-decoration: none; cursor: pointer; margin-left: 0.5rem;">Chart</a>
           </td>
         </tr>
       `;
@@ -770,6 +770,8 @@ function renderWind24HourTable(stationId) {
     <tbody>
   `;
 
+  let shouldAddToggleRow = false;
+
   if (hourlyTimes.length === 0) {
     tableHTML += '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No data available</td></tr>';
   } else {
@@ -807,20 +809,38 @@ function renderWind24HourTable(stationId) {
 
     // Add expand/collapse toggle button if there are more rows than the default
     if (hourlyTimes.length > DEFAULT_VISIBLE_ROWS) {
-      tableHTML += `
-        <tr id="toggle-row-wind-24hr">
-          <td colspan="6" style="text-align: center; padding: 1rem; background: #f5f9fc; cursor: pointer; border-bottom: none;">
-            <button onclick="toggleWind24hrRows()" style="padding: 0.5rem 1.5rem; background: #0077be; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.95rem; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='#005a94'" onmouseout="this.style.background='#0077be'">
-              ▼ Show More Rows
-            </button>
-          </td>
-        </tr>
-      `;
+      shouldAddToggleRow = true;
     }
   }
 
   tableHTML += '</tbody>';
   table.innerHTML = tableHTML;
+
+  if (shouldAddToggleRow) {
+    const tbody = table.querySelector('tbody');
+    if (tbody) {
+      const toggleRow = document.createElement('tr');
+      toggleRow.id = 'toggle-row-wind-24hr';
+
+      const toggleCell = document.createElement('td');
+      toggleCell.colSpan = 6;
+      toggleCell.style.textAlign = 'center';
+      toggleCell.style.padding = '1rem';
+      toggleCell.style.background = '#f5f9fc';
+      toggleCell.style.cursor = 'pointer';
+      toggleCell.style.borderBottom = 'none';
+
+      const toggleButton = document.createElement('button');
+      toggleButton.type = 'button';
+      toggleButton.className = 'wind-24hr-toggle-btn';
+      toggleButton.textContent = '▼ Show More Rows';
+      toggleButton.addEventListener('click', toggleWind24hrRows);
+
+      toggleCell.appendChild(toggleButton);
+      toggleRow.appendChild(toggleCell);
+      tbody.appendChild(toggleRow);
+    }
+  }
 }
 
 /**
@@ -1105,7 +1125,7 @@ function toggleWind24hrRows() {
   if (!table) return;
 
   const collapsedRows = table.querySelectorAll('.collapsed-row');
-  const toggleButton = table.querySelector('#toggle-row-wind-24hr button');
+  const toggleButton = table.querySelector('.wind-24hr-toggle-btn');
 
   if (!toggleButton || collapsedRows.length === 0) return;
 
@@ -1119,11 +1139,7 @@ function toggleWind24hrRows() {
   });
 
   // Update button text
-  if (isCurrentlyHidden) {
-    toggleButton.innerHTML = '▲ Show Less Rows';
-  } else {
-    toggleButton.innerHTML = '▼ Show More Rows';
-  }
+  toggleButton.textContent = isCurrentlyHidden ? '▲ Show Less Rows' : '▼ Show More Rows';
 }
 
 function checkHashForWindStation() {
@@ -1137,6 +1153,28 @@ function checkHashForWindStation() {
     }, 500);
   }
 }
+
+// Event delegation for time range buttons and table Map/Chart links (replaces onclick= for CSP compliance)
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.wind-time-range-btn');
+  if (btn) {
+    var hours = parseInt(btn.dataset.windHours, 10);
+    if (hours) setWindTimeRange(hours);
+    return;
+  }
+
+  var link = e.target.closest('.wind-table-action-link');
+  if (link) {
+    e.preventDefault();
+    var stationId = link.dataset.stationId;
+    var action = link.dataset.action;
+    if (action === 'map') {
+      showStationOnMap(stationId);
+    } else if (action === 'chart') {
+      viewStationChart(stationId);
+    }
+  }
+});
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {

@@ -245,6 +245,31 @@ async function loadBuoyData() {
           card.style.borderLeft = "4px solid #006837";
         }
 
+        // No data in DB at all (e.g. buoy offline and records purged) — render minimal card
+        if (b.no_data) {
+          let noDataContent = `<div class="buoy-card-inner"><h2>${b.name || id}`;
+          if (id === "46087" || id === "46088" || id === "46267") {
+            noDataContent += ` <span style="font-size: 0.7em; color: #003087; font-weight: normal;">🇺🇸 NOAA</span>`;
+          } else if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
+            noDataContent += ` <span style="font-size: 0.7em; color: #006837; font-weight: normal;">🏛️ Surrey (FlowWorks)</span>`;
+          } else {
+            noDataContent += ` <span style="font-size: 0.7em; color: #006400; font-weight: normal;">🇨🇦 Env Canada</span>`;
+          }
+          noDataContent += `</h2>
+            <p class="buoy-metric" style="margin: 1rem 0; padding: 1rem; background: #ffebee; border-left: 4px solid #e53935; border-radius: 4px; color: #c62828; font-weight: 600;">
+              🔴 Station offline — no data available
+            </p>`;
+          if (sourceLinks[id]) {
+            noDataContent += `<p style="margin-top: 0.75rem; margin-bottom: 0; padding-top: 0.5rem; border-top: 1px solid #e0e0e0; text-align: center;">
+              <a href="${sourceLinks[id]}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85em; color: #004b7c; text-decoration: none; font-weight: 500;">🔗 View Source Data</a>
+            </p>`;
+          }
+          noDataContent += `</div>`;
+          setSafeHTML(card, noDataContent);
+          cardsGrid.appendChild(card);
+          return;
+        }
+
       // Format timestamp in Pacific Time (24-hour, shorter format: "11/11 19:58")
       const updated = b.observation_time
         ? new Date(b.observation_time).toLocaleString("en-US", {
@@ -375,7 +400,7 @@ async function loadBuoyData() {
       // === EXPANDABLE BUTTONS ===
       cardContent += `
         <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
-          <button class="toggle-details-btn" onclick="toggleCardDetails('${id}')" style="
+          <button class="toggle-details-btn" style="
             flex: 1;
             padding: 0.5rem;
             background: #f0f4f8;
@@ -386,10 +411,10 @@ async function loadBuoyData() {
             color: #004b7c;
             font-weight: 600;
             transition: background 0.2s;
-          " onmouseover="this.style.background='#e1e8ed'" onmouseout="this.style.background='#f0f4f8'">
+          ">
             ▼ Show Details
           </button>
-          <button class="toggle-history-btn" onclick="toggleCardHistory('${id}')" style="
+          <button class="toggle-history-btn" style="
             flex: 1;
             padding: 0.5rem;
             background: #f0f4f8;
@@ -400,7 +425,7 @@ async function loadBuoyData() {
             color: #004b7c;
             font-weight: 600;
             transition: background 0.2s;
-          " onmouseover="this.style.background='#e1e8ed'" onmouseout="this.style.background='#f0f4f8'">
+          ">
             📈 Show History (12h)
           </button>
         </div>
@@ -493,7 +518,7 @@ async function loadBuoyData() {
             cardContent += `
               <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: #004b7c;">
                 🧭 Wave Direction Angular Spread
-                <span onclick="toggleSpreadInfo('${id}')" style="cursor: pointer; font-size: 0.9em; margin-left: 0.3rem; color: #0077be; user-select: none;" title="Click for explanation">ℹ️</span>
+                <span class="spread-info-btn" style="cursor: pointer; font-size: 0.9em; margin-left: 0.3rem; color: #0077be; user-select: none;" title="Click for explanation">ℹ️</span>
               </p>
             `;
 
@@ -616,7 +641,7 @@ async function loadBuoyData() {
 
       cardContent += `
         <div class="buoy-nav-links" style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
-          <button class="buoy-nav-link" onclick="scrollToMap('${id}')" style="
+          <button class="buoy-nav-link" data-action="map" style="
             flex: 1;
             padding: 0.5rem;
             background: #004b7c;
@@ -627,10 +652,10 @@ async function loadBuoyData() {
             font-size: 0.85em;
             font-weight: 600;
             transition: background 0.2s;
-          " onmouseover="this.style.background='#003a5d'" onmouseout="this.style.background='#004b7c'">
+          ">
             📍 View Location
           </button>
-          <button class="buoy-nav-link" onclick="scrollToCharts('${id}')" ${chartButtonDisabled} style="
+          <button class="buoy-nav-link" data-action="charts" ${chartButtonDisabled} style="
             flex: 1;
             padding: 0.5rem;
             background: #004b7c;
@@ -641,7 +666,7 @@ async function loadBuoyData() {
             font-size: 0.85em;
             font-weight: 600;
             transition: background 0.2s;
-          " onmouseover="this.style.background='#003a5d'" onmouseout="this.style.background='#004b7c'">
+          ">
             📊 View Charts
           </button>
         </div>
@@ -656,7 +681,7 @@ async function loadBuoyData() {
               color: #004b7c;
               text-decoration: none;
               font-weight: 500;
-            " onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+            ">
               🔗 View Source Data
             </a>
           </p>
@@ -665,6 +690,23 @@ async function loadBuoyData() {
 
         cardContent += `</div>`;
         setSafeHTML(card, cardContent);
+
+        // Wire up event listeners (inline handlers stripped by DOMPurify)
+        const detailsBtn = card.querySelector('.toggle-details-btn');
+        if (detailsBtn) detailsBtn.addEventListener('click', () => toggleCardDetails(id));
+
+        const historyBtn = card.querySelector('.toggle-history-btn');
+        if (historyBtn) historyBtn.addEventListener('click', () => toggleCardHistory(id));
+
+        const spreadBtn = card.querySelector('.spread-info-btn');
+        if (spreadBtn) spreadBtn.addEventListener('click', () => toggleSpreadInfo(id));
+
+        const mapBtn = card.querySelector('.buoy-nav-link[data-action="map"]');
+        if (mapBtn) mapBtn.addEventListener('click', () => scrollToMap(id));
+
+        const chartsBtn = card.querySelector('.buoy-nav-link[data-action="charts"]');
+        if (chartsBtn) chartsBtn.addEventListener('click', () => scrollToCharts(id));
+
         cardsGrid.appendChild(card);
       }); // end stations forEach
 
@@ -821,6 +863,8 @@ async function toggleCardHistory(buoyId) {
 
       if (buoyData && buoyData.timeseries) {
         setSafeHTML(historyDiv, renderHistoryTable(buoyId, buoyData.timeseries));
+        const hideBtn = historyDiv.querySelector('.hide-history-btn');
+        if (hideBtn) hideBtn.addEventListener('click', () => toggleCardHistory(buoyId));
         historyDiv.style.display = 'block';
         button.textContent = '▲ Hide History';
         button.disabled = false;
@@ -984,7 +1028,7 @@ function renderHistoryTable(buoyId, timeseries) {
   // Add duplicate Hide button at bottom of history table
   tableHTML += `
     <div style="text-align: center; margin-top: 0.75rem;">
-      <button onclick="toggleCardHistory('${buoyId}')" style="padding: 0.5rem 1rem; background: #004b7c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;">
+      <button class="hide-history-btn" style="padding: 0.5rem 1rem; background: #004b7c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;">
         ▲ Hide History
       </button>
     </div>
@@ -1043,3 +1087,30 @@ setInterval(loadBuoyData, 5 * 60 * 1000);
 
 // Handle hash navigation when hash changes (clicking map links)
 window.addEventListener('hashchange', handleHashNavigation);
+
+// Auto-open site intro on desktop (replaces inline script removed for CSP compliance)
+(function() {
+  var d = document.querySelector('.site-intro-details');
+  if (d && window.innerWidth > 600) d.open = true;
+})();
+
+// Event listeners replacing onclick= attributes (CSP compliance)
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.time-range-btn');
+  if (btn) {
+    var hours = parseInt(btn.dataset.hours, 10);
+    if (hours && typeof setTimeRange === 'function') setTimeRange(hours);
+  }
+});
+
+var applyBtn = document.getElementById('apply-wave-threshold-btn');
+if (applyBtn) applyBtn.addEventListener('click', function() { applyWaveThreshold(); });
+
+var clearBtn = document.getElementById('clear-wave-threshold-btn');
+if (clearBtn) clearBtn.addEventListener('click', function() { clearWaveThreshold(); });
+
+var buoyMapBtn = document.getElementById('show-buoy-on-map-btn');
+if (buoyMapBtn) buoyMapBtn.addEventListener('click', function(e) { showSelectedBuoyOnMap(e); });
+
+var surgeMapBtn = document.getElementById('show-surge-on-map-btn');
+if (surgeMapBtn) surgeMapBtn.addEventListener('click', function(e) { showSelectedSurgeOnMap(e); });

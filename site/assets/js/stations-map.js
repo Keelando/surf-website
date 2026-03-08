@@ -1050,13 +1050,18 @@ function showSelectedSurgeOnMap(event) {
   showSurgeStationOnMap(select.value, true);
 }
 
+function getIndexPathWithHash(hash) {
+  const basePath = window.location.pathname.replace(/[^/]*$/, '');
+  const normalizedBase = basePath.endsWith('/') ? basePath : `${basePath}/`;
+  return `${normalizedBase}index.html${hash}`;
+}
+
 // Show selected surge station on map from storm_surge.html forecast selector
 function showSelectedForecastSurgeOnMap() {
   const select = document.getElementById('forecast-station-select');
   if (!select || !select.value) return;
 
-  // Navigate to index.html with surge station in hash
-  window.location.href = `/#surge-${select.value}`;
+  window.location.href = getIndexPathWithHash(`#surge-${select.value}`);
 }
 
 // Show selected surge station on map from storm_surge.html hindcast selector
@@ -1064,8 +1069,7 @@ function showSelectedHindcastSurgeOnMap() {
   const select = document.getElementById('hindcast-station-select');
   if (!select || !select.value) return;
 
-  // Navigate to index.html with surge station in hash
-  window.location.href = `/#surge-${select.value}`;
+  window.location.href = getIndexPathWithHash(`#surge-${select.value}`);
 }
 
 // Make functions globally accessible

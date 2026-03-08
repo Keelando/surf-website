@@ -148,21 +148,15 @@ function updateTableToggleButton(shouldShow) {
     const toggleBtn = document.createElement('div');
     toggleBtn.id = 'wave-table-toggle-btn';
     toggleBtn.style.cssText = 'text-align: center; margin-top: 1rem;';
-    toggleBtn.innerHTML = `
-      <button onclick="toggleWaveTableRows()" style="
-        padding: 0.5rem 1.5rem;
-        background: #0077be;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        font-weight: 600;
-        transition: background 0.2s;
-      " onmouseover="this.style.background='#005a94'" onmouseout="this.style.background='#0077be'">
-        ▼ Show More Rows
-      </button>
-    `;
+
+    const btn = document.createElement('button');
+    btn.textContent = '▼ Show More Rows';
+    btn.style.cssText = 'padding: 0.5rem 1.5rem; background: #0077be; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.2s;';
+    btn.addEventListener('click', toggleWaveTableRows);
+    btn.addEventListener('mouseover', function() { this.style.background = '#005a94'; });
+    btn.addEventListener('mouseout', function() { this.style.background = '#0077be'; });
+
+    toggleBtn.appendChild(btn);
     container.appendChild(toggleBtn);
   }
 }

@@ -301,7 +301,7 @@ function addLightstationMapMarker(lightstation) {
       ${lightstation.established ? `<div><strong>Established:</strong> ${lightstation.established}</div>` : ''}
       ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: #666;">${lightstation.notes}</div>` : ''}
     </div>
-    <a href="#lightstation-data-table-section" class="view-data-btn" onclick="viewLightstationData('${lightstation.id}')" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Data →</a>
+    <a href="#lightstation-data-table-section" class="view-data-btn" data-lightstation-id="${lightstation.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Data →</a>
   </div>`;
 
   marker.bindPopup(popupContent);
@@ -384,6 +384,20 @@ function viewLightstationData(lightstationId) {
 
 // Make function globally accessible
 window.viewLightstationData = viewLightstationData;
+
+// Event delegation for popup "View Data" buttons (CSP-safe)
+document.addEventListener('click', event => {
+  const link = event.target.closest('.view-data-btn[data-lightstation-id]');
+  if (!link) {
+    return;
+  }
+
+  event.preventDefault();
+  const stationId = link.getAttribute('data-lightstation-id');
+  if (stationId) {
+    viewLightstationData(stationId);
+  }
+});
 
 // Initialize map when DOM is ready
 if (document.readyState === 'loading') {

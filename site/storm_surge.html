@@ -18,7 +18,7 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/storm_surge.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20260309" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css" />
 
@@ -167,7 +167,7 @@
         <select id="forecast-station-select">
           <!-- Options populated by JavaScript -->
         </select>
-        <a href="javascript:void(0)" onclick="showSelectedForecastSurgeOnMap()" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
+        <a href="javascript:void(0)" id="show-forecast-surge-on-map-btn" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
         <span id="forecast-station-indicator" class="station-indicator"></span>
       </div>
 
@@ -218,7 +218,7 @@
         <select id="hindcast-station-select">
           <!-- Options populated by JavaScript -->
         </select>
-        <a href="javascript:void(0)" onclick="showSelectedHindcastSurgeOnMap()" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
+        <a href="javascript:void(0)" id="show-hindcast-surge-on-map-btn" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
         <span id="hindcast-station-indicator" class="station-indicator"></span>
       </div>
 
@@ -284,7 +284,7 @@
   <script src="/assets/js/logger.js?v=20251117"></script>
   <script src="/assets/js/warning-banner.js?v=20251117"></script>
   <script src="/assets/js/chart-utils-v4.js?v=20251117"></script>
-  <script src="/assets/js/storm_surge_page.js?v=20251117"></script>
+  <script src="/assets/js/storm_surge_page.js?v=20260308b"></script>
   <script src="https://unpkg.com/htmx.org@1.9.10"
     integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
     crossorigin="anonymous"></script>
