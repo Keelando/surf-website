@@ -92,6 +92,7 @@ pytz==2024.1
 PyYAML==6.0.1
 requests==2.31.0
 rich==13.7.1
+ruff==0.5.5
 s3transfer==0.10.1
 SciPy==1.11.4
 service-identity==24.1.0

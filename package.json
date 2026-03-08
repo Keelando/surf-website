@@ -1,0 +1,11 @@
+{
+  "name": "envcan-wave",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "lint:js": "eslint \"site/assets/js/**/*.js\""
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}

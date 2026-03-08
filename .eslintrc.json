@@ -1,0 +1,47 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "script"
+  },
+  "ignorePatterns": [
+    "site/assets/vendor/**",
+    "site/assets/js/tides-modules/README.md",
+    "site/assets/js/tides-modules/TODO.md",
+    "site/assets/js/tides-modules/PROGRESS.md"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "site/assets/js/tides-refactored.js",
+        "site/assets/js/tides-modules/**/*.js"
+      ],
+      "parserOptions": {
+        "sourceType": "module"
+      }
+    }
+  ],
+  "globals": {
+    "Chart": "readonly",
+    "DOMPurify": "readonly",
+    "L": "readonly",
+    "logger": "readonly"
+  },
+  "rules": {
+    "no-unused-vars": [
+      "warn",
+      {
+        "args": "none",
+        "ignoreRestSiblings": true
+      }
+    ],
+    "no-undef": "off"
+  }
+}

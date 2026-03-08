@@ -1,8 +1,13 @@
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 venv/
+.pytest_cache/
+
+# Node
+node_modules/
 
 # Real data files (don't commit)
 data/buoy/
@@ -58,6 +63,9 @@ storm_surge/
 *.json
 !examples/*.json
 !requirements.txt
+!package.json
+!package-lock.json
+!.eslintrc.json
 
 # =============================================================================
 # Frontend (site/)
