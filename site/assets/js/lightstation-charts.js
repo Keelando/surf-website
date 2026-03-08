@@ -32,6 +32,16 @@ function formatTimestamp(isoString) {
   }).replace(',', '');
 }
 
+function setSafeHTML(element, html) {
+  if (!element) return;
+
+  if (typeof window.setSanitizedHTML === 'function') {
+    window.setSanitizedHTML(element, html);
+  } else {
+    element.innerHTML = html;
+  }
+}
+
 // Global chart instances
 let windSpeedChart = null;
 let waveHeightChart = null;
@@ -115,7 +125,7 @@ async function loadLightstationTimeseries() {
     console.error('Error loading lightstation timeseries:', error);
     const select = document.getElementById("lightstation-station-select");
     if (select) {
-      select.innerHTML = '<option value="">Error loading stations</option>';
+      setSafeHTML(select, '<option value="">Error loading stations</option>');
     }
   }
 }
@@ -127,7 +137,7 @@ function populateLightstationDropdown() {
   const select = document.getElementById("lightstation-station-select");
   if (!select || !allLightstations) return;
 
-  select.innerHTML = '';
+  select.textContent = '';
 
   // Group stations by region
   const regionGroups = {};
@@ -199,7 +209,10 @@ function renderLightstationCharts(stationName) {
 function showNoDataMessage(stationName) {
   const tbody = document.getElementById('lightstation-24hr-body');
   if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #e53e3e;">⚠️ No data available from the past 24 hours for this station.<br/><span style="font-size: 0.9rem; color: #718096; margin-top: 0.5rem; display: inline-block;">Most recent observation may be older than 24 hours.</span></td></tr>';
+    setSafeHTML(
+      tbody,
+      '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #e53e3e;">⚠️ No data available from the past 24 hours for this station.<br/><span style="font-size: 0.9rem; color: #718096; margin-top: 0.5rem; display: inline-block;">Most recent observation may be older than 24 hours.</span></td></tr>'
+    );
   }
 
   // Clear charts
@@ -255,7 +268,10 @@ function render24HourTable(stationName, station) {
   const sortedTimes = Array.from(timestamps).sort((a, b) => new Date(b) - new Date(a));
 
   if (sortedTimes.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #718096;">No data available for this station</td></tr>';
+    setSafeHTML(
+      tbody,
+      '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #718096;">No data available for this station</td></tr>'
+    );
     return;
   }
 
@@ -323,7 +339,7 @@ function render24HourTable(stationName, station) {
     `;
   });
 
-  tbody.innerHTML = tableHTML;
+  setSafeHTML(tbody, tableHTML);
 }
 
 /**

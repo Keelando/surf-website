@@ -108,6 +108,16 @@ function createAngularSpreadVector(avgDirection, spread, size = 60) {
   `;
 }
 
+function setSafeHTML(element, html) {
+  if (!element) return;
+
+  if (typeof window.setSanitizedHTML === 'function') {
+    window.setSanitizedHTML(element, html);
+  } else {
+    element.innerHTML = html;
+  }
+}
+
 async function loadBuoyData() {
   const container = document.getElementById("buoy-container");
   const timestamp = document.getElementById("timestamp");
@@ -165,7 +175,7 @@ async function loadBuoyData() {
   try {
     const data = await fetchWithTimeout(`/data/latest_buoy_v2.json?t=${Date.now()}`);
 
-    container.innerHTML = "";
+    container.textContent = "";
 
     // Find most recent observation time
     let mostRecentTime = null;
@@ -204,7 +214,10 @@ async function loadBuoyData() {
       regionHeader.className = "region-header";
       regionHeader.style.cursor = "pointer";
       regionHeader.style.userSelect = "none";
-      regionHeader.innerHTML = `<span class="region-toggle-btn">▼</span> ${group.region} <span style="font-size: 0.8em; font-weight: normal; opacity: 0.8;">(${group.stations.length} stations)</span>`;
+      setSafeHTML(
+        regionHeader,
+        `<span class="region-toggle-btn">▼</span> ${group.region} <span style="font-size: 0.8em; font-weight: normal; opacity: 0.8;">(${group.stations.length} stations)</span>`
+      );
       regionHeader.onclick = () => toggleRegion(group.region);
       regionGroup.appendChild(regionHeader);
       regionGroup.id = `region-${group.region.replace(/\s+/g, '-')}`;
@@ -651,7 +664,7 @@ async function loadBuoyData() {
       }
 
         cardContent += `</div>`;
-        card.innerHTML = cardContent;
+        setSafeHTML(card, cardContent);
         cardsGrid.appendChild(card);
       }); // end stations forEach
 
@@ -685,8 +698,10 @@ async function loadBuoyData() {
     handleHashNavigation();
   } catch (err) {
     logger.error("BuoyData", "Error loading buoy data", err);
-    container.innerHTML =
-      `<p class="error">⚠️ Error loading buoy data. Please try again later.</p>`;
+    setSafeHTML(
+      container,
+      `<p class="error">⚠️ Error loading buoy data. Please try again later.</p>`
+    );
   }
 }
 
@@ -805,19 +820,25 @@ async function toggleCardHistory(buoyId) {
       const buoyData = timeseriesData[buoyId];
 
       if (buoyData && buoyData.timeseries) {
-        historyDiv.innerHTML = renderHistoryTable(buoyId, buoyData.timeseries);
+        setSafeHTML(historyDiv, renderHistoryTable(buoyId, buoyData.timeseries));
         historyDiv.style.display = 'block';
         button.textContent = '▲ Hide History';
         button.disabled = false;
       } else {
-        historyDiv.innerHTML = '<p style="color: #999; text-align: center; padding: 1rem;">No historical data available</p>';
+        setSafeHTML(
+          historyDiv,
+          '<p style="color: #999; text-align: center; padding: 1rem;">No historical data available</p>'
+        );
         historyDiv.style.display = 'block';
         button.textContent = '▲ Hide History';
         button.disabled = false;
       }
     } catch (error) {
       logger.error("BuoyData", "Error loading history", error);
-      historyDiv.innerHTML = '<p style="color: #e53935; text-align: center; padding: 1rem;">Error loading historical data</p>';
+      setSafeHTML(
+        historyDiv,
+        '<p style="color: #e53935; text-align: center; padding: 1rem;">Error loading historical data</p>'
+      );
       historyDiv.style.display = 'block';
       button.textContent = '▲ Hide History';
       button.disabled = false;

@@ -9,8 +9,17 @@ import json
 import os
 
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
-USERNAME = os.environ.get("SURREY_API_USERNAME", "surreyrain")
-PASSWORD = os.environ.get("SURREY_API_PASSWORD", "surreyrain")
+
+
+def _require_env(var_name: str) -> str:
+    value = os.environ.get(var_name)
+    if not value:
+        raise RuntimeError(f"{var_name} environment variable not set")
+    return value
+
+
+USERNAME = _require_env("SURREY_API_USERNAME")
+PASSWORD = _require_env("SURREY_API_PASSWORD")
 
 def authenticate():
     """Get JWT token."""

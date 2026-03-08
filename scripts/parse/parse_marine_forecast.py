@@ -7,7 +7,7 @@ Marine Forecast Parser for Environment Canada XML files
 Parses marine weather forecast XMLs and stores as JSON
 """
 
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
 import json
 import os
 from pathlib import Path

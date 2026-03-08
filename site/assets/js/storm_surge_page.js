@@ -19,6 +19,16 @@ const STATION_ORDER = [
   "Tofino"
 ];
 
+function setSafeHTML(element, html) {
+  if (!element) return;
+
+  if (typeof window.setSanitizedHTML === 'function') {
+    window.setSanitizedHTML(element, html);
+  } else {
+    element.innerHTML = html;
+  }
+}
+
 // Calculate minimum date for hindcast: 11 days back from today (12 days total including today)
 // Extended to match backend export range
 function getHindcastMinDate() {
@@ -50,7 +60,10 @@ async function loadForecastData() {
     logger.error("StormSurge", "Error loading forecast data", err);
     const container = document.getElementById("forecast-chart");
     if (container) {
-      container.innerHTML = '<p style="text-align:center;color:#999;">⚠️ Forecast data unavailable</p>';
+      setSafeHTML(
+        container,
+        '<p style="text-align:center;color:#999;">⚠️ Forecast data unavailable</p>'
+      );
     }
   }
 }
@@ -59,7 +72,7 @@ function initForecastSelector() {
   const selector = document.getElementById("forecast-station-select");
   if (!selector || selector.dataset.initialized) return;
 
-  selector.innerHTML = "";
+  selector.textContent = "";
 
   STATION_ORDER.forEach(stationId => {
     // Surrey stations reuse Crescent_Beach_Channel forecast
@@ -549,7 +562,7 @@ function updateForecastMetadata(station, times, values) {
     modelRunDisplay = `${dateStr} ${hourUTC.toString().padStart(2, '0')}Z`;
   }
 
-  metaEl.innerHTML = `
+  setSafeHTML(metaEl, `
     <strong>Station:</strong> ${station.station_name}<br/>
     <strong>Location:</strong> ${station.location.lat.toFixed(4)}°N, ${Math.abs(station.location.lon).toFixed(4)}°W<br/>
     ${modelRunDisplay ? `<strong>Model Run:</strong> ${modelRunDisplay}<br/>` : ''}
@@ -558,7 +571,7 @@ function updateForecastMetadata(station, times, values) {
     <strong>Resolution:</strong> ${values.length} hours (1-hour intervals)<br/>
     <strong>Peak High:</strong> +${maxSurge.toFixed(3)} m at ${formatDate(new Date(maxTime))}<br/>
     <strong>Peak Low:</strong> ${minSurge.toFixed(3)} m at ${formatDate(new Date(minTime))}
-  `;
+  `);
 }
 
 /* ======================================
@@ -594,7 +607,10 @@ async function loadHindcastData() {
     logger.error("StormSurge", "Error loading hindcast data", err);
     const container = document.getElementById("hindcast-chart");
     if (container) {
-      container.innerHTML = '<p style="text-align:center;color:#999;">⚠️ Hindcast data unavailable</p>';
+      setSafeHTML(
+        container,
+        '<p style="text-align:center;color:#999;">⚠️ Hindcast data unavailable</p>'
+      );
     }
   }
 }
@@ -603,7 +619,7 @@ function initHindcastSelector() {
   const selector = document.getElementById("hindcast-station-select");
   if (!selector || selector.dataset.initialized) return;
 
-  selector.innerHTML = "";
+  selector.textContent = "";
 
   // Only show stations that have hindcast data
   STATION_ORDER.forEach(stationId => {
@@ -665,7 +681,10 @@ function updateHindcastChart(stationId) {
   if (!station.hindcast || station.hindcast.length === 0) {
     const container = document.getElementById("hindcast-chart");
     if (container) {
-      container.innerHTML = '<p style="text-align:center;color:#999;">No hindcast data available for this station yet. Data accumulates over time.</p>';
+      setSafeHTML(
+        container,
+        '<p style="text-align:center;color:#999;">No hindcast data available for this station yet. Data accumulates over time.</p>'
+      );
     }
     return;
   }
@@ -714,7 +733,10 @@ function updateHindcastChart(stationId) {
   if (sortedDates.length === 0) {
     const container = document.getElementById("hindcast-chart");
     if (container) {
-      container.innerHTML = `<p style="text-align:center;color:#999;">No hindcast data available for this station from ${minDate} onwards. Data accumulates over time.</p>`;
+      setSafeHTML(
+        container,
+        `<p style="text-align:center;color:#999;">No hindcast data available for this station from ${minDate} onwards. Data accumulates over time.</p>`
+      );
     }
     return;
   }
@@ -974,14 +996,14 @@ function updateHindcastMetadata(station) {
     modelRunDisplay = `${dateStr} ${hourUTC.toString().padStart(2, '0')}Z`;
   }
 
-  metaEl.innerHTML = `
+  setSafeHTML(metaEl, `
     <strong>Station:</strong> ${station.station_name}<br/>
     <strong>Location:</strong> ${station.location.lat.toFixed(4)}°N, ${Math.abs(station.location.lon).toFixed(4)}°W<br/>
     <strong>Data Retrieved:</strong> ${formatDate(generatedTime)}<br/>
     <strong>Forecast Horizon:</strong> ${hindcastData.forecast_horizon_hours || 48} hours ahead<br/>
     <strong>Historical Days:</strong> ${daysAvailable} day${daysAvailable !== 1 ? 's' : ''} (max ${hindcastData.max_days_back || 10})<br/>
     <strong>Collection Time:</strong> ${modelRunDisplay}
-  `;
+  `);
 }
 
 /* ======================================

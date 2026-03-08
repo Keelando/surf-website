@@ -33,9 +33,16 @@ logger = setup_logging('surrey_tide_sync')
 # ---- Configuration ----
 
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
-# Surrey FlowWorks API credentials (use environment variables if available)
-USERNAME = os.environ.get("SURREY_API_USERNAME", "surreyrain")
-PASSWORD = os.environ.get("SURREY_API_PASSWORD", "surreyrain")
+# Surrey FlowWorks API credentials
+def _require_env(var_name: str) -> str:
+    value = os.environ.get(var_name)
+    if not value:
+        raise RuntimeError(f"{var_name} environment variable not set")
+    return value
+
+
+USERNAME = _require_env("SURREY_API_USERNAME")
+PASSWORD = _require_env("SURREY_API_PASSWORD")
 
 # Surrey station mapping with channel IDs
 SURREY_STATIONS = {

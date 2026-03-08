@@ -275,12 +275,18 @@
 
   <div hx-get="/components/footer.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"
+    integrity="sha384-BQKzmHvQLMCAnL3UtDBA1Al5tFjsCz1wrMlIUA1wkzo14DYkRWjywW+p9pCj0cwd"
+    crossorigin="anonymous"></script>
+  <script src="/assets/vendor/dompurify.min.js"></script>
+  <script src="/assets/js/sanitize-html.js"></script>
   <!-- Load logger first for global availability -->
   <script src="/assets/js/logger.js?v=20251117"></script>
   <script src="/assets/js/warning-banner.js?v=20251117"></script>
   <script src="/assets/js/chart-utils-v4.js?v=20251117"></script>
   <script src="/assets/js/storm_surge_page.js?v=20251117"></script>
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"
+    integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
+    crossorigin="anonymous"></script>
 </body>
 </html>

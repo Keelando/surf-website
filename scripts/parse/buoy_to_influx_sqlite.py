@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from pathlib import Path
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
 from datetime import datetime
 import sqlite3
 

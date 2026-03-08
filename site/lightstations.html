@@ -25,8 +25,8 @@
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""/>
+    integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
+    crossorigin="anonymous"/>
 
   <style>
     /* Lightstation map label styling */
@@ -404,17 +404,31 @@
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""></script>
+    integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
+    crossorigin="anonymous"></script>
 
   <!-- ECharts for lightstation charts -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"
+    integrity="sha384-BQKzmHvQLMCAnL3UtDBA1Al5tFjsCz1wrMlIUA1wkzo14DYkRWjywW+p9pCj0cwd"
+    crossorigin="anonymous"></script>
 
+  <script src="/assets/vendor/dompurify.min.js"></script>
+  <script src="/assets/js/sanitize-html.js"></script>
   <script src="/assets/js/warning-banner.js"></script>
   <script src="/assets/js/chart-utils-v4.js?v=20251117"></script>
   <script src="/assets/js/lightstation-map.js"></script>
   <script src="/assets/js/lightstation-charts.js"></script>
   <script type="module">
+    function setSafeHTML(element, html) {
+      if (!element) return;
+
+      if (typeof window.setSanitizedHTML === 'function') {
+        window.setSanitizedHTML(element, html);
+      } else {
+        element.innerHTML = html;
+      }
+    }
+
     // Load and display lightstation data
     async function loadLightstationData() {
       try {
@@ -454,7 +468,7 @@
 
         // Render grouped by region
         const container = document.getElementById('lightstations-container');
-        container.innerHTML = '';
+        container.textContent = '';
 
         const regionOrder = [
           'STRAIT OF GEORGIA',
@@ -490,7 +504,7 @@
           stationCount.style.opacity = '0.8';
           stationCount.textContent = ` (${regions[region].length} stations)`;
 
-          header.innerHTML = '';
+          header.textContent = '';
           header.appendChild(toggleArrow);
           header.appendChild(document.createTextNode(' ' + region + ' '));
           header.appendChild(stationCount);
@@ -522,8 +536,13 @@
 
       } catch (error) {
         console.error('Failed to load lightstation data:', error);
-        document.getElementById('lightstations-container').innerHTML =
-          '<p style="text-align: center; color: #e53e3e; padding: 2rem;">Failed to load lightstation data.</p>';
+        const fallbackContainer = document.getElementById('lightstations-container');
+        if (fallbackContainer) {
+          setSafeHTML(
+            fallbackContainer,
+            '<p style="text-align: center; color: #e53e3e; padding: 2rem;">Failed to load lightstation data.</p>'
+          );
+        }
       }
     }
 
@@ -717,7 +736,7 @@
       // Station details toggle button
       const detailsToggle = document.createElement('div');
       detailsToggle.className = 'station-details-toggle';
-      detailsToggle.innerHTML = 'Station Details <span class="toggle-icon">▼</span>';
+      setSafeHTML(detailsToggle, 'Station Details <span class="toggle-icon">▼</span>');
 
       // Station details content (initially hidden)
       const detailsContent = document.createElement('div');
@@ -730,35 +749,50 @@
         if (meta.id) {
           const idRow = document.createElement('div');
           idRow.className = 'detail-row';
-          idRow.innerHTML = `<span class="detail-label">Station ID:</span><span class="detail-value">${meta.id}</span>`;
+          setSafeHTML(
+            idRow,
+            `<span class="detail-label">Station ID:</span><span class="detail-value">${meta.id}</span>`
+          );
           detailsContent.appendChild(idRow);
         }
 
         if (meta.lat && meta.lon) {
           const coordRow = document.createElement('div');
           coordRow.className = 'detail-row';
-          coordRow.innerHTML = `<span class="detail-label">Coordinates:</span><span class="detail-value">${meta.lat.toFixed(4)}°N, ${Math.abs(meta.lon).toFixed(4)}°W</span>`;
+          setSafeHTML(
+            coordRow,
+            `<span class="detail-label">Coordinates:</span><span class="detail-value">${meta.lat.toFixed(4)}°N, ${Math.abs(meta.lon).toFixed(4)}°W</span>`
+          );
           detailsContent.appendChild(coordRow);
         }
 
         if (meta.region) {
           const regionRow = document.createElement('div');
           regionRow.className = 'detail-row';
-          regionRow.innerHTML = `<span class="detail-label">Region:</span><span class="detail-value">${meta.region}</span>`;
+          setSafeHTML(
+            regionRow,
+            `<span class="detail-label">Region:</span><span class="detail-value">${meta.region}</span>`
+          );
           detailsContent.appendChild(regionRow);
         }
 
         if (meta.established) {
           const estRow = document.createElement('div');
           estRow.className = 'detail-row';
-          estRow.innerHTML = `<span class="detail-label">Established:</span><span class="detail-value">${meta.established}</span>`;
+          setSafeHTML(
+            estRow,
+            `<span class="detail-label">Established:</span><span class="detail-value">${meta.established}</span>`
+          );
           detailsContent.appendChild(estRow);
         }
 
         if (meta.update_frequency_hours) {
           const freqRow = document.createElement('div');
           freqRow.className = 'detail-row';
-          freqRow.innerHTML = `<span class="detail-label">Update Frequency:</span><span class="detail-value">Every ${meta.update_frequency_hours} hours</span>`;
+          setSafeHTML(
+            freqRow,
+            `<span class="detail-label">Update Frequency:</span><span class="detail-value">Every ${meta.update_frequency_hours} hours</span>`
+          );
           detailsContent.appendChild(freqRow);
         }
 
@@ -767,7 +801,10 @@
           notesRow.className = 'detail-row';
           notesRow.style.flexDirection = 'column';
           notesRow.style.alignItems = 'flex-start';
-          notesRow.innerHTML = `<span class="detail-label">Notes:</span><span class="detail-value" style="text-align: left; margin-top: 0.3rem; font-size: 0.8rem; color: #666;">${meta.notes}</span>`;
+          setSafeHTML(
+            notesRow,
+            `<span class="detail-label">Notes:</span><span class="detail-value" style="text-align: left; margin-top: 0.3rem; font-size: 0.8rem; color: #666;">${meta.notes}</span>`
+          );
           detailsContent.appendChild(notesRow);
         }
       }
@@ -864,6 +901,8 @@
     // Load data on page load
     loadLightstationData();
   </script>
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"
+    integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
+    crossorigin="anonymous"></script>
 </body>
 </html>
