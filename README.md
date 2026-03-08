@@ -1,8 +1,8 @@
-# Salish Sea Wave Conditions — Backend
+# Salish Sea Wave Conditions
 
 Real-time marine weather monitoring system for the Salish Sea region.
 
-**Live site:** [halibutbank.ca](https://halibutbank.ca) · **Frontend:** `site/`
+**Live site:** [halibutbank.ca](https://halibutbank.ca)
 
 ---
 
@@ -38,20 +38,24 @@ See `docs/DEPLOYMENT.md` for full setup including cron jobs.
 
 ```
 envcan_wave/
+├── site/                 # Static frontend (HTML/JS/CSS, served by Caddy)
+│   ├── assets/           # JS, CSS, vendor libs
+│   ├── data/             # JSON exports read by the frontend
+│   └── docs/             # Frontend documentation
 ├── scripts/
-│   ├── fetch/        # Data fetching scripts (NOAA, Surrey, DFO, webcams, etc.)
-│   └── parse/        # XML/text parsers → SQLite
-├── lib/              # Shared utilities (config, stations, logging)
+│   ├── fetch/            # Data fetching scripts (NOAA, Surrey, DFO, webcams, etc.)
+│   └── parse/            # XML/text parsers → SQLite
+├── lib/                  # Shared utilities (config, stations, logging)
 ├── config/
-│   ├── sr3/          # Sarracenia subscription configs
-│   ├── stations.json # Master station registry
+│   ├── stations.json     # Master station registry
 │   └── tide_stations.json
-├── site/             # Static frontend (HTML/JS/CSS, served by Caddy)
-├── data/             # Raw XML/text files from EC (auto-purged after 2 days)
-├── docs/             # Documentation
+├── docs/                 # Backend documentation
+├── data/                 # Raw XML/text files from EC (auto-purged after 2 days)
 ├── tests/
-└── archive/          # Deprecated scripts and old docs
+└── archive/              # Deprecated scripts and old docs
 ```
+
+**Sarracenia configs** live in `~/.config/sr3/` (not in the repo).
 
 **Databases** live in `~/.local/share/` (not in the repo):
 - `buoy_data.sqlite` — wave buoy observations
@@ -59,8 +63,6 @@ envcan_wave/
 - `tide_data.sqlite` — tide observations, predictions, high/low events
 - `storm_surge_forecast.sqlite` — GDSPS storm surge forecasts
 - `lightstation_data.sqlite` — lightstation reports
-
-**JSON exports** go to `site/data/` for the frontend to read.
 
 ---
 
@@ -101,7 +103,6 @@ envcan_wave/
 | `docs/SURREY_CHANNELS.md` | Active FlowWorks channel IDs |
 | `docs/STORM_SURGE_SETUP.md` | GeoMet GDSPS setup and methodology |
 | `docs/SR3_MANAGEMENT.md` | Sarracenia subscription management |
-| `docs/project/TODO.md` | Upcoming and completed work |
 
 ---
 
