@@ -17,6 +17,7 @@ test.describe("Frontend console health", () => {
       const consoleLogs = [];
       const consoleErrors = [];
       const pageErrors = [];
+      const failedRequests = [];
 
       page.on("console", (message) => {
         const entry = `[${message.type()}] ${message.text()}`;
@@ -30,24 +31,36 @@ test.describe("Frontend console health", () => {
         pageErrors.push(error?.message || String(error));
       });
 
-      const response = await page.goto(route, { waitUntil: "domcontentloaded" });
+      page.on("requestfailed", (request) => {
+        failedRequests.push(`${request.method()} ${request.url()} — ${request.failure()?.errorText}`);
+      });
+
+      const response = await page.goto(route, { waitUntil: "networkidle" });
       expect(response, `No HTTP response for ${route}`).not.toBeNull();
       if (response) {
         expect(response.ok(), `HTTP ${response.status()} on ${route}`).toBeTruthy();
       }
-
-      // Allow async fetches/rendering to finish so late console errors surface.
-      await page.waitForTimeout(1500);
 
       await testInfo.attach(`console-log-${route}`, {
         body: consoleLogs.join("\n") || "No console output",
         contentType: "text/plain",
       });
 
+      if (failedRequests.length > 0) {
+        await testInfo.attach(`failed-requests-${route}`, {
+          body: failedRequests.join("\n"),
+          contentType: "text/plain",
+        });
+      }
+
       expect(pageErrors, `pageerror events on ${route}:\n${pageErrors.join("\n")}`).toEqual([]);
       expect(
         consoleErrors,
         `console.error output on ${route}:\n${consoleErrors.join("\n")}`,
+      ).toEqual([]);
+      expect(
+        failedRequests,
+        `Failed network requests on ${route}:\n${failedRequests.join("\n")}`,
       ).toEqual([]);
     });
   }

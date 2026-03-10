@@ -345,7 +345,9 @@ function render24HourTable(stationName, station) {
     `;
   });
 
-  setSafeHTML(tbody, tableHTML);
+  // Table HTML is built from our own data (not user input), so bypass
+  // DOMPurify which strips <tr>/<td> tags outside a <table> context.
+  tbody.innerHTML = tableHTML;
 }
 
 /**
@@ -420,7 +422,7 @@ function renderWindSpeedChart(stationName, station) {
     grid: {
       left: "15%",
       right: "4%",
-      bottom: "15%",
+      bottom: "22%",
       top: "20%",
       containLabel: false,
     },
@@ -473,7 +475,7 @@ function renderWindSpeedChart(stationName, station) {
         start: 0,
         end: 100,
         height: 30,
-        bottom: "5%",
+        bottom: "2%",
       },
     ],
     series: [
@@ -599,7 +601,7 @@ function renderWaveHeightChart(stationName, station) {
     grid: {
       left: "15%",
       right: "4%",
-      bottom: "15%",
+      bottom: "22%",
       top: "20%",
       containLabel: false,
     },
@@ -652,7 +654,7 @@ function renderWaveHeightChart(stationName, station) {
         start: 0,
         end: 100,
         height: 30,
-        bottom: "5%",
+        bottom: "2%",
       },
     ],
     series: [

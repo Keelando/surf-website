@@ -27,8 +27,7 @@ module.exports = defineConfig({
     },
   ],
   webServer: {
-    command: "python3 -m http.server 4173",
-    cwd: path.resolve(__dirname, "site"),
+    command: "python3 tests/playwright/serve.py 4173",
     port: 4173,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
