@@ -186,6 +186,12 @@
 
 ---
 
+## 📋 TODO: Add Pre-Commit Hook for Linting/Formatting
+
+Add a git pre-commit hook that runs `npx biome check` (JS) and `.venv/bin/ruff check` (Python) before commits. Catches formatting and lint issues automatically.
+
+---
+
 ## 📋 Technical Debt Items (Future Sessions)
 
 ### Low Priority

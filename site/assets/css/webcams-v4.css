@@ -259,14 +259,31 @@
   vertical-align: middle;
 }
 
+.stale-indicator.stale-error {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
 .webcam-card.webcam-stale {
   border: 2px solid var(--webcam-warning-border);
   box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
 }
 
+.webcam-card.webcam-stale-error {
+  border: 2px solid #ef4444;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
 .webcam-card.webcam-stale .webcam-header {
   background: linear-gradient(to bottom, var(--webcam-warning-bg), white);
   border-bottom: 1px solid var(--webcam-warning-border);
+}
+
+.webcam-card.webcam-stale-error .webcam-header {
+  background: linear-gradient(to bottom, #fee2e2, white);
+  border-bottom: 1px solid #ef4444;
+  color: #991b1b;
 }
 
 .webcam-source {

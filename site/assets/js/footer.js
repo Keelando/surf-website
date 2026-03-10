@@ -17,16 +17,63 @@
       badge.classList.remove("status-ok", "status-warning", "status-error");
       badge.classList.add("status-" + data.overall_status);
 
-      text.textContent = `${reporting}/${total} stations (${pct}%)`;
+      // Shorthand names for stale stations (keep footer compact)
+      const shortNames = {
+        "Halibut Bank": "Halibut",
+        "English Bay": "EngBay",
+        "Southern Georgia Strait": "SGS",
+        "Sentry Shoal": "Sentry",
+        "Crescent Beach Ocean": "CRPILE",
+        "Angeles Point": "Angeles",
+        "Neah Bay": "Neah",
+        "New Dungeness": "Dungeness",
+        "White Rock Pier": "WR Cam",
+        "Cox Bay": "Cox Cam",
+        "Mud Bay HD": "Mud Cam",
+        Ambleside: "Ambl Cam",
+        "White Rock East Beach": "BB Cam",
+        "Point Atkinson": "PtAtk",
+        Kitsilano: "Kits",
+        "New Westminster": "NewWest",
+        "Campbell River": "CampR",
+        "Sisters Islets": "Sisters",
+        Ballenas: "Ballenas",
+        "Entrance Island": "Entrance",
+        "Sand Heads": "SandH",
+        Saturna: "Saturna",
+        "Race Rocks": "RaceR",
+        "Trial Island": "Trial",
+      };
 
-      const staleNames = freshness.stale_stations
-        .filter((s) => s.severity === "error" || s.severity === "warning")
-        .map((s) => s.name)
-        .join(", ");
+      const staleStations = freshness.stale_stations.filter(
+        (s) => s.severity === "error" || s.severity === "warning",
+      );
 
-      badge.title = staleNames
-        ? `System Status: ${data.overall_status.toUpperCase()}\nStale: ${staleNames}`
-        : `System Status: ${data.overall_status.toUpperCase()}\nAll stations reporting normally`;
+      if (staleStations.length === 0) {
+        text.textContent = `${reporting}/${total} stations (${pct}%)`;
+        badge.title = "System Status: OK\nAll stations reporting normally";
+      } else {
+        // Build compact down list with shorthand names
+        const downNames = staleStations.map((s) => shortNames[s.name] || s.name.split(" ")[0]);
+        const downList = downNames.join(", ");
+
+        text.innerHTML =
+          `${reporting}/${total} (${pct}%) ` +
+          `<span class="status-down-list">Down: ${downList}</span>`;
+
+        badge.title =
+          `System Status: ${data.overall_status.toUpperCase()}\n` +
+          staleStations
+            .map((s) => {
+              const age = s.age_hours
+                ? s.age_hours < 1
+                  ? `${Math.round(s.age_hours * 60)}m`
+                  : `${Math.round(s.age_hours)}h`
+                : "no data";
+              return `${s.name} (${s.type}, ${age})`;
+            })
+            .join("\n");
+      }
     })
     .catch((err) => {
       const badge = document.getElementById("system-status-badge");

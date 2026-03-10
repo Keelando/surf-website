@@ -67,6 +67,9 @@ function renderComparisonChart(waveComparisonChart, chartData) {
       CRPILE: "#9c27b0",
     };
 
+    // Track global max wave height across all buoys for arrow positioning
+    let globalMaxHeight = 0;
+
     const series = buoyOrder
       .map((buoyId) => {
         const buoy = chartData[buoyId];
@@ -81,6 +84,12 @@ function renderComparisonChart(waveComparisonChart, chartData) {
             "ComparisonChart",
             `Downsampled ${buoy.name} from high-frequency to hourly (${data.length} points)`,
           );
+        }
+
+        // Update global max
+        for (const d of data) {
+          const v = parseFloat(d.value);
+          if (!isNaN(v) && v > globalMaxHeight) globalMaxHeight = v;
         }
 
         return {
@@ -112,6 +121,57 @@ function renderComparisonChart(waveComparisonChart, chartData) {
         : { data: [] }; // explicitly clear so ECharts doesn't keep the old line
     }
 
+    // Add Halibut Bank wave direction arrows
+    const halibutBuoy = chartData["4600146"];
+    const halibutDirData =
+      halibutBuoy?.timeseries?.wave_direction_avg?.data ||
+      halibutBuoy?.timeseries?.wave_direction_peak?.data ||
+      [];
+    const halibutHeightData = halibutBuoy?.timeseries?.wave_height_sig?.data || [];
+
+    if (halibutDirData.length > 0) {
+      const arrowYPosition = globalMaxHeight * 1.05;
+      const sampleInterval = window.innerWidth < 600 ? 6 : 3;
+      const arrowData = [];
+
+      for (let i = 0; i < halibutDirData.length; i += sampleInterval) {
+        const dirPoint = halibutDirData[i];
+        if (!dirPoint || dirPoint.value == null) continue;
+
+        const heightPoint = halibutHeightData.find((h) => h.time === dirPoint.time);
+        if (!heightPoint || heightPoint.value == null) continue;
+
+        arrowData.push({
+          value: [new Date(dirPoint.time).getTime(), arrowYPosition],
+          symbolRotate: calculateArrowRotation(dirPoint.value),
+          itemStyle: { color: "#1e88e5", opacity: 0.7 },
+        });
+      }
+
+      if (arrowData.length > 0) {
+        series.push({
+          name: "Wave Dir (Halibut)",
+          type: "scatter",
+          data: arrowData,
+          symbol: DIRECTION_ARROW_PATH,
+          symbolSize: 14,
+          symbolRotate: function (dataIndex) {
+            return arrowData[dataIndex]?.symbolRotate || 0;
+          },
+          itemStyle: {
+            color: function (params) {
+              return arrowData[params.dataIndex]?.itemStyle?.color || "#1e88e5";
+            },
+            opacity: function (params) {
+              return arrowData[params.dataIndex]?.itemStyle?.opacity || 0.7;
+            },
+          },
+          silent: true,
+          z: 3,
+        });
+      }
+    }
+
     waveComparisonChart.setOption({
       title: {
         text: "Sig Wave Height (All)",
@@ -126,8 +186,21 @@ function renderComparisonChart(waveComparisonChart, chartData) {
           const time = formatTimeAxis(new Date(params[0].value[0]).toISOString());
           let res = `<b>${time}</b><br/>`;
           for (const p of params) {
+            if (p.seriesName === "Wave Dir (Halibut)") continue;
             if (p.value[1] != null) {
               res += `${p.marker} ${p.seriesName}: ${p.value[1]} m<br/>`;
+            }
+          }
+          // Add Halibut Bank wave direction to tooltip
+          if (halibutDirData.length > 0) {
+            const timestamp = new Date(params[0].value[0]).getTime();
+            const dirPoint = halibutDirData.find(
+              (d) => Math.abs(new Date(d.time).getTime() - timestamp) < 1800000,
+            );
+            if (dirPoint && dirPoint.value != null) {
+              const dir = Math.round(dirPoint.value);
+              const compass = degreesToCompass(dir);
+              res += `🌊 Halibut Dir: ${dir}° (${compass})<br/>`;
             }
           }
           return res;
@@ -135,7 +208,10 @@ function renderComparisonChart(waveComparisonChart, chartData) {
       },
 
       legend: {
-        data: buoyOrder.map((id) => chartData[id]?.name).filter(Boolean),
+        data: [
+          ...buoyOrder.map((id) => chartData[id]?.name).filter(Boolean),
+          ...(halibutDirData.length > 0 ? ["Wave Dir (Halibut)"] : []),
+        ],
         bottom: "3%", // Fixed lower position for comparison chart (multi-row legend needs more space)
       },
 
@@ -160,7 +236,9 @@ function renderComparisonChart(waveComparisonChart, chartData) {
         min: 0,
         max: (value) => {
           const rawMax = value.max || 1;
-          const padded = Math.ceil(rawMax * 1.01 * 10) / 10;
+          // Pad extra when direction arrows are present (they sit at 1.05x max)
+          const padding = halibutDirData.length > 0 ? 1.15 : 1.01;
+          const padded = Math.ceil(rawMax * padding * 10) / 10;
           return Math.max(1, padded);
         },
         scale: false,

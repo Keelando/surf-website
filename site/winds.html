@@ -25,9 +25,7 @@
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css" />
 
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
-    crossorigin="anonymous"/>
+  <link rel="stylesheet" href="/assets/vendor/leaflet.css"/>
 
   <style>
     header {
@@ -306,21 +304,15 @@
   <div hx-get="/components/footer.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
 
   <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
-    crossorigin="anonymous"></script>
+  <script src="/assets/vendor/leaflet.js"></script>
 
   <!-- Load logger first for global availability -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"
-    integrity="sha384-BQKzmHvQLMCAnL3UtDBA1Al5tFjsCz1wrMlIUA1wkzo14DYkRWjywW+p9pCj0cwd"
-    crossorigin="anonymous"></script>
+  <script src="/assets/vendor/echarts.min.js"></script>
   <script src="/assets/js/logger.js?v=20251117"></script>
   <script src="/assets/js/warning-banner.js?v=20251117"></script>
   <script src="/assets/js/chart-utils-v4.js?v=20251224"></script>
   <script src="/assets/js/wind-stations.js?v=20260308d"></script>
   <script src="/assets/js/winds-map.js?v=20260308a"></script>
-  <script src="https://unpkg.com/htmx.org@1.9.10"
-    integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
-    crossorigin="anonymous"></script>
+  <script src="/assets/vendor/htmx.min.js"></script>
 </body>
 </html>

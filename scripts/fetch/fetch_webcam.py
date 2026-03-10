@@ -24,6 +24,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from lib.daylight import is_daylight
+
 # Setup path for imports
 from lib.logging_config import setup_logging
 from lib.webcam import (
@@ -34,7 +36,6 @@ from lib.webcam import (
     download_image,
     manage_slideshow_images,
 )
-from scripts.utils.daylight import is_daylight
 
 # Webcam configurations
 # YouTube streams support: max_height (resolution), interval_minutes, check_daylight, crop

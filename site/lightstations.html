@@ -24,9 +24,7 @@
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css" />
 
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
-    crossorigin="anonymous"/>
+  <link rel="stylesheet" href="/assets/vendor/leaflet.css"/>
 
   <style>
     /* Lightstation map label styling */
@@ -455,14 +453,10 @@
   <div hx-get="/components/footer.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
 
   <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
-    crossorigin="anonymous"></script>
+  <script src="/assets/vendor/leaflet.js"></script>
 
   <!-- ECharts for lightstation charts -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"
-    integrity="sha384-BQKzmHvQLMCAnL3UtDBA1Al5tFjsCz1wrMlIUA1wkzo14DYkRWjywW+p9pCj0cwd"
-    crossorigin="anonymous"></script>
+  <script src="/assets/vendor/echarts.min.js"></script>
 
   <script src="/assets/vendor/dompurify.min.js?v=20260308"></script>
   <script src="/assets/js/sanitize-html.js?v=20260308"></script>
@@ -471,8 +465,6 @@
   <script src="/assets/js/lightstation-map.js?v=20260308a"></script>
   <script src="/assets/js/lightstation-charts.js?v=20260308b"></script>
   <script src="/assets/js/lightstation-page.js?v=20260310"></script>
-  <script src="https://unpkg.com/htmx.org@1.9.10"
-    integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
-    crossorigin="anonymous"></script>
+  <script src="/assets/vendor/htmx.min.js"></script>
 </body>
 </html>

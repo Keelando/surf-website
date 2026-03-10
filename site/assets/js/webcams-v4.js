@@ -228,10 +228,13 @@ async function loadWebcamMetadata(webcam, card) {
 
         if (stale) {
           const ageText = formatAge(ageMinutes);
-          timestampText += ` <span class="stale-indicator" title="Image is ${ageMinutes} minutes old">⚠️ STALE (${ageText})</span>`;
-          card.classList.add("webcam-stale");
+          const isDown = ageMinutes > 60 * 24;
+          const severity = isDown ? "stale-error" : "";
+          const label = isDown ? "DOWN" : "STALE";
+          timestampText += ` <span class="stale-indicator ${severity}" title="Image is ${ageMinutes} minutes old">${label} (${ageText})</span>`;
+          card.classList.add(isDown ? "webcam-stale-error" : "webcam-stale");
         } else {
-          card.classList.remove("webcam-stale");
+          card.classList.remove("webcam-stale", "webcam-stale-error");
         }
 
         timestampEl.innerHTML = timestampText;
@@ -715,8 +718,11 @@ async function createWebcamCard(webcam, metadata) {
 
     if (stale) {
       const ageText = formatAge(ageMinutes);
-      timestampText += ` <span class="stale-indicator" title="Image is ${ageMinutes} minutes old">⚠️ STALE (${ageText})</span>`;
-      card.classList.add("webcam-stale");
+      const isDown = ageMinutes > 60 * 24; // >24h = down, not just stale
+      const severity = isDown ? "stale-error" : "";
+      const label = isDown ? "DOWN" : "STALE";
+      timestampText += ` <span class="stale-indicator ${severity}" title="Image is ${ageMinutes} minutes old">${label} (${ageText})</span>`;
+      card.classList.add(isDown ? "webcam-stale-error" : "webcam-stale");
     }
 
     timestampEl.innerHTML = timestampText;
