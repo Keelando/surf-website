@@ -19,11 +19,7 @@ FIXTURES_DIR = SCRIPT_DIR / "fixtures" / "storm_surge"
 OUTPUT_DIR = SCRIPT_DIR / "data" / "storm_surge"
 
 # Test station files
-STATION_FILES = [
-    "Point_Atkinson.json",
-    "Campbell_River.json",
-    "Crescent_Beach_Channel.json"
-]
+STATION_FILES = ["Point_Atkinson.json", "Campbell_River.json", "Crescent_Beach_Channel.json"]
 
 
 def update_forecast_timestamps(forecast_data):
@@ -68,7 +64,7 @@ def process_station_file(station_file):
         print(f"⚠️  Fixture not found: {station_file}")
         return None
 
-    with open(fixture_path, 'r') as f:
+    with open(fixture_path, "r") as f:
         station_data = json.load(f)
 
     # Update forecast timestamps
@@ -98,7 +94,7 @@ def main():
 
             # Write individual station file
             output_file = OUTPUT_DIR / station_file
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 json.dump(station_data, f, indent=2)
 
             # Add to combined
@@ -109,13 +105,10 @@ def main():
             print(f"   📁 {output_file}")
 
     # Create combined forecast
-    combined_data = {
-        "generated_utc": datetime.now(timezone.utc).isoformat(),
-        "stations": combined_stations
-    }
+    combined_data = {"generated_utc": datetime.now(timezone.utc).isoformat(), "stations": combined_stations}
 
     combined_file = OUTPUT_DIR / "combined_forecast.json"
-    with open(combined_file, 'w') as f:
+    with open(combined_file, "w") as f:
         json.dump(combined_data, f, indent=2)
 
     print(f"\n✅ Combined forecast created: {combined_file}")

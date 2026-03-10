@@ -8,6 +8,7 @@ Checks that:
 3. Calendar day boundaries align properly (Pacific time)
 4. All stations have same time range
 """
+
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -28,9 +29,9 @@ def validate_hindcast_json(json_path):
 
     all_valid = True
 
-    for station_id, station_data in data['stations'].items():
+    for station_id, station_data in data["stations"].items():
         print(f"📍 {station_data['station_name']} ({station_id})")
-        hindcast = station_data['hindcast']
+        hindcast = station_data["hindcast"]
 
         if not hindcast:
             print("   ❌ No hindcast data")
@@ -47,9 +48,9 @@ def validate_hindcast_json(json_path):
 
         # Validate timestamp format
         try:
-            first_time = datetime.fromisoformat(first['time'].replace('Z', '+00:00'))
-            last_time = datetime.fromisoformat(last['time'].replace('Z', '+00:00'))
-            forecast_time = datetime.fromisoformat(first['forecast_date'].replace('Z', '+00:00'))
+            first_time = datetime.fromisoformat(first["time"].replace("Z", "+00:00"))
+            last_time = datetime.fromisoformat(last["time"].replace("Z", "+00:00"))
+            forecast_time = datetime.fromisoformat(first["forecast_date"].replace("Z", "+00:00"))
 
             print("   ✅ Timestamps are full ISO format")
         except Exception as e:
@@ -58,10 +59,10 @@ def validate_hindcast_json(json_path):
             continue
 
         # Check hours ahead range
-        if first['hours_ahead'] < 38 or first['hours_ahead'] > 38:
+        if first["hours_ahead"] < 38 or first["hours_ahead"] > 38:
             print(f"   ⚠️  First hours_ahead should be 38.0, got {first['hours_ahead']}")
 
-        if last['hours_ahead'] < 61 or last['hours_ahead'] > 61:
+        if last["hours_ahead"] < 61 or last["hours_ahead"] > 61:
             print(f"   ⚠️  Last hours_ahead should be 61.0, got {last['hours_ahead']}")
 
         # Check record count (should be 24 for full day)
@@ -72,7 +73,7 @@ def validate_hindcast_json(json_path):
 
         # Verify hours_ahead calculation
         calculated_hours = (first_time - forecast_time).total_seconds() / 3600
-        if abs(calculated_hours - first['hours_ahead']) > 0.1:
+        if abs(calculated_hours - first["hours_ahead"]) > 0.1:
             print(f"   ❌ Hours ahead mismatch: calculated {calculated_hours:.1f}, stored {first['hours_ahead']}")
             print(f"      Forecast: {forecast_time}")
             print(f"      Valid:    {first_time}")
@@ -108,6 +109,7 @@ def validate_hindcast_json(json_path):
         print("❌ Some validations failed")
         return 1
 
+
 def main():
     test_file = Path("~/site/data/storm_surge/hindcast.json").expanduser()
 
@@ -117,6 +119,7 @@ def main():
         return 1
 
     return validate_hindcast_json(test_file)
+
 
 if __name__ == "__main__":
     exit(main())

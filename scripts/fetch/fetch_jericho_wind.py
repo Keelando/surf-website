@@ -9,7 +9,6 @@ Update frequency: 30-minute intervals
 Integrates into existing wind_data.sqlite database.
 """
 
-
 import sqlite3
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -20,13 +19,14 @@ import requests
 from lib.config import WIND_DATABASE
 from lib.logging_config import setup_logging
 
-logger = setup_logging('jericho_fetch')
+logger = setup_logging("jericho_fetch")
 
 # Configuration
 JERICHO_URL = "https://jsca.bc.ca/main/downld02.txt"
 STATION_ID = "JERICHO"
 STATION_NAME = "Jericho Sailing Centre"
 PACIFIC_TZ = ZoneInfo("America/Vancouver")
+
 
 # Unit conversions
 def mph_to_kmh(mph):
@@ -35,11 +35,13 @@ def mph_to_kmh(mph):
         return None
     return mph * 1.60934
 
+
 def f_to_c(fahrenheit):
     """Convert Fahrenheit to Celsius."""
     if fahrenheit is None:
         return None
     return (fahrenheit - 32) * 5.0 / 9.0
+
 
 def inches_to_mm(inches):
     """Convert inches to millimeters."""
@@ -47,17 +49,30 @@ def inches_to_mm(inches):
         return None
     return inches * 25.4
 
+
 def cardinal_to_degrees(cardinal):
     """Convert cardinal direction (N, NE, E, etc.) to degrees."""
-    if not cardinal or cardinal == '---':
+    if not cardinal or cardinal == "---":
         return None
 
     # Map cardinal directions to degrees
     directions = {
-        'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5,
-        'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
-        'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5,
-        'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5
+        "N": 0,
+        "NNE": 22.5,
+        "NE": 45,
+        "ENE": 67.5,
+        "E": 90,
+        "ESE": 112.5,
+        "SE": 135,
+        "SSE": 157.5,
+        "S": 180,
+        "SSW": 202.5,
+        "SW": 225,
+        "WSW": 247.5,
+        "W": 270,
+        "WNW": 292.5,
+        "NW": 315,
+        "NNW": 337.5,
     }
 
     return directions.get(cardinal.upper())
@@ -76,8 +91,8 @@ def parse_jericho_timestamp(date_str, time_str):
     """
     try:
         # Parse date (MM/DD/YY)
-        month, day, year = date_str.split('/')
-        year = int('20' + year)  # Assume 20xx
+        month, day, year = date_str.split("/")
+        year = int("20" + year)  # Assume 20xx
         month = int(month)
         day = int(day)
 
@@ -86,8 +101,8 @@ def parse_jericho_timestamp(date_str, time_str):
         am_pm = time_str[-1].lower()  # 'a' or 'p'
         time_part = time_str[:-1]  # Remove 'a' or 'p'
 
-        if ':' in time_part:
-            hour, minute = time_part.split(':')
+        if ":" in time_part:
+            hour, minute = time_part.split(":")
             hour = int(hour)
             minute = int(minute)
         else:
@@ -95,9 +110,9 @@ def parse_jericho_timestamp(date_str, time_str):
             minute = 0
 
         # Convert to 24-hour format
-        if am_pm == 'p' and hour != 12:
+        if am_pm == "p" and hour != 12:
             hour += 12
-        elif am_pm == 'a' and hour == 12:
+        elif am_pm == "a" and hour == 12:
             hour = 0
 
         # Create datetime in Pacific timezone
@@ -125,18 +140,18 @@ def parse_jericho_line(line):
 
     try:
         # Extract fields (0-indexed after split)
-        date_str = parts[0]           # MM/DD/YY
-        time_str = parts[1]           # h:mma
-        temp_c = float(parts[2])      # °C (already in Celsius!)
-        humidity = float(parts[5])    # %
+        date_str = parts[0]  # MM/DD/YY
+        time_str = parts[1]  # h:mma
+        temp_c = float(parts[2])  # °C (already in Celsius!)
+        humidity = float(parts[5])  # %
         dewpoint_c = float(parts[6])  # °C (already in Celsius!)
         wind_speed_mph = float(parts[7])  # mph
-        wind_dir_card = parts[8]      # Cardinal (E, NE, etc.)
+        wind_dir_card = parts[8]  # Cardinal (E, NE, etc.)
         wind_gust_mph = float(parts[10])  # mph (hi speed)
-        wind_chill_c = float(parts[12])   # °C (already in Celsius!)
-        heat_index_c = float(parts[13])   # °C (already in Celsius!)
-        pressure_mb = float(parts[15])    # mb (= hPa)
-        rain_inches = float(parts[16])    # inches
+        wind_chill_c = float(parts[12])  # °C (already in Celsius!)
+        heat_index_c = float(parts[13])  # °C (already in Celsius!)
+        pressure_mb = float(parts[15])  # mb (= hPa)
+        rain_inches = float(parts[16])  # inches
 
         # Parse timestamp
         timestamp = parse_jericho_timestamp(date_str, time_str)
@@ -145,17 +160,17 @@ def parse_jericho_line(line):
 
         # Convert units (wind still in mph→kmh, rain in inches→mm)
         return {
-            'timestamp': timestamp,
-            'wind_speed_kmh': mph_to_kmh(wind_speed_mph),
-            'wind_gust_kmh': mph_to_kmh(wind_gust_mph),
-            'wind_direction_deg': cardinal_to_degrees(wind_dir_card),
-            'air_temp_c': temp_c,  # Already in Celsius
-            'pressure_hpa': pressure_mb,  # mb = hPa
-            'rainfall_1hr_mm': inches_to_mm(rain_inches),
-            'humidity_percent': humidity,
-            'dewpoint_c': dewpoint_c,  # Already in Celsius
-            'wind_chill_c': wind_chill_c,  # Already in Celsius
-            'heat_index_c': heat_index_c,  # Already in Celsius
+            "timestamp": timestamp,
+            "wind_speed_kmh": mph_to_kmh(wind_speed_mph),
+            "wind_gust_kmh": mph_to_kmh(wind_gust_mph),
+            "wind_direction_deg": cardinal_to_degrees(wind_dir_card),
+            "air_temp_c": temp_c,  # Already in Celsius
+            "pressure_hpa": pressure_mb,  # mb = hPa
+            "rainfall_1hr_mm": inches_to_mm(rain_inches),
+            "humidity_percent": humidity,
+            "dewpoint_c": dewpoint_c,  # Already in Celsius
+            "wind_chill_c": wind_chill_c,  # Already in Celsius
+            "heat_index_c": heat_index_c,  # Already in Celsius
         }
 
     except (ValueError, IndexError) as e:
@@ -171,7 +186,7 @@ def fetch_jericho_data():
         response.raise_for_status()
 
         text = response.text
-        lines = text.strip().split('\n')
+        lines = text.strip().split("\n")
 
         # Skip header rows (first 3 lines)
         data_lines = lines[3:]
@@ -191,7 +206,7 @@ def ensure_columns(conn):
     existing = {row[1] for row in cur.fetchall()}
 
     # Additional columns for Jericho (beyond standard wind stations)
-    required = ['wind_chill_c', 'heat_index_c']
+    required = ["wind_chill_c", "heat_index_c"]
 
     for col in required:
         if col not in existing:
@@ -213,16 +228,20 @@ def store_observations(conn, observations):
     for obs in observations:
         try:
             # Check if record exists
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT COUNT(*) FROM wind_observation
                 WHERE station_id = ? AND observation_time = ?
-            """, (STATION_ID, obs['timestamp']))
+            """,
+                (STATION_ID, obs["timestamp"]),
+            )
 
             exists = cur.fetchone()[0] > 0
 
             if exists:
                 # Update existing record
-                cur.execute("""
+                cur.execute(
+                    """
                     UPDATE wind_observation
                     SET wind_speed_kmh = ?,
                         wind_gust_kmh = ?,
@@ -236,25 +255,28 @@ def store_observations(conn, observations):
                         heat_index_c = ?,
                         source_file = ?
                     WHERE station_id = ? AND observation_time = ?
-                """, (
-                    obs['wind_speed_kmh'],
-                    obs['wind_gust_kmh'],
-                    obs['wind_direction_deg'],
-                    obs['air_temp_c'],
-                    obs['pressure_hpa'],
-                    obs['rainfall_1hr_mm'],
-                    obs['humidity_percent'],
-                    obs['dewpoint_c'],
-                    obs['wind_chill_c'],
-                    obs['heat_index_c'],
-                    'jericho_jsca',
-                    STATION_ID,
-                    obs['timestamp']
-                ))
+                """,
+                    (
+                        obs["wind_speed_kmh"],
+                        obs["wind_gust_kmh"],
+                        obs["wind_direction_deg"],
+                        obs["air_temp_c"],
+                        obs["pressure_hpa"],
+                        obs["rainfall_1hr_mm"],
+                        obs["humidity_percent"],
+                        obs["dewpoint_c"],
+                        obs["wind_chill_c"],
+                        obs["heat_index_c"],
+                        "jericho_jsca",
+                        STATION_ID,
+                        obs["timestamp"],
+                    ),
+                )
                 updated += 1
             else:
                 # Insert new record
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO wind_observation (
                         station_id,
                         station_name,
@@ -271,22 +293,24 @@ def store_observations(conn, observations):
                         heat_index_c,
                         source_file
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    STATION_ID,
-                    STATION_NAME,
-                    obs['timestamp'],
-                    obs['wind_speed_kmh'],
-                    obs['wind_gust_kmh'],
-                    obs['wind_direction_deg'],
-                    obs['air_temp_c'],
-                    obs['pressure_hpa'],
-                    obs['rainfall_1hr_mm'],
-                    obs['humidity_percent'],
-                    obs['dewpoint_c'],
-                    obs['wind_chill_c'],
-                    obs['heat_index_c'],
-                    'jericho_jsca'
-                ))
+                """,
+                    (
+                        STATION_ID,
+                        STATION_NAME,
+                        obs["timestamp"],
+                        obs["wind_speed_kmh"],
+                        obs["wind_gust_kmh"],
+                        obs["wind_direction_deg"],
+                        obs["air_temp_c"],
+                        obs["pressure_hpa"],
+                        obs["rainfall_1hr_mm"],
+                        obs["humidity_percent"],
+                        obs["dewpoint_c"],
+                        obs["wind_chill_c"],
+                        obs["heat_index_c"],
+                        "jericho_jsca",
+                    ),
+                )
                 inserted += 1
 
         except Exception as e:

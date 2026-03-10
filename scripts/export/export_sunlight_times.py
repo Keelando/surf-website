@@ -8,7 +8,6 @@ for display on the website.
 Generates JSON files with sunlight information for each webcam location.
 """
 
-
 import json
 from datetime import datetime, timedelta, timezone
 
@@ -24,24 +23,24 @@ WEBCAM_LOCATIONS = {
         "name": "White Rock, BC",
         "lat": 49.0253,
         "lon": -122.8031,
-        "output_file": EXPORT_DIR / "wrcam" / "sunlight.json"
+        "output_file": EXPORT_DIR / "wrcam" / "sunlight.json",
     },
     "boundarybay": {
         "name": "Boundary Bay, BC",
         "lat": 49.0042,
         "lon": -123.0128,
-        "output_file": EXPORT_DIR / "bbcam" / "sunlight.json"
+        "output_file": EXPORT_DIR / "bbcam" / "sunlight.json",
     },
     "coxbay": {
         "name": "Cox Bay (Tofino), BC",
         "lat": 49.1167,
         "lon": -125.9000,
-        "output_file": EXPORT_DIR / "coxbay" / "sunlight.json"
-    }
+        "output_file": EXPORT_DIR / "coxbay" / "sunlight.json",
+    },
 }
 
 
-def get_sunlight_times(lat, lon, date=None, tz_name='America/Vancouver'):
+def get_sunlight_times(lat, lon, date=None, tz_name="America/Vancouver"):
     """
     Get comprehensive sunlight information for a location.
 
@@ -71,26 +70,24 @@ def get_sunlight_times(lat, lon, date=None, tz_name='America/Vancouver'):
 
         # Dawn times using different depression angles
         # Civil dawn = 6° below horizon (enough light for outdoor activities)
-        dawn_civil = dawn(location.observer, date=date.date(),
-                         depression=Depression.CIVIL, tzinfo=timezone.utc)
+        dawn_civil = dawn(location.observer, date=date.date(), depression=Depression.CIVIL, tzinfo=timezone.utc)
 
         # Nautical dawn = 12° below horizon (horizon visible at sea)
-        dawn_nautical = dawn(location.observer, date=date.date(),
-                            depression=Depression.NAUTICAL, tzinfo=timezone.utc)
+        dawn_nautical = dawn(location.observer, date=date.date(), depression=Depression.NAUTICAL, tzinfo=timezone.utc)
 
         # Astronomical dawn = 18° below horizon (sky no longer completely dark)
-        dawn_astronomical = dawn(location.observer, date=date.date(),
-                                depression=Depression.ASTRONOMICAL, tzinfo=timezone.utc)
+        dawn_astronomical = dawn(
+            location.observer, date=date.date(), depression=Depression.ASTRONOMICAL, tzinfo=timezone.utc
+        )
 
         # Dusk times using different depression angles
-        dusk_civil = dusk(location.observer, date=date.date(),
-                         depression=Depression.CIVIL, tzinfo=timezone.utc)
+        dusk_civil = dusk(location.observer, date=date.date(), depression=Depression.CIVIL, tzinfo=timezone.utc)
 
-        dusk_nautical = dusk(location.observer, date=date.date(),
-                            depression=Depression.NAUTICAL, tzinfo=timezone.utc)
+        dusk_nautical = dusk(location.observer, date=date.date(), depression=Depression.NAUTICAL, tzinfo=timezone.utc)
 
-        dusk_astronomical = dusk(location.observer, date=date.date(),
-                                depression=Depression.ASTRONOMICAL, tzinfo=timezone.utc)
+        dusk_astronomical = dusk(
+            location.observer, date=date.date(), depression=Depression.ASTRONOMICAL, tzinfo=timezone.utc
+        )
 
         # Golden hour (best light for photography)
         # Note: golden_hour returns (start, end) for the evening golden hour only
@@ -133,44 +130,36 @@ def get_sunlight_times(lat, lon, date=None, tz_name='America/Vancouver'):
         result = {
             "date": date.date().isoformat(),
             "generated_at": datetime.now(timezone.utc).isoformat(),
-
             # Main events
             "sunrise": sunrise_time.isoformat(),
             "sunset": sunset_time.isoformat(),
             "solar_noon": s["noon"].isoformat(),
-
             # Dawn events (in order of occurrence)
             "dawn_astronomical": dawn_astronomical.isoformat(),  # First light
             "dawn_nautical": dawn_nautical.isoformat(),
             "dawn_civil": dawn_civil.isoformat(),  # Civil twilight begins
-
             # Dusk events (in order of occurrence)
             "dusk_civil": dusk_civil_time.isoformat(),  # Civil twilight ends
             "dusk_nautical": dusk_nautical_time.isoformat(),
             "dusk_astronomical": dusk_astronomical_time.isoformat(),  # Last light
-
             # Photography times (if available)
             # Golden hour and blue hour in astral library return (start, end)
-            "golden_hour": {
-                "start": gh[0].isoformat(),
-                "end": gh[1].isoformat()
-            } if gh and len(gh) >= 2 else None,
-
-            "blue_hour": {
-                "start": bh[0].isoformat(),
-                "end": bh[1].isoformat()
-            } if bh and len(bh) >= 2 else None,
-
+            "golden_hour": {"start": gh[0].isoformat(), "end": gh[1].isoformat()} if gh and len(gh) >= 2 else None,
+            "blue_hour": {"start": bh[0].isoformat(), "end": bh[1].isoformat()} if bh and len(bh) >= 2 else None,
             # Daylight duration
             "daylight_duration_seconds": int((sunset_time - sunrise_time).total_seconds()),
-
             # Current status
             "is_daylight_now": is_currently_daylight(sunrise_time, sunset_time),
             "current_phase": get_current_phase(
-                sunrise_time, sunset_time,
-                dawn_astronomical, dawn_nautical, dawn_civil,
-                dusk_civil, dusk_nautical, dusk_astronomical
-            )
+                sunrise_time,
+                sunset_time,
+                dawn_astronomical,
+                dawn_nautical,
+                dawn_civil,
+                dusk_civil,
+                dusk_nautical,
+                dusk_astronomical,
+            ),
         }
 
         return result
@@ -182,7 +171,7 @@ def get_sunlight_times(lat, lon, date=None, tz_name='America/Vancouver'):
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "error": str(e),
             "is_daylight_now": False,
-            "current_phase": "unknown"
+            "current_phase": "unknown",
         }
 
 
@@ -193,8 +182,7 @@ def is_currently_daylight(sunrise, sunset, margin_minutes=30):
     return (sunrise - margin) <= now <= (sunset + margin)
 
 
-def get_current_phase(sunrise, sunset, dawn_astro, dawn_naut, dawn_civil,
-                      dusk_civil, dusk_naut, dusk_astro):
+def get_current_phase(sunrise, sunset, dawn_astro, dawn_naut, dawn_civil, dusk_civil, dusk_naut, dusk_astro):
     """Determine the current light phase"""
     now = datetime.now(timezone.utc)
 
@@ -223,9 +211,9 @@ def load_tide_stations():
     """Load tide station coordinates from stations.json"""
     stations_file = EXPORT_DIR / "stations.json"
     try:
-        with open(stations_file, 'r') as f:
+        with open(stations_file, "r") as f:
             data = json.load(f)
-            return data.get('tides', {})
+            return data.get("tides", {})
     except Exception as e:
         print(f"Warning: Could not load tide stations: {e}")
         return {}
@@ -240,14 +228,10 @@ def export_all_locations(days_ahead=4):
                     timezone offset - cron runs at 00:06 UTC which is still previous
                     day in Pacific time, so we need an extra day buffer)
     """
-    local_tz = pytz.timezone('America/Vancouver')
+    local_tz = pytz.timezone("America/Vancouver")
     today = datetime.now(local_tz).date()
 
-    results = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "days_ahead": days_ahead,
-        "stations": {}
-    }
+    results = {"generated_at": datetime.now(timezone.utc).isoformat(), "days_ahead": days_ahead, "stations": {}}
 
     # Combine webcams and tide stations into one structure
     all_locations = {}
@@ -256,10 +240,10 @@ def export_all_locations(days_ahead=4):
     print("=== Preparing Webcam Locations ===")
     for location_key, location in WEBCAM_LOCATIONS.items():
         all_locations[location_key] = {
-            'name': location['name'],
-            'lat': location['lat'],
-            'lon': location['lon'],
-            'type': 'webcam'
+            "name": location["name"],
+            "lat": location["lat"],
+            "lon": location["lon"],
+            "type": "webcam",
         }
         print(f"  Added: {location['name']}")
 
@@ -267,12 +251,12 @@ def export_all_locations(days_ahead=4):
     print("\n=== Preparing Tide Station Locations ===")
     tide_stations = load_tide_stations()
     for station_key, station in tide_stations.items():
-        if 'lat' in station and 'lon' in station:
+        if "lat" in station and "lon" in station:
             all_locations[station_key] = {
-                'name': station.get('name', station_key),
-                'lat': station['lat'],
-                'lon': station['lon'],
-                'type': 'tide'
+                "name": station.get("name", station_key),
+                "lat": station["lat"],
+                "lon": station["lon"],
+                "type": "tide",
             }
             print(f"  Added: {station.get('name', station_key)}")
 
@@ -281,31 +265,29 @@ def export_all_locations(days_ahead=4):
     for station_key, location in all_locations.items():
         print(f"\n{location['name']} ({location['type']})...")
 
-        station_data = {
-            "name": location['name'],
-            "lat": location['lat'],
-            "lon": location['lon'],
-            "days": {}
-        }
+        station_data = {"name": location["name"], "lat": location["lat"], "lon": location["lon"], "days": {}}
 
         # Calculate for each day
         for day_offset in range(days_ahead):
             target_date = today + timedelta(days=day_offset)
             date_str = target_date.isoformat()
 
-            print(f"  {date_str}...", end=' ')
+            print(f"  {date_str}...", end=" ")
 
             # Get sunlight times for this day
-            sunlight = get_sunlight_times(location['lat'], location['lon'],
-                                         date=local_tz.localize(datetime.combine(target_date, datetime.min.time())))
+            sunlight = get_sunlight_times(
+                location["lat"],
+                location["lon"],
+                date=local_tz.localize(datetime.combine(target_date, datetime.min.time())),
+            )
 
             # Extract only the times we need for plotting
-            if 'error' not in sunlight:
+            if "error" not in sunlight:
                 station_data["days"][date_str] = {
                     "first_light": sunlight["dawn_civil"],
                     "sunrise": sunlight["sunrise"],
                     "sunset": sunlight["sunset"],
-                    "last_light": sunlight["dusk_civil"]
+                    "last_light": sunlight["dusk_civil"],
                 }
                 print("✓")
             else:
@@ -318,7 +300,7 @@ def export_all_locations(days_ahead=4):
     combined_file = EXPORT_DIR / "sunlight_times.json"
     combined_file.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(combined_file, 'w') as f:
+    with open(combined_file, "w") as f:
         json.dump(results, f, indent=2)
 
     print(f"\n{'='*60}")
@@ -335,15 +317,11 @@ def export_all_locations(days_ahead=4):
             today_str = today.isoformat()
             today_data = results["stations"][location_key]["days"].get(today_str, {})
 
-            output_file = location['output_file']
+            output_file = location["output_file"]
             output_file.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(output_file, 'w') as f:
-                json.dump({
-                    "date": today_str,
-                    "generated_at": results["generated_at"],
-                    **today_data
-                }, f, indent=2)
+            with open(output_file, "w") as f:
+                json.dump({"date": today_str, "generated_at": results["generated_at"], **today_data}, f, indent=2)
 
             print(f"  {location['name']}: {output_file}")
 

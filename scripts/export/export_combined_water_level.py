@@ -26,7 +26,7 @@ from zoneinfo import ZoneInfo
 from lib.config import EXPORT_DIR, TIDE_DATABASE
 from lib.logging_config import setup_logging
 
-logger = setup_logging('combined_water_level')
+logger = setup_logging("combined_water_level")
 
 # ---------- Config ----------
 TIDE_DB = TIDE_DATABASE
@@ -52,7 +52,7 @@ STATION_MAPPING = {
     # Surrey geodetic stations - both use Crescent_Beach_Channel surge data
     # (same location for channel, nearby for ocean - ~300m apart)
     "crescent_channel_ocean": "Crescent_Beach_Channel",
-    "crescent_beach_ocean": "Crescent_Beach_Channel"
+    "crescent_beach_ocean": "Crescent_Beach_Channel",
 }
 
 
@@ -67,7 +67,7 @@ def load_storm_surge_forecasts(surge_dir):
         logger.warning(f"Storm surge forecast not found: {combined_file}")
         return {}
 
-    with open(combined_file, 'r') as f:
+    with open(combined_file, "r") as f:
         data = json.load(f)
 
     # Extract forecasts by station
@@ -101,7 +101,8 @@ def load_tide_predictions(station_id, start_ts, end_ts, tide_db):
     conn = sqlite3.connect(tide_db)
     cur = conn.cursor()
 
-    cur.execute("""
+    cur.execute(
+        """
         SELECT prediction_time, water_level
         FROM tide_prediction
         WHERE station_name = ?
@@ -109,7 +110,9 @@ def load_tide_predictions(station_id, start_ts, end_ts, tide_db):
           AND prediction_time <= ?
           AND water_level IS NOT NULL
         ORDER BY prediction_time ASC
-    """, (station_id, start_ts, end_ts))
+    """,
+        (station_id, start_ts, end_ts),
+    )
 
     predictions = {ts: level for ts, level in cur.fetchall()}
     conn.close()
@@ -209,7 +212,10 @@ def combine_predictions(station_tide_id, station_surge_id, surge_forecasts, star
                     "astronomical_tide_m": round(tide_level, 3),
                     "storm_surge_m": round(surge_value, 3),
                     "total_water_level_m": round(total_level, 3),
-                    "description": f"Peak occurs at {dt.astimezone(ZoneInfo('America/Vancouver')).strftime('%Y-%m-%d %I:%M %p PST')}"
+                    "description": (
+                        "Peak occurs at "
+                        f"{dt.astimezone(ZoneInfo('America/Vancouver')).strftime('%Y-%m-%d %I:%M %p PST')}"
+                    ),
                 }
 
             # Downsample output: Only include at 15-minute intervals
@@ -219,14 +225,11 @@ def combine_predictions(station_tide_id, station_surge_id, surge_forecasts, star
                     "time": dt.isoformat(),
                     "astronomical_tide_m": round(tide_level, 3),
                     "storm_surge_m": round(surge_value, 3),
-                    "total_water_level_m": round(total_level, 3)
+                    "total_water_level_m": round(total_level, 3),
                 }
                 combined.append(entry)
 
-    return {
-        "forecast": combined,
-        "peak": peak_entry
-    }
+    return {"forecast": combined, "peak": peak_entry}
 
 
 def update_latest_with_surge(surge_dir):
@@ -277,10 +280,10 @@ def update_latest_with_surge(surge_dir):
 
         # Find current storm surge (closest to now)
         closest_surge = None
-        min_diff = float('inf')
+        min_diff = float("inf")
 
         for iso_time, surge_value in surge_forecast.items():
-            dt = datetime.fromisoformat(iso_time.replace('Z', '+00:00'))
+            dt = datetime.fromisoformat(iso_time.replace("Z", "+00:00"))
             diff = abs((dt - now).total_seconds())
             if diff < min_diff:
                 min_diff = diff
@@ -322,7 +325,7 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
     logger.info("Combined Water Level Forecast Export")
 
     # Determine time range: current day + next 2 full calendar days (Pacific time)
-    pacific = ZoneInfo('America/Vancouver')
+    pacific = ZoneInfo("America/Vancouver")
     now_pacific = datetime.now(pacific)
 
     # Start from beginning of today (Pacific)
@@ -335,7 +338,11 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
     end_ts = int(three_days_end.astimezone(timezone.utc).timestamp())
 
     logger.info(f"Forecast range: {today.date()} to {(today + timedelta(days=2)).date()} (Pacific)")
-    logger.info(f"UTC range: {datetime.fromtimestamp(start_ts, tz=timezone.utc)} to {datetime.fromtimestamp(end_ts, tz=timezone.utc)}")
+    logger.info(
+        "UTC range: "
+        f"{datetime.fromtimestamp(start_ts, tz=timezone.utc)} to "
+        f"{datetime.fromtimestamp(end_ts, tz=timezone.utc)}"
+    )
 
     # Load storm surge forecasts
     surge_forecasts = load_storm_surge_forecasts(surge_dir)
@@ -357,7 +364,7 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
                 "tide_station_id": tide_station,
                 "surge_station_id": surge_station,
                 "forecast": result["forecast"],
-                "peak": result["peak"]
+                "peak": result["peak"],
             }
             logger.info(f"  {len(result['forecast'])} combined predictions")
             if result["peak"]:
@@ -378,21 +385,36 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
             "units": "meters",
             "data_sources": {
                 "astronomical_tide": "DFO IWLS (Integrated Water Level System)",
-                "storm_surge": "Environment Canada GDSPS (Global Deterministic Storm Surge Prediction System)"
+                "storm_surge": "Environment Canada GDSPS (Global Deterministic Storm Surge Prediction System)",
             },
             "important_notes": {
-                "wave_effects_not_included": "These predictions do NOT include wave setup, wave runup, or wave overtopping effects. During storms with large waves, actual water levels at the shore can be significantly higher due to breaking waves pushing water inland (wave setup ~0.2-0.5m, wave runup ~1-3m+ depending on location and wave height).",
-                "what_is_storm_surge": "Storm surge is the static elevation of water level caused by meteorological forcing (wind stress and atmospheric pressure). GDSPS predicts this component using ocean circulation models driven by weather forecasts.",
-                "total_flooding_risk": "For complete coastal flooding assessment, wave effects must be added separately. Wave runup is often the dominant factor during major storms on exposed coasts.",
-                "inland_vs_exposed": "Wave effects are minimal in protected areas (e.g., Vancouver Harbour) but can dominate on exposed outer coasts (e.g., Tofino, Neah Bay)."
-            }
+                "wave_effects_not_included": (
+                    "These predictions do NOT include wave setup, wave runup, or wave overtopping effects. "
+                    "During storms with large waves, actual water levels at the shore can be significantly "
+                    "higher due to breaking waves pushing water inland (wave setup ~0.2-0.5m, wave runup "
+                    "~1-3m+ depending on location and wave height)."
+                ),
+                "what_is_storm_surge": (
+                    "Storm surge is the static elevation of water level caused by meteorological forcing "
+                    "(wind stress and atmospheric pressure). GDSPS predicts this component using ocean "
+                    "circulation models driven by weather forecasts."
+                ),
+                "total_flooding_risk": (
+                    "For complete coastal flooding assessment, wave effects must be added separately. "
+                    "Wave runup is often the dominant factor during major storms on exposed coasts."
+                ),
+                "inland_vs_exposed": (
+                    "Wave effects are minimal in protected areas (e.g., Vancouver Harbour) but can dominate "
+                    "on exposed outer coasts (e.g., Tofino, Neah Bay)."
+                ),
+            },
         },
-        "stations": combined_data
+        "stations": combined_data,
     }
 
     # Write output
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         json.dump(output, f, indent=2, sort_keys=True)
 
     logger.info(f"Exported combined water level for {len(combined_data)} stations")
@@ -403,8 +425,7 @@ def export_combined_water_level(tide_db, surge_dir, output_file):
 
 def main():
     parser = argparse.ArgumentParser(description="Export combined water level predictions")
-    parser.add_argument('--test-mode', action='store_true',
-                       help='Use test data instead of production data')
+    parser.add_argument("--test-mode", action="store_true", help="Use test data instead of production data")
     args = parser.parse_args()
 
     # Select paths based on mode

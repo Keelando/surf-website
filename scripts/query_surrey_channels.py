@@ -3,6 +3,7 @@
 Quick script to query FlowWorks API for channel list at a specific site.
 Usage: python3 query_surrey_channels.py <site_id>
 """
+
 import json
 import os
 import sys
@@ -22,6 +23,7 @@ def _require_env(var_name: str) -> str:
 USERNAME = _require_env("SURREY_API_USERNAME")
 PASSWORD = _require_env("SURREY_API_PASSWORD")
 
+
 def authenticate():
     """Get JWT token."""
     url = f"{API_BASE}/authenticate"
@@ -31,16 +33,15 @@ def authenticate():
     data = response.json()
     return data.get("Token")
 
+
 def get_channels(token, site_id):
     """Get all channels for a site."""
     url = f"{API_BASE}/sites/{site_id}/channels"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     response = requests.get(url, headers=headers, timeout=15)
     response.raise_for_status()
     return response.json()
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

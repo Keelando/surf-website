@@ -24,7 +24,7 @@ import pytz
 from lib.config import EXPORT_DIR
 from lib.logging_config import setup_logging
 
-logger = setup_logging('hindcast_export')
+logger = setup_logging("hindcast_export")
 
 # Configuration
 DB_PATH = Path("~/.local/share/storm_surge_forecast.sqlite").expanduser()
@@ -34,15 +34,50 @@ MAX_DAYS_BACK = 12  # Show predictions for last 12 days (today + 11 back)
 # Note: Forecast runs go back ~14 days to capture predictions for the full 12-day window
 
 STATIONS = {
-    "Point_Atkinson": {"name": "Point Atkinson", "lat": 49.3375, "lon": -123.253583},
-    "Crescent_Beach_Channel": {"name": "Crescent Beach Channel", "lat": 49.0536, "lon": -122.8969},
-    "Crescent_Channel_Ocean": {"name": "Crescent Channel Ocean", "lat": 49.0536, "lon": -122.8969, "reuses": "Crescent_Beach_Channel"},
-    "Crescent_Beach_Ocean": {"name": "Crescent Beach Ocean", "lat": 49.0122, "lon": -122.9411, "reuses": "Crescent_Beach_Channel"},
-    "Campbell_River": {"name": "Campbell River", "lat": 50.042, "lon": -125.247},
-    "Neah_Bay": {"name": "Neah Bay", "lat": 48.495, "lon": -124.728},
-    "New_Dungeness": {"name": "New Dungeness", "lat": 48.333, "lon": -123.167},
-    "Tofino": {"name": "Tofino", "lat": 49.154, "lon": -125.913}  # Updated to match DFO tide station
+    "Point_Atkinson": {
+        "name": "Point Atkinson",
+        "lat": 49.3375,
+        "lon": -123.253583,
+    },
+    "Crescent_Beach_Channel": {
+        "name": "Crescent Beach Channel",
+        "lat": 49.0536,
+        "lon": -122.8969,
+    },
+    "Crescent_Channel_Ocean": {
+        "name": "Crescent Channel Ocean",
+        "lat": 49.0536,
+        "lon": -122.8969,
+        "reuses": "Crescent_Beach_Channel",
+    },
+    "Crescent_Beach_Ocean": {
+        "name": "Crescent Beach Ocean",
+        "lat": 49.0122,
+        "lon": -122.9411,
+        "reuses": "Crescent_Beach_Channel",
+    },
+    "Campbell_River": {
+        "name": "Campbell River",
+        "lat": 50.042,
+        "lon": -125.247,
+    },
+    "Neah_Bay": {
+        "name": "Neah Bay",
+        "lat": 48.495,
+        "lon": -124.728,
+    },
+    "New_Dungeness": {
+        "name": "New Dungeness",
+        "lat": 48.333,
+        "lon": -123.167,
+    },
+    "Tofino": {
+        "name": "Tofino",
+        "lat": 49.154,
+        "lon": -125.913,
+    },  # Updated to match DFO tide station
 }
+
 
 def export_hindcast():
     """Export +48h hindcast predictions to JSON."""
@@ -51,12 +86,12 @@ def export_hindcast():
         logger.error(f"Database not found: {DB_PATH}")
         logger.info("Run fetch_storm_surge.py at 19:30 UTC to start collecting data")
         return False
-    
+
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
-        
+
         # Get available date range
         cur.execute("""
             SELECT 
@@ -66,23 +101,26 @@ def export_hindcast():
             FROM forecast_archive
         """)
         stats = cur.fetchone()
-        
+
         if not stats or stats["days"] == 0:
             logger.warning("No forecast data in database yet")
             logger.info("First data will be available after 19:30 UTC run")
             return False
 
         logger.info(f"Found {stats['days']} days of forecasts ({stats['oldest']} to {stats['newest']})")
-        
+
         hindcast_data = {
             "generated_utc": datetime.now(timezone.utc).isoformat(),
-            "description": "Storm surge predictions for full Pacific calendar days made 2 days in advance (18Z run, hours 38-61 PST)",
+            "description": (
+                "Storm surge predictions for full Pacific calendar days made 2 days in advance "
+                "(18Z run, hours 38-61 PST)"
+            ),
             "forecast_horizon_hours": "38-61",
             "max_days_back": MAX_DAYS_BACK,
             "actual_days_available": stats["days"],
-            "stations": {}
+            "stations": {},
         }
-        
+
         # Export each station
         for station_id, station_info in STATIONS.items():
             logger.info(f"Processing {station_info['name']}...")
@@ -96,7 +134,7 @@ def export_hindcast():
             # we need forecast runs from ~2 days before day X
             # Example: To show predictions for Nov 14-23 (10 days), we need runs from ~Nov 12-21 (12 days back)
 
-            pacific = pytz.timezone('America/Vancouver')
+            pacific = pytz.timezone("America/Vancouver")
             now_pacific = datetime.now(pacific)
             # Start of today Pacific
             today_midnight_pacific = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -117,11 +155,12 @@ def export_hindcast():
             forecast_start_utc = forecast_start_pacific.astimezone(timezone.utc)
 
             # Use ISO format with 'Z' to match database storage format
-            valid_start_str = valid_start_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
-            today_end_str = today_end_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
-            forecast_start_str = forecast_start_utc.strftime('%Y-%m-%d')
+            valid_start_str = valid_start_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+            today_end_str = today_end_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+            forecast_start_str = forecast_start_utc.strftime("%Y-%m-%d")
 
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT
                     forecast_run_time,
                     valid_time,
@@ -134,48 +173,53 @@ def export_hindcast():
                   AND valid_time >= ?
                   AND valid_time <= ?
                 ORDER BY valid_time ASC
-            """, (query_station_id, forecast_start_str, valid_start_str, today_end_str))
-            
+            """,
+                (query_station_id, forecast_start_str, valid_start_str, today_end_str),
+            )
+
             rows = cur.fetchall()
 
             if not rows:
                 logger.warning(f"No 38-61h predictions found for {station_info['name']}")
                 continue
-            
+
             # Build hindcast series
             hindcast_series = []
             for row in rows:
                 # Normalize forecast_date to just date (no time) for consistency
-                forecast_datetime = datetime.fromisoformat(row["forecast_run_time"].replace('Z', '+00:00') if 'T' in row["forecast_run_time"] else row["forecast_run_time"] + 'T00:00:00+00:00')
-                forecast_date_str = forecast_datetime.strftime('%Y-%m-%d')
+                run_time = row["forecast_run_time"]
+                normalized_run_time = (
+                    run_time.replace("Z", "+00:00") if "T" in run_time else f"{run_time}T00:00:00+00:00"
+                )
+                forecast_datetime = datetime.fromisoformat(normalized_run_time)
+                forecast_date_str = forecast_datetime.strftime("%Y-%m-%d")
 
-                hindcast_series.append({
-                    "time": row["valid_time"],
-                    "value": round(row["surge_value"], 3),
-                    "forecast_date": forecast_date_str,
-                    "hours_ahead": row["hours_ahead"]
-                })
-            
+                hindcast_series.append(
+                    {
+                        "time": row["valid_time"],
+                        "value": round(row["surge_value"], 3),
+                        "forecast_date": forecast_date_str,
+                        "hours_ahead": row["hours_ahead"],
+                    }
+                )
+
             # Get time range
-            first_time = datetime.fromisoformat(hindcast_series[0]["time"].replace('Z', '+00:00'))
-            last_time = datetime.fromisoformat(hindcast_series[-1]["time"].replace('Z', '+00:00'))
+            first_time = datetime.fromisoformat(hindcast_series[0]["time"].replace("Z", "+00:00"))
+            last_time = datetime.fromisoformat(hindcast_series[-1]["time"].replace("Z", "+00:00"))
 
             logger.info(f"  {len(hindcast_series)} predictions")
             logger.info(f"  Range: {first_time.strftime('%Y-%m-%d')} to {last_time.strftime('%Y-%m-%d')}")
-            
+
             # Add to output
             hindcast_data["stations"][station_id] = {
                 "station_id": station_id,
                 "station_name": station_info["name"],
-                "location": {
-                    "lat": station_info["lat"],
-                    "lon": station_info["lon"]
-                },
-                "hindcast": hindcast_series
+                "location": {"lat": station_info["lat"], "lon": station_info["lon"]},
+                "hindcast": hindcast_series,
             }
-        
+
         conn.close()
-        
+
         # Write to JSON (atomic)
         OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         tmp_file = OUTPUT_PATH.with_suffix(".json.tmp")

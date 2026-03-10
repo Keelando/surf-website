@@ -30,14 +30,17 @@ def download_image(image_url, output_path, logger):
                 "curl",
                 "-f",  # Fail silently on HTTP errors
                 "-L",  # Follow redirects
-                "-o", str(output_path),
-                "--max-time", "30",
-                "--connect-timeout", "10",
-                image_url
+                "-o",
+                str(output_path),
+                "--max-time",
+                "30",
+                "--connect-timeout",
+                "10",
+                image_url,
             ],
             capture_output=True,
             text=True,
-            timeout=40
+            timeout=40,
         )
 
         if result.returncode != 0:
@@ -85,10 +88,7 @@ def capture_yawcam_image(base_url, output_path, quality, logger):
         # Step 1: Handshake
         logger.info(f"Yawcam handshake with {base_url}")
         handshake_url = f"{base_url}get"
-        handshake_params = {
-            'id': session_id,
-            'r': random.random()
-        }
+        handshake_params = {"id": session_id, "r": random.random()}
 
         response = session.get(handshake_url, params=handshake_params, timeout=10)
         response.raise_for_status()
@@ -110,11 +110,7 @@ def capture_yawcam_image(base_url, output_path, quality, logger):
         # Step 2: Grab image
         logger.info(f"Yawcam grabbing image (quality={quality})")
         image_url = f"{base_url}out.jpg"
-        image_params = {
-            'q': quality,
-            'id': session_id,
-            'r': int(time.time() * 1000)
-        }
+        image_params = {"q": quality, "id": session_id, "r": int(time.time() * 1000)}
 
         response = session.get(image_url, params=image_params, timeout=15)
         response.raise_for_status()
@@ -124,7 +120,7 @@ def capture_yawcam_image(base_url, output_path, quality, logger):
             logger.warning(f"Yawcam: Response too small ({len(response.content)} bytes)")
             return False
 
-        if not response.content.startswith(b'\xff\xd8'):
+        if not response.content.startswith(b"\xff\xd8"):
             logger.warning("Yawcam: Not a valid JPEG")
             return False
 

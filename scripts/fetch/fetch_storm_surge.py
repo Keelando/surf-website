@@ -4,6 +4,7 @@ Storm Surge Forecast Fetcher for Surf Server
 Fetches GDSPS data from Environment Canada GeoMet WMS
 Stores 18Z run to database for hindcast analysis (closest to noon Pacific)
 """
+
 import json
 import re
 import sqlite3
@@ -17,7 +18,7 @@ from owslib.wms import WebMapService
 from lib.config import EXPORT_DIR, STORM_SURGE_DATABASE, STORM_SURGE_RETENTION_DAYS
 from lib.logging_config import setup_logging
 
-logger = setup_logging('storm_surge')
+logger = setup_logging("storm_surge")
 
 # Configuration
 TESTING = False  # Set to True for verbose output and progress tracking
@@ -29,7 +30,7 @@ STATIONS = {
     "Campbell_River": {"lat": 50.042, "lon": -125.247, "name": "Campbell River"},
     "Neah_Bay": {"lat": 48.495, "lon": -124.728, "name": "Neah Bay"},
     "New_Dungeness": {"lat": 48.333, "lon": -123.167, "name": "New Dungeness"},
-    "Tofino": {"lat": 49.154, "lon": -125.913, "name": "Tofino"}  # Updated to match DFO tide station
+    "Tofino": {"lat": 49.154, "lon": -125.913, "name": "Tofino"},  # Updated to match DFO tide station
 }
 
 OUTPUT_DIR = EXPORT_DIR / "storm_surge"
@@ -77,7 +78,7 @@ def ensure_db_schema(conn):
             PRIMARY KEY (station_id, forecast_run_time, valid_time)
         )
     """)
-    
+
     # Index for efficient queries
     cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_forecast_station_time
@@ -96,17 +97,20 @@ def store_forecast_to_db(forecast_run_time, all_station_data):
 
         # Store only date (YYYY-MM-DD) for forecast_run_time consistency
         # This prevents format issues in hindcast export and frontend display
-        forecast_date = forecast_run_time.strftime('%Y-%m-%d')
+        forecast_date = forecast_run_time.strftime("%Y-%m-%d")
         stored_count = 0
 
         for station_id, forecast_data in all_station_data.items():
             for time_str, surge_value in forecast_data.items():
                 try:
-                    cur.execute("""
+                    cur.execute(
+                        """
                         INSERT OR REPLACE INTO forecast_archive
                         (station_id, forecast_run_time, valid_time, surge_value)
                         VALUES (?, ?, ?, ?)
-                    """, (station_id, forecast_date, time_str, surge_value))
+                    """,
+                        (station_id, forecast_date, time_str, surge_value),
+                    )
                     stored_count += 1
                 except Exception as e:
                     logger.info(f"⚠️  DB insert error for {station_id} {time_str}: {e}")
@@ -114,7 +118,7 @@ def store_forecast_to_db(forecast_run_time, all_station_data):
         conn.commit()
 
         # Purge old data (compare date strings YYYY-MM-DD)
-        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=DB_RETENTION_DAYS)).strftime('%Y-%m-%d')
+        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=DB_RETENTION_DAYS)).strftime("%Y-%m-%d")
         cur.execute("DELETE FROM forecast_archive WHERE forecast_run_time < ?", (cutoff_date,))
         deleted = cur.rowcount
         conn.commit()
@@ -123,9 +127,9 @@ def store_forecast_to_db(forecast_run_time, all_station_data):
         logger.info(f"\n💾 Stored {stored_count} forecast points to database")
         if deleted > 0:
             logger.info(f"🗑️  Purged {deleted} old records (before {cutoff_date})")
-        
+
         return True
-        
+
     except Exception as e:
         logger.info(f"❌ Database storage error: {e}")
         return False
@@ -140,12 +144,12 @@ def get_time_parameters(wms, layer):
     """Extract temporal information from GeoMet metadata."""
     time_dim = wms[layer].dimensions["time"]["values"][0]
     start_str, end_str, interval_str = time_dim.split("/")
-    
+
     iso_format = "%Y-%m-%dT%H:%M:%SZ"
     start_time = datetime.strptime(start_str, iso_format)
     end_time = datetime.strptime(end_str, iso_format)
     interval_hours = int(re.sub(r"\D", "", interval_str))
-    
+
     return start_time, end_time, interval_hours
 
 
@@ -153,7 +157,7 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
     """Fetch storm surge value for specific location and time."""
     try:
         time_str = timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
-        
+
         response = wms.getfeatureinfo(
             layers=[layer],
             srs="EPSG:4326",
@@ -164,38 +168,38 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
             info_format="text/plain",
             xy=(50, 50),
             feature_count=1,
-            time=time_str
+            time=time_str,
         )
-        
+
         text = response.read().decode("utf-8")
-        
+
         # Debug output for testing mode
-        if TESTING and not hasattr(fetch_pixel_value, '_debug_count'):
+        if TESTING and not hasattr(fetch_pixel_value, "_debug_count"):
             fetch_pixel_value._debug_count = 0
-        
+
         if TESTING and fetch_pixel_value._debug_count < 3:
             logger.info(f"\n    🔍 Debug - Raw response for {time_str}:")
             logger.info(f"    {text[:200]}")
             fetch_pixel_value._debug_count += 1
-        
+
         # Extract value from response
         match = re.search(r"value_0\s+=\s+'(-?\d+\.?\d*)'", text)
         if match:
             return float(match.group(1))
-        
+
         # Check for "no feature" response
         if TESTING and "no feature" in text.lower():
-            if not hasattr(fetch_pixel_value, '_no_feature_warned'):
+            if not hasattr(fetch_pixel_value, "_no_feature_warned"):
                 logger.info("    ⚠️  'No feature' response - coordinates may be outside model domain")
                 fetch_pixel_value._no_feature_warned = True
-        
+
         return None
-        
+
     except Exception as e:
         # Only log errors in testing mode or first occurrence
-        if TESTING or not hasattr(fetch_pixel_value, '_error_count'):
+        if TESTING or not hasattr(fetch_pixel_value, "_error_count"):
             logger.info(f"    ⚠️  Error fetching data for {timestamp}: {e}")
-            if not hasattr(fetch_pixel_value, '_error_count'):
+            if not hasattr(fetch_pixel_value, "_error_count"):
                 fetch_pixel_value._error_count = 0
             fetch_pixel_value._error_count += 1
         return None
@@ -204,38 +208,42 @@ def fetch_pixel_value(wms, layer, bbox, timestamp):
 def fetch_station_forecast(wms, layer, station_id, station_info, time_list):
     """Fetch complete forecast for a station."""
     logger.info(f"\n📍 Fetching {station_info['name']}...")
-    
+
     if TESTING:
         logger.info(f"    Total timesteps to fetch: {len(time_list)}")
-        logger.info(f"    Estimated time: ~{len(time_list) * FETCH_DELAY:.0f} seconds "
-              f"({len(time_list) * FETCH_DELAY / 60:.1f} minutes)")
-    
-    bbox = get_bounding_box(station_info['lat'], station_info['lon'])
+        logger.info(
+            f"    Estimated time: ~{len(time_list) * FETCH_DELAY:.0f} seconds "
+            f"({len(time_list) * FETCH_DELAY / 60:.1f} minutes)"
+        )
+
+    bbox = get_bounding_box(station_info["lat"], station_info["lon"])
     forecast_data = {}
     successful = 0
     failed = 0
-    
+
     for idx, timestamp in enumerate(time_list, 1):
         value = fetch_pixel_value(wms, layer, bbox, timestamp)
-        
+
         if value is not None:
             time_key = timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
             forecast_data[time_key] = round(value, 3)
             successful += 1
         else:
             failed += 1
-        
+
         # Progress indicator
         if TESTING:
             if idx % 10 == 0 or idx == len(time_list):
                 progress = (idx / len(time_list)) * 100
-                logger.info(f"    Progress: {idx}/{len(time_list)} ({progress:.1f}%) - "
-                      f"Success: {successful}, Failed: {failed}")
+                logger.info(
+                    f"    Progress: {idx}/{len(time_list)} ({progress:.1f}%) - "
+                    f"Success: {successful}, Failed: {failed}"
+                )
         elif idx % 50 == 0:
             logger.info(f"    Progress: {idx}/{len(time_list)}...")
-        
+
         time.sleep(FETCH_DELAY)  # Rate limiting
-    
+
     logger.info(f"    ✅ Retrieved {successful}/{len(time_list)} forecasts (Failed: {failed})")
     return forecast_data
 
@@ -249,31 +257,24 @@ def save_forecast(station_id, forecast_data, station_info, model_run_time=None):
     output_data = {
         "station_id": station_id,
         "station_name": station_info["name"],
-        "location": {
-            "lat": station_info["lat"],
-            "lon": station_info["lon"]
-        },
+        "location": {"lat": station_info["lat"], "lon": station_info["lon"]},
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "model_run_time": model_run_time.isoformat() if model_run_time else None,
         "forecast": forecast_data,
-        "unit": "meters"
+        "unit": "meters",
     }
-    
+
     # Atomic write (temp file + rename)
     tmp_file = output_file.with_suffix(".json.tmp")
     tmp_file.write_text(json.dumps(output_data, indent=2))
     tmp_file.replace(output_file)
-    
+
     logger.info(f"    💾 Saved to {output_file}")
 
 
 def create_combined_forecast():
     """Combine all station forecasts into single file."""
-    combined = {
-        "generated_utc": datetime.now(timezone.utc).isoformat(),
-        "model_run_time": None,
-        "stations": {}
-    }
+    combined = {"generated_utc": datetime.now(timezone.utc).isoformat(), "model_run_time": None, "stations": {}}
 
     # Files to skip (not station forecasts)
     skip_files = {"combined_forecast.json", "hindcast.json", "observed_surge.json"}
@@ -292,65 +293,65 @@ def create_combined_forecast():
                 combined["model_run_time"] = station_data["model_run_time"]
         except Exception as e:
             logger.info(f"⚠️  Error reading {station_file.name}: {e}")
-    
+
     combined_file = OUTPUT_DIR / "combined_forecast.json"
     tmp_file = combined_file.with_suffix(".json.tmp")
     tmp_file.write_text(json.dumps(combined, indent=2))
     tmp_file.replace(combined_file)
-    
+
     logger.info(f"\n✅ Created combined forecast: {combined_file}")
     logger.info(f"📊 Contains {len(combined['stations'])} stations")
 
 
 def main():
     if TESTING:
-        logger.info("="* 60)
+        logger.info("=" * 60)
         logger.info("🧪 TESTING MODE ENABLED - Verbose output active")
-        logger.info("="* 60)
-    
+        logger.info("=" * 60)
+
     logger.info("🌊 Storm Surge Forecast Fetcher")
-    logger.info("="* 50)
-    
+    logger.info("=" * 50)
+
     if not acquire_lock():
         return 1
-    
+
     try:
         # Suppress OWSLib warnings
         warnings.filterwarnings("ignore", module="owslib", category=UserWarning)
-        
+
         # Connect to WMS
         logger.info("\n🔌 Connecting to Environment Canada GeoMet...")
         wms = WebMapService(WMS_URL, version="1.3.0", timeout=300)
-        
+
         # Get time parameters
         start_time, end_time, interval = get_time_parameters(wms, LAYER)
-        logger.info(f"📅 Forecast period: {start_time.strftime('%Y-%m-%d %H:%M')} to "
-              f"{end_time.strftime('%Y-%m-%d %H:%M')} UTC")
+        logger.info(
+            f"📅 Forecast period: {start_time.strftime('%Y-%m-%d %H:%M')} to "
+            f"{end_time.strftime('%Y-%m-%d %H:%M')} UTC"
+        )
         logger.info(f"⏱️  Interval: {interval} hours")
-        
+
         # Build time list
         time_list = [start_time]
         while time_list[-1] < end_time:
             time_list.append(time_list[-1] + timedelta(hours=interval))
-        
+
         logger.info(f"📊 Total timesteps: {len(time_list)}")
-        
+
         # Estimate total time
         total_minutes = len(time_list) * len(STATIONS) * FETCH_DELAY / 60
-        
+
         if TESTING:
             logger.info(f"\n⏰ Estimated total time: ~{total_minutes:.1f} minutes")
             logger.info(f"   ({len(time_list)} timesteps × {len(STATIONS)} stations × {FETCH_DELAY}s)")
         elif total_minutes > 5:
             logger.info(f"⏰ This will take approximately {total_minutes:.0f} minutes to complete...")
-        
+
         # Fetch data for each station
         all_forecasts = {}
         for station_id, station_info in STATIONS.items():
             try:
-                forecast_data = fetch_station_forecast(
-                    wms, LAYER, station_id, station_info, time_list
-                )
+                forecast_data = fetch_station_forecast(wms, LAYER, station_id, station_info, time_list)
 
                 if forecast_data:
                     save_forecast(station_id, forecast_data, station_info, start_time)
@@ -360,10 +361,10 @@ def main():
 
             except Exception as e:
                 logger.info(f"    ❌ Error processing {station_id}: {e}")
-        
+
         # Create combined forecast
         create_combined_forecast()
-        
+
         # Store to database if this is the 12Z run (hour 13)
         # GDWPS only runs twice daily at 00Z and 12Z
         current_hour = datetime.now(timezone.utc).hour
@@ -372,14 +373,14 @@ def main():
             store_forecast_to_db(start_time, all_forecasts)
         else:
             logger.info(f"\n⏭️  Skipping database storage (hour={current_hour}, not 12Z run)")
-        
+
         logger.info("\n✅ Storm surge forecast update complete!")
         return 0
-    
+
     except Exception as e:
         logger.info(f"\n❌ Fatal error: {e}")
         return 1
-    
+
     finally:
         release_lock()
 

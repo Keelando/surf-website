@@ -9,15 +9,14 @@ let forecastData = null;
  * Load and display forecast data
  */
 async function loadForecasts() {
-  const container = document.getElementById('forecast-container');
+  const container = document.getElementById("forecast-container");
 
   try {
-    forecastData = await fetchWithTimeout('/data/marine_forecast.json');
+    forecastData = await fetchWithTimeout("/data/marine_forecast.json");
     displayForecasts();
     updateTimestamp();
-
   } catch (error) {
-    logger.error('Forecasts', 'Error loading forecasts', error);
+    logger.error("Forecasts", "Error loading forecasts", error);
     container.innerHTML = `
       <div class="error-state">
         <h2>Unable to Load Forecasts</h2>
@@ -33,7 +32,7 @@ async function loadForecasts() {
  */
 function checkFreshness() {
   if (!forecastData || !forecastData.generated_utc) {
-    return { isStale: true, ageHours: null, message: 'No timestamp available' };
+    return { isStale: true, ageHours: null, message: "No timestamp available" };
   }
 
   const generatedDate = new Date(forecastData.generated_utc);
@@ -45,7 +44,7 @@ function checkFreshness() {
   // Consider stale if > 8 hours old (missed update + grace period)
   const isStale = ageHours > 8;
 
-  let message = '';
+  let message = "";
   if (ageHours > 12) {
     message = `⚠️ Data is ${Math.floor(ageHours)} hours old - forecast may be outdated`;
   } else if (ageHours > 8) {
@@ -63,14 +62,14 @@ function checkFreshness() {
  * Display forecast data in the UI
  */
 function displayForecasts() {
-  const container = document.getElementById('forecast-container');
+  const container = document.getElementById("forecast-container");
 
   if (!forecastData || !forecastData.locations) {
     container.innerHTML = '<div class="error-state"><p>No forecast data available.</p></div>';
     return;
   }
 
-  let html = '';
+  let html = "";
 
   // Check data freshness and show warning only if stale
   const freshness = checkFreshness();
@@ -84,11 +83,11 @@ function displayForecasts() {
 
   // Display each zone
   const zones = [
-    { key: 'strait_georgia_north', priority: 1 },
-    { key: 'strait_georgia_south', priority: 2 }
+    { key: "strait_georgia_north", priority: 1 },
+    { key: "strait_georgia_south", priority: 2 },
   ];
 
-  zones.forEach(zone => {
+  zones.forEach((zone) => {
     const zoneData = forecastData.locations[zone.key];
     if (zoneData) {
       html += renderZoneForecast(zone.key, zoneData);
@@ -110,12 +109,12 @@ function displayForecasts() {
  * @returns {string} HTML string
  */
 function renderZoneForecast(zoneKey, zoneData) {
-  const zoneName = zoneData.zone_name || zoneKey.replace(/_/g, ' ');
+  const zoneName = zoneData.zone_name || zoneKey.replace(/_/g, " ");
 
   // Get source link for this zone
   const sourceLinks = {
-    'strait_georgia_north': 'https://weather.gc.ca/marine/forecast_e.html?mapID=03&siteID=14301',
-    'strait_georgia_south': 'https://weather.gc.ca/marine/forecast_e.html?mapID=03&siteID=14305'
+    strait_georgia_north: "https://weather.gc.ca/marine/forecast_e.html?mapID=03&siteID=14301",
+    strait_georgia_south: "https://weather.gc.ca/marine/forecast_e.html?mapID=03&siteID=14305",
   };
   const sourceLink = sourceLinks[zoneKey];
 
@@ -123,14 +122,14 @@ function renderZoneForecast(zoneKey, zoneData) {
     <div class="forecast-zone" id="${zoneKey}">
       <h2>
         ${zoneName}
-        ${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="font-size: 0.75em; margin-left: 0.5rem; color: #4299e1; text-decoration: none;">📄 View Source</a>` : ''}
+        ${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="font-size: 0.75em; margin-left: 0.5rem; color: #4299e1; text-decoration: none;">📄 View Source</a>` : ""}
       </h2>
   `;
 
   // Warnings section
   html += '<div class="zone-warnings">';
   if (zoneData.warnings && zoneData.warnings.length > 0) {
-    zoneData.warnings.forEach(warning => {
+    zoneData.warnings.forEach((warning) => {
       html += renderWarningCard(warning);
     });
   } else {
@@ -140,7 +139,7 @@ function renderZoneForecast(zoneKey, zoneData) {
       </div>
     `;
   }
-  html += '</div>';
+  html += "</div>";
 
   // Current forecast
   if (zoneData.forecast) {
@@ -200,7 +199,7 @@ function renderZoneForecast(zoneKey, zoneData) {
     `;
   }
 
-  html += '</div>'; // .forecast-zone
+  html += "</div>"; // .forecast-zone
 
   return html;
 }
@@ -214,7 +213,7 @@ function renderWarningCard(warning) {
   const severityClass = getWarningSeverityClass(warning.type);
   const icon = getWarningIcon(warning.type);
 
-  let issuedText = '';
+  let issuedText = "";
   if (warning.issued_utc) {
     const issuedDate = new Date(warning.issued_utc);
     issuedText = ` <small>(Issued ${formatTimestamp(issuedDate)})</small>`;
@@ -240,7 +239,7 @@ function renderExtendedForecast(extendedForecast) {
       <div class="extended-forecast">
   `;
 
-  extendedForecast.forEach(period => {
+  extendedForecast.forEach((period) => {
     html += `
       <div class="extended-day">
         <h4>${period.period}</h4>
@@ -278,11 +277,11 @@ function renderExtendedForecast(extendedForecast) {
 function getWarningSeverityClass(type) {
   const typeLower = type.toLowerCase();
 
-  if (typeLower.includes('storm')) return 'warning-storm';
-  if (typeLower.includes('gale')) return 'warning-gale';
-  if (typeLower.includes('strong wind')) return 'warning-strong-wind';
+  if (typeLower.includes("storm")) return "warning-storm";
+  if (typeLower.includes("gale")) return "warning-gale";
+  if (typeLower.includes("strong wind")) return "warning-strong-wind";
 
-  return '';
+  return "";
 }
 
 /**
@@ -293,11 +292,11 @@ function getWarningSeverityClass(type) {
 function getWarningIcon(type) {
   const typeLower = type.toLowerCase();
 
-  if (typeLower.includes('storm')) return '⚠️';
-  if (typeLower.includes('gale')) return '💨';
-  if (typeLower.includes('strong wind')) return '🌬️';
+  if (typeLower.includes("storm")) return "⚠️";
+  if (typeLower.includes("gale")) return "💨";
+  if (typeLower.includes("strong wind")) return "🌬️";
 
-  return '⚠️';
+  return "⚠️";
 }
 
 /**
@@ -307,23 +306,23 @@ function getWarningIcon(type) {
  */
 function formatTimestamp(date) {
   const options = {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZoneName: 'short'
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
   };
 
-  return date.toLocaleString('en-US', options);
+  return date.toLocaleString("en-US", options);
 }
 
 /**
  * Update the page timestamp
  */
 function updateTimestamp() {
-  const timestampEl = document.getElementById('timestamp');
+  const timestampEl = document.getElementById("timestamp");
   if (timestampEl && forecastData && forecastData.generated_utc) {
     const generatedDate = new Date(forecastData.generated_utc);
     timestampEl.textContent = `Last updated: ${formatTimestamp(generatedDate)}`;
@@ -337,10 +336,13 @@ function updateTimestamp() {
  * Auto-refresh forecast data every 5 minutes
  */
 function startAutoRefresh() {
-  setInterval(() => {
-    logger.info('Forecasts', 'Auto-refreshing forecast data...');
-    loadForecasts();
-  }, 5 * 60 * 1000); // 5 minutes
+  setInterval(
+    () => {
+      logger.info("Forecasts", "Auto-refreshing forecast data...");
+      loadForecasts();
+    },
+    5 * 60 * 1000,
+  ); // 5 minutes
 }
 
 /**
@@ -353,12 +355,12 @@ function scrollToZoneIfNeeded() {
     setTimeout(() => {
       const element = document.querySelector(hash);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
         // Add a subtle highlight effect
-        element.style.transition = 'box-shadow 0.3s ease';
-        element.style.boxShadow = '0 0 0 3px rgba(66, 153, 225, 0.5)';
+        element.style.transition = "box-shadow 0.3s ease";
+        element.style.boxShadow = "0 0 0 3px rgba(66, 153, 225, 0.5)";
         setTimeout(() => {
-          element.style.boxShadow = '';
+          element.style.boxShadow = "";
         }, 2000);
       }
     }, 300);
@@ -366,9 +368,13 @@ function scrollToZoneIfNeeded() {
 }
 
 // Initialize on page load - wait for HTMX to load footer with timestamp
-document.addEventListener('htmx:load', () => {
-  loadForecasts().then(() => {
-    scrollToZoneIfNeeded();
-  });
-  startAutoRefresh();
-}, { once: true });
+document.addEventListener(
+  "htmx:load",
+  () => {
+    loadForecasts().then(() => {
+      scrollToZoneIfNeeded();
+    });
+    startAutoRefresh();
+  },
+  { once: true },
+);

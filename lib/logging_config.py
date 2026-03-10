@@ -30,15 +30,12 @@ MAX_LOG_SIZE = 20 * 1024 * 1024  # 20 MB (increased from 10MB for high-frequency
 BACKUP_COUNT = 5  # Keep 5 old log files
 
 # Log format
-LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def setup_logging(
-    name: str,
-    log_level: int = DEFAULT_LOG_LEVEL,
-    console: bool = True,
-    log_file: str = None
+    name: str, log_level: int = DEFAULT_LOG_LEVEL, console: bool = True, log_file: str = None
 ) -> logging.Logger:
     """
     Set up logging for a script with rotating file handler.
@@ -78,12 +75,7 @@ def setup_logging(
     formatter = logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT)
 
     # Add rotating file handler
-    file_handler = RotatingFileHandler(
-        log_path,
-        maxBytes=MAX_LOG_SIZE,
-        backupCount=BACKUP_COUNT,
-        encoding='utf-8'
-    )
+    file_handler = RotatingFileHandler(log_path, maxBytes=MAX_LOG_SIZE, backupCount=BACKUP_COUNT, encoding="utf-8")
     file_handler.setLevel(log_level)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)

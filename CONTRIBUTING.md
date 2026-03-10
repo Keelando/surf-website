@@ -114,6 +114,13 @@ from defusedxml import ElementTree as ET
 
 ---
 
+## Formatting & linting
+
+- JavaScript lives under `site/assets/js`. Format with `npm run format:js` (Biome) and lint with `npm run lint:js`.
+- Python formatting and linting run via Ruff: `ruff format . && ruff check .`.
+
+---
+
 ## Deployment
 
 After making changes:

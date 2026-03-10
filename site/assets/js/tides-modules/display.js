@@ -3,9 +3,9 @@
  * Handles rendering of station information, observations, predictions, storm surge, and high/low tables
  */
 
-import { STATION_DISPLAY_NAMES } from './constants.js';
-import { isGeodeticStation, getGeodeticMethodology, getCurrentGeodeticOffset } from './geodetic.js';
-import { formatTime, getAgeString } from './utils.js';
+import { STATION_DISPLAY_NAMES } from "./constants.js";
+import { isGeodeticStation, getGeodeticMethodology, getCurrentGeodeticOffset } from "./geodetic.js";
+import { formatTime, getAgeString } from "./utils.js";
 
 /**
  * Main station display coordinator
@@ -23,15 +23,15 @@ export function displayStation(
   tideDataStore,
   setupDayNavigationCallback,
   displayTideChartCallback,
-  displaySunlightCallback
+  displaySunlightCallback,
 ) {
-  const section = document.getElementById('tide-current-section');
-  const loading = document.getElementById('tide-loading');
-  const error = document.getElementById('tide-error');
+  const section = document.getElementById("tide-current-section");
+  const loading = document.getElementById("tide-loading");
+  const error = document.getElementById("tide-error");
 
   // Hide loading/error
-  loading.style.display = 'none';
-  error.style.display = 'none';
+  loading.style.display = "none";
+  error.style.display = "none";
 
   // Save current station and reset day offset
   tideDataStore.setCurrentStation(stationKey);
@@ -43,9 +43,9 @@ export function displayStation(
 
   // Update station name in all locations
   const stationName = STATION_DISPLAY_NAMES[stationKey] || stationKey;
-  document.getElementById('station-name').textContent = stationName;
-  document.getElementById('highlow-station-name').textContent = stationName;
-  document.getElementById('chart-station-name').textContent = stationName;
+  document.getElementById("station-name").textContent = stationName;
+  document.getElementById("highlow-station-name").textContent = stationName;
+  document.getElementById("chart-station-name").textContent = stationName;
 
   // Display station metadata
   displayStationMetadata(stationKey, tideDataStore);
@@ -57,7 +57,7 @@ export function displayStation(
   const fullStation = {
     observation: tideDataStore.getCurrentObservation(stationKey),
     prediction_now: tideDataStore.getCurrentPrediction(stationKey),
-    tide_offset: tideDataStore.getTideOffset(stationKey)
+    tide_offset: tideDataStore.getTideOffset(stationKey),
   };
 
   // Display current observation
@@ -70,7 +70,7 @@ export function displayStation(
   displayHighLowTable(highlowStation, 0);
 
   // Show the section first (so chart can measure properly)
-  section.style.display = 'block';
+  section.style.display = "block";
 
   // Setup day navigation buttons
   setupDayNavigationCallback();
@@ -90,20 +90,20 @@ export function displayStation(
  * @returns {void}
  */
 export function displayStationMetadata(stationKey, tideDataStore) {
-  const container = document.getElementById('station-metadata');
+  const container = document.getElementById("station-metadata");
 
   const metadata = tideDataStore.getStationMetadata(stationKey);
   if (!metadata) {
-    container.innerHTML = '';
+    container.innerHTML = "";
     return;
   }
 
   // Check if station has observations by looking at series array
-  const hasObservations = metadata.series && metadata.series.includes('wlo');
+  const hasObservations = metadata.series && metadata.series.includes("wlo");
 
   // Determine badge based on observation capability
-  const typeClass = hasObservations ? 'station-type-permanent' : 'station-type-temporary';
-  const typeLabel = hasObservations ? '📡 Real-Time Observations' : '📊 Predictions Only';
+  const typeClass = hasObservations ? "station-type-permanent" : "station-type-temporary";
+  const typeLabel = hasObservations ? "📡 Real-Time Observations" : "📊 Predictions Only";
 
   container.innerHTML = `
     <div class="metadata-item">
@@ -130,7 +130,7 @@ export function displayStationMetadata(stationKey, tideDataStore) {
  * @returns {void}
  */
 export function displayCurrentObservation(station, stationKey, tideDataStore) {
-  const container = document.getElementById('current-observation');
+  const container = document.getElementById("current-observation");
 
   if (!station || !station.observation || station.observation.value === null) {
     // Check if this station has observations at all (in timeseries data)
@@ -165,25 +165,25 @@ export function displayCurrentObservation(station, stationKey, tideDataStore) {
   const methodology = getGeodeticMethodology(stationKey);
   const geodeticOffset = getCurrentGeodeticOffset(stationKey, tideDataStore.tideTimeseriesData);
 
-  let calibrationNote = '';
-  if (methodology === 'calibrate_observation' && geodeticOffset !== null) {
+  let calibrationNote = "";
+  if (methodology === "calibrate_observation" && geodeticOffset !== null) {
     observedLevel = obs.value + geodeticOffset;
     calibrationNote = `
       <div style="color: #1976d2; margin-top: 0.5rem; font-size: 0.85rem; font-style: italic;">
-        📏 Calibrated (offset: ${geodeticOffset >= 0 ? '+' : ''}${geodeticOffset.toFixed(3)}m)
+        📏 Calibrated (offset: ${geodeticOffset >= 0 ? "+" : ""}${geodeticOffset.toFixed(3)}m)
       </div>
     `;
   }
 
   container.innerHTML = `
-    <div style="font-size: 1.5rem; font-weight: bold; color: ${isStale ? '#e53935' : '#43a047'};">
+    <div style="font-size: 1.5rem; font-weight: bold; color: ${isStale ? "#e53935" : "#43a047"};">
       ${observedLevel.toFixed(2)} m
     </div>
     <div style="color: #666; margin-top: 0.25rem; font-size: 0.9rem;">
       at ${timeStr}
-      <span style="color: ${isStale ? '#e53935' : '#999'};">(${ageStr})</span>
+      <span style="color: ${isStale ? "#e53935" : "#999"};">(${ageStr})</span>
     </div>
-    ${isStale ? '<div style="color: #e53935; margin-top: 0.25rem; font-size: 0.85rem;">⚠ Data may be stale</div>' : ''}
+    ${isStale ? '<div style="color: #e53935; margin-top: 0.25rem; font-size: 0.85rem;">⚠ Data may be stale</div>' : ""}
     ${calibrationNote}
   `;
 }
@@ -197,7 +197,7 @@ export function displayCurrentObservation(station, stationKey, tideDataStore) {
  * @returns {void}
  */
 export function displayCurrentPrediction(station, stationKey, tideDataStore) {
-  const container = document.getElementById('current-prediction');
+  const container = document.getElementById("current-prediction");
 
   if (!station || !station.prediction_now || station.prediction_now.value === null) {
     container.innerHTML = '<p style="color: #999;">No prediction available</p>';
@@ -213,51 +213,51 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
   const methodology = getGeodeticMethodology(stationKey);
   const geodeticOffset = getCurrentGeodeticOffset(stationKey, tideDataStore.tideTimeseriesData);
 
-  let calibrationNote = '';
-  if (methodology === 'calibrate_prediction' && geodeticOffset !== null) {
+  let calibrationNote = "";
+  if (methodology === "calibrate_prediction" && geodeticOffset !== null) {
     tideLevel = pred.value + geodeticOffset;
     calibrationNote = `
       <div style="color: #1976d2; margin-top: 0.5rem; font-size: 0.85rem; font-style: italic;">
-        📏 Calibrated (offset: ${geodeticOffset >= 0 ? '+' : ''}${geodeticOffset.toFixed(3)}m)
+        📏 Calibrated (offset: ${geodeticOffset >= 0 ? "+" : ""}${geodeticOffset.toFixed(3)}m)
       </div>
     `;
   }
 
   // Determine tide direction (rising, falling, slack)
-  let tideDirection = '';
-  let tideArrow = '';
+  let tideDirection = "";
+  let tideArrow = "";
   if (pred.trend) {
-    if (pred.trend === 'rising') {
-      tideDirection = 'Rising';
-      tideArrow = '↗️';
-    } else if (pred.trend === 'falling') {
-      tideDirection = 'Falling';
-      tideArrow = '↘️';
-    } else if (pred.trend === 'slack') {
-      tideDirection = 'Slack';
-      tideArrow = '→';
+    if (pred.trend === "rising") {
+      tideDirection = "Rising";
+      tideArrow = "↗️";
+    } else if (pred.trend === "falling") {
+      tideDirection = "Falling";
+      tideArrow = "↘️";
+    } else if (pred.trend === "slack") {
+      tideDirection = "Slack";
+      tideArrow = "→";
     }
   }
 
   // Get next high/low event
-  let nextEventHtml = '';
+  let nextEventHtml = "";
   const highlowData = tideDataStore.getHighLow(stationKey);
   if (highlowData && highlowData.events) {
     const now = Date.now();
-    const futureEvents = highlowData.events.filter(e => new Date(e.time).getTime() > now);
+    const futureEvents = highlowData.events.filter((e) => new Date(e.time).getTime() > now);
     if (futureEvents.length > 0) {
       const nextEvent = futureEvents[0];
 
       // Only display if we have valid event data
       if (nextEvent.time && nextEvent.type && nextEvent.value != null) {
         const eventTime = new Date(nextEvent.time);
-        const eventTimeStr = eventTime.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
+        const eventTimeStr = eventTime.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
           hour12: false,
-          timeZone: 'America/Vancouver'
+          timeZone: "America/Vancouver",
         });
-        const eventType = nextEvent.type === 'high' ? 'High' : 'Low';
+        const eventType = nextEvent.type === "high" ? "High" : "Low";
         const eventHeight = nextEvent.value.toFixed(2);
 
         // Calculate time remaining
@@ -266,13 +266,13 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
         const hoursUntil = Math.floor(minutesUntil / 60);
         const remainingMinutes = minutesUntil % 60;
 
-        let timeUntilStr = '';
+        let timeUntilStr = "";
         if (hoursUntil > 0) {
           timeUntilStr = `in ${hoursUntil}h ${remainingMinutes}m`;
         } else if (minutesUntil > 0) {
           timeUntilStr = `in ${minutesUntil}m`;
         } else {
-          timeUntilStr = 'now';
+          timeUntilStr = "now";
         }
 
         // Try to find storm surge forecast at this time for combined water level
@@ -284,10 +284,11 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
           let closestForecast = null;
           let minDiff = Infinity;
 
-          combinedData.forecast.forEach(f => {
+          combinedData.forecast.forEach((f) => {
             const forecastTime = new Date(f.time).getTime();
             const diff = Math.abs(forecastTime - eventTimeTs);
-            if (diff < minDiff && diff < 900000) { // Within 15 minutes
+            if (diff < minDiff && diff < 900000) {
+              // Within 15 minutes
               minDiff = diff;
               closestForecast = f;
             }
@@ -302,7 +303,7 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
           <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #eee; font-size: 0.85rem;">
             <div style="color: #666;">
               Next ${eventType} Tide: <strong style="color: #0077be;">${eventHeight} m</strong>
-              ${combinedWaterLevel ? `<span style="color: #00897b; font-weight: 600;">(${combinedWaterLevel} m total)</span>` : ''}
+              ${combinedWaterLevel ? `<span style="color: #00897b; font-weight: 600;">(${combinedWaterLevel} m total)</span>` : ""}
               <span style="color: #43a047; font-weight: 600;">${timeUntilStr}</span>
               <span style="color: #999;">(${eventTimeStr})</span>
             </div>
@@ -318,7 +319,7 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
         ${tideLevel.toFixed(2)} m ${tideArrow}
       </div>
       <div style="color: #666; margin-top: 0.25rem; font-size: 0.9rem;">
-        at ${timeStr}${tideDirection ? ` <span style="color: #0077be;">(${tideDirection})</span>` : ''}
+        at ${timeStr}${tideDirection ? ` <span style="color: #0077be;">(${tideDirection})</span>` : ""}
       </div>
       ${calibrationNote}
     </div>
@@ -335,12 +336,12 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
 function generatePeakForecastHtml(tideDataStore, stationKey) {
   const combinedData = tideDataStore.getCombinedWaterLevel(stationKey);
   if (!combinedData || !combinedData.forecast || combinedData.forecast.length === 0) {
-    return '';
+    return "";
   }
 
   // Get today's date range in Pacific time
   const now = new Date();
-  const pacificNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Vancouver' }));
+  const pacificNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Vancouver" }));
   const todayStart = new Date(pacificNow);
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(pacificNow);
@@ -348,9 +349,11 @@ function generatePeakForecastHtml(tideDataStore, stationKey) {
 
   // Filter forecast for today only and find peak
   let todayPeak = null;
-  combinedData.forecast.forEach(entry => {
+  combinedData.forecast.forEach((entry) => {
     const entryTime = new Date(entry.time);
-    const pacificEntryTime = new Date(entryTime.toLocaleString('en-US', { timeZone: 'America/Vancouver' }));
+    const pacificEntryTime = new Date(
+      entryTime.toLocaleString("en-US", { timeZone: "America/Vancouver" }),
+    );
 
     // Check if this entry is today
     if (pacificEntryTime >= todayStart && pacificEntryTime <= todayEnd) {
@@ -361,15 +364,15 @@ function generatePeakForecastHtml(tideDataStore, stationKey) {
   });
 
   if (!todayPeak) {
-    return '';
+    return "";
   }
 
   const peakTime = new Date(todayPeak.time);
-  const peakTimeStr = peakTime.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
+  const peakTimeStr = peakTime.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
-    timeZone: 'America/Vancouver'
+    timeZone: "America/Vancouver",
   });
 
   return `
@@ -381,7 +384,7 @@ function generatePeakForecastHtml(tideDataStore, stationKey) {
         Today's forecasted peak water level is
         <strong style="color: #00897b; font-size: 1.1rem;">${todayPeak.total_water_level_m.toFixed(2)} m</strong>
         with a storm surge of
-        <strong style="color: #9c27b0;">${todayPeak.storm_surge_m >= 0 ? '+' : ''}${todayPeak.storm_surge_m.toFixed(3)} m</strong>
+        <strong style="color: #9c27b0;">${todayPeak.storm_surge_m >= 0 ? "+" : ""}${todayPeak.storm_surge_m.toFixed(3)} m</strong>
         at <strong style="color: #0077be;">${peakTimeStr}</strong>.
       </div>
     </div>
@@ -397,7 +400,7 @@ function generatePeakForecastHtml(tideDataStore, stationKey) {
  * @returns {void}
  */
 export function displayStormSurge(station, stationKey, tideDataStore) {
-  const container = document.getElementById('storm-surge');
+  const container = document.getElementById("storm-surge");
 
   // ===================================================================
   // GEODETIC STATIONS (Surrey/FlowWorks data - CGVD28 datum)
@@ -412,15 +415,22 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
       const lastResidual = geodeticResiduals[geodeticResiduals.length - 1];
       const [residualTime, residualValue] = lastResidual;
 
-      const residualStr = residualValue >= 0 ? `+${residualValue.toFixed(3)}` : residualValue.toFixed(3);
-      const color = Math.abs(residualValue) > 0.3 ? '#e53935' : (Math.abs(residualValue) > 0.15 ? '#ff9800' : '#43a047');
+      const residualStr =
+        residualValue >= 0 ? `+${residualValue.toFixed(3)}` : residualValue.toFixed(3);
+      const color =
+        Math.abs(residualValue) > 0.3
+          ? "#e53935"
+          : Math.abs(residualValue) > 0.15
+            ? "#ff9800"
+            : "#43a047";
       const residualTimeStr = formatTime(residualTime);
 
       // Get ECCC forecast for comparison (optional)
       const forecastSurge = station?.prediction_now?.surge;
-      let forecastHtml = '';
+      let forecastHtml = "";
       if (forecastSurge !== null && forecastSurge !== undefined) {
-        const forecastStr = forecastSurge >= 0 ? `+${forecastSurge.toFixed(3)}` : forecastSurge.toFixed(3);
+        const forecastStr =
+          forecastSurge >= 0 ? `+${forecastSurge.toFixed(3)}` : forecastSurge.toFixed(3);
         forecastHtml = `
           <div style="color: #666; margin-top: 0.75rem; font-size: 0.9rem; padding-top: 0.75rem; border-top: 1px solid #eee;">
             <strong>ECCC Storm Surge:</strong> <span style="color: #9c27b0; font-weight: 600;">${forecastStr} m</span>
@@ -469,7 +479,8 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
   if (station && station.tide_offset && station.tide_offset.value !== null) {
     const offset = station.tide_offset.value;
     const offsetStr = offset >= 0 ? `+${offset.toFixed(2)}` : offset.toFixed(2);
-    const color = Math.abs(offset) > 0.3 ? '#e53935' : (Math.abs(offset) > 0.15 ? '#ff9800' : '#43a047');
+    const color =
+      Math.abs(offset) > 0.3 ? "#e53935" : Math.abs(offset) > 0.15 ? "#ff9800" : "#43a047";
 
     // Format the calculation time
     const calcTime = new Date(station.tide_offset.observation_time);
@@ -477,9 +488,10 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
 
     // Check if we also have ECCC forecast surge for comparison
     const forecastSurge = station.observation?.surge || station.prediction_now?.surge;
-    let forecastHtml = '';
+    let forecastHtml = "";
     if (forecastSurge !== null && forecastSurge !== undefined) {
-      const forecastStr = forecastSurge >= 0 ? `+${forecastSurge.toFixed(3)}` : forecastSurge.toFixed(3);
+      const forecastStr =
+        forecastSurge >= 0 ? `+${forecastSurge.toFixed(3)}` : forecastSurge.toFixed(3);
       forecastHtml = `
         <div style="color: #666; margin-top: 0.5rem; font-size: 0.85rem;">
           ECCC Forecast: <strong style="color: #ff9800;">${forecastStr} m</strong>
@@ -530,14 +542,24 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
       }
     }
 
-    if (closestForecast && closestForecast.storm_surge_m !== null && closestForecast.storm_surge_m !== undefined) {
+    if (
+      closestForecast &&
+      closestForecast.storm_surge_m !== null &&
+      closestForecast.storm_surge_m !== undefined
+    ) {
       surge = closestForecast.storm_surge_m;
       surgeTime = new Date(closestForecast.time);
     }
   }
 
   // Fall back to prediction_now.surge if available
-  if (!surge && station && station.prediction_now && station.prediction_now.surge !== null && station.prediction_now.surge !== undefined) {
+  if (
+    !surge &&
+    station &&
+    station.prediction_now &&
+    station.prediction_now.surge !== null &&
+    station.prediction_now.surge !== undefined
+  ) {
     surge = station.prediction_now.surge;
     surgeTime = new Date(station.prediction_now.time);
   }
@@ -555,7 +577,7 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
   container.innerHTML = `
     <div>
       <div style="font-size: 1.5rem; font-weight: bold; color: #ff9800;">
-        ${surge >= 0 ? '+' : ''}${surge.toFixed(3)} m
+        ${surge >= 0 ? "+" : ""}${surge.toFixed(3)} m
       </div>
       <div style="color: #666; margin-top: 0.25rem; font-size: 0.9rem;">
         Current (at ${timeStr})
@@ -573,28 +595,29 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
  * @returns {void}
  */
 export function displayHighLowTable(station, dayOffset = 0) {
-  const tbody = document.querySelector('#highlow-table tbody');
+  const tbody = document.querySelector("#highlow-table tbody");
 
   if (!station || !station.events || station.events.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="3" style="color: #999; text-align: center;">No high/low data available</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="3" style="color: #999; text-align: center;">No high/low data available</td></tr>';
     return;
   }
 
   // Calculate target day in Pacific timezone
-  const pacific = 'America/Vancouver';
+  const pacific = "America/Vancouver";
   const now = new Date();
 
   // Get current year/month/day in Pacific timezone
-  const formatter = new Intl.DateTimeFormat('en-US', {
+  const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: pacific,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
   const parts = formatter.formatToParts(now);
-  const year = parseInt(parts.find(p => p.type === 'year').value);
-  const month = parseInt(parts.find(p => p.type === 'month').value);
-  const day = parseInt(parts.find(p => p.type === 'day').value);
+  const year = parseInt(parts.find((p) => p.type === "year").value);
+  const month = parseInt(parts.find((p) => p.type === "month").value);
+  const day = parseInt(parts.find((p) => p.type === "day").value);
 
   // Create a date for midnight Pacific time on the current Pacific day
   const pacificMidnight = new Date(year, month - 1, day);
@@ -604,18 +627,19 @@ export function displayHighLowTable(station, dayOffset = 0) {
 
   // Format as YYYY-MM-DD
   const targetYear = pacificMidnight.getFullYear();
-  const targetMonth = String(pacificMidnight.getMonth() + 1).padStart(2, '0');
-  const targetDay = String(pacificMidnight.getDate()).padStart(2, '0');
+  const targetMonth = String(pacificMidnight.getMonth() + 1).padStart(2, "0");
+  const targetDay = String(pacificMidnight.getDate()).padStart(2, "0");
   const targetDateStr = `${targetYear}-${targetMonth}-${targetDay}`;
 
   // Filter events for the target day
-  const eventsForDay = station.events.filter(event => {
+  const eventsForDay = station.events.filter((event) => {
     // event.date is in format "YYYY-MM-DD" (Pacific time)
     return event.date === targetDateStr;
   });
 
   if (eventsForDay.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="3" style="color: #999; text-align: center;">No high/low data available for this day</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="3" style="color: #999; text-align: center;">No high/low data available for this day</td></tr>';
     return;
   }
 
@@ -623,18 +647,20 @@ export function displayHighLowTable(station, dayOffset = 0) {
   const events = [...eventsForDay].sort((a, b) => new Date(a.time) - new Date(b.time));
 
   // Build table rows
-  tbody.innerHTML = events.map(event => {
-    const timeStr = event.time_display; // Use pre-formatted time from JSON
-    const height = event.value.toFixed(2);
-    const type = event.type.charAt(0).toUpperCase() + event.type.slice(1);
-    const typeColor = event.type === 'high' ? '#0077be' : '#e53935';
+  tbody.innerHTML = events
+    .map((event) => {
+      const timeStr = event.time_display; // Use pre-formatted time from JSON
+      const height = event.value.toFixed(2);
+      const type = event.type.charAt(0).toUpperCase() + event.type.slice(1);
+      const typeColor = event.type === "high" ? "#0077be" : "#e53935";
 
-    return `
+      return `
       <tr>
         <td style="font-weight: bold;">${timeStr}</td>
         <td>${height} m</td>
         <td style="color: ${typeColor}; font-weight: bold;">${type}</td>
       </tr>
     `;
-  }).join('');
+    })
+    .join("");
 }

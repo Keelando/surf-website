@@ -4,7 +4,6 @@ Fetch NOAA NDBC buoy data and store in local SQLite database.
 Uses 5-day feeds for both .txt (meteorological) and .spec (spectral wave) data.
 """
 
-
 import sqlite3
 from datetime import datetime, timedelta, timezone
 
@@ -18,7 +17,7 @@ from lib.stations import STATIONS as STATION_REGISTRY
 from lib.units import ms_to_kmh
 
 # Disable console logging (runs from cron, file logging only)
-logger = setup_logging('noaa', console=False)
+logger = setup_logging("noaa", console=False)
 
 # ---- Configuration ----
 # Get NOAA buoys from the unified station registry
@@ -31,28 +30,29 @@ UPDATE_EXISTING = False
 # ---- Field Mappings ----
 FIELD_MAP_TXT = {
     "WSPD": "wind_speed",
-    "GST":  "wind_gust",
+    "GST": "wind_gust",
     "WDIR": "wind_direction",
     "ATMP": "air_temp",
     "WTMP": "sea_temp",
     "PRES": "pressure",
     "WVHT": "wave_height_sig",
-    "DPD":  "wave_period_sig",
-    "APD":  "wave_period_avg",
-    "MWD":  "wave_direction_avg",
+    "DPD": "wave_period_sig",
+    "APD": "wave_period_avg",
+    "MWD": "wave_direction_avg",
 }
 
 FIELD_MAP_SPEC = {
     "WVHT": "wave_height_sig",
-    "SwH":  "swell_height",
-    "SwP":  "swell_period",
-    "SwD":  "swell_direction",
-    "WWH":  "wind_wave_height",
-    "WWP":  "wind_wave_period",
-    "WWD":  "wind_wave_direction",
-    "APD":  "wave_period_avg",
-    "MWD":  "wave_direction_avg",  # Mean Wave Direction
+    "SwH": "swell_height",
+    "SwP": "swell_period",
+    "SwD": "swell_direction",
+    "WWH": "wind_wave_height",
+    "WWP": "wind_wave_period",
+    "WWD": "wind_wave_direction",
+    "APD": "wave_period_avg",
+    "MWD": "wave_direction_avg",  # Mean Wave Direction
 }
+
 
 # ---- Utilities ----
 def parse_direction(val):
@@ -65,12 +65,25 @@ def parse_direction(val):
     except ValueError:
         pass
     dir_map = {
-        'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5,
-        'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
-        'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5,
-        'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5
+        "N": 0,
+        "NNE": 22.5,
+        "NE": 45,
+        "ENE": 67.5,
+        "E": 90,
+        "ESE": 112.5,
+        "SE": 135,
+        "SSE": 157.5,
+        "S": 180,
+        "SSW": 202.5,
+        "SW": 225,
+        "WSW": 247.5,
+        "W": 270,
+        "WNW": 292.5,
+        "NW": 315,
+        "NNW": 337.5,
     }
     return dir_map.get(str(val).strip().upper())
+
 
 def is_missing(val, field=None):
     """Return True if a NOAA field value is missing or invalid."""
@@ -80,11 +93,11 @@ def is_missing(val, field=None):
     # MM is the standard NOAA missing data indicator
     if s in ("MM", "M", "NA", ""):
         return True
-    
+
     # Direction fields (SwD, WWD, MWD) can be textual; treat as present if not MM
     if field in {"SwD", "WWD", "MWD"}:
         return False
-    
+
     # For numeric fields, just check if parseable (removed 999 check - valid pressure!)
     try:
         float(s)
@@ -92,13 +105,14 @@ def is_missing(val, field=None):
     except ValueError:
         return True
 
+
 # ---- Fetch NOAA data ----
 def fetch_noaa_txt(station):
     """Fetch NOAA meteorological data (5-day feed preferred, realtime2 fallback, last 6h)."""
     # Try 5-day feed first (more data)
     urls = [
         f"https://www.ndbc.noaa.gov/data/5day2/{station}_5day.txt",
-        f"https://www.ndbc.noaa.gov/data/realtime2/{station}.txt"
+        f"https://www.ndbc.noaa.gov/data/realtime2/{station}.txt",
     ]
 
     for url in urls:
@@ -118,8 +132,7 @@ def fetch_noaa_txt(station):
                 row = dict(zip(header, parts))
                 try:
                     ts = datetime.strptime(
-                        f"{row['#YY']} {row['MM']} {row['DD']} {row['hh']} {row['mm']}",
-                        "%Y %m %d %H %M"
+                        f"{row['#YY']} {row['MM']} {row['DD']} {row['hh']} {row['mm']}", "%Y %m %d %H %M"
                     ).replace(tzinfo=timezone.utc)
                     if ts >= cutoff:
                         row["timestamp"] = int(ts.timestamp())
@@ -135,6 +148,7 @@ def fetch_noaa_txt(station):
                 logger.warning(f"Failed to fetch .txt file from all sources: {e}")
             continue
     return []
+
 
 def fetch_noaa_spec(station):
     """Fetch NOAA spectral wave data (5-day feed, last 6h)."""
@@ -153,8 +167,7 @@ def fetch_noaa_spec(station):
             row = dict(zip(header, parts))
             try:
                 ts = datetime.strptime(
-                    f"{row['#YY']} {row['MM']} {row['DD']} {row['hh']} {row['mm']}",
-                    "%Y %m %d %H %M"
+                    f"{row['#YY']} {row['MM']} {row['DD']} {row['hh']} {row['mm']}", "%Y %m %d %H %M"
                 ).replace(tzinfo=timezone.utc)
                 if ts >= cutoff:
                     row["timestamp"] = int(ts.timestamp())
@@ -167,15 +180,23 @@ def fetch_noaa_spec(station):
         logger.warning(f"Failed to fetch .spec file: {e}")
         return []
 
+
 # ---- Merge and insert ----
 def merge_records(txt_records, spec_records):
     """Combine both feeds with proper direction and range handling."""
     merged = {}
     RANGES = {
-        "WSPD": (0, 200), "GST": (0, 200),
-        "ATMP": (-20, 50), "WTMP": (-5, 35), "PRES": (800, 1100),
-        "WVHT": (0, 30), "SwH": (0, 30), "WWH": (0, 30),
-        "SwP": (1, 30), "WWP": (1, 30), "APD": (1, 30)
+        "WSPD": (0, 200),
+        "GST": (0, 200),
+        "ATMP": (-20, 50),
+        "WTMP": (-5, 35),
+        "PRES": (800, 1100),
+        "WVHT": (0, 30),
+        "SwH": (0, 30),
+        "WWH": (0, 30),
+        "SwP": (1, 30),
+        "WWP": (1, 30),
+        "APD": (1, 30),
     }
 
     # ---- Meteorological ----
@@ -235,6 +256,7 @@ def merge_records(txt_records, spec_records):
 
     return list(merged.values())
 
+
 def ensure_columns_exist(conn):
     cur = conn.cursor()
     cur.execute("PRAGMA table_info(buoy_observation);")
@@ -254,6 +276,7 @@ def ensure_columns_exist(conn):
             cur.execute(f"ALTER TABLE buoy_observation ADD COLUMN {c};")
             logger.info(f"Added column: {name}")
     conn.commit()
+
 
 def insert_sqlite(conn, buoy_id, timestamp, fields):
     cur = conn.cursor()
@@ -281,14 +304,15 @@ def insert_sqlite(conn, buoy_id, timestamp, fields):
     cur.execute(sql, vals)
     conn.commit()
 
+
 # ---- Main ----
 def main():
     conn = sqlite3.connect(BUOY_DATABASE)
     ensure_columns_exist(conn)
-    
+
     total_inserted = 0
     total_ignored = 0
-    
+
     for station_id, station_name in STATIONS.items():
         logger.info(f"Processing {station_name} ({station_id})")
 
@@ -307,8 +331,10 @@ def main():
         ins = ign = 0
         for rec in merged:
             cur = conn.cursor()
-            cur.execute("SELECT COUNT(*) FROM buoy_observation WHERE buoy_id=? AND observation_time=?",
-                        (station_id, rec["timestamp"]))
+            cur.execute(
+                "SELECT COUNT(*) FROM buoy_observation WHERE buoy_id=? AND observation_time=?",
+                (station_id, rec["timestamp"]),
+            )
             existed = cur.fetchone()[0] > 0
             insert_sqlite(conn, station_id, rec["timestamp"], rec)
             if existed:
@@ -325,6 +351,7 @@ def main():
     logger.info("=" * 60)
     logger.info(f"Total: Inserted {total_inserted}, ignored {total_ignored} duplicates")
     logger.info(f"Database: {BUOY_DATABASE}")
+
 
 if __name__ == "__main__":
     main()

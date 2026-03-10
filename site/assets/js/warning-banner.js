@@ -32,7 +32,7 @@ async function fetchWithTimeout(url, timeout = 5000) {
 }
 
 // Configuration
-const STORAGE_KEY = 'dismissed_marine_warnings';
+const STORAGE_KEY = "dismissed_marine_warnings";
 
 // Dismiss duration - all warnings dismissed for 12 hours
 const DISMISS_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
@@ -47,7 +47,7 @@ const MAX_DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
  */
 function getWarningId(warning) {
   // Use zone, type, and issued time to create unique ID
-  const issued = warning.issued_utc || 'unknown';
+  const issued = warning.issued_utc || "unknown";
   return `${warning.zone_key}_${warning.type}_${issued}`;
 }
 
@@ -66,7 +66,7 @@ function getDismissDuration() {
  */
 function isWarningDismissed(warningId) {
   try {
-    const dismissed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const dismissed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
     const dismissedTime = dismissed[warningId];
 
     if (!dismissedTime) return false;
@@ -83,7 +83,7 @@ function isWarningDismissed(warningId) {
 
     return true;
   } catch (error) {
-    logger.error('WarningBanner', 'Error checking dismissed warnings', error);
+    logger.error("WarningBanner", "Error checking dismissed warnings", error);
     return false;
   }
 }
@@ -94,12 +94,12 @@ function isWarningDismissed(warningId) {
  */
 function dismissWarning(warningId) {
   try {
-    const dismissed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const dismissed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
     dismissed[warningId] = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dismissed));
 
     // Feedback message - always 12 hours
-    const feedbackMsg = 'Warning hidden for 12 hours';
+    const feedbackMsg = "Warning hidden for 12 hours";
 
     // Remove warning banner from DOM
     const banner = document.querySelector(`[data-warning-id="${warningId}"]`);
@@ -108,21 +108,21 @@ function dismissWarning(warningId) {
       showDismissalFeedback(banner, feedbackMsg);
 
       // Fade out and remove
-      banner.style.opacity = '0';
-      banner.style.transition = 'opacity 0.3s ease';
+      banner.style.opacity = "0";
+      banner.style.transition = "opacity 0.3s ease";
 
       setTimeout(() => {
         banner.remove();
 
         // Hide container if no warnings left
-        const container = document.getElementById('warning-banner-container');
-        if (container && container.querySelectorAll('.warning-banner').length === 0) {
-          container.style.display = 'none';
+        const container = document.getElementById("warning-banner-container");
+        if (container && container.querySelectorAll(".warning-banner").length === 0) {
+          container.style.display = "none";
         }
       }, 300);
     }
   } catch (error) {
-    logger.error('WarningBanner', 'Error dismissing warning', error);
+    logger.error("WarningBanner", "Error dismissing warning", error);
   }
 }
 
@@ -133,8 +133,8 @@ function dismissWarning(warningId) {
  */
 function showDismissalFeedback(banner, message) {
   // Create feedback element
-  const feedback = document.createElement('div');
-  feedback.className = 'warning-dismissal-feedback';
+  const feedback = document.createElement("div");
+  feedback.className = "warning-dismissal-feedback";
   feedback.textContent = message;
   feedback.style.cssText = `
     position: fixed;
@@ -156,8 +156,8 @@ function showDismissalFeedback(banner, message) {
 
   // Fade out and remove after 3 seconds
   setTimeout(() => {
-    feedback.style.transition = 'opacity 0.5s ease';
-    feedback.style.opacity = '0';
+    feedback.style.transition = "opacity 0.5s ease";
+    feedback.style.opacity = "0";
     setTimeout(() => feedback.remove(), 500);
   }, 3000);
 }
@@ -166,11 +166,11 @@ function showDismissalFeedback(banner, message) {
  * Fetch and display warning banners
  * @param {string} containerId - ID of container element (default: 'warning-banner-container')
  */
-async function displayWarningBanners(containerId = 'warning-banner-container') {
+async function displayWarningBanners(containerId = "warning-banner-container") {
   const container = document.getElementById(containerId);
 
   if (!container) {
-    logger.warn('WarningBanner', `Warning banner container '${containerId}' not found`);
+    logger.warn("WarningBanner", `Warning banner container '${containerId}' not found`);
     return;
   }
 
@@ -180,7 +180,7 @@ async function displayWarningBanners(containerId = 'warning-banner-container') {
     const warnings = collectActiveWarnings(data);
 
     // Filter out dismissed warnings
-    const activeWarnings = warnings.filter(warning => {
+    const activeWarnings = warnings.filter((warning) => {
       const warningId = getWarningId(warning);
       const isDismissed = isWarningDismissed(warningId);
       return !isDismissed;
@@ -188,48 +188,50 @@ async function displayWarningBanners(containerId = 'warning-banner-container') {
 
     if (activeWarnings.length === 0) {
       // No active warnings - hide container
-      container.style.display = 'none';
+      container.style.display = "none";
       return;
     }
 
     // Combine all warnings into a single banner
     const combinedBanner = createCombinedWarningBanner(activeWarnings);
     container.innerHTML = combinedBanner;
-    container.style.display = 'block';
+    container.style.display = "block";
 
     // Attach dismiss handler - dismisses all warnings at once
-    const dismissBtn = container.querySelector('.warning-dismiss-btn');
+    const dismissBtn = container.querySelector(".warning-dismiss-btn");
     if (dismissBtn) {
-      dismissBtn.addEventListener('click', (e) => {
+      dismissBtn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
 
         // Dismiss all active warnings
-        activeWarnings.forEach(warning => {
+        activeWarnings.forEach((warning) => {
           const warningId = getWarningId(warning);
-          const dismissed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+          const dismissed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
           dismissed[warningId] = Date.now();
           localStorage.setItem(STORAGE_KEY, JSON.stringify(dismissed));
         });
 
         // Show feedback and remove banner
-        showDismissalFeedback(container.querySelector('.warning-banner'), 'All warnings hidden for 12 hours');
-        const banner = container.querySelector('.warning-banner');
+        showDismissalFeedback(
+          container.querySelector(".warning-banner"),
+          "All warnings hidden for 12 hours",
+        );
+        const banner = container.querySelector(".warning-banner");
         if (banner) {
-          banner.style.opacity = '0';
-          banner.style.transition = 'opacity 0.3s ease';
+          banner.style.opacity = "0";
+          banner.style.transition = "opacity 0.3s ease";
           setTimeout(() => {
-            container.style.display = 'none';
+            container.style.display = "none";
             banner.remove();
           }, 300);
         }
       });
-    };
-
+    }
   } catch (error) {
-    console.error('[WarningBanner] Error loading warnings:', error);
-    logger.error('WarningBanner', 'Error loading marine forecast warnings', error);
-    container.style.display = 'none';
+    console.error("[WarningBanner] Error loading warnings:", error);
+    logger.error("WarningBanner", "Error loading marine forecast warnings", error);
+    container.style.display = "none";
   }
 }
 
@@ -245,12 +247,12 @@ function collectActiveWarnings(data) {
 
   for (const [zoneKey, zoneData] of Object.entries(data.locations)) {
     if (zoneData.warnings && Array.isArray(zoneData.warnings)) {
-      zoneData.warnings.forEach(warning => {
-        if (warning.status === 'IN EFFECT') {
+      zoneData.warnings.forEach((warning) => {
+        if (warning.status === "IN EFFECT") {
           warnings.push({
             ...warning,
             zone_key: zoneKey,
-            zone_name: zoneData.zone_name || warning.location
+            zone_name: zoneData.zone_name || warning.location,
           });
         }
       });
@@ -260,14 +262,14 @@ function collectActiveWarnings(data) {
   // Sort by severity (Storm > Gale > Strong Wind)
   warnings.sort((a, b) => {
     const severityOrder = {
-      'Storm warning': 1,
-      'Storm': 1,
-      'Gale warning': 2,
-      'Gale': 2,
-      'Strong wind warning': 3,
-      'Strong wind': 3,
-      'Wind warning': 4,
-      'Wind': 4
+      "Storm warning": 1,
+      Storm: 1,
+      "Gale warning": 2,
+      Gale: 2,
+      "Strong wind warning": 3,
+      "Strong wind": 3,
+      "Wind warning": 4,
+      Wind: 4,
     };
 
     const aSeverity = severityOrder[a.type] || 99;
@@ -291,12 +293,14 @@ function createCombinedWarningBanner(warnings) {
   const icon = getWarningIcon(highestSeverity.type);
 
   // Build warning text
-  let warningText = '';
+  let warningText = "";
   if (warnings.length === 1) {
     warningText = `<strong>${warnings[0].type.toUpperCase()}</strong> in effect for ${warnings[0].zone_name}`;
   } else {
     // Multiple warnings - list them
-    const warningsList = warnings.map(w => `<strong>${w.type.toUpperCase()}</strong> for ${w.zone_name}`).join(' • ');
+    const warningsList = warnings
+      .map((w) => `<strong>${w.type.toUpperCase()}</strong> for ${w.zone_name}`)
+      .join(" • ");
     warningText = warningsList;
   }
 
@@ -322,16 +326,16 @@ function createCombinedWarningBanner(warnings) {
 function getWarningSeverityClass(type) {
   const typeLower = type.toLowerCase();
 
-  if (typeLower.includes('storm')) return 'warning-storm';
-  if (typeLower.includes('gale')) return 'warning-gale';
-  if (typeLower.includes('strong wind') || typeLower.includes('wind')) {
-    return 'warning-strong-wind';
+  if (typeLower.includes("storm")) return "warning-storm";
+  if (typeLower.includes("gale")) return "warning-gale";
+  if (typeLower.includes("strong wind") || typeLower.includes("wind")) {
+    return "warning-strong-wind";
   }
-  if (typeLower.includes('waterspout') || typeLower.includes('water spout')) {
-    return 'warning-waterspout';
+  if (typeLower.includes("waterspout") || typeLower.includes("water spout")) {
+    return "warning-waterspout";
   }
 
-  return 'warning-default';
+  return "warning-default";
 }
 
 /**
@@ -342,23 +346,23 @@ function getWarningSeverityClass(type) {
 function getWarningIcon(type) {
   const typeLower = type.toLowerCase();
 
-  if (typeLower.includes('storm')) return '⚠️';
-  if (typeLower.includes('gale')) return '💨';
-  if (typeLower.includes('strong wind') || typeLower.includes('wind')) return '🌬️';
+  if (typeLower.includes("storm")) return "⚠️";
+  if (typeLower.includes("gale")) return "💨";
+  if (typeLower.includes("strong wind") || typeLower.includes("wind")) return "🌬️";
 
-  return '⚠️';
+  return "⚠️";
 }
 
 // Auto-initialize if container exists on page load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('warning-banner-container')) {
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    if (document.getElementById("warning-banner-container")) {
       displayWarningBanners();
     }
   });
 } else {
   // DOM already loaded
-  if (document.getElementById('warning-banner-container')) {
+  if (document.getElementById("warning-banner-container")) {
     displayWarningBanners();
   }
 }
@@ -368,7 +372,7 @@ let warningsLoaded = false;
 let loadingInProgress = false;
 
 // Also listen for htmx afterSwap events (for pages using htmx to load the container)
-document.addEventListener('htmx:afterSwap', (event) => {
+document.addEventListener("htmx:afterSwap", (event) => {
   // Skip if already loaded or currently loading (no logging to reduce console noise)
   if (warningsLoaded || loadingInProgress) {
     return;
@@ -376,8 +380,9 @@ document.addEventListener('htmx:afterSwap', (event) => {
 
   // With outerHTML swap, the target IS the newly swapped element
   // Check if it's the warning banner container or contains it
-  const isWarningBanner = event.detail.target.id === 'warning-banner-container' ||
-                          event.detail.target.querySelector?.('#warning-banner-container') !== null;
+  const isWarningBanner =
+    event.detail.target.id === "warning-banner-container" ||
+    event.detail.target.querySelector?.("#warning-banner-container") !== null;
 
   if (isWarningBanner) {
     loadingInProgress = true;
@@ -387,7 +392,7 @@ document.addEventListener('htmx:afterSwap', (event) => {
     });
   } else {
     // After any swap, check if container now exists (might have been swapped in)
-    const container = document.getElementById('warning-banner-container');
+    const container = document.getElementById("warning-banner-container");
     if (container && !warningsLoaded && !loadingInProgress) {
       loadingInProgress = true;
       displayWarningBanners().finally(() => {

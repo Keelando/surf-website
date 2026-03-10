@@ -33,11 +33,8 @@ DISK_USAGE_THRESHOLD_PERCENT = 80
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_PATH),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler(LOG_PATH), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -48,12 +45,7 @@ def get_stream_url():
         logger.info(f"Fetching stream URL from YouTube: {YOUTUBE_URL}")
 
         # Use yt-dlp to get the best video stream URL
-        result = subprocess.run(
-            ["yt-dlp", "-f", "best", "-g", YOUTUBE_URL],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
+        result = subprocess.run(["yt-dlp", "-f", "best", "-g", YOUTUBE_URL], capture_output=True, text=True, timeout=30)
 
         if result.returncode != 0:
             logger.error(f"yt-dlp failed: {result.stderr}")
@@ -87,17 +79,22 @@ def capture_frame(stream_url, output_path, timestamp):
             [
                 "ffmpeg",
                 "-hide_banner",
-                "-loglevel", "error",
-                "-i", stream_url,
-                "-vf", filter_complex,
-                "-frames:v", "1",
-                "-q:v", "3",  # JPEG quality (3 is very high quality, slight increase in file size)
+                "-loglevel",
+                "error",
+                "-i",
+                stream_url,
+                "-vf",
+                filter_complex,
+                "-frames:v",
+                "1",
+                "-q:v",
+                "3",  # JPEG quality (3 is very high quality, slight increase in file size)
                 "-y",  # Overwrite output file
-                str(output_path)
+                str(output_path),
             ],
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=60,
         )
 
         if result.returncode != 0:
@@ -130,7 +127,11 @@ def cleanup_old_archives():
         disk_usage = shutil.disk_usage(ARCHIVE_DIR)
         usage_percent = (disk_usage.used / disk_usage.total) * 100
 
-        logger.info(f"Disk usage: {usage_percent:.1f}% ({disk_usage.used / (1024**3):.1f}GB / {disk_usage.total / (1024**3):.1f}GB)")
+        logger.info(
+            "Disk usage: "
+            f"{usage_percent:.1f}% "
+            f"({disk_usage.used / (1024**3):.1f}GB / {disk_usage.total / (1024**3):.1f}GB)"
+        )
 
         # Only cleanup if above threshold
         if usage_percent < DISK_USAGE_THRESHOLD_PERCENT:
@@ -140,10 +141,7 @@ def cleanup_old_archives():
         logger.info(f"Disk usage above {DISK_USAGE_THRESHOLD_PERCENT}% threshold - cleaning up oldest images")
 
         # Get all archive images sorted by modification time (oldest first)
-        all_images = sorted(
-            ARCHIVE_DIR.glob("WR_*.jpg"),
-            key=lambda p: p.stat().st_mtime
-        )
+        all_images = sorted(ARCHIVE_DIR.glob("WR_*.jpg"), key=lambda p: p.stat().st_mtime)
 
         if not all_images:
             logger.warning("No images found to cleanup")
@@ -220,6 +218,7 @@ def main():
     website_temp = WEBSITE_DIR / f"latest.tmp.{timestamp_unix}.jpg"
     try:
         import shutil
+
         shutil.copy2(archive_path, website_temp)
         # Atomic rename - this ensures users never see partial images
         website_temp.rename(website_latest)
@@ -233,12 +232,12 @@ def main():
         "timestamp": timestamp.isoformat(),
         "timestamp_unix": int(timestamp.timestamp()),
         "source": "White Rock East Beach YouTube Livestream",
-        "url": YOUTUBE_URL
+        "url": YOUTUBE_URL,
     }
 
     metadata_path = WEBSITE_DIR / "latest.json"
     try:
-        with open(metadata_path, 'w') as f:
+        with open(metadata_path, "w") as f:
             json.dump(metadata, f, indent=2)
         logger.info(f"Updated metadata: {metadata_path}")
     except Exception as e:

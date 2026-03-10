@@ -28,7 +28,7 @@ from lib.logging_config import setup_logging
 from lib.stations import get_all_buoys, get_all_tides, get_all_wind
 
 # Setup logging (console disabled for cron, file only)
-logger = setup_logging('health_check', console=False)
+logger = setup_logging("health_check", console=False)
 
 # Database paths
 DB_DIR = Path.home() / ".local" / "share"
@@ -45,16 +45,16 @@ OUTPUT_FILE = SITE_DATA / "system_health.json"
 
 # Freshness thresholds (in hours)
 THRESHOLDS = {
-    'buoy': {'warning': 2, 'error': 4},
-    'wind': {'warning': 2, 'error': 4},
-    'tide': {'warning': 2, 'error': 4},
-    'lightstation': {'warning': 6, 'error': 12},
-    'webcam': {'warning': 2, 'error': 24},  # 24h error threshold for daylight-only cams
+    "buoy": {"warning": 2, "error": 4},
+    "wind": {"warning": 2, "error": 4},
+    "tide": {"warning": 2, "error": 4},
+    "lightstation": {"warning": 6, "error": 12},
+    "webcam": {"warning": 2, "error": 24},  # 24h error threshold for daylight-only cams
 }
 
 # Stations known to be intermittent (report but don't flag as critical)
 INTERMITTENT_STATIONS = {
-    'TRIAL_ISLAND': 'Lightstation - reports intermittently, extended gaps are normal',
+    "TRIAL_ISLAND": "Lightstation - reports intermittently, extended gaps are normal",
 }
 
 VERBOSE = False
@@ -106,8 +106,8 @@ def check_data_freshness() -> Dict:
     total_checked += 5  # 5 webcams total
 
     # Determine overall status (ignore 'info' severity for intermittent stations)
-    error_stations = [s for s in stale_stations if s['severity'] == 'error']
-    warning_stations = [s for s in stale_stations if s['severity'] == 'warning']
+    error_stations = [s for s in stale_stations if s["severity"] == "error"]
+    warning_stations = [s for s in stale_stations if s["severity"] == "warning"]
 
     if error_stations:
         status = "error"
@@ -118,7 +118,7 @@ def check_data_freshness() -> Dict:
         "status": status,
         "total_stations": total_checked,
         "stale_count": len(stale_stations),
-        "stale_stations": stale_stations
+        "stale_stations": stale_stations,
     }
 
 
@@ -137,46 +137,53 @@ def check_buoy_freshness() -> List[Dict]:
 
         for buoy_id, metadata in get_all_buoys().items():
             # Get most recent observation time for this buoy
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT MAX(observation_time)
                 FROM buoy_observation
                 WHERE buoy_id = ?
-            """, (buoy_id,))
+            """,
+                (buoy_id,),
+            )
 
             result = cursor.fetchone()
             if not result or not result[0]:
                 log(f"  ❌ {metadata['name']}: No data found")
-                stale.append({
-                    "id": buoy_id,
-                    "name": metadata['name'],
-                    "type": "buoy",
-                    "age_hours": None,
-                    "severity": "error",
-                    "message": "No data"
-                })
+                stale.append(
+                    {
+                        "id": buoy_id,
+                        "name": metadata["name"],
+                        "type": "buoy",
+                        "age_hours": None,
+                        "severity": "error",
+                        "message": "No data",
+                    }
+                )
                 continue
 
             last_obs = datetime.fromtimestamp(result[0], tz=timezone.utc)
             age = (now - last_obs).total_seconds() / 3600
 
-            if age > THRESHOLDS['buoy']['error']:
-                severity = 'error'
+            if age > THRESHOLDS["buoy"]["error"]:
+                severity = "error"
                 log(f"  ❌ {metadata['name']}: {age:.1f}h old (ERROR)")
-            elif age > THRESHOLDS['buoy']['warning']:
-                severity = 'warning'
+            elif age > THRESHOLDS["buoy"]["warning"]:
+                severity = "warning"
                 log(f"  ⚠️  {metadata['name']}: {age:.1f}h old (WARNING)")
             else:
                 log(f"  ✅ {metadata['name']}: {age:.1f}h old (OK)")
                 continue
 
-            stale.append({
-                "id": buoy_id,
-                "name": metadata['name'],
-                "type": "buoy",
-                "age_hours": round(age, 1),
-                "last_observation": last_obs.isoformat(),
-                "severity": severity
-            })
+            stale.append(
+                {
+                    "id": buoy_id,
+                    "name": metadata["name"],
+                    "type": "buoy",
+                    "age_hours": round(age, 1),
+                    "last_observation": last_obs.isoformat(),
+                    "severity": severity,
+                }
+            )
 
         conn.close()
     except Exception as e:
@@ -207,52 +214,59 @@ def check_wind_freshness() -> List[Dict]:
 
         for station_id, metadata in get_all_wind().items():
             # Special case: whiterock_east is in weather_data.sqlite
-            if station_id == 'whiterock_east' and weather_cursor:
+            if station_id == "whiterock_east" and weather_cursor:
                 weather_cursor.execute("""
                     SELECT MAX(observation_time)
                     FROM whiterock_weather
                 """)
                 result = weather_cursor.fetchone()
             else:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT MAX(observation_time)
                     FROM wind_observation
                     WHERE station_id = ?
-                """, (station_id,))
+                """,
+                    (station_id,),
+                )
                 result = cursor.fetchone()
             if not result or not result[0]:
                 log(f"  ❌ {metadata['name']}: No data found")
-                stale.append({
-                    "id": station_id,
-                    "name": metadata['name'],
-                    "type": "wind",
-                    "age_hours": None,
-                    "severity": "error",
-                    "message": "No data"
-                })
+                stale.append(
+                    {
+                        "id": station_id,
+                        "name": metadata["name"],
+                        "type": "wind",
+                        "age_hours": None,
+                        "severity": "error",
+                        "message": "No data",
+                    }
+                )
                 continue
 
             last_obs = datetime.fromtimestamp(result[0], tz=timezone.utc)
             age = (now - last_obs).total_seconds() / 3600
 
-            if age > THRESHOLDS['wind']['error']:
-                severity = 'error'
+            if age > THRESHOLDS["wind"]["error"]:
+                severity = "error"
                 log(f"  ❌ {metadata['name']}: {age:.1f}h old (ERROR)")
-            elif age > THRESHOLDS['wind']['warning']:
-                severity = 'warning'
+            elif age > THRESHOLDS["wind"]["warning"]:
+                severity = "warning"
                 log(f"  ⚠️  {metadata['name']}: {age:.1f}h old (WARNING)")
             else:
                 log(f"  ✅ {metadata['name']}: {age:.1f}h old (OK)")
                 continue
 
-            stale.append({
-                "id": station_id,
-                "name": metadata['name'],
-                "type": "wind",
-                "age_hours": round(age, 1),
-                "last_observation": last_obs.isoformat(),
-                "severity": severity
-            })
+            stale.append(
+                {
+                    "id": station_id,
+                    "name": metadata["name"],
+                    "type": "wind",
+                    "age_hours": round(age, 1),
+                    "last_observation": last_obs.isoformat(),
+                    "severity": severity,
+                }
+            )
 
         conn.close()
         if weather_conn:
@@ -278,55 +292,62 @@ def check_tide_freshness() -> List[Dict]:
 
         # Only check stations that should have observations (series contains 'wlo')
         for station_key, metadata in get_all_tides().items():
-            if 'wlo' not in metadata.get('series', []):
+            if "wlo" not in metadata.get("series", []):
                 log(f"  ⏭️  {metadata['name']}: No observations expected (predictions only)")
                 continue
 
             # Map station_key to station_id (e.g., 'point_atkinson' -> '07795')
-            station_id = metadata.get('id')
+            station_id = metadata.get("id")
             if not station_id:
                 continue
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT MAX(observation_time)
                 FROM tide_observation
                 WHERE station_id = ?
-            """, (station_id,))
+            """,
+                (station_id,),
+            )
 
             result = cursor.fetchone()
             if not result or not result[0]:
                 log(f"  ❌ {metadata['name']}: No data found")
-                stale.append({
-                    "id": station_key,
-                    "name": metadata['name'],
-                    "type": "tide",
-                    "age_hours": None,
-                    "severity": "error",
-                    "message": "No data"
-                })
+                stale.append(
+                    {
+                        "id": station_key,
+                        "name": metadata["name"],
+                        "type": "tide",
+                        "age_hours": None,
+                        "severity": "error",
+                        "message": "No data",
+                    }
+                )
                 continue
 
             last_obs = datetime.fromtimestamp(result[0], tz=timezone.utc)
             age = (now - last_obs).total_seconds() / 3600
 
-            if age > THRESHOLDS['tide']['error']:
-                severity = 'error'
+            if age > THRESHOLDS["tide"]["error"]:
+                severity = "error"
                 log(f"  ❌ {metadata['name']}: {age:.1f}h old (ERROR)")
-            elif age > THRESHOLDS['tide']['warning']:
-                severity = 'warning'
+            elif age > THRESHOLDS["tide"]["warning"]:
+                severity = "warning"
                 log(f"  ⚠️  {metadata['name']}: {age:.1f}h old (WARNING)")
             else:
                 log(f"  ✅ {metadata['name']}: {age:.1f}h old (OK)")
                 continue
 
-            stale.append({
-                "id": station_key,
-                "name": metadata['name'],
-                "type": "tide",
-                "age_hours": round(age, 1),
-                "last_observation": last_obs.isoformat(),
-                "severity": severity
-            })
+            stale.append(
+                {
+                    "id": station_key,
+                    "name": metadata["name"],
+                    "type": "tide",
+                    "age_hours": round(age, 1),
+                    "last_observation": last_obs.isoformat(),
+                    "severity": severity,
+                }
+            )
 
         conn.close()
     except Exception as e:
@@ -364,29 +385,29 @@ def check_lightstation_freshness() -> List[Dict]:
             last_obs = datetime.fromtimestamp(last_obs_timestamp, tz=timezone.utc)
             age = (now - last_obs).total_seconds() / 3600
 
-            if age > THRESHOLDS['lightstation']['error']:
-                severity = 'error'
+            if age > THRESHOLDS["lightstation"]["error"]:
+                severity = "error"
                 # Check if this is a known intermittent station
-                station_id = station_name.replace(' ', '_')
+                station_id = station_name.replace(" ", "_")
                 if station_id in INTERMITTENT_STATIONS:
-                    severity = 'info'
+                    severity = "info"
                     log(f"  ℹ️  {station_name}: {age:.1f}h old (INTERMITTENT - expected)")
                 else:
                     log(f"  ❌ {station_name}: {age:.1f}h old (ERROR)")
-            elif age > THRESHOLDS['lightstation']['warning']:
-                severity = 'warning'
+            elif age > THRESHOLDS["lightstation"]["warning"]:
+                severity = "warning"
                 log(f"  ⚠️  {station_name}: {age:.1f}h old (WARNING)")
             else:
                 log(f"  ✅ {station_name}: {age:.1f}h old (OK)")
                 continue
 
             stale_entry = {
-                "id": station_name.replace(' ', '_'),  # Use name as ID
+                "id": station_name.replace(" ", "_"),  # Use name as ID
                 "name": station_name,
                 "type": "lightstation",
                 "age_hours": round(age, 1),
                 "last_observation": last_obs.isoformat(),
-                "severity": severity
+                "severity": severity,
             }
 
             # Add note for intermittent stations
@@ -408,91 +429,123 @@ def check_webcam_freshness() -> List[Dict]:
     now = datetime.now(timezone.utc)
 
     webcams = {
-        'whiterock': {'name': 'White Rock Pier', 'path': SITE_DATA / 'wrcam' / 'latest.json', 'interval': 10},
-        'boundarybay': {'name': 'White Rock East Beach', 'path': SITE_DATA / 'bbcam' / 'latest.json', 'interval': 10, 'disabled': True},
-        'coxbay': {'name': 'Cox Bay', 'path': SITE_DATA / 'coxbay' / 'latest.json', 'interval': 15, 'daylight_only': True},
-        'mudbay': {'name': 'Mud Bay HD', 'path': SITE_DATA / 'mudbay' / 'latest.json', 'interval': 30, 'daylight_only': True},
-        'ambleside': {'name': 'Ambleside', 'path': SITE_DATA / 'ambleside' / 'latest.json', 'interval': 20, 'daylight_only': True},
+        "whiterock": {
+            "name": "White Rock Pier",
+            "path": SITE_DATA / "wrcam" / "latest.json",
+            "interval": 10,
+        },
+        "boundarybay": {
+            "name": "White Rock East Beach",
+            "path": SITE_DATA / "bbcam" / "latest.json",
+            "interval": 10,
+            "disabled": True,
+        },
+        "coxbay": {
+            "name": "Cox Bay",
+            "path": SITE_DATA / "coxbay" / "latest.json",
+            "interval": 15,
+            "daylight_only": True,
+        },
+        "mudbay": {
+            "name": "Mud Bay HD",
+            "path": SITE_DATA / "mudbay" / "latest.json",
+            "interval": 30,
+            "daylight_only": True,
+        },
+        "ambleside": {
+            "name": "Ambleside",
+            "path": SITE_DATA / "ambleside" / "latest.json",
+            "interval": 20,
+            "daylight_only": True,
+        },
     }
 
     for webcam_id, webcam_meta in webcams.items():
-        if webcam_meta.get('disabled'):
+        if webcam_meta.get("disabled"):
             log(f"  ⏭️  {webcam_meta['name']}: Disabled in cron")
             continue
 
-        if not webcam_meta['path'].exists():
+        if not webcam_meta["path"].exists():
             log(f"  ❌ {webcam_meta['name']}: Metadata file not found")
-            stale.append({
-                "id": webcam_id,
-                "name": webcam_meta['name'],
-                "type": "webcam",
-                "age_hours": None,
-                "severity": "error",
-                "message": "Metadata file not found"
-            })
-            continue
-
-        try:
-            with open(webcam_meta['path'], 'r') as f:
-                metadata = json.load(f)
-
-            last_update_str = metadata.get('timestamp')
-            if not last_update_str:
-                log(f"  ❌ {webcam_meta['name']}: No timestamp in metadata")
-                stale.append({
+            stale.append(
+                {
                     "id": webcam_id,
-                    "name": webcam_meta['name'],
+                    "name": webcam_meta["name"],
                     "type": "webcam",
                     "age_hours": None,
                     "severity": "error",
-                    "message": "No timestamp"
-                })
+                    "message": "Metadata file not found",
+                }
+            )
+            continue
+
+        try:
+            with open(webcam_meta["path"], "r") as f:
+                metadata = json.load(f)
+
+            last_update_str = metadata.get("timestamp")
+            if not last_update_str:
+                log(f"  ❌ {webcam_meta['name']}: No timestamp in metadata")
+                stale.append(
+                    {
+                        "id": webcam_id,
+                        "name": webcam_meta["name"],
+                        "type": "webcam",
+                        "age_hours": None,
+                        "severity": "error",
+                        "message": "No timestamp",
+                    }
+                )
                 continue
 
             # Parse ISO timestamp
-            last_update = datetime.fromisoformat(last_update_str.replace('Z', '+00:00'))
+            last_update = datetime.fromisoformat(last_update_str.replace("Z", "+00:00"))
             age = (now - last_update).total_seconds() / 3600
 
             # Daylight-only cams: use relaxed thresholds
-            if webcam_meta.get('daylight_only'):
+            if webcam_meta.get("daylight_only"):
                 # Warning at 2x interval, error at 24h (full day missed)
-                warning_threshold = max(webcam_meta['interval'] / 60 * 2, THRESHOLDS['webcam']['warning'])
-                error_threshold = THRESHOLDS['webcam']['error']
+                warning_threshold = max(webcam_meta["interval"] / 60 * 2, THRESHOLDS["webcam"]["warning"])
+                error_threshold = THRESHOLDS["webcam"]["error"]
             else:
                 # 24/7 cams: use stricter thresholds
-                warning_threshold = webcam_meta['interval'] / 60 * 2  # 2x interval
-                error_threshold = webcam_meta['interval'] / 60 * 4    # 4x interval
+                warning_threshold = webcam_meta["interval"] / 60 * 2  # 2x interval
+                error_threshold = webcam_meta["interval"] / 60 * 4  # 4x interval
 
             if age > error_threshold:
-                severity = 'error'
+                severity = "error"
                 log(f"  ❌ {webcam_meta['name']}: {age:.1f}h old (ERROR)")
             elif age > warning_threshold:
-                severity = 'warning'
+                severity = "warning"
                 log(f"  ⚠️  {webcam_meta['name']}: {age:.1f}h old (WARNING)")
             else:
                 log(f"  ✅ {webcam_meta['name']}: {age:.1f}h old (OK)")
                 continue
 
-            stale.append({
-                "id": webcam_id,
-                "name": webcam_meta['name'],
-                "type": "webcam",
-                "age_hours": round(age, 1),
-                "last_update": last_update.isoformat(),
-                "severity": severity,
-                "daylight_only": webcam_meta.get('daylight_only', False)
-            })
+            stale.append(
+                {
+                    "id": webcam_id,
+                    "name": webcam_meta["name"],
+                    "type": "webcam",
+                    "age_hours": round(age, 1),
+                    "last_update": last_update.isoformat(),
+                    "severity": severity,
+                    "daylight_only": webcam_meta.get("daylight_only", False),
+                }
+            )
 
         except Exception as e:
             log(f"  ❌ {webcam_meta['name']}: Error reading metadata - {e}")
-            stale.append({
-                "id": webcam_id,
-                "name": webcam_meta['name'],
-                "type": "webcam",
-                "age_hours": None,
-                "severity": "error",
-                "message": str(e)
-            })
+            stale.append(
+                {
+                    "id": webcam_id,
+                    "name": webcam_meta["name"],
+                    "type": "webcam",
+                    "age_hours": None,
+                    "severity": "error",
+                    "message": str(e),
+                }
+            )
 
     return stale
 
@@ -502,12 +555,12 @@ def check_database_integrity() -> Dict:
     log("\n=== Checking Database Integrity ===")
 
     databases = {
-        'buoy_data': BUOY_DB,
-        'wind_data': WIND_DB,
-        'weather_data': WEATHER_DB,
-        'tide_data': TIDE_DB,
-        'lightstation_data': LIGHTSTATION_DB,
-        'storm_surge': STORM_SURGE_DB
+        "buoy_data": BUOY_DB,
+        "wind_data": WIND_DB,
+        "weather_data": WEATHER_DB,
+        "tide_data": TIDE_DB,
+        "lightstation_data": LIGHTSTATION_DB,
+        "storm_surge": STORM_SURGE_DB,
     }
 
     status = "ok"
@@ -516,10 +569,7 @@ def check_database_integrity() -> Dict:
     for name, db_path in databases.items():
         if not db_path.exists():
             log(f"  ⚠️  {name}: Database not found")
-            db_status[name] = {
-                "exists": False,
-                "status": "warning"
-            }
+            db_status[name] = {"exists": False, "status": "warning"}
             status = "warning"
             continue
 
@@ -542,14 +592,17 @@ def check_database_integrity() -> Dict:
 
             recent_count = 0
             for table in tables:
-                if 'observation' in table.lower():
+                if "observation" in table.lower():
                     try:
-                        cursor.execute(f"""
+                        cursor.execute(
+                            f"""
                             SELECT COUNT(*) FROM {table}
                             WHERE observation_time > ?
-                        """, (one_hour_ago,))
+                        """,
+                            (one_hour_ago,),
+                        )
                         recent_count += cursor.fetchone()[0]
-                    except:
+                    except sqlite3.Error:
                         pass  # Table might not have observation_time column
 
             conn.close()
@@ -561,22 +614,15 @@ def check_database_integrity() -> Dict:
                 "size_mb": round(size_mb, 1),
                 "journal_mode": journal_mode,
                 "recent_writes_1h": recent_count,
-                "status": "ok"
+                "status": "ok",
             }
 
         except Exception as e:
             log(f"  ❌ {name}: Error - {e}")
-            db_status[name] = {
-                "exists": True,
-                "status": "error",
-                "error": str(e)
-            }
+            db_status[name] = {"exists": True, "status": "error", "error": str(e)}
             status = "error"
 
-    return {
-        "status": status,
-        "databases": db_status
-    }
+    return {"status": status, "databases": db_status}
 
 
 def check_export_freshness() -> Dict:
@@ -584,16 +630,16 @@ def check_export_freshness() -> Dict:
     log("\n=== Checking Export Files ===")
 
     exports = {
-        'latest_buoy': SITE_DATA / 'latest_buoy_v2.json',
-        'latest_wind': SITE_DATA / 'latest_wind.json',
-        'tide_latest': SITE_DATA / 'tide-latest.json',
-        'latest_lightstation': SITE_DATA / 'latest_lightstation.json',
-        'buoy_48hr': SITE_DATA / 'buoy_timeseries_48h.json',
-        'wind_48hr': SITE_DATA / 'wind_timeseries_48hr.json',
-        'lightstation_24hr': SITE_DATA / 'lightstation_timeseries_24hr.json',
-        'tide_timeseries': SITE_DATA / 'tide-timeseries.json',
-        'marine_forecast': SITE_DATA / 'marine_forecast.json',
-        'stations': SITE_DATA / 'stations.json',
+        "latest_buoy": SITE_DATA / "latest_buoy_v2.json",
+        "latest_wind": SITE_DATA / "latest_wind.json",
+        "tide_latest": SITE_DATA / "tide-latest.json",
+        "latest_lightstation": SITE_DATA / "latest_lightstation.json",
+        "buoy_48hr": SITE_DATA / "buoy_timeseries_48h.json",
+        "wind_48hr": SITE_DATA / "wind_timeseries_48hr.json",
+        "lightstation_24hr": SITE_DATA / "lightstation_timeseries_24hr.json",
+        "tide_timeseries": SITE_DATA / "tide-timeseries.json",
+        "marine_forecast": SITE_DATA / "marine_forecast.json",
+        "stations": SITE_DATA / "stations.json",
     }
 
     status = "ok"
@@ -602,10 +648,7 @@ def check_export_freshness() -> Dict:
     for name, path in exports.items():
         if not path.exists():
             log(f"  ⚠️  {name}: File not found")
-            export_status[name] = {
-                "exists": False,
-                "status": "warning"
-            }
+            export_status[name] = {"exists": False, "status": "warning"}
             status = "warning"
             continue
 
@@ -618,8 +661,8 @@ def check_export_freshness() -> Dict:
             size_kb = path.stat().st_size / 1024
 
             # Validate JSON
-            with open(path, 'r') as f:
-                data = json.load(f)
+            with open(path, "r") as f:
+                json.load(f)
 
             # Flag if file is stale (>1 hour old)
             file_status = "ok"
@@ -635,30 +678,19 @@ def check_export_freshness() -> Dict:
                 "age_minutes": round(age_minutes, 1),
                 "size_kb": round(size_kb, 1),
                 "valid_json": True,
-                "status": file_status
+                "status": file_status,
             }
 
         except json.JSONDecodeError as e:
             log(f"  ❌ {name}: Invalid JSON - {e}")
-            export_status[name] = {
-                "exists": True,
-                "status": "error",
-                "error": "Invalid JSON"
-            }
+            export_status[name] = {"exists": True, "status": "error", "error": "Invalid JSON"}
             status = "error"
         except Exception as e:
             log(f"  ❌ {name}: Error - {e}")
-            export_status[name] = {
-                "exists": True,
-                "status": "error",
-                "error": str(e)
-            }
+            export_status[name] = {"exists": True, "status": "error", "error": str(e)}
             status = "error"
 
-    return {
-        "status": status,
-        "exports": export_status
-    }
+    return {"status": status, "exports": export_status}
 
 
 def main():
@@ -678,18 +710,14 @@ def main():
     export_freshness = check_export_freshness()
 
     # Determine overall status
-    statuses = [
-        data_freshness['status'],
-        db_integrity['status'],
-        export_freshness['status']
-    ]
+    statuses = [data_freshness["status"], db_integrity["status"], export_freshness["status"]]
 
-    if 'error' in statuses:
-        overall_status = 'error'
-    elif 'warning' in statuses:
-        overall_status = 'warning'
+    if "error" in statuses:
+        overall_status = "error"
+    elif "warning" in statuses:
+        overall_status = "warning"
     else:
-        overall_status = 'ok'
+        overall_status = "ok"
 
     # Build report
     report = {
@@ -698,24 +726,28 @@ def main():
         "checks": {
             "data_freshness": data_freshness,
             "database_integrity": db_integrity,
-            "export_freshness": export_freshness
-        }
+            "export_freshness": export_freshness,
+        },
     }
 
     # Write to output file
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_FILE, 'w') as f:
+    with open(OUTPUT_FILE, "w") as f:
         json.dump(report, f, indent=2)
 
     # Log summary at INFO level
-    logger.info(f"Health check complete: {overall_status.upper()} | "
-                f"Data: {data_freshness['status']} ({data_freshness['stale_count']} stale/{data_freshness['total_stations']} total) | "
-                f"DB: {db_integrity['status']} | "
-                f"Exports: {export_freshness['status']}")
+    logger.info(
+        "Health check complete: "
+        f"{overall_status.upper()} | "
+        f"Data: {data_freshness['status']} "
+        f"({data_freshness['stale_count']} stale/{data_freshness['total_stations']} total) | "
+        f"DB: {db_integrity['status']} | "
+        f"Exports: {export_freshness['status']}"
+    )
 
     # Log any issues
-    if overall_status != 'ok':
-        stale_critical = [s for s in data_freshness['stale_stations'] if s['severity'] in ['error', 'warning']]
+    if overall_status != "ok":
+        stale_critical = [s for s in data_freshness["stale_stations"] if s["severity"] in ["error", "warning"]]
         if stale_critical:
             logger.warning(f"Stale stations: {', '.join([s['name'] for s in stale_critical])}")
 
@@ -723,10 +755,10 @@ def main():
     log(f"Report saved to: {OUTPUT_FILE}")
 
     # Exit with appropriate code
-    if overall_status == 'error':
+    if overall_status == "error":
         logger.error("Health check failed with errors")
         sys.exit(2)
-    elif overall_status == 'warning':
+    elif overall_status == "warning":
         logger.warning("Health check completed with warnings")
         sys.exit(1)
     else:

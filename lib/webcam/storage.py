@@ -29,7 +29,11 @@ def cleanup_old_archives(archive_dir, prefix, logger, threshold_percent=DEFAULT_
         disk_usage = shutil.disk_usage(archive_dir)
         usage_percent = (disk_usage.used / disk_usage.total) * 100
 
-        logger.info(f"Disk usage: {usage_percent:.1f}% ({disk_usage.used / (1024**3):.1f}GB / {disk_usage.total / (1024**3):.1f}GB)")
+        logger.info(
+            "Disk usage: "
+            f"{usage_percent:.1f}% "
+            f"({disk_usage.used / (1024**3):.1f}GB / {disk_usage.total / (1024**3):.1f}GB)"
+        )
 
         # Only cleanup if above threshold
         if usage_percent < threshold_percent:
@@ -39,10 +43,7 @@ def cleanup_old_archives(archive_dir, prefix, logger, threshold_percent=DEFAULT_
         logger.info(f"Disk usage above {threshold_percent}% threshold - cleaning up oldest images")
 
         # Get all archive images sorted by modification time (oldest first)
-        all_images = sorted(
-            archive_dir.glob(f"{prefix}_*.jpg"),
-            key=lambda p: p.stat().st_mtime
-        )
+        all_images = sorted(archive_dir.glob(f"{prefix}_*.jpg"), key=lambda p: p.stat().st_mtime)
 
         if not all_images:
             logger.warning("No images found to cleanup")
@@ -89,12 +90,18 @@ def get_timestamp_from_filename(filepath):
     """Extract unix timestamp from slideshow image filename (img_TIMESTAMP.jpg)."""
     try:
         name = filepath.stem  # img_1769281562
-        return int(name.split('_')[1])
+        return int(name.split("_")[1])
     except (IndexError, ValueError):
         return 0
 
 
-def manage_slideshow_images(website_dir, new_image_path, timestamp_unix, logger, max_images=DEFAULT_SLIDESHOW_IMAGES_COUNT):
+def manage_slideshow_images(
+    website_dir,
+    new_image_path,
+    timestamp_unix,
+    logger,
+    max_images=DEFAULT_SLIDESHOW_IMAGES_COUNT,
+):
     """Manage slideshow images - keep only the last N images.
 
     Copies the new image to the slideshow directory, removes old images
@@ -112,11 +119,7 @@ def manage_slideshow_images(website_dir, new_image_path, timestamp_unix, logger,
         slideshow_dir.mkdir(exist_ok=True)
 
         # Get all existing slideshow images sorted by timestamp in filename (newest first)
-        existing_images = sorted(
-            slideshow_dir.glob("img_*.jpg"),
-            key=get_timestamp_from_filename,
-            reverse=True
-        )
+        existing_images = sorted(slideshow_dir.glob("img_*.jpg"), key=get_timestamp_from_filename, reverse=True)
 
         # Copy new image to slideshow directory with capture timestamp in filename
         slideshow_filename = f"img_{timestamp_unix}.jpg"
@@ -127,11 +130,7 @@ def manage_slideshow_images(website_dir, new_image_path, timestamp_unix, logger,
         logger.info(f"Added to slideshow: {slideshow_filename}")
 
         # Re-get list with new image, sorted by timestamp in filename (newest first)
-        existing_images = sorted(
-            slideshow_dir.glob("img_*.jpg"),
-            key=get_timestamp_from_filename,
-            reverse=True
-        )
+        existing_images = sorted(slideshow_dir.glob("img_*.jpg"), key=get_timestamp_from_filename, reverse=True)
 
         # Keep only the last N images, delete older ones
         if len(existing_images) > max_images:
@@ -143,14 +142,16 @@ def manage_slideshow_images(website_dir, new_image_path, timestamp_unix, logger,
         manifest = []
         for img in existing_images[:max_images]:
             img_timestamp = get_timestamp_from_filename(img)
-            manifest.append({
-                "filename": img.name,
-                "timestamp": datetime.fromtimestamp(img_timestamp, tz=timezone.utc).isoformat(),
-                "path": f"slideshow/{img.name}"
-            })
+            manifest.append(
+                {
+                    "filename": img.name,
+                    "timestamp": datetime.fromtimestamp(img_timestamp, tz=timezone.utc).isoformat(),
+                    "path": f"slideshow/{img.name}",
+                }
+            )
 
         manifest_path = website_dir / "slideshow_manifest.json"
-        with open(manifest_path, 'w') as f:
+        with open(manifest_path, "w") as f:
             json.dump(manifest, f, indent=2)
         logger.info(f"Updated slideshow manifest: {len(manifest)} images")
 

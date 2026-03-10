@@ -127,27 +127,15 @@ def get_daylight_info(lat, lon, date=None):
         "sunrise": sunrise.isoformat() if sunrise else None,
         "sunset": sunset.isoformat() if sunset else None,
         "is_daylight": current_is_daylight,
-        "checked_at": date.isoformat()
+        "checked_at": date.isoformat(),
     }
 
 
 # Location presets for common webcam locations
 LOCATIONS = {
-    "whiterock": {
-        "name": "White Rock, BC",
-        "lat": 49.0253,
-        "lon": -122.8031
-    },
-    "boundarybay": {
-        "name": "Boundary Bay, BC",
-        "lat": 49.0042,
-        "lon": -123.0128
-    },
-    "coxbay": {
-        "name": "Cox Bay (Tofino), BC",
-        "lat": 49.1167,
-        "lon": -125.9000
-    }
+    "whiterock": {"name": "White Rock, BC", "lat": 49.0253, "lon": -122.8031},
+    "boundarybay": {"name": "Boundary Bay, BC", "lat": 49.0042, "lon": -123.0128},
+    "coxbay": {"name": "Cox Bay (Tofino), BC", "lat": 49.1167, "lon": -125.9000},
 }
 
 
@@ -193,31 +181,32 @@ if __name__ == "__main__":
 
     # Also show local time (Pacific)
     import pytz
+
     try:
-        pacific = pytz.timezone('America/Vancouver')
+        pacific = pytz.timezone("America/Vancouver")
         local_time = now.astimezone(pacific)
         print(f"Current time (Local): {local_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
-    except:
+    except Exception:
         pass
 
     info = get_daylight_info(loc["lat"], loc["lon"])
 
-    if info['sunrise']:
-        sunrise_utc = datetime.fromisoformat(info['sunrise'])
+    if info["sunrise"]:
+        sunrise_utc = datetime.fromisoformat(info["sunrise"])
         print(f"\nSunrise (UTC): {sunrise_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}")
         try:
             sunrise_local = sunrise_utc.astimezone(pacific)
             print(f"Sunrise (Local): {sunrise_local.strftime('%H:%M:%S %Z')}")
-        except:
+        except Exception:
             pass
 
-    if info['sunset']:
-        sunset_utc = datetime.fromisoformat(info['sunset'])
+    if info["sunset"]:
+        sunset_utc = datetime.fromisoformat(info["sunset"])
         print(f"Sunset (UTC):  {sunset_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}")
         try:
             sunset_local = sunset_utc.astimezone(pacific)
             print(f"Sunset (Local):  {sunset_local.strftime('%H:%M:%S %Z')}")
-        except:
+        except Exception:
             pass
 
     print(f"\nIs daylight? {info['is_daylight']}")

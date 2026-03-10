@@ -3,7 +3,7 @@
  * Handles geodetic tide stations that use CGVD28 datum
  */
 
-import { GEODETIC_STATIONS, GEODETIC_METHODOLOGIES } from './constants.js';
+import { GEODETIC_STATIONS, GEODETIC_METHODOLOGIES } from "./constants.js";
 
 /**
  * Check if a station is a geodetic tide station (Surrey FlowWorks).

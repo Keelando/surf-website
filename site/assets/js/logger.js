@@ -8,7 +8,7 @@ const LogLevel = {
   INFO: 1,
   WARN: 2,
   ERROR: 3,
-  NONE: 4
+  NONE: 4,
 };
 
 class Logger {
@@ -23,16 +23,19 @@ class Logger {
    */
   getConfiguredLevel() {
     try {
-      const stored = localStorage.getItem('logLevel');
-      if (stored && LogLevel.hasOwnProperty(stored.toUpperCase())) {
-        return LogLevel[stored.toUpperCase()];
+      const stored = localStorage.getItem("logLevel");
+      if (stored) {
+        const storedUpper = stored.toUpperCase();
+        if (Object.prototype.hasOwnProperty.call(LogLevel, storedUpper)) {
+          return LogLevel[storedUpper];
+        }
       }
     } catch (e) {
       // localStorage might not be available
     }
 
     // Default: INFO for production, DEBUG for local development
-    return window.location.hostname === 'localhost' ? LogLevel.DEBUG : LogLevel.INFO;
+    return window.location.hostname === "localhost" ? LogLevel.DEBUG : LogLevel.INFO;
   }
 
   /**
@@ -41,16 +44,16 @@ class Logger {
    */
   setLevel(level) {
     const upperLevel = level.toUpperCase();
-    if (LogLevel.hasOwnProperty(upperLevel)) {
+    if (Object.prototype.hasOwnProperty.call(LogLevel, upperLevel)) {
       this.level = LogLevel[upperLevel];
       try {
-        localStorage.setItem('logLevel', upperLevel);
+        localStorage.setItem("logLevel", upperLevel);
       } catch (e) {
         // Ignore localStorage errors
       }
-      this.info('Logger', `Log level set to ${upperLevel}`);
+      this.info("Logger", `Log level set to ${upperLevel}`);
     } else {
-      this.warn('Logger', `Invalid log level: ${level}`);
+      this.warn("Logger", `Invalid log level: ${level}`);
     }
   }
 
@@ -58,7 +61,7 @@ class Logger {
    * Format log message with context
    */
   formatMessage(context, message, data) {
-    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+    const timestamp = new Date().toISOString().split("T")[1].split(".")[0];
     const prefix = context ? `[${timestamp}] [${context}]` : `[${timestamp}]`;
     return { prefix, message, data };
   }
@@ -72,7 +75,7 @@ class Logger {
   debug(context, message, data = null) {
     if (this.level <= LogLevel.DEBUG) {
       const formatted = this.formatMessage(context, message, data);
-      console.log(`%c${formatted.prefix} ${formatted.message}`, 'color: #9e9e9e', data || '');
+      console.log(`%c${formatted.prefix} ${formatted.message}`, "color: #9e9e9e", data || "");
     }
   }
 
@@ -85,7 +88,7 @@ class Logger {
   info(context, message, data = null) {
     if (this.level <= LogLevel.INFO) {
       const formatted = this.formatMessage(context, message, data);
-      console.log(`%c${formatted.prefix} ${formatted.message}`, 'color: #2196f3', data || '');
+      console.log(`%c${formatted.prefix} ${formatted.message}`, "color: #2196f3", data || "");
     }
   }
 
@@ -98,7 +101,7 @@ class Logger {
   warn(context, message, data = null) {
     if (this.level <= LogLevel.WARN) {
       const formatted = this.formatMessage(context, message, data);
-      console.warn(`${formatted.prefix} ${formatted.message}`, data || '');
+      console.warn(`${formatted.prefix} ${formatted.message}`, data || "");
     }
   }
 
@@ -111,11 +114,11 @@ class Logger {
   error(context, message, error = null) {
     if (this.level <= LogLevel.ERROR) {
       const formatted = this.formatMessage(context, message, error);
-      console.error(`${formatted.prefix} ${formatted.message}`, error || '');
+      console.error(`${formatted.prefix} ${formatted.message}`, error || "");
 
       // Log stack trace if available
       if (error && error.stack) {
-        console.error('Stack trace:', error.stack);
+        console.error("Stack trace:", error.stack);
       }
     }
   }
@@ -126,7 +129,7 @@ class Logger {
    */
   time(label) {
     this.timers.set(label, performance.now());
-    this.debug('Performance', `Timer started: ${label}`);
+    this.debug("Performance", `Timer started: ${label}`);
   }
 
   /**
@@ -138,10 +141,10 @@ class Logger {
       const start = this.timers.get(label);
       const duration = (performance.now() - start).toFixed(2);
       this.timers.delete(label);
-      this.debug('Performance', `${label}: ${duration}ms`);
+      this.debug("Performance", `${label}: ${duration}ms`);
       return duration;
     } else {
-      this.warn('Performance', `Timer not found: ${label}`);
+      this.warn("Performance", `Timer not found: ${label}`);
       return null;
     }
   }
@@ -173,14 +176,14 @@ class Logger {
 }
 
 // Create singleton instance
-const logger = new Logger();
+const loggerInstance = new Logger();
 
 // Expose logger and setLevel globally
-window.logger = logger;
-window.setLogLevel = (level) => logger.setLevel(level);
+window.logger = loggerInstance;
+window.setLogLevel = (level) => loggerInstance.setLevel(level);
 
 // Log initialization
-logger.debug('Logger', 'Logging system initialized', {
-  level: Object.keys(LogLevel).find(key => LogLevel[key] === logger.level),
-  hostname: window.location.hostname
+loggerInstance.debug("Logger", "Logging system initialized", {
+  level: Object.keys(LogLevel).find((key) => LogLevel[key] === loggerInstance.level),
+  hostname: window.location.hostname,
 });

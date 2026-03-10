@@ -14,7 +14,7 @@ from defusedxml import ElementTree as ET
 from lib.config import EXPORT_DIR
 from lib.logging_config import setup_logging
 
-logger = setup_logging('marine_forecast')
+logger = setup_logging("marine_forecast")
 
 # Directories
 DATA_DIR = Path.home() / "envcan_wave" / "data" / "marine_forecast"
@@ -44,12 +44,7 @@ def parse_datetime(dt_element):
 
     try:
         dt = datetime(
-            int(year.text),
-            int(month.text),
-            int(day.text),
-            int(hour.text),
-            int(minute.text),
-            tzinfo=timezone.utc
+            int(year.text), int(month.text), int(day.text), int(hour.text), int(minute.text), tzinfo=timezone.utc
         )
         return dt.isoformat()
     except (ValueError, TypeError) as e:
@@ -104,10 +99,7 @@ def parse_extended_forecast(forecast_element):
                 period_text = period.text.strip() if period.text else ""
 
                 if period_name and period_text:
-                    periods.append({
-                        "period": period_name,
-                        "forecast": period_text
-                    })
+                    periods.append({"period": period_name, "forecast": period_text})
 
     return periods
 
@@ -160,7 +152,7 @@ def parse_marine_xml(xml_file):
             "region": region,
             "sub_region": sub_region,
             "area": area_name,
-            "locations": {}
+            "locations": {},
         }
 
         # Parse warnings by location
@@ -191,7 +183,7 @@ def parse_marine_xml(xml_file):
                     if zone_key not in result["locations"]:
                         result["locations"][zone_key] = {
                             "zone_name": loc_name,
-                            "warnings": location_warnings.get(zone_key, [])
+                            "warnings": location_warnings.get(zone_key, []),
                         }
 
                     result["locations"][zone_key]["issued_utc"] = issued_time
@@ -263,7 +255,7 @@ def main():
     try:
         OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(OUTPUT_FILE, 'w') as f:
+        with open(OUTPUT_FILE, "w") as f:
             json.dump(data, f, indent=2)
 
         logger.info(f"Wrote forecast data to {OUTPUT_FILE}")

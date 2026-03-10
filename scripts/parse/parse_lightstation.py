@@ -17,7 +17,7 @@ from pathlib import Path
 from lib.logging_config import setup_logging
 
 # Disable console logging (runs from cron, file logging only)
-logger = setup_logging('lightstation_parse', console=False)
+logger = setup_logging("lightstation_parse", console=False)
 
 # Configuration
 DB_PATH = Path.home() / ".local" / "share" / "lightstation_data.sqlite"
@@ -46,7 +46,7 @@ def parse_report_time(header_line, report_time_line):
     """
     try:
         # Extract DDHHMM from header
-        match = re.search(r'FPCN61\s+CWVR\s+(\d{6})', header_line)
+        match = re.search(r"FPCN61\s+CWVR\s+(\d{6})", header_line)
         if not match:
             logger.warning(f"Could not parse header: {header_line}")
             return None
@@ -107,69 +107,69 @@ def parse_station_entry(line, region):
         dict with parsed fields or None if not a valid station line
     """
     # Must start with station name (all caps) followed by period
-    if not re.match(r'^[A-Z][A-Z\s]+\.', line):
+    if not re.match(r"^[A-Z][A-Z\s]+\.", line):
         return None
 
     # Extract station name (everything before first period)
-    station_name = line.split('.')[0].strip()
+    station_name = line.split(".")[0].strip()
 
     # Initialize data dict
     data = {
-        'station_name': station_name,
-        'region': region,
-        'wind_speed_kt': None,
-        'wind_direction': None,
-        'wind_gusting': 0,
-        'wind_calm': 0,
-        'wind_estimated': 0,
-        'sea_height_ft': None,
-        'sea_condition': None,
-        'swell_intensity': None,
-        'swell_direction': None,
+        "station_name": station_name,
+        "region": region,
+        "wind_speed_kt": None,
+        "wind_direction": None,
+        "wind_gusting": 0,
+        "wind_calm": 0,
+        "wind_estimated": 0,
+        "sea_height_ft": None,
+        "sea_condition": None,
+        "swell_intensity": None,
+        "swell_direction": None,
     }
 
     # Check for WIND CALM
-    if 'WIND CALM' in line:
-        data['wind_calm'] = 1
+    if "WIND CALM" in line:
+        data["wind_calm"] = 1
     else:
         # Check for ESTIMATED WIND
-        if 'ESTIMATED WIND' in line:
-            data['wind_estimated'] = 1
+        if "ESTIMATED WIND" in line:
+            data["wind_estimated"] = 1
 
         # Extract wind direction and speed
         # Pattern: "WIND SOUTHEAST 27 KNOTS"
-        wind_match = re.search(r'WIND\s+([A-Z]+)\s+(\d+)\s+KNOTS?', line)
+        wind_match = re.search(r"WIND\s+([A-Z]+)\s+(\d+)\s+KNOTS?", line)
         if wind_match:
-            data['wind_direction'] = wind_match.group(1)
-            data['wind_speed_kt'] = float(wind_match.group(2))
+            data["wind_direction"] = wind_match.group(1)
+            data["wind_speed_kt"] = float(wind_match.group(2))
 
         # Check for "AND GUSTING"
-        if 'AND GUSTING' in line or 'GUSTING' in line:
-            data['wind_gusting'] = 1
+        if "AND GUSTING" in line or "GUSTING" in line:
+            data["wind_gusting"] = 1
 
     # Check for SEAS RIPPLED
-    if 'SEAS RIPPLED' in line or 'SEA RIPPLED' in line:
-        data['sea_condition'] = 'RIPPLED'
-        data['sea_height_ft'] = 0  # Calm/rippled
+    if "SEAS RIPPLED" in line or "SEA RIPPLED" in line:
+        data["sea_condition"] = "RIPPLED"
+        data["sea_height_ft"] = 0  # Calm/rippled
     else:
         # Extract sea height and condition
         # Pattern: "SEAS 4 FEET MODERATE" or "SEAS 2 FOOT CHOP"
-        seas_match = re.search(r'SEAS?\s+(\d+)\s+FEET?\s+([A-Z]+)', line)
+        seas_match = re.search(r"SEAS?\s+(\d+)\s+FEET?\s+([A-Z]+)", line)
         if seas_match:
-            data['sea_height_ft'] = float(seas_match.group(1))
-            data['sea_condition'] = seas_match.group(2)
+            data["sea_height_ft"] = float(seas_match.group(1))
+            data["sea_condition"] = seas_match.group(2)
 
     # Extract swell information
     # Pattern: "LOW SOUTHERLY SWELL" or "MODERATE SOUTHWESTERLY SWELL"
-    swell_match = re.search(r'(LOW|MODERATE|HEAVY)\s+([A-Z]+)\s+SWELL', line)
+    swell_match = re.search(r"(LOW|MODERATE|HEAVY)\s+([A-Z]+)\s+SWELL", line)
     if swell_match:
-        data['swell_intensity'] = swell_match.group(1)
-        data['swell_direction'] = swell_match.group(2)
+        data["swell_intensity"] = swell_match.group(1)
+        data["swell_direction"] = swell_match.group(2)
     # Also check for intensity without direction: "LOW TO MODERATE ... SWELL"
-    elif re.search(r'(LOW|MODERATE|HEAVY).*SWELL', line):
-        intensity_match = re.search(r'(LOW|MODERATE|HEAVY)', line)
+    elif re.search(r"(LOW|MODERATE|HEAVY).*SWELL", line):
+        intensity_match = re.search(r"(LOW|MODERATE|HEAVY)", line)
         if intensity_match:
-            data['swell_intensity'] = intensity_match.group(1)
+            data["swell_intensity"] = intensity_match.group(1)
 
     return data
 
@@ -182,8 +182,8 @@ def parse_report_file(filepath):
         list of dicts with station observations
     """
     try:
-        text = filepath.read_text(encoding='utf-8', errors='ignore')
-        lines = text.split('\n')
+        text = filepath.read_text(encoding="utf-8", errors="ignore")
+        lines = text.split("\n")
 
         # Parse header to get report time
         header_line = lines[0] if lines else ""
@@ -198,28 +198,28 @@ def parse_report_file(filepath):
                 continue
 
             # Capture report time line (e.g., "10 AM Tuesday")
-            if re.match(r'\d+\s+(AM|PM)\s+\w+', line):
+            if re.match(r"\d+\s+(AM|PM)\s+\w+", line):
                 report_time_str = line
                 if observation_time is None:
                     observation_time = parse_report_time(header_line, line)
                 continue
 
             # Check if this is a regional header
-            if line.rstrip('.') in REGIONS:
-                current_region = line.rstrip('.')
+            if line.rstrip(".") in REGIONS:
+                current_region = line.rstrip(".")
                 continue
 
             # Skip other metadata lines
-            if any(skip in line for skip in ['FPCN61', 'CURRENT OBSERVATIONS', 'YBL', 'YZT', 'YAZ', 'YCD']):
+            if any(skip in line for skip in ["FPCN61", "CURRENT OBSERVATIONS", "YBL", "YZT", "YAZ", "YCD"]):
                 continue
 
             # Try to parse as station entry
             if current_region:
                 station_data = parse_station_entry(line, current_region)
                 if station_data:
-                    station_data['observation_time'] = observation_time
-                    station_data['report_time_str'] = report_time_str
-                    station_data['source_file'] = filepath.name
+                    station_data["observation_time"] = observation_time
+                    station_data["report_time_str"] = report_time_str
+                    station_data["source_file"] = filepath.name
                     observations.append(station_data)
 
         logger.info(f"Parsed {len(observations)} station observations from {filepath.name}")
@@ -243,21 +243,32 @@ def insert_observations(observations):
 
     for obs in observations:
         try:
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO lightstation_observation (
                     station_name, region, observation_time, report_time_str,
                     wind_speed_kt, wind_direction, wind_gusting, wind_calm, wind_estimated,
                     sea_height_ft, sea_condition, swell_intensity, swell_direction,
                     source_file
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                obs['station_name'], obs['region'], obs['observation_time'], obs['report_time_str'],
-                obs['wind_speed_kt'], obs['wind_direction'], obs['wind_gusting'],
-                obs['wind_calm'], obs['wind_estimated'],
-                obs['sea_height_ft'], obs['sea_condition'],
-                obs['swell_intensity'], obs['swell_direction'],
-                obs['source_file']
-            ))
+            """,
+                (
+                    obs["station_name"],
+                    obs["region"],
+                    obs["observation_time"],
+                    obs["report_time_str"],
+                    obs["wind_speed_kt"],
+                    obs["wind_direction"],
+                    obs["wind_gusting"],
+                    obs["wind_calm"],
+                    obs["wind_estimated"],
+                    obs["sea_height_ft"],
+                    obs["sea_condition"],
+                    obs["swell_intensity"],
+                    obs["swell_direction"],
+                    obs["source_file"],
+                ),
+            )
             inserted += 1
 
         except sqlite3.IntegrityError:

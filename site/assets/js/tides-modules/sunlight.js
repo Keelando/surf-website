@@ -21,7 +21,7 @@ class SunlightDataStore {
       const response = await fetch(`/data/sunlight_times.json?t=${Date.now()}`);
       this.sunlightTimesData = await response.json();
     } catch (error) {
-      console.warn('Could not load sunlight times:', error);
+      console.warn("Could not load sunlight times:", error);
       this.sunlightTimesData = null;
     }
   }
@@ -34,7 +34,11 @@ class SunlightDataStore {
    * @returns {Object|null} Sunlight times or null if not found
    */
   getForDate(stationKey, dateStr) {
-    if (!this.sunlightTimesData || !this.sunlightTimesData.stations || !this.sunlightTimesData.stations[stationKey]) {
+    if (
+      !this.sunlightTimesData ||
+      !this.sunlightTimesData.stations ||
+      !this.sunlightTimesData.stations[stationKey]
+    ) {
       return null;
     }
 
@@ -53,23 +57,29 @@ class SunlightDataStore {
  * @param {Function} updateChartCallback - Callback to update chart when day changes
  * @returns {void}
  */
-export function displaySunlightTimes(stationKey, dayOffset, sunlightStore, tideDataStore, updateChartCallback) {
-  const container = document.getElementById('sunlight-widget');
+export function displaySunlightTimes(
+  stationKey,
+  dayOffset,
+  sunlightStore,
+  tideDataStore,
+  updateChartCallback,
+) {
+  const container = document.getElementById("sunlight-widget");
   if (!container) return;
 
   // Get target date in Pacific timezone based on offset
-  const pacific = 'America/Vancouver';
+  const pacific = "America/Vancouver";
   const now = new Date();
-  const formatter = new Intl.DateTimeFormat('en-US', {
+  const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: pacific,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
   const parts = formatter.formatToParts(now);
-  const year = parseInt(parts.find(p => p.type === 'year').value);
-  const month = parseInt(parts.find(p => p.type === 'month').value);
-  const day = parseInt(parts.find(p => p.type === 'day').value);
+  const year = parseInt(parts.find((p) => p.type === "year").value);
+  const month = parseInt(parts.find((p) => p.type === "month").value);
+  const day = parseInt(parts.find((p) => p.type === "day").value);
 
   // Create target date and apply offset
   const targetDate = new Date(year, month - 1, day);
@@ -78,14 +88,14 @@ export function displaySunlightTimes(stationKey, dayOffset, sunlightStore, tideD
   const targetYear = targetDate.getFullYear();
   const targetMonth = targetDate.getMonth() + 1;
   const targetDay = targetDate.getDate();
-  const targetDateStr = `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+  const targetDateStr = `${targetYear}-${String(targetMonth).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
 
   // Get sunlight times for the target date
   const sunlight = sunlightStore.getForDate(stationKey, targetDateStr);
 
   // Check if we have valid sunlight data for this station (not missing or error)
   if (!sunlight || sunlight.error || !sunlight.first_light) {
-    container.style.display = 'none';
+    container.style.display = "none";
     return;
   }
 
@@ -97,16 +107,21 @@ export function displaySunlightTimes(stationKey, dayOffset, sunlightStore, tideD
 
   // Validate parsed dates
   if (isNaN(firstLight) || isNaN(sunrise) || isNaN(sunset) || isNaN(lastLight)) {
-    container.style.display = 'none';
+    container.style.display = "none";
     return;
   }
 
   // Format to local time (24-hour)
-  const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Vancouver' };
-  const firstLightStr = firstLight.toLocaleTimeString('en-US', timeOptions);
-  const sunriseStr = sunrise.toLocaleTimeString('en-US', timeOptions);
-  const sunsetStr = sunset.toLocaleTimeString('en-US', timeOptions);
-  const lastLightStr = lastLight.toLocaleTimeString('en-US', timeOptions);
+  const timeOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "America/Vancouver",
+  };
+  const firstLightStr = firstLight.toLocaleTimeString("en-US", timeOptions);
+  const sunriseStr = sunrise.toLocaleTimeString("en-US", timeOptions);
+  const sunsetStr = sunset.toLocaleTimeString("en-US", timeOptions);
+  const lastLightStr = lastLight.toLocaleTimeString("en-US", timeOptions);
 
   // Calculate daylight duration
   const daylightDurationMs = sunset - sunrise;
@@ -115,11 +130,11 @@ export function displaySunlightTimes(stationKey, dayOffset, sunlightStore, tideD
   const daylightDuration = `${hours}h ${minutes}m`;
 
   // Format date label for heading
-  const dateStr = targetDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric'
+  const dateStr = targetDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
   });
-  let dayLabel = '';
+  let dayLabel = "";
   if (dayOffset === 0) {
     dayLabel = `Today (${dateStr})`;
   } else if (dayOffset === 1) {
@@ -185,24 +200,24 @@ export function displaySunlightTimes(stationKey, dayOffset, sunlightStore, tideD
     </div>
   `;
 
-  container.style.display = 'block';
+  container.style.display = "block";
 
   // Add event listeners for sunlight day navigation buttons
-  const sunlightPrevBtn = document.getElementById('sunlight-prev-day-btn');
-  const sunlightNextBtn = document.getElementById('sunlight-next-day-btn');
+  const sunlightPrevBtn = document.getElementById("sunlight-prev-day-btn");
+  const sunlightNextBtn = document.getElementById("sunlight-next-day-btn");
 
   if (sunlightPrevBtn && sunlightNextBtn) {
     // Update button states
     sunlightPrevBtn.disabled = dayOffset === 0;
     sunlightNextBtn.disabled = dayOffset === 2; // We have 3 days of data (0-2)
 
-    sunlightPrevBtn.style.opacity = dayOffset === 0 ? '0.3' : '1';
-    sunlightNextBtn.style.opacity = dayOffset === 2 ? '0.3' : '1';
-    sunlightPrevBtn.style.cursor = dayOffset === 0 ? 'not-allowed' : 'pointer';
-    sunlightNextBtn.style.cursor = dayOffset === 2 ? 'not-allowed' : 'pointer';
+    sunlightPrevBtn.style.opacity = dayOffset === 0 ? "0.3" : "1";
+    sunlightNextBtn.style.opacity = dayOffset === 2 ? "0.3" : "1";
+    sunlightPrevBtn.style.cursor = dayOffset === 0 ? "not-allowed" : "pointer";
+    sunlightNextBtn.style.cursor = dayOffset === 2 ? "not-allowed" : "pointer";
 
     // Add click handlers
-    sunlightPrevBtn.addEventListener('click', () => {
+    sunlightPrevBtn.addEventListener("click", () => {
       const currentOffset = tideDataStore.getDayOffset();
       if (currentOffset > 0) {
         tideDataStore.setDayOffset(currentOffset - 1);
@@ -210,7 +225,7 @@ export function displaySunlightTimes(stationKey, dayOffset, sunlightStore, tideD
       }
     });
 
-    sunlightNextBtn.addEventListener('click', () => {
+    sunlightNextBtn.addEventListener("click", () => {
       const currentOffset = tideDataStore.getDayOffset();
       if (currentOffset < 2) {
         tideDataStore.setDayOffset(currentOffset + 1);

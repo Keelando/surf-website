@@ -11,7 +11,7 @@ from lib.stations import get_all_buoys
 # Shared utilities
 from lib.units import kmh_to_knots
 
-logger = setup_logging('timeseries_export')
+logger = setup_logging("timeseries_export")
 
 # ---------- Config ----------
 OUT_PATH = EXPORT_DIR / "buoy_timeseries_48h.json"
@@ -76,6 +76,7 @@ ALL_METRICS = {
     "solar_current": {"name": "Solar Panel Current", "unit": "A"},
 }
 
+
 def downsample_to_interval(timeseries_data, interval_minutes):
     """Downsample high-frequency data to specified interval by keeping the closest point to each interval mark.
 
@@ -94,7 +95,7 @@ def downsample_to_interval(timeseries_data, interval_minutes):
     interval_seconds = interval_minutes * 60
 
     for point in timeseries_data:
-        time_obj = datetime.fromisoformat(point['time'])
+        time_obj = datetime.fromisoformat(point["time"])
         # Round down to nearest interval mark
         timestamp = int(time_obj.timestamp())
         interval_mark = (timestamp // interval_seconds) * interval_seconds
@@ -105,7 +106,7 @@ def downsample_to_interval(timeseries_data, interval_minutes):
             interval_buckets[interval_key] = point
         else:
             # Compare which point is closer to the interval mark
-            existing_time = datetime.fromisoformat(interval_buckets[interval_key]['time'])
+            existing_time = datetime.fromisoformat(interval_buckets[interval_key]["time"])
             existing_offset = abs((existing_time - interval_key).total_seconds())
             new_offset = abs((time_obj - interval_key).total_seconds())
             if new_offset < existing_offset:
@@ -116,15 +117,17 @@ def downsample_to_interval(timeseries_data, interval_minutes):
     for interval_key, point in sorted(interval_buckets.items()):
         # Create new point with normalized timestamp
         normalized_point = point.copy()
-        normalized_point['time'] = interval_key.isoformat()
+        normalized_point["time"] = interval_key.isoformat()
         downsampled.append(normalized_point)
 
     return downsampled
+
 
 def downsample_to_hourly(timeseries_data):
     """Downsample high-frequency data to hourly intervals by keeping the closest point to each hour.
     Normalizes all timestamps to the top of the hour (:00) for alignment in history tables."""
     return downsample_to_interval(timeseries_data, 60)
+
 
 def acquire_lock():
     """Simple file-based lock to prevent concurrent runs."""
@@ -140,10 +143,12 @@ def acquire_lock():
     LOCKFILE.touch()
     return True
 
+
 def release_lock():
     """Release the lock file."""
     if LOCKFILE.exists():
         LOCKFILE.unlink()
+
 
 def query_and_export_timeseries():
     # Check database exists
@@ -164,7 +169,7 @@ def query_and_export_timeseries():
             # Check which metrics actually exist in the database
             cur.execute("PRAGMA table_info(buoy_observation);")
             existing_cols = {row[1] for row in cur.fetchall()}
-            
+
             available_metrics = {k: v for k, v in ALL_METRICS.items() if k in existing_cols}
 
             if not available_metrics:
@@ -174,11 +179,7 @@ def query_and_export_timeseries():
             logger.info(f"Available metrics: {', '.join(available_metrics.keys())}")
 
             for buoy_id in BUOYS.keys():
-                buoy_data = {
-                    "name": BUOYS[buoy_id]["name"],
-                    "location": BUOYS[buoy_id]["location"],
-                    "timeseries": {}
-                }
+                buoy_data = {"name": BUOYS[buoy_id]["name"], "location": BUOYS[buoy_id]["location"], "timeseries": {}}
 
                 # Query each metric separately to handle sparse data
                 for metric_key, metric_info in available_metrics.items():
@@ -202,7 +203,7 @@ def query_and_export_timeseries():
                           AND {metric_key} IS NOT NULL
                         ORDER BY observation_time ASC
                         """
-                    
+
                     cur.execute(sql, (buoy_id, cutoff_timestamp))
                     rows = cur.fetchall()
 
@@ -212,23 +213,27 @@ def query_and_export_timeseries():
                             value = row[metric_key]
 
                             # Convert wind speeds from km/h to knots
-                            if metric_key in ['wind_speed', 'wind_gust']:
+                            if metric_key in ["wind_speed", "wind_gust"]:
                                 value = kmh_to_knots(value)
                             else:
                                 value = round(value, 2)
 
-                            timeseries.append({
-                                "time": datetime.fromtimestamp(row["observation_time"], tz=timezone.utc).isoformat(),
-                                "value": value
-                            })
+                            timeseries.append(
+                                {
+                                    "time": datetime.fromtimestamp(
+                                        row["observation_time"], tz=timezone.utc
+                                    ).isoformat(),
+                                    "value": value,
+                                }
+                            )
 
                         # Auto-detect data frequency and downsample if too frequent
                         # Calculate average interval between consecutive points
                         if len(timeseries) > 1:
                             intervals = []
                             for i in range(1, min(10, len(timeseries))):  # Sample first 10 intervals
-                                t1 = datetime.fromisoformat(timeseries[i-1]['time'])
-                                t2 = datetime.fromisoformat(timeseries[i]['time'])
+                                t1 = datetime.fromisoformat(timeseries[i - 1]["time"])
+                                t2 = datetime.fromisoformat(timeseries[i]["time"])
                                 intervals.append((t2 - t1).total_seconds() / 60)  # Convert to minutes
 
                             avg_interval = sum(intervals) / len(intervals) if intervals else 0
@@ -237,12 +242,16 @@ def query_and_export_timeseries():
                             if avg_interval > 0 and avg_interval < MIN_INTERVAL_MINUTES:
                                 original_count = len(timeseries)
                                 timeseries = downsample_to_interval(timeseries, MIN_INTERVAL_MINUTES)
-                                logger.debug(f"  {buoy_id} - {metric_key}: Downsampled from {original_count} to {len(timeseries)} points ({avg_interval:.1f}min → {MIN_INTERVAL_MINUTES}min)")
+                                logger.debug(
+                                    f"  {buoy_id} - {metric_key}: Downsampled from {original_count} "
+                                    f"to {len(timeseries)} points "
+                                    f"({avg_interval:.1f}min → {MIN_INTERVAL_MINUTES}min)"
+                                )
 
                         buoy_data["timeseries"][metric_key] = {
                             "name": metric_info["name"],
                             "unit": metric_info["unit"],
-                            "data": timeseries
+                            "data": timeseries,
                         }
                         logger.debug(f"  {buoy_id} - {metric_key}: {len(timeseries)} points")
 
@@ -281,19 +290,22 @@ def query_and_export_timeseries():
         "hours_covered": 48,
         "min_interval_minutes": MIN_INTERVAL_MINUTES,
         "available_metrics": list(available_metrics.keys()),
-        "buoy_count": len([k for k in timeseries_json.keys() if k != "_meta"])
+        "buoy_count": len([k for k in timeseries_json.keys() if k != "_meta"]),
     }
 
     # Atomic write
     safe_json_write(OUT_PATH, timeseries_json, sort_keys=True)
     logger.info(f"Wrote 48h timeseries to {OUT_PATH}")
     logger.info(f"Total buoys: {timeseries_json['_meta']['buoy_count']}")
-    logger.info(f"Time range: {forty_eight_hours_ago.strftime('%Y-%m-%d %H:%M')} to {now.strftime('%Y-%m-%d %H:%M')} UTC")
+    logger.info(
+        "Time range: " f"{forty_eight_hours_ago.strftime('%Y-%m-%d %H:%M')} to " f"{now.strftime('%Y-%m-%d %H:%M')} UTC"
+    )
+
 
 if __name__ == "__main__":
     if not acquire_lock():
         exit(1)
-    
+
     try:
         query_and_export_timeseries()
     finally:

@@ -27,8 +27,14 @@ assets/GeoIP.conf.txt
 
 # Cache
 .cache/
+.npm/
+.npm-cache/
 *.lock
 /tmp/
+
+# Linter output
+ruff.out
+ruff.err
 
 # OS
 .DS_Store

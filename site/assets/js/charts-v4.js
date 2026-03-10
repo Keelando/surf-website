@@ -19,8 +19,8 @@ function filterTimeseriesData(data, hours) {
   // Deep copy and filter each buoy's timeseries
   const filtered = {};
 
-  Object.keys(data).forEach(buoyId => {
-    if (buoyId === '_meta') {
+  Object.keys(data).forEach((buoyId) => {
+    if (buoyId === "_meta") {
       filtered[buoyId] = data[buoyId];
       return;
     }
@@ -29,16 +29,16 @@ function filterTimeseriesData(data, hours) {
     filtered[buoyId] = {
       name: buoy.name,
       location: buoy.location,
-      timeseries: {}
+      timeseries: {},
     };
 
     // Filter each metric's data array
-    Object.keys(buoy.timeseries || {}).forEach(metricKey => {
+    Object.keys(buoy.timeseries || {}).forEach((metricKey) => {
       const metric = buoy.timeseries[metricKey];
       filtered[buoyId].timeseries[metricKey] = {
         name: metric.name,
         unit: metric.unit,
-        data: (metric.data || []).filter(point => new Date(point.time) >= cutoff)
+        data: (metric.data || []).filter((point) => new Date(point.time) >= cutoff),
       };
     });
   });
@@ -91,18 +91,16 @@ function initCharts() {
   tempChart = echarts.init(document.getElementById("temp-chart"));
   waveComparisonChart = echarts.init(document.getElementById("wave-comparison-chart"));
 
-  document
-    .getElementById("chart-buoy-select")
-    .addEventListener("change", (e) => {
-      updateCharts(e.target.value);
-      updateActiveBuoyIndicator(e.target.value);
-    });
+  document.getElementById("chart-buoy-select").addEventListener("change", (e) => {
+    updateCharts(e.target.value);
+    updateActiveBuoyIndicator(e.target.value);
+  });
 
   const selectedBuoy = document.getElementById("chart-buoy-select").value;
   updateActiveBuoyIndicator(selectedBuoy);
 
   window.addEventListener("resize", () => {
-    [waveChart, windChart, tempChart].forEach(chart => chart.resize());
+    [waveChart, windChart, tempChart].forEach((chart) => chart.resize());
     waveComparisonChart.resize();
   });
 
@@ -146,11 +144,11 @@ function setTimeRange(hours) {
   currentTimeRange = hours;
 
   // Update ALL button states (sync all toggle buttons on page)
-  document.querySelectorAll('.time-range-btn').forEach(btn => {
+  document.querySelectorAll(".time-range-btn").forEach((btn) => {
     if (parseInt(btn.dataset.hours) === hours) {
-      btn.classList.add('active');
+      btn.classList.add("active");
     } else {
-      btn.classList.remove('active');
+      btn.classList.remove("active");
     }
   });
 
@@ -175,12 +173,12 @@ function setTimeRange(hours) {
  */
 function updateTimeRangeLabels() {
   // Update section headers
-  const chartSectionH2 = document.querySelector('#charts-section h2');
+  const chartSectionH2 = document.querySelector("#charts-section h2");
   if (chartSectionH2) {
     chartSectionH2.textContent = `${currentTimeRange}-Hour Trends`;
   }
 
-  const tableSectionH2 = document.querySelector('#wave-height-table-section h2');
+  const tableSectionH2 = document.querySelector("#wave-height-table-section h2");
   if (tableSectionH2) {
     tableSectionH2.textContent = `${currentTimeRange}-Hour Wave Height Summary`;
   }
@@ -229,10 +227,14 @@ function initThresholdControl() {
 }
 
 // Wait for HTMX to load footer (which contains timestamp element) before initializing
-document.addEventListener('htmx:load', function() {
-  loadChartsData();
-  initThresholdControl();
-}, { once: true });
+document.addEventListener(
+  "htmx:load",
+  function () {
+    loadChartsData();
+    initThresholdControl();
+  },
+  { once: true },
+);
 
 // Auto-refresh every 15 minutes
 setInterval(loadChartsData, 15 * 60 * 1000);

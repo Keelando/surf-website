@@ -10,7 +10,6 @@ Stations:
 - SISW1: Smith Island, WA
 """
 
-
 import sqlite3
 from datetime import datetime, timedelta, timezone
 
@@ -22,7 +21,7 @@ from lib.logging_config import setup_logging
 # Shared utilities
 from lib.units import ms_to_kmh
 
-logger = setup_logging('noaa_land', console=False)
+logger = setup_logging("noaa_land", console=False)
 
 # ---- Configuration ----
 STATIONS = {
@@ -33,11 +32,12 @@ STATIONS = {
 # ---- Field Mappings ----
 FIELD_MAP_TXT = {
     "WSPD": "wind_speed_kmh",
-    "GST":  "wind_gust_kmh",
+    "GST": "wind_gust_kmh",
     "WDIR": "wind_direction_deg",
     "ATMP": "air_temp_c",
     "PRES": "pressure_hpa",
 }
+
 
 # ---- Utilities ----
 def parse_direction(val):
@@ -50,12 +50,25 @@ def parse_direction(val):
     except ValueError:
         pass
     dir_map = {
-        'N': 0, 'NNE': 22, 'NE': 45, 'ENE': 68,
-        'E': 90, 'ESE': 113, 'SE': 135, 'SSE': 158,
-        'S': 180, 'SSW': 203, 'SW': 225, 'WSW': 248,
-        'W': 270, 'WNW': 293, 'NW': 315, 'NNW': 338
+        "N": 0,
+        "NNE": 22,
+        "NE": 45,
+        "ENE": 68,
+        "E": 90,
+        "ESE": 113,
+        "SE": 135,
+        "SSE": 158,
+        "S": 180,
+        "SSW": 203,
+        "SW": 225,
+        "WSW": 248,
+        "W": 270,
+        "WNW": 293,
+        "NW": 315,
+        "NNW": 338,
     }
     return dir_map.get(str(val).strip().upper())
+
 
 def is_missing(val, field=None):
     """Return True if a NOAA field value is missing or invalid."""
@@ -73,9 +86,10 @@ def is_missing(val, field=None):
             return True
     return False
 
+
 def parse_noaa_txt(content):
     """Parse NOAA .txt format and return list of observation dicts."""
-    lines = content.strip().split('\n')
+    lines = content.strip().split("\n")
     if len(lines) < 3:
         return []
 
@@ -181,10 +195,13 @@ def fetch_station(station_id, station_name):
                 obs_time = obs["observation_time"]
 
                 # Check if already exists
-                cur.execute("""
+                cur.execute(
+                    """
                     SELECT 1 FROM wind_observation
                     WHERE station_id = ? AND observation_time = ?
-                """, (station_id, obs_time))
+                """,
+                    (station_id, obs_time),
+                )
 
                 if cur.fetchone():
                     skipped += 1
@@ -194,8 +211,7 @@ def fetch_station(station_id, station_name):
                 fields = ["station_id", "observation_time", "station_name"]
                 values = [station_id, obs_time, station_name]
 
-                for field in ["wind_speed_kmh", "wind_gust_kmh", "wind_direction_deg",
-                             "air_temp_c", "pressure_hpa"]:
+                for field in ["wind_speed_kmh", "wind_gust_kmh", "wind_direction_deg", "air_temp_c", "pressure_hpa"]:
                     if field in obs:
                         fields.append(field)
                         values.append(obs[field])

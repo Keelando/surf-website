@@ -51,10 +51,10 @@ WEBCAM_CONFIGS = {
         "source_text": "White Rock Pier - YouTube Livestream",
         "lat": 49.0253,
         "lon": -122.8031,
-        "max_height": 720,          # 720p for detail
-        "check_daylight": False,    # Capture 24/7
-        "interval_minutes": 10,     # Snapshot every 10 minutes
-        "cron_offset": 0            # Runs at :00, :10, :20, etc.
+        "max_height": 720,  # 720p for detail
+        "check_daylight": False,  # Capture 24/7
+        "interval_minutes": 10,  # Snapshot every 10 minutes
+        "cron_offset": 0,  # Runs at :00, :10, :20, etc.
     },
     "boundarybay": {
         "name": "White Rock East Beach",
@@ -63,14 +63,14 @@ WEBCAM_CONFIGS = {
         "archive_dir": Path("/mnt/storage/boundarybay_cam"),
         "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "bbcam",
         "prefix": "BB",
-        "crop": "in_w:in_h:0:0",    # Full frame
+        "crop": "in_w:in_h:0:0",  # Full frame
         "source_text": "White Rock East Beach - YouTube Livestream",
         "lat": 49.0042,
         "lon": -123.0128,
-        "max_height": 480,          # 480p default
-        "check_daylight": False,    # Capture 24/7
-        "interval_minutes": 10,     # Snapshot every 10 minutes
-        "cron_offset": 2            # Runs at :02, :12, :22, etc.
+        "max_height": 480,  # 480p default
+        "check_daylight": False,  # Capture 24/7
+        "interval_minutes": 10,  # Snapshot every 10 minutes
+        "cron_offset": 2,  # Runs at :02, :12, :22, etc.
     },
     "coxbay": {
         "name": "Cox Bay",
@@ -79,15 +79,15 @@ WEBCAM_CONFIGS = {
         "archive_dir": Path("/mnt/storage/coxbay_cam"),
         "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "coxbay",
         "prefix": "CB",
-        "crop": "in_w:in_h:0:0",    # Full frame
+        "crop": "in_w:in_h:0:0",  # Full frame
         "source_text": "Cox Bay (Tofino) - Pacific Sands Beach Resort Livestream",
         "lat": 49.1167,
         "lon": -125.9000,
-        "max_height": 720,          # 720p for surf detail
-        "check_daylight": True,     # Only capture during daylight
+        "max_height": 720,  # 720p for surf detail
+        "check_daylight": True,  # Only capture during daylight
         "daylight_margin_minutes": 75,
-        "interval_minutes": 15,     # Snapshot every 15 minutes
-        "cron_offset": 4            # Runs at :04, :19, :34, :49
+        "interval_minutes": 15,  # Snapshot every 15 minutes
+        "cron_offset": 4,  # Runs at :04, :19, :34, :49
     },
     "mudbay": {
         "name": "Mud Bay HD",
@@ -95,16 +95,16 @@ WEBCAM_CONFIGS = {
         "archive_dir": Path("/mnt/storage/mudbay_cam"),
         "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "mudbay",
         "prefix": "MB",
-        "crop": "in_w:in_h:0:0",    # Full frame
+        "crop": "in_w:in_h:0:0",  # Full frame
         "source_text": "Mud Bay HD - OxBlue Construction Cam",
         "lat": 49.07138649092664,
         "lon": -122.95538135838513,
         # No max_height - direct image URL, fetched as-is (1024x768)
-        "check_daylight": True,     # Only capture during daylight
+        "check_daylight": True,  # Only capture during daylight
         "daylight_margin_minutes": 75,
-        "interval_minutes": 30,     # Snapshot every 30 minutes
-        "cron_offset": 6,           # Runs at :06, :36
-        "annotate_timestamp": True  # Add timestamp overlay
+        "interval_minutes": 30,  # Snapshot every 30 minutes
+        "cron_offset": 6,  # Runs at :06, :36
+        "annotate_timestamp": True,  # Add timestamp overlay
     },
     # -------------------------------------------------------------------------
     # HOLLYBURN SAILING CLUB WEBCAM - PERMISSION REQUIRED
@@ -119,24 +119,24 @@ WEBCAM_CONFIGS = {
         "archive_dir": Path("/mnt/storage/ambleside_cam"),
         "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "ambleside",
         "prefix": "AB",
-        "crop": "in_w:in_h:0:0",    # Full frame
+        "crop": "in_w:in_h:0:0",  # Full frame
         "source_text": "Hollyburn Sailing Club Webcam",
         "source_url": "https://www.hollyburnsailingclub.ca/webcam",
         "lat": 49.326635134999776,
         "lon": -123.1529396759124,
         # Yawcam quality setting (1-100)
         "yawcam_quality": 50,
-        "check_daylight": True,     # Only capture during daylight
+        "check_daylight": True,  # Only capture during daylight
         "daylight_margin_minutes": 60,
-        "interval_minutes": 20,     # Snapshot every 20 minutes (conservative rate)
-        "cron_offset": 8            # Runs at :08, :28, :48
-    }
+        "interval_minutes": 20,  # Snapshot every 20 minutes (conservative rate)
+        "cron_offset": 8,  # Runs at :08, :28, :48
+    },
 }
 
 
 def setup_logger(config_name):
     """Setup logging for this webcam using centralized logging config."""
-    return setup_logging(f'webcam_{config_name}', console=False)
+    return setup_logging(f"webcam_{config_name}", console=False)
 
 
 def main():
@@ -230,12 +230,12 @@ def main():
         "timestamp": timestamp.isoformat(),
         "timestamp_unix": timestamp_unix,
         "source": config["source_text"],
-        "url": config.get("youtube_url") or config.get("image_url") or config.get("source_url")
+        "url": config.get("youtube_url") or config.get("image_url") or config.get("source_url"),
     }
 
     metadata_path = config["website_dir"] / "latest.json"
     try:
-        with open(metadata_path, 'w') as f:
+        with open(metadata_path, "w") as f:
             json.dump(metadata, f, indent=2)
         logger.info(f"Updated metadata: {metadata_path}")
     except Exception as e:

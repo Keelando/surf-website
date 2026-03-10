@@ -31,9 +31,9 @@ def capture_youtube_thumbnail(video_id, output_path, crop_filter, logger):
     """
     # YouTube live thumbnail URLs (try higher quality first)
     thumbnail_urls = [
-        f"https://i.ytimg.com/vi/{video_id}/sddefault_live.jpg",   # 640x480
-        f"https://i.ytimg.com/vi/{video_id}/hqdefault_live.jpg",   # 480x360
-        f"https://i.ytimg.com/vi/{video_id}/mqdefault_live.jpg",   # 320x180
+        f"https://i.ytimg.com/vi/{video_id}/sddefault_live.jpg",  # 640x480
+        f"https://i.ytimg.com/vi/{video_id}/hqdefault_live.jpg",  # 480x360
+        f"https://i.ytimg.com/vi/{video_id}/mqdefault_live.jpg",  # 320x180
     ]
 
     for thumb_url in thumbnail_urls:
@@ -45,11 +45,11 @@ def capture_youtube_thumbnail(video_id, output_path, crop_filter, logger):
             # Real thumbnails are usually >5 KB, placeholders are tiny
             if response.status_code == 200 and len(response.content) > 5000:
                 # Save to temp file first for cropping
-                temp_fd, temp_thumb = tempfile.mkstemp(suffix='.jpg')
+                temp_fd, temp_thumb = tempfile.mkstemp(suffix=".jpg")
                 os.close(temp_fd)
 
                 try:
-                    with open(temp_thumb, 'wb') as f:
+                    with open(temp_thumb, "wb") as f:
                         f.write(response.content)
 
                     logger.info(f"Thumbnail downloaded ({len(response.content)/1024:.1f} KB)")
@@ -68,16 +68,20 @@ def capture_youtube_thumbnail(video_id, output_path, crop_filter, logger):
                         [
                             "ffmpeg",
                             "-hide_banner",
-                            "-loglevel", "error",
-                            "-i", temp_thumb,
-                            "-vf", vf_filter,
-                            "-q:v", "3",
+                            "-loglevel",
+                            "error",
+                            "-i",
+                            temp_thumb,
+                            "-vf",
+                            vf_filter,
+                            "-q:v",
+                            "3",
                             "-y",
-                            str(output_path)
+                            str(output_path),
                         ],
                         capture_output=True,
                         text=True,
-                        timeout=10
+                        timeout=10,
                     )
                     if result.returncode != 0:
                         logger.warning(f"Crop to 16:9 failed: {result.stderr}")
@@ -119,7 +123,7 @@ def capture_youtube_frame_deno(youtube_url, output_path, crop_filter, logger, ma
 
     temp_video = None
     try:
-        temp_fd, temp_video = tempfile.mkstemp(suffix='.mp4')
+        temp_fd, temp_video = tempfile.mkstemp(suffix=".mp4")
         os.close(temp_fd)
 
         logger.info(f"Downloading video via yt-dlp + Deno ({max_height}p)...")
@@ -128,16 +132,20 @@ def capture_youtube_frame_deno(youtube_url, output_path, crop_filter, logger, ma
         result = subprocess.run(
             [
                 YT_DLP_PATH,
-                "--js-runtimes", f"deno:{deno_path}",
-                "-f", f"best[height<={max_height}]",
-                "--downloader-args", "ffmpeg:-t 2",  # 2 seconds of video
+                "--js-runtimes",
+                f"deno:{deno_path}",
+                "-f",
+                f"best[height<={max_height}]",
+                "--downloader-args",
+                "ffmpeg:-t 2",  # 2 seconds of video
                 "--no-continue",
-                "-o", temp_video,
-                youtube_url
+                "-o",
+                temp_video,
+                youtube_url,
             ],
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=60,
         )
 
         if result.returncode != 0:
@@ -155,17 +163,14 @@ def capture_youtube_frame_deno(youtube_url, output_path, crop_filter, logger, ma
         ffmpeg_cmd = [
             "ffmpeg",
             "-hide_banner",
-            "-loglevel", "error",
-            "-i", temp_video,
+            "-loglevel",
+            "error",
+            "-i",
+            temp_video,
         ]
         if filter_complex:
             ffmpeg_cmd.extend(["-vf", filter_complex])
-        ffmpeg_cmd.extend([
-            "-frames:v", "1",
-            "-q:v", "3",
-            "-y",
-            str(output_path)
-        ])
+        ffmpeg_cmd.extend(["-frames:v", "1", "-q:v", "3", "-y", str(output_path)])
 
         result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=30)
 
@@ -191,7 +196,7 @@ def capture_youtube_frame_deno(youtube_url, output_path, crop_filter, logger, ma
         if temp_video and os.path.exists(temp_video):
             try:
                 os.unlink(temp_video)
-            except:
+            except OSError:
                 pass
 
 
@@ -204,7 +209,7 @@ def capture_youtube_frame_web_embedded(youtube_url, output_path, crop_filter, lo
     temp_video = None
     try:
         # Create temp file for video segment
-        temp_fd, temp_video = tempfile.mkstemp(suffix='.mp4')
+        temp_fd, temp_video = tempfile.mkstemp(suffix=".mp4")
         os.close(temp_fd)
 
         # Download 0.5-second video segment using yt-dlp
@@ -213,16 +218,20 @@ def capture_youtube_frame_web_embedded(youtube_url, output_path, crop_filter, lo
         result = subprocess.run(
             [
                 YT_DLP_PATH,
-                "--extractor-args", "youtube:player_client=web_embedded",
-                "-f", "worst",
-                "--downloader-args", "ffmpeg:-t 0.5",
+                "--extractor-args",
+                "youtube:player_client=web_embedded",
+                "-f",
+                "worst",
+                "--downloader-args",
+                "ffmpeg:-t 0.5",
                 "--no-continue",
-                "-o", temp_video,
-                youtube_url
+                "-o",
+                temp_video,
+                youtube_url,
             ],
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=60,
         )
 
         if result.returncode != 0:
@@ -232,16 +241,20 @@ def capture_youtube_frame_web_embedded(youtube_url, output_path, crop_filter, lo
             result = subprocess.run(
                 [
                     YT_DLP_PATH,
-                    "--extractor-args", "youtube:request-no-ads=false",
-                    "-f", "worst",
-                    "--downloader-args", "ffmpeg:-t 0.5",
+                    "--extractor-args",
+                    "youtube:request-no-ads=false",
+                    "-f",
+                    "worst",
+                    "--downloader-args",
+                    "ffmpeg:-t 0.5",
                     "--no-continue",
-                    "-o", temp_video,
-                    youtube_url
+                    "-o",
+                    temp_video,
+                    youtube_url,
                 ],
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60,
             )
             if result.returncode != 0:
                 logger.error(f"yt-dlp fallback also failed: {result.stderr[:200]}")
@@ -260,17 +273,22 @@ def capture_youtube_frame_web_embedded(youtube_url, output_path, crop_filter, lo
             [
                 "ffmpeg",
                 "-hide_banner",
-                "-loglevel", "error",
-                "-i", temp_video,
-                "-vf", filter_complex,
-                "-frames:v", "1",
-                "-q:v", "3",
+                "-loglevel",
+                "error",
+                "-i",
+                temp_video,
+                "-vf",
+                filter_complex,
+                "-frames:v",
+                "1",
+                "-q:v",
+                "3",
                 "-y",
-                str(output_path)
+                str(output_path),
             ],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
         )
 
         if result.returncode != 0:
@@ -298,7 +316,7 @@ def capture_youtube_frame_web_embedded(youtube_url, output_path, crop_filter, lo
         if temp_video and os.path.exists(temp_video):
             try:
                 os.unlink(temp_video)
-            except:
+            except OSError:
                 pass
 
 

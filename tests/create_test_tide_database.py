@@ -24,16 +24,8 @@ DB_PATH = DB_DIR / "tide_data_test.sqlite"
 
 # Test station mapping (subset of real stations for testing)
 TEST_STATIONS = {
-    "point_atkinson": {
-        "id": "07795",
-        "name": "Point Atkinson",
-        "has_observations": True
-    },
-    "kitsilano": {
-        "id": "07707",
-        "name": "Kitsilano",
-        "has_observations": True
-    }
+    "point_atkinson": {"id": "07795", "name": "Point Atkinson", "has_observations": True},
+    "kitsilano": {"id": "07707", "name": "Kitsilano", "has_observations": True},
 }
 
 
@@ -119,7 +111,7 @@ def load_fixture_json(filename, extend_predictions=False):
         print(f"⚠️  Fixture not found: {filename}")
         return None
 
-    with open(path, 'r') as f:
+    with open(path, "r") as f:
         data = json.load(f)
 
     # Calculate time offset to make data "recent"
@@ -137,10 +129,7 @@ def load_fixture_json(filename, extend_predictions=False):
             for record in data:
                 original = datetime.datetime.fromisoformat(record["eventDate"].replace("Z", "+00:00"))
                 new_time = original + time_delta
-                updated_data.append({
-                    **record,
-                    "eventDate": new_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-                })
+                updated_data.append({**record, "eventDate": new_time.strftime("%Y-%m-%dT%H:%M:%SZ")})
 
             # Extend predictions to cover next 3 days (repeat pattern)
             # Calculate time delta between consecutive records
@@ -157,10 +146,12 @@ def load_fixture_json(filename, extend_predictions=False):
                 while last_time < target_end:
                     last_time += interval
                     # Use sinusoidal pattern for tides (simple approximation)
-                    updated_data.append({
-                        "eventDate": last_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "value": last_value  # Simplified - reuse pattern
-                    })
+                    updated_data.append(
+                        {
+                            "eventDate": last_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                            "value": last_value,  # Simplified - reuse pattern
+                        }
+                    )
 
             return updated_data
         else:
@@ -198,11 +189,14 @@ def populate_observations(conn, station_id, station_name):
             water_level = record.get("value")
             quality = record.get("qcFlagCode", "1")
 
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT OR IGNORE INTO tide_observation
                 (station_id, station_name, observation_time, water_level, quality)
                 VALUES (?, ?, ?, ?, ?)
-            """, (station_id, station_name, timestamp, water_level, quality))
+            """,
+                (station_id, station_name, timestamp, water_level, quality),
+            )
 
             if cur.rowcount > 0:
                 inserted += 1
@@ -231,11 +225,14 @@ def populate_predictions(conn, station_id, station_name):
             timestamp = int(ts.timestamp())
             water_level = record.get("value")
 
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT OR IGNORE INTO tide_prediction
                 (station_id, station_name, prediction_time, water_level)
                 VALUES (?, ?, ?, ?)
-            """, (station_id, station_name, timestamp, water_level))
+            """,
+                (station_id, station_name, timestamp, water_level),
+            )
 
             if cur.rowcount > 0:
                 inserted += 1
@@ -268,24 +265,27 @@ def populate_highlow(conn, station_id, station_name):
             # Determine event type
             event_type = "unknown"
             if i > 0 and i < len(data) - 1:
-                prev_val = data[i-1].get("value")
-                next_val = data[i+1].get("value")
+                prev_val = data[i - 1].get("value")
+                next_val = data[i + 1].get("value")
                 if water_level > prev_val and water_level > next_val:
                     event_type = "high"
                 elif water_level < prev_val and water_level < next_val:
                     event_type = "low"
             elif i == 0 and len(data) > 1:
-                next_val = data[i+1].get("value")
+                next_val = data[i + 1].get("value")
                 event_type = "high" if water_level > next_val else "low"
             elif i == len(data) - 1:
-                prev_val = data[i-1].get("value")
+                prev_val = data[i - 1].get("value")
                 event_type = "high" if water_level > prev_val else "low"
 
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT OR IGNORE INTO tide_highlow
                 (station_id, station_name, event_time, water_level, event_type)
                 VALUES (?, ?, ?, ?, ?)
-            """, (station_id, station_name, timestamp, water_level, event_type))
+            """,
+                (station_id, station_name, timestamp, water_level, event_type),
+            )
 
             if cur.rowcount > 0:
                 inserted += 1
@@ -395,6 +395,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

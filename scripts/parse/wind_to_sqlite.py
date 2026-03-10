@@ -21,7 +21,8 @@ from lib.config import WIND_DATABASE, WIND_RETENTION_DAYS
 from lib.logging_config import setup_logging
 
 # Disable console logging (runs from cron, file logging only)
-logger = setup_logging('wind_parser', console=False)
+logger = setup_logging("wind_parser", console=False)
+
 
 # ---- Optional Influx sink (soft dependency) ----
 class InfluxSink:
@@ -122,6 +123,7 @@ CREATE_INDEXES_SQL = [
     "CREATE UNIQUE INDEX IF NOT EXISTS uniq_wind_station_ts ON wind_observation(station_id, observation_time);",
 ]
 
+
 def ensure_schema(conn):
     cur = conn.cursor()
     cur.execute(CREATE_TABLE_SQL)
@@ -143,31 +145,25 @@ FIELD_MAP = {
     "avg_wnd_spd_pst10mts": "wind_speed_kmh",
     "avg_wnd_spd_pst10mts_1": "wind_speed_kmh",  # alternate naming
     "avg_wnd_spd_10m_pst10mts": "wind_speed_kmh",  # CZBB format (10m sensor height)
-
     # Wind gust (maximum in past 10 minutes)
     "max_avg_wnd_spd_pst10mts": "wind_gust_kmh",
     "max_avg_wnd_spd_pst10mts_1": "wind_gust_kmh",  # alternate naming
     "max_wnd_spd_pst10mts": "wind_gust_kmh",  # another alternate
     "max_wnd_gst_spd_10m_pst10mts": "wind_gust_kmh",  # CZBB format
     "max_wnd_spd_10m_pst1hr": "wind_gust_kmh",  # CZBB 1-hour max
-
     # Wind direction (degrees, 10-minute average)
     "avg_wnd_dir_pst10mts": "wind_direction_deg",
     "avg_wnd_dir_pst10mts_1": "wind_direction_deg",
     "avg_wnd_dir_10m_pst10mts": "wind_direction_deg",  # CZBB format
-
     # Air temperature (10-minute average or instantaneous)
     "avg_air_temp_pst10mts": "air_temp_c",
     "air_temp": "air_temp_c",  # CZBB instantaneous
-
     # Atmospheric pressure (10-minute average or instantaneous)
     "avg_stn_pres_pst10mts": "pressure_hpa",
     "stn_pres": "pressure_hpa",  # CZBB instantaneous
-
     # Rainfall
     "pcpn_amt_pst1hr": "rainfall_1hr_mm",
     "pcpn_amt_pst6hrs": "rainfall_6hr_mm",
-
     # High-value additions (2025-11-18)
     "rel_hum": "humidity_percent",  # Relative humidity
     "dwpt_temp": "dewpoint_c",  # Dewpoint temperature
@@ -204,6 +200,7 @@ def parse_and_collect_fields(root, filename=None):
     station_id = None
     if filename:
         import re
+
         # Try format with date prefix first (YYYY-MM-DD-HHMM-STATION-)
         match = re.match(r"^\d{4}-\d{2}-\d{2}-\d{4}-([A-Z]{4})-", filename)
         if not match:
@@ -215,10 +212,10 @@ def parse_and_collect_fields(root, filename=None):
     # Fall back to XML fields if filename doesn't have ICAO
     if not station_id:
         station_id = (
-            station_ids.get("icao_stn_id") or
-            station_ids.get("tc_id") or
-            station_ids.get("wmo_id_extnd") or
-            station_ids.get("wmo_synop_id")
+            station_ids.get("icao_stn_id")
+            or station_ids.get("tc_id")
+            or station_ids.get("wmo_id_extnd")
+            or station_ids.get("wmo_synop_id")
         )
 
     if not station_id:
@@ -317,7 +314,7 @@ def main():
 
             new_count += 1
             processed.add(fp)
-            field_list = sorted(k for k in fields.keys() if k != 'observation_time')
+            field_list = sorted(k for k in fields.keys() if k != "observation_time")
             name_display = f" ({station_name})" if station_name else ""
             logger.info(f"{station_id}{name_display} @ {timestamp.strftime('%Y-%m-%d %H:%M')} UTC -> {field_list}")
         except Exception as e:
@@ -327,6 +324,7 @@ def main():
 
     # Purge old data based on retention policy
     import time
+
     cutoff_timestamp = int(time.time()) - (WIND_RETENTION_DAYS * 86400)
     cur.execute("DELETE FROM wind_observation WHERE observation_time < ?", (cutoff_timestamp,))
     deleted = cur.rowcount

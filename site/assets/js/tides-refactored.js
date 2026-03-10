@@ -15,26 +15,23 @@
  * - chart-renderer.js: ECharts tide chart visualization
  */
 
-import { TideDataStore } from './tides-modules/data-loader.js';
-import { SunlightDataStore } from './tides-modules/sunlight.js';
+import { TideDataStore } from "./tides-modules/data-loader.js";
+import { SunlightDataStore } from "./tides-modules/sunlight.js";
 import {
   populateStationDropdown,
   setupDayNavigation,
   updateDayLabel,
   updateNavigationButtons,
-  hideStation
-} from './tides-modules/ui-controls.js';
-import {
-  displayStation,
-  displayHighLowTable
-} from './tides-modules/display.js';
+  hideStation,
+} from "./tides-modules/ui-controls.js";
+import { displayStation, displayHighLowTable } from "./tides-modules/display.js";
 import {
   displayTideChart,
   disposeChart,
-  getCurrentGeodeticResiduals
-} from './tides-modules/chart-renderer.js';
-import { displaySunlightTimes } from './tides-modules/sunlight.js';
-import { updateTimestamp, showError, showSelectedTideOnMap } from './tides-modules/utils.js';
+  getCurrentGeodeticResiduals,
+} from "./tides-modules/chart-renderer.js";
+import { displaySunlightTimes } from "./tides-modules/sunlight.js";
+import { updateTimestamp, showError, showSelectedTideOnMap } from "./tides-modules/utils.js";
 
 /* =====================================================
    Global State
@@ -60,23 +57,22 @@ async function loadTideData() {
     // Load all data
     await Promise.all([
       tideDataStore.loadAll(window.logger || console, window.fetchWithTimeout || fetch),
-      sunlightDataStore.load()
+      sunlightDataStore.load(),
     ]);
 
     // Populate UI
     populateStationDropdown(
       tideDataStore,
       (stationKey) => displayStationWrapper(stationKey),
-      () => hideStation()
+      () => hideStation(),
     );
 
     updateTimestamp();
-
   } catch (error) {
     if (window.logger) {
-      window.logger.error('Tides', 'Error loading tide data', error);
+      window.logger.error("Tides", "Error loading tide data", error);
     } else {
-      console.error('Error loading tide data:', error);
+      console.error("Error loading tide data:", error);
     }
     showError();
   }
@@ -95,7 +91,7 @@ function displayStationWrapper(stationKey) {
     tideDataStore,
     () => setupDayNavigationWrapper(),
     (key, offset) => displayTideChartWrapper(key, offset),
-    (key, offset) => displaySunlightWrapper(key, offset)
+    (key, offset) => displaySunlightWrapper(key, offset),
   );
 }
 
@@ -103,10 +99,7 @@ function displayStationWrapper(stationKey) {
  * Setup day navigation with callbacks
  */
 function setupDayNavigationWrapper() {
-  setupDayNavigation(
-    tideDataStore,
-    () => updateChartForDay()
-  );
+  setupDayNavigation(tideDataStore, () => updateChartForDay());
 }
 
 /**
@@ -114,7 +107,7 @@ function setupDayNavigationWrapper() {
  */
 function displayTideChartWrapper(stationKey, dayOffset) {
   const tideTimeseriesData = {
-    stations: {}
+    stations: {},
   };
 
   // Build timeseries data structure expected by chart
@@ -128,7 +121,7 @@ function displayTideChartWrapper(stationKey, dayOffset) {
     dayOffset,
     tideTimeseriesData,
     tideDataStore.getAllCombinedWaterLevel(),
-    (key, dateStr) => sunlightDataStore.getForDate(key, dateStr)
+    (key, dateStr) => sunlightDataStore.getForDate(key, dateStr),
   );
 
   // After chart display, get geodetic residuals and store them for storm surge card
@@ -142,12 +135,8 @@ function displayTideChartWrapper(stationKey, dayOffset) {
  * Display sunlight times with callback
  */
 function displaySunlightWrapper(stationKey, dayOffset) {
-  displaySunlightTimes(
-    stationKey,
-    dayOffset,
-    sunlightDataStore,
-    tideDataStore,
-    () => updateChartForDay()
+  displaySunlightTimes(stationKey, dayOffset, sunlightDataStore, tideDataStore, () =>
+    updateChartForDay(),
   );
 }
 
@@ -210,15 +199,19 @@ function handleResize() {
    ===================================================== */
 
 // Wait for HTMX to load footer with timestamp
-document.addEventListener('htmx:load', async function() {
-  await initializeTidePage();
-}, { once: true });
+document.addEventListener(
+  "htmx:load",
+  async function () {
+    await initializeTidePage();
+  },
+  { once: true },
+);
 
 // Auto-refresh
 startAutoRefresh();
 
 // Window resize
-window.addEventListener('resize', handleResize);
+window.addEventListener("resize", handleResize);
 
 /* =====================================================
    Global Exports (for HTML onclick handlers)
@@ -228,8 +221,8 @@ window.addEventListener('resize', handleResize);
 window.showSelectedTideOnMap = showSelectedTideOnMap;
 
 // Event delegation for show-on-map buttons (replaces onclick= for CSP compliance)
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('show-tide-on-map-btn')) {
+document.addEventListener("click", function (e) {
+  if (e.target.classList.contains("show-tide-on-map-btn")) {
     showSelectedTideOnMap();
   }
 });

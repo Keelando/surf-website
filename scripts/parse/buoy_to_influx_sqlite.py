@@ -9,7 +9,8 @@ from defusedxml import ElementTree as ET
 from lib.config import BUOY_DATABASE, BUOY_RETENTION_DAYS
 from lib.logging_config import setup_logging
 
-logger = setup_logging('parser')
+logger = setup_logging("parser")
+
 
 # ---- Optional Influx sink (soft dependency) ----
 class InfluxSink:
@@ -158,6 +159,7 @@ CREATE_INDEXES_SQL = [
     "CREATE UNIQUE INDEX IF NOT EXISTS uniq_buoy_ts ON buoy_observation(buoy_id, observation_time);",
 ]
 
+
 def ensure_schema(conn):
     cur = conn.cursor()
     cur.execute(CREATE_TABLE_SQL)
@@ -180,13 +182,11 @@ FIELD_MAP = {
     "avg_sig_wave_hgt_pst20mts": "wave_height_sig",
     "sig_wave_hgt_pst35mts_10mts_ago": "wave_height_sig",
     "spetrl_sig_wave_hgt_pst20mts": "wave_height_spectral",
-
     "pk_wave_hgt_pst20mts": "wave_height_peak",
     "pk_wave_hgt_pst35mts_10mts_ago": "wave_height_peak",
     "max_wave_hgt_pst20mts": "wave_height_max",
     "avg_wave_hgt_pst20mts": "wave_height_avg",
     "max_wave_crst_hgt_abv_avg_wtr_lvl_pst20mts": "wave_crest_height_max",
-
     # Wave period
     "avg_wave_pd_pst20mts": "wave_period_avg",
     "avg_sig_wave_pd_pst20mts": "wave_period_sig",
@@ -195,13 +195,11 @@ FIELD_MAP = {
     "pd_of_max_wave_hgt_pst20mts": "wave_period_max_wave",
     "avg_spetrl_wave_pd_pst20mts": "wave_period_spectral",
     "spetrl_wave_enrgy_pd_pst20mts": "wave_period_energy_spectral",
-
     # Wave direction
     "avg_wave_dir_pst20mts": "wave_direction_avg",
     "avg_pk_wave_dir_pst20mts": "wave_direction_peak",
     "avg_wave_dir_sprd_pst20mts": "wave_direction_spread_avg",
     "pk_wave_dir_sprd_pst20mts": "wave_direction_spread_peak",
-
     # Wind (primary sensor)
     "avg_wnd_spd_pst10mts": "wind_speed",
     "avg_wnd_spd_pst10mts_1": "wind_speed",
@@ -212,18 +210,15 @@ FIELD_MAP = {
     "avg_wnd_dir_pst10mts": "wind_direction",
     "avg_wnd_dir_pst10mts_1": "wind_direction",
     "wnd_snsr_vert_disp": "wind_sensor_height",
-
     # Wind (secondary sensor)
     "avg_wnd_spd_pst10mts_2": "wind_speed_sensor_2",
     "max_wnd_spd_pst10mts_2": "wind_gust_sensor_2",
     "avg_wnd_dir_pst10mts_2": "wind_direction_sensor_2",
     "bad_wnd_smpls_1": "wind_samples_bad_1",
     "bad_wnd_smpls_2": "wind_samples_bad_2",
-
     # Temperature
     "avg_air_temp_pst10mts": "air_temp",
     "avg_sea_sfc_temp_pst10mts": "sea_temp",
-
     # Pressure
     "avg_stn_pres_pst10mts": "pressure",
     "avg_stn_pres_pst10mts_1": "pressure",
@@ -231,24 +226,19 @@ FIELD_MAP = {
     "avg_mslp_pst10mts": "pressure_msl",
     "pres_tend_char_pst3hrs": "pressure_trend_char",
     "pres_tend_amt_pst3hrs": "pressure_trend_amount",
-
     # Position
     "crnt_buoy_lat": "buoy_lat_current",
     "crnt_buoy_long": "buoy_lon_current",
-
     # Solar current (cloudiness indicator)
     "avg_solr_panl_crnt_pst10mts": "solar_current",
-
     # Wave metrics (additional statistics) - Added 2025-12-06
     "sig_wave_pd_pst20mts": "wave_period_sig_basic",
     "avg_max_wave_hgt_pst20mts": "wave_height_max_avg",
     "avg_max_wave_pd_pst20mts": "wave_period_max_avg",
-
     # System health & monitoring - Added 2025-12-06
     "avg_batry_volt_pst10mts": "battery_voltage",
     "wtchmn_boot_cnt_pst1hr": "watchman_boot_count",
     "avg_obstrn_lamp_crnt_pst10mts": "obstruction_lamp_current",
-
     # Orientation (compass headings) - Added 2025-12-06
     "avg_cmpss_hdng_pst10mts_1": "compass_heading_1",
     "avg_cmpss_hdng_pst10mts_2": "compass_heading_2",
@@ -277,7 +267,7 @@ def parse_and_collect_fields(root):
             break
         if name == "wmo_synop_id" and val:
             synop_id = val
-    
+
     buoy_id = buoy_id or synop_id
     if not buoy_id:
         return None
@@ -359,7 +349,7 @@ def main():
 
             new_count += 1
             processed.add(fp)
-            field_list = sorted(k for k in fields.keys() if k != 'observation_time')
+            field_list = sorted(k for k in fields.keys() if k != "observation_time")
             logger.info(f"{buoy_id} @ {timestamp.strftime('%Y-%m-%d %H:%M')} UTC -> {field_list}")
         except Exception as e:
             logger.warning(f"Error processing {xml_path.name}: {e}")
@@ -368,6 +358,7 @@ def main():
 
     # Purge old data based on retention policy
     import time
+
     cutoff_timestamp = int(time.time()) - (BUOY_RETENTION_DAYS * 86400)
     cur.execute("DELETE FROM buoy_observation WHERE observation_time < ?", (cutoff_timestamp,))
     deleted = cur.rowcount

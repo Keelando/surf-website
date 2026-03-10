@@ -11,12 +11,13 @@
  * @returns {Object} Object with arrowData and maxValue for y-axis scaling
  */
 function createWindDirectionArrowData(windDirectionData, windSpeedData, windGustData) {
-  if (!windDirectionData || windDirectionData.length === 0) return { arrowData: [], maxValue: null };
+  if (!windDirectionData || windDirectionData.length === 0)
+    return { arrowData: [], maxValue: null };
 
   // Find maximum wind speed/gust to position arrows at top
   const allSpeeds = [...windSpeedData, ...windGustData]
-    .map(d => d.value)
-    .filter(v => v != null && !isNaN(v));
+    .map((d) => d.value)
+    .filter((v) => v != null && !isNaN(v));
 
   const maxSpeed = allSpeeds.length > 0 ? Math.max(...allSpeeds) : 20;
   const arrowYPosition = maxSpeed * 1.05; // Position arrows 5% above max value
@@ -32,7 +33,7 @@ function createWindDirectionArrowData(windDirectionData, windSpeedData, windGust
     if (!dirPoint || dirPoint.value == null) continue;
 
     // Find corresponding wind speed for this time (for validation)
-    const speedPoint = windSpeedData.find(s => s.time === dirPoint.time);
+    const speedPoint = windSpeedData.find((s) => s.time === dirPoint.time);
     if (!speedPoint || speedPoint.value == null) continue;
 
     const timestamp = new Date(dirPoint.time).getTime();
@@ -47,9 +48,9 @@ function createWindDirectionArrowData(windDirectionData, windSpeedData, windGust
       value: [timestamp, arrowYPosition],
       symbolRotate: -direction,
       itemStyle: {
-        color: '#004b7c',
-        opacity: 0.7
-      }
+        color: "#004b7c",
+        opacity: 0.7,
+      },
     });
   }
 
@@ -64,117 +65,123 @@ function createWindDirectionArrowData(windDirectionData, windSpeedData, windGust
 function renderWindChart(windChart, buoy) {
   try {
     const ts = buoy.timeseries;
-  const windSpeedData = ts.wind_speed?.data || [];
-  const windGustData = ts.wind_gust?.data || [];
-  const windDirectionData = ts.wind_direction?.data || [];
+    const windSpeedData = ts.wind_speed?.data || [];
+    const windGustData = ts.wind_gust?.data || [];
+    const windDirectionData = ts.wind_direction?.data || [];
 
-  // Create direction arrow data (returns object with arrowData and maxValue)
-  const { arrowData, maxValue } = createWindDirectionArrowData(windDirectionData, windSpeedData, windGustData);
+    // Create direction arrow data (returns object with arrowData and maxValue)
+    const { arrowData, maxValue } = createWindDirectionArrowData(
+      windDirectionData,
+      windSpeedData,
+      windGustData,
+    );
 
-  // Calculate y-axis max to ensure arrows are visible at top
-  const yAxisMax = maxValue ? Math.ceil(maxValue * 1.1) : null;
+    // Calculate y-axis max to ensure arrows are visible at top
+    const yAxisMax = maxValue ? Math.ceil(maxValue * 1.1) : null;
 
-  // Build legend data array
-  const legendData = ["Wind Speed", "Wind Gust"];
-  if (arrowData.length > 0) {
-    legendData.push("Wind Direction");
-  }
+    // Build legend data array
+    const legendData = ["Wind Speed", "Wind Gust"];
+    if (arrowData.length > 0) {
+      legendData.push("Wind Direction");
+    }
 
-  windChart.setOption({
-    title: {
-      text: `${buoy.name} - Wind Conditions`,
-      left: "center",
-      textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14 }
-    },
-    tooltip: {
-      ...getMobileOptimizedTooltipConfig(),
-      formatter: (params) => {
-        if (!params || params.length === 0) return "";
-        const time = formatTimeAxis(new Date(params[0].value[0]).toISOString());
-        let res = `<b>${time}</b><br/>`;
-        params.forEach((p) => {
-          if (p.seriesName === "Wind Direction") return; // Skip arrow series in tooltip
-          if (p.value[1] != null) {
-            res += `${p.marker} ${p.seriesName}: ${p.value[1]} kt<br/>`;
+    windChart.setOption({
+      title: {
+        text: `${buoy.name} - Wind Conditions`,
+        left: "center",
+        textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14 },
+      },
+      tooltip: {
+        ...getMobileOptimizedTooltipConfig(),
+        formatter: (params) => {
+          if (!params || params.length === 0) return "";
+          const time = formatTimeAxis(new Date(params[0].value[0]).toISOString());
+          let res = `<b>${time}</b><br/>`;
+          params.forEach((p) => {
+            if (p.seriesName === "Wind Direction") return; // Skip arrow series in tooltip
+            if (p.value[1] != null) {
+              res += `${p.marker} ${p.seriesName}: ${p.value[1]} kt<br/>`;
+            }
+          });
+
+          // Add wind direction to tooltip if available
+          const timestamp = new Date(params[0].value[0]).getTime();
+          const dirPoint = windDirectionData.find(
+            (d) => Math.abs(new Date(d.time).getTime() - timestamp) < 1800000,
+          ); // Within 30 min
+          if (dirPoint && dirPoint.value != null) {
+            const dir = Math.round(dirPoint.value);
+            const compass = degreesToCompass(dir);
+            res += `🧭 Direction: ${dir}° (${compass})<br/>`;
           }
-        });
 
-        // Add wind direction to tooltip if available
-        const timestamp = new Date(params[0].value[0]).getTime();
-        const dirPoint = windDirectionData.find(d => Math.abs(new Date(d.time).getTime() - timestamp) < 1800000); // Within 30 min
-        if (dirPoint && dirPoint.value != null) {
-          const dir = Math.round(dirPoint.value);
-          const compass = degreesToCompass(dir);
-          res += `🧭 Direction: ${dir}° (${compass})<br/>`;
-        }
-
-        return res;
-      },
-    },
-    legend: { data: legendData, bottom: getResponsiveLegendBottom() },
-    grid: getResponsiveGridConfig(false),
-    xAxis: {
-      type: "time",
-      axisLabel: {
-        fontSize: window.innerWidth < 600 ? 9 : 10,
-        rotate: window.innerWidth < 600 ? 30 : 0,
-        formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
-        hideOverlap: true,
-        margin: 10
-      },
-      axisTick: { show: true },
-      splitLine: { show: true, lineStyle: { color: "#eee" } },
-    },
-    yAxis: {
-      type: "value",
-      name: "Speed (kt)",
-      max: yAxisMax // Set max to accommodate arrows at top
-    },
-    series: [
-      {
-        name: "Wind Speed",
-        type: "line",
-        data: sanitizeSeriesData(windSpeedData),
-        smooth: true,
-        connectNulls: false,
-        itemStyle: { color: "#fb8c00" },
-        areaStyle: { opacity: 0.1 },
-      },
-      {
-        name: "Wind Gust",
-        type: "scatter",
-        data: sanitizeSeriesData(windGustData),
-        symbol: "circle",
-        symbolSize: 6,
-        itemStyle: { color: "#e53935" },
-      },
-      {
-        name: "Wind Direction",
-        type: "scatter",
-        data: arrowData,
-        symbol: DIRECTION_ARROW_PATH,
-        symbolSize: 16,
-        symbolRotate: function(dataIndex) {
-          // Read rotation from data point
-          return arrowData[dataIndex]?.symbolRotate || 0;
+          return res;
         },
-        itemStyle: {
-          color: function(params) {
-            // Read color from data point
-            return arrowData[params.dataIndex]?.itemStyle?.color || '#004b7c';
+      },
+      legend: { data: legendData, bottom: getResponsiveLegendBottom() },
+      grid: getResponsiveGridConfig(false),
+      xAxis: {
+        type: "time",
+        axisLabel: {
+          fontSize: window.innerWidth < 600 ? 9 : 10,
+          rotate: window.innerWidth < 600 ? 30 : 0,
+          formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
+          hideOverlap: true,
+          margin: 10,
+        },
+        axisTick: { show: true },
+        splitLine: { show: true, lineStyle: { color: "#eee" } },
+      },
+      yAxis: {
+        type: "value",
+        name: "Speed (kt)",
+        max: yAxisMax, // Set max to accommodate arrows at top
+      },
+      series: [
+        {
+          name: "Wind Speed",
+          type: "line",
+          data: sanitizeSeriesData(windSpeedData),
+          smooth: true,
+          connectNulls: false,
+          itemStyle: { color: "#fb8c00" },
+          areaStyle: { opacity: 0.1 },
+        },
+        {
+          name: "Wind Gust",
+          type: "scatter",
+          data: sanitizeSeriesData(windGustData),
+          symbol: "circle",
+          symbolSize: 6,
+          itemStyle: { color: "#e53935" },
+        },
+        {
+          name: "Wind Direction",
+          type: "scatter",
+          data: arrowData,
+          symbol: DIRECTION_ARROW_PATH,
+          symbolSize: 16,
+          symbolRotate: function (dataIndex) {
+            // Read rotation from data point
+            return arrowData[dataIndex]?.symbolRotate || 0;
           },
-          opacity: function(params) {
-            // Read opacity from data point
-            return arrowData[params.dataIndex]?.itemStyle?.opacity || 1.0;
-          }
+          itemStyle: {
+            color: function (params) {
+              // Read color from data point
+              return arrowData[params.dataIndex]?.itemStyle?.color || "#004b7c";
+            },
+            opacity: function (params) {
+              // Read opacity from data point
+              return arrowData[params.dataIndex]?.itemStyle?.opacity || 1.0;
+            },
+          },
+          silent: true, // Don't trigger mouse events
+          z: 2, // Render on top of lines
         },
-        silent: true, // Don't trigger mouse events
-        z: 2 // Render on top of lines
-      }
-    ]
-  });
+      ],
+    });
   } catch (error) {
-    showChartError('wind-chart', 'Wind Chart', error);
+    showChartError("wind-chart", "Wind Chart", error);
   }
 }
 
@@ -184,7 +191,24 @@ function renderWindChart(windChart, buoy) {
  * @returns {string} Compass direction (N, NE, E, etc.)
  */
 function degreesToCompass(degrees) {
-  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  const directions = [
+    "N",
+    "NNE",
+    "NE",
+    "ENE",
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSW",
+    "SW",
+    "WSW",
+    "W",
+    "WNW",
+    "NW",
+    "NNW",
+  ];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index];
 }

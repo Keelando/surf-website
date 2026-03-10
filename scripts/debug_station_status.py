@@ -46,18 +46,18 @@ def load_json(path: Path) -> dict:
 def calculate_age_minutes(obs_time_str: str) -> float:
     """Calculate age of observation in minutes."""
     if not obs_time_str:
-        return float('inf')
+        return float("inf")
     try:
-        obs_time = datetime.fromisoformat(obs_time_str.replace('Z', '+00:00'))
+        obs_time = datetime.fromisoformat(obs_time_str.replace("Z", "+00:00"))
         now = datetime.now(timezone.utc)
         return (now - obs_time).total_seconds() / 60
     except Exception:
-        return float('inf')
+        return float("inf")
 
 
 def format_age(age_minutes: float) -> str:
     """Format age as human-readable string."""
-    if age_minutes == float('inf'):
+    if age_minutes == float("inf"):
         return "Never"
     if age_minutes < 60:
         return f"{int(age_minutes)}m ago"
@@ -70,19 +70,13 @@ def format_age(age_minutes: float) -> str:
 def check_wind_stations(wind_data: dict, stations_config: dict) -> List[Tuple[str, str, bool, str, float]]:
     """Check wind station statuses. Returns list of (id, name, is_stale, obs_time, age_minutes)."""
     results = []
-    for station_id, station_meta in stations_config.get('wind', {}).items():
+    for station_id, station_meta in stations_config.get("wind", {}).items():
         data = wind_data.get(station_id, {})
-        obs_time = data.get('observation_time', '')
-        is_stale = data.get('stale', True)
+        obs_time = data.get("observation_time", "")
+        is_stale = data.get("stale", True)
         age_minutes = calculate_age_minutes(obs_time)
 
-        results.append((
-            station_id,
-            station_meta.get('name', station_id),
-            is_stale,
-            obs_time,
-            age_minutes
-        ))
+        results.append((station_id, station_meta.get("name", station_id), is_stale, obs_time, age_minutes))
 
     return results
 
@@ -90,19 +84,13 @@ def check_wind_stations(wind_data: dict, stations_config: dict) -> List[Tuple[st
 def check_buoy_stations(buoy_data: dict, stations_config: dict) -> List[Tuple[str, str, bool, str, float]]:
     """Check buoy station statuses."""
     results = []
-    for station_id, station_meta in stations_config.get('buoys', {}).items():
+    for station_id, station_meta in stations_config.get("buoys", {}).items():
         data = buoy_data.get(station_id, {})
-        obs_time = data.get('observation_time', '')
-        is_stale = data.get('stale', True)
+        obs_time = data.get("observation_time", "")
+        is_stale = data.get("stale", True)
         age_minutes = calculate_age_minutes(obs_time)
 
-        results.append((
-            station_id,
-            station_meta.get('name', station_id),
-            is_stale,
-            obs_time,
-            age_minutes
-        ))
+        results.append((station_id, station_meta.get("name", station_id), is_stale, obs_time, age_minutes))
 
     return results
 
@@ -111,45 +99,36 @@ def check_tide_stations(tide_data: dict, stations_config: dict) -> List[Tuple[st
     """Check tide station statuses."""
     results = []
     # Tide data is nested under 'stations' key
-    tide_stations = tide_data.get('stations', {})
+    tide_stations = tide_data.get("stations", {})
 
-    for station_id, station_meta in stations_config.get('tides', {}).items():
+    for station_id, station_meta in stations_config.get("tides", {}).items():
         data = tide_stations.get(station_id, {})
-        obs_data = data.get('observation', {})
-        obs_time = obs_data.get('time', '')
-        is_stale = obs_data.get('stale', True) if obs_data else True
+        obs_data = data.get("observation", {})
+        obs_time = obs_data.get("time", "")
+        is_stale = obs_data.get("stale", True) if obs_data else True
         age_minutes = calculate_age_minutes(obs_time)
 
-        results.append((
-            station_id,
-            station_meta.get('name', station_id),
-            is_stale,
-            obs_time,
-            age_minutes
-        ))
+        results.append((station_id, station_meta.get("name", station_id), is_stale, obs_time, age_minutes))
 
     return results
 
 
-def check_lightstation_stations(lightstation_data: dict, stations_config: dict) -> List[Tuple[str, str, bool, str, float]]:
+def check_lightstation_stations(
+    lightstation_data: dict,
+    stations_config: dict,
+) -> List[Tuple[str, str, bool, str, float]]:
     """Check lightstation statuses."""
     results = []
-    for station_id, station_meta in stations_config.get('lightstations', {}).items():
+    for station_id, station_meta in stations_config.get("lightstations", {}).items():
         # Lightstation JSON uses spaces instead of underscores in keys
         # Convert "CHROME_ISLAND" -> "CHROME ISLAND"
-        json_key = station_id.replace('_', ' ')
+        json_key = station_id.replace("_", " ")
         data = lightstation_data.get(json_key, {})
-        obs_time = data.get('observation_time', '')
-        is_stale = data.get('stale', True) if data else True
+        obs_time = data.get("observation_time", "")
+        is_stale = data.get("stale", True) if data else True
         age_minutes = calculate_age_minutes(obs_time)
 
-        results.append((
-            station_id,
-            station_meta.get('name', station_id),
-            is_stale,
-            obs_time,
-            age_minutes
-        ))
+        results.append((station_id, station_meta.get("name", station_id), is_stale, obs_time, age_minutes))
 
     return results
 
@@ -202,16 +181,25 @@ def log_stale_stations(all_results: List[Tuple[str, str, bool, str, float, str]]
     write_header = not STALE_LOG.exists()
 
     try:
-        with open(STALE_LOG, 'a', newline='') as f:
+        with open(STALE_LOG, "a", newline="") as f:
             writer = csv.writer(f)
 
             if write_header:
-                writer.writerow(['timestamp', 'station_id', 'station_name', 'station_type', 'last_observation', 'age_hours'])
+                writer.writerow(
+                    [
+                        "timestamp",
+                        "station_id",
+                        "station_name",
+                        "station_type",
+                        "last_observation",
+                        "age_hours",
+                    ]
+                )
 
             now = datetime.now(timezone.utc).isoformat()
             for station_id, name, is_stale, obs_time, age_minutes, station_type in stale_stations:
-                age_hours = round(age_minutes / 60, 1) if age_minutes != float('inf') else 9999
-                writer.writerow([now, station_id, name, station_type, obs_time or 'Never', age_hours])
+                age_hours = round(age_minutes / 60, 1) if age_minutes != float("inf") else 9999
+                writer.writerow([now, station_id, name, station_type, obs_time or "Never", age_hours])
 
         print(f"\nLogged {len(stale_stations)} stale station(s) to: {STALE_LOG}")
         print(f"View with: cat {STALE_LOG}")
@@ -224,10 +212,10 @@ def main():
     """Main entry point."""
     import argparse
 
-    parser = argparse.ArgumentParser(description='Debug station data freshness')
-    parser.add_argument('--stale', action='store_true', help='Show only stale stations')
-    parser.add_argument('--json', action='store_true', help='Output as JSON')
-    parser.add_argument('--log', action='store_true', help='Log stale stations to CSV file')
+    parser = argparse.ArgumentParser(description="Debug station data freshness")
+    parser.add_argument("--stale", action="store_true", help="Show only stale stations")
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
+    parser.add_argument("--log", action="store_true", help="Log stale stations to CSV file")
     args = parser.parse_args()
 
     # Load data
@@ -239,8 +227,8 @@ def main():
     stations_config = load_json(STATIONS_JSON)
 
     # Remove _meta entries
-    wind_data.pop('_meta', None)
-    buoy_data.pop('_meta', None)
+    wind_data.pop("_meta", None)
+    buoy_data.pop("_meta", None)
 
     # Check all station types
     wind_results = check_wind_stations(wind_data, stations_config)
@@ -251,22 +239,22 @@ def main():
     if args.json:
         # Output as JSON
         output = {
-            'wind_stations': [
-                {'id': r[0], 'name': r[1], 'stale': r[2], 'observation_time': r[3], 'age_minutes': r[4]}
+            "wind_stations": [
+                {"id": r[0], "name": r[1], "stale": r[2], "observation_time": r[3], "age_minutes": r[4]}
                 for r in wind_results
             ],
-            'buoys': [
-                {'id': r[0], 'name': r[1], 'stale': r[2], 'observation_time': r[3], 'age_minutes': r[4]}
+            "buoys": [
+                {"id": r[0], "name": r[1], "stale": r[2], "observation_time": r[3], "age_minutes": r[4]}
                 for r in buoy_results
             ],
-            'tides': [
-                {'id': r[0], 'name': r[1], 'stale': r[2], 'observation_time': r[3], 'age_minutes': r[4]}
+            "tides": [
+                {"id": r[0], "name": r[1], "stale": r[2], "observation_time": r[3], "age_minutes": r[4]}
                 for r in tide_results
             ],
-            'lightstations': [
-                {'id': r[0], 'name': r[1], 'stale': r[2], 'observation_time': r[3], 'age_minutes': r[4]}
+            "lightstations": [
+                {"id": r[0], "name": r[1], "stale": r[2], "observation_time": r[3], "age_minutes": r[4]}
                 for r in lightstation_results
-            ]
+            ],
         }
         print(json.dumps(output, indent=2))
     else:
@@ -297,13 +285,13 @@ def main():
     if args.log:
         # Add station type to results for logging
         all_results_with_type = (
-            [(r[0], r[1], r[2], r[3], r[4], 'wind') for r in wind_results] +
-            [(r[0], r[1], r[2], r[3], r[4], 'buoy') for r in buoy_results] +
-            [(r[0], r[1], r[2], r[3], r[4], 'tide') for r in tide_results] +
-            [(r[0], r[1], r[2], r[3], r[4], 'lightstation') for r in lightstation_results]
+            [(r[0], r[1], r[2], r[3], r[4], "wind") for r in wind_results]
+            + [(r[0], r[1], r[2], r[3], r[4], "buoy") for r in buoy_results]
+            + [(r[0], r[1], r[2], r[3], r[4], "tide") for r in tide_results]
+            + [(r[0], r[1], r[2], r[3], r[4], "lightstation") for r in lightstation_results]
         )
         log_stale_stations(all_results_with_type)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -15,3 +15,9 @@ extend-exclude = [
 
 [lint]
 select = ["E", "F", "I"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true

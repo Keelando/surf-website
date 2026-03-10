@@ -22,15 +22,32 @@ async function fetchWithTimeout(url, timeout = 5000) {
 // Helper: Convert degrees to cardinal direction
 function degreesToCardinal(degrees) {
   if (degrees == null) return null;
-  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  const directions = [
+    "N",
+    "NNE",
+    "NE",
+    "ENE",
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSW",
+    "SW",
+    "WSW",
+    "W",
+    "WNW",
+    "NW",
+    "NNW",
+  ];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index];
 }
 
 // Helper: Get directional arrow (SVG, rotated to exact degrees)
 // Based on buoy page implementation - provides infinite precision
-function getDirectionalArrow(degrees, arrowType = 'wind') {
-  if (degrees == null || degrees === '—') return '';
+function getDirectionalArrow(degrees, arrowType = "wind") {
+  if (degrees == null || degrees === "—") return "";
 
   // Meteorological convention: direction indicates WHERE wind is COMING FROM
   // Arrow rotation: wind arrow points down by default, rotates to show direction wind is blowing TO
@@ -45,14 +62,16 @@ function getDirectionalArrow(degrees, arrowType = 'wind') {
 // Helper: Format timestamp to local time
 function formatTimestamp(isoString) {
   const date = new Date(isoString);
-  return date.toLocaleString("en-US", {
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "America/Vancouver",
-  }).replace(',', '');
+  return date
+    .toLocaleString("en-US", {
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "America/Vancouver",
+    })
+    .replace(",", "");
 }
 
 // Global chart instance
@@ -74,8 +93,8 @@ function filterWindTimeseriesData(data, hours) {
   // Deep copy and filter each station's timeseries
   const filtered = {};
 
-  Object.keys(data).forEach(stationId => {
-    if (stationId === '_meta') {
+  Object.keys(data).forEach((stationId) => {
+    if (stationId === "_meta") {
       filtered[stationId] = data[stationId];
       return;
     }
@@ -84,22 +103,24 @@ function filterWindTimeseriesData(data, hours) {
     filtered[stationId] = {
       name: station.name,
       isBuoy: station.isBuoy,
-      timeseries: {}
+      timeseries: {},
     };
 
     // Handle both buoy format (with .data) and wind station format (direct arrays)
-    Object.keys(station.timeseries || {}).forEach(metricKey => {
+    Object.keys(station.timeseries || {}).forEach((metricKey) => {
       const metric = station.timeseries[metricKey];
 
       if (Array.isArray(metric)) {
         // Wind station format: direct array
-        filtered[stationId].timeseries[metricKey] = metric.filter(point => new Date(point.time) >= cutoff);
+        filtered[stationId].timeseries[metricKey] = metric.filter(
+          (point) => new Date(point.time) >= cutoff,
+        );
       } else if (metric.data && Array.isArray(metric.data)) {
         // Buoy format: {data: [...], name, unit}
         filtered[stationId].timeseries[metricKey] = {
           name: metric.name,
           unit: metric.unit,
-          data: metric.data.filter(point => new Date(point.time) >= cutoff)
+          data: metric.data.filter((point) => new Date(point.time) >= cutoff),
         };
       }
     });
@@ -112,13 +133,13 @@ function filterWindTimeseriesData(data, hours) {
  * Initialize sortable table functionality
  */
 function initializeSortableTable() {
-  const headers = document.querySelectorAll('#wind-conditions-table th.sortable');
+  const headers = document.querySelectorAll("#wind-conditions-table th.sortable");
 
-  headers.forEach(header => {
-    header.style.cursor = 'pointer';
-    header.style.userSelect = 'none';
+  headers.forEach((header) => {
+    header.style.cursor = "pointer";
+    header.style.userSelect = "none";
 
-    header.addEventListener('click', () => {
+    header.addEventListener("click", () => {
       const column = header.dataset.column;
       const type = header.dataset.type;
 
@@ -140,9 +161,9 @@ function initializeSortableTable() {
  * Sort table by column
  */
 function sortTable(column, type, ascending) {
-  const table = document.getElementById('wind-conditions-table');
-  const tbody = table.querySelector('tbody');
-  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const table = document.getElementById("wind-conditions-table");
+  const tbody = table.querySelector("tbody");
+  const rows = Array.from(tbody.querySelectorAll("tr"));
 
   rows.sort((a, b) => {
     let aVal = a.dataset[column];
@@ -155,9 +176,9 @@ function sortTable(column, type, ascending) {
 
     // Compare based on type
     let comparison = 0;
-    if (type === 'number') {
+    if (type === "number") {
       comparison = parseFloat(aVal) - parseFloat(bVal);
-    } else if (type === 'date') {
+    } else if (type === "date") {
       comparison = new Date(aVal) - new Date(bVal);
     } else {
       // String comparison
@@ -168,7 +189,7 @@ function sortTable(column, type, ascending) {
   });
 
   // Re-append rows in sorted order
-  rows.forEach(row => tbody.appendChild(row));
+  rows.forEach((row) => tbody.appendChild(row));
 }
 
 /**
@@ -176,16 +197,16 @@ function sortTable(column, type, ascending) {
  */
 function updateSortIndicators(activeHeader) {
   // Clear all indicators and remove sorting class
-  document.querySelectorAll('#wind-conditions-table th.sortable').forEach(header => {
-    header.classList.remove('sorting');
-    const indicator = header.querySelector('.sort-indicator');
-    indicator.textContent = '';
+  document.querySelectorAll("#wind-conditions-table th.sortable").forEach((header) => {
+    header.classList.remove("sorting");
+    const indicator = header.querySelector(".sort-indicator");
+    indicator.textContent = "";
   });
 
   // Set active indicator
-  activeHeader.classList.add('sorting');
-  const indicator = activeHeader.querySelector('.sort-indicator');
-  indicator.textContent = currentSort.ascending ? '▲' : '▼';
+  activeHeader.classList.add("sorting");
+  const indicator = activeHeader.querySelector(".sort-indicator");
+  indicator.textContent = currentSort.ascending ? "▲" : "▼";
 }
 
 /**
@@ -197,7 +218,7 @@ async function loadWindTable() {
     const [stationsMetadata, windData, buoyData] = await Promise.all([
       fetchWithTimeout(`/data/stations.json?t=${Date.now()}`),
       fetchWithTimeout(`/data/latest_wind.json?t=${Date.now()}`),
-      fetchWithTimeout(`/data/latest_buoy_v2.json?t=${Date.now()}`)
+      fetchWithTimeout(`/data/latest_buoy_v2.json?t=${Date.now()}`),
     ]);
 
     const table = document.getElementById("wind-conditions-table");
@@ -209,14 +230,14 @@ async function loadWindTable() {
 
     // Add wind stations
     Object.entries(windData)
-      .filter(([key]) => key !== '_meta')
+      .filter(([key]) => key !== "_meta")
       .forEach(([id, station]) => {
         // Calculate data age
         const obsTime = station.observation_time ? new Date(station.observation_time) : null;
         const ageHours = obsTime ? (Date.now() - obsTime.getTime()) / (1000 * 60 * 60) : Infinity;
 
         const stationData = {
-          name: station.name + ' 💨',
+          name: station.name + " 💨",
           wind_speed_kt: station.wind_speed_kt != null ? Math.round(station.wind_speed_kt) : null,
           wind_gust_kt: station.wind_gust_kt != null ? Math.round(station.wind_gust_kt) : null,
           wind_direction: station.wind_direction_deg || station.wind_direction,
@@ -226,7 +247,7 @@ async function loadWindTable() {
           observation_time: station.observation_time,
           ageHours: ageHours,
           stale: ageHours >= 2 && ageHours < 4, // Mark as stale if 2-4 hours old
-          type: 'land'
+          type: "land",
         };
 
         if (ageHours >= 4) {
@@ -240,14 +261,17 @@ async function loadWindTable() {
 
     // Add buoys (with wind data)
     Object.entries(buoyData)
-      .filter(([key]) => key !== '_meta')
+      .filter(([key]) => key !== "_meta")
       .forEach(([id, buoy]) => {
         // Only add buoys that have wind data
         const buoyWindDir = buoy.wind_direction_deg || buoy.wind_direction;
         if (buoy.wind_speed != null || buoyWindDir != null) {
           // Use field-specific timestamp for wind if available, otherwise use main observation_time
           let windObsTime = buoy.observation_time;
-          if (buoy.field_times && (buoy.field_times.wind_speed || buoy.field_times.wind_direction)) {
+          if (
+            buoy.field_times &&
+            (buoy.field_times.wind_speed || buoy.field_times.wind_direction)
+          ) {
             // Use the most recent wind-related field timestamp
             windObsTime = buoy.field_times.wind_speed || buoy.field_times.wind_direction;
           }
@@ -258,11 +282,12 @@ async function loadWindTable() {
 
           // Determine icon based on station type from metadata
           const stationMeta = stationsMetadata.buoys?.[id];
-          const isWindStation = stationMeta?.type === 'wind_monitoring_station' ||
-                                stationMeta?.type === 'weather_station' ||
-                                stationMeta?.type === 'c_man_station' ||
-                                stationMeta?.type === 'land_station';
-          const icon = isWindStation ? ' 💨' : ' 🌊';
+          const isWindStation =
+            stationMeta?.type === "wind_monitoring_station" ||
+            stationMeta?.type === "weather_station" ||
+            stationMeta?.type === "c_man_station" ||
+            stationMeta?.type === "land_station";
+          const icon = isWindStation ? " 💨" : " 🌊";
 
           const stationData = {
             name: buoy.name + icon,
@@ -275,7 +300,7 @@ async function loadWindTable() {
             observation_time: windObsTime,
             ageHours: ageHours,
             stale: ageHours >= 2 && ageHours < 4, // Mark as stale if 2-4 hours old
-            type: isWindStation ? 'land' : 'buoy'
+            type: isWindStation ? "land" : "buoy",
           };
 
           if (ageHours >= 4) {
@@ -295,35 +320,40 @@ async function loadWindTable() {
     // Station-specific source links (used in table and offline list)
     const sourceLinks = {
       // Environment Canada Marine Stations
-      'CWGT': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06100&stationID=WGT',
-      'CWGB': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=WGB',
-      'CWEL': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06200&stationID=WEL',
-      'CWSB': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06300&stationID=WSB',
-      'CVTF': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06500&stationID=VTF',
-      'CWVF': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06600&stationID=WVF',
-      'CWEZ': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06700&stationID=WEZ',
-      'CWQK': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06800&stationID=WQK',
+      CWGT: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06100&stationID=WGT",
+      CWGB: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=WGB",
+      CWEL: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06200&stationID=WEL",
+      CWSB: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06300&stationID=WSB",
+      CVTF: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06500&stationID=VTF",
+      CWVF: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06600&stationID=WVF",
+      CWEZ: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06700&stationID=WEZ",
+      CWQK: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06800&stationID=WQK",
       // Environment Canada Airports
-      'CYVR': 'https://spaces.navcanada.ca/workspace/aeroview/CYVR',
-      'CZBB': 'https://spaces.navcanada.ca/workspace/aeroview/CZBB',
+      CYVR: "https://spaces.navcanada.ca/workspace/aeroview/CYVR",
+      CZBB: "https://spaces.navcanada.ca/workspace/aeroview/CZBB",
       // Environment Canada Buoys
-      '4600146': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=02&siteID=14305&stationID=46146',
-      '4600304': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46304',
-      '4600303': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=02&siteID=14305&stationID=46303',
-      '4600131': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46131',
-      '4600206': 'https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46206',
+      4600146:
+        "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=02&siteID=14305&stationID=46146",
+      4600304:
+        "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46304",
+      4600303:
+        "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=02&siteID=14305&stationID=46303",
+      4600131:
+        "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46131",
+      4600206:
+        "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46206",
       // NOAA Buoys and Stations
-      '46087': 'https://www.ndbc.noaa.gov/station_page.php?station=46087',
-      '46088': 'https://www.ndbc.noaa.gov/station_page.php?station=46088',
-      '46267': 'https://www.ndbc.noaa.gov/station_page.php?station=46267',
-      'CPMW1': 'https://www.ndbc.noaa.gov/station_page.php?station=cpmw1',
-      'SISW1': 'https://www.ndbc.noaa.gov/station_page.php?station=sisw1',
+      46087: "https://www.ndbc.noaa.gov/station_page.php?station=46087",
+      46088: "https://www.ndbc.noaa.gov/station_page.php?station=46088",
+      46267: "https://www.ndbc.noaa.gov/station_page.php?station=46267",
+      CPMW1: "https://www.ndbc.noaa.gov/station_page.php?station=cpmw1",
+      SISW1: "https://www.ndbc.noaa.gov/station_page.php?station=sisw1",
       // NOAA NWS Airports
-      'KBLI': 'https://www.weather.gov/wrh/timeseries?site=KBLI',
-      'KORS': 'https://www.weather.gov/wrh/timeseries?site=KORS',
+      KBLI: "https://www.weather.gov/wrh/timeseries?site=KBLI",
+      KORS: "https://www.weather.gov/wrh/timeseries?site=KORS",
       // Municipal/Other
-      'whiterock_east': 'https://www.whiterockcity.ca/1000/Weather-Station',
-      'JERICHO': 'https://jsca.bc.ca/services/weather/'
+      whiterock_east: "https://www.whiterockcity.ca/1000/Weather-Station",
+      JERICHO: "https://jsca.bc.ca/services/weather/",
     };
 
     let tableHTML = `
@@ -343,40 +373,41 @@ async function loadWindTable() {
     `;
 
     stations.forEach(([id, station]) => {
-      const rowClass = station.stale ? 'class="stale"' : '';
+      const rowClass = station.stale ? 'class="stale"' : "";
       // Round wind speeds to integers
-      const windSpeed = station.wind_speed_kt != null ? Math.round(station.wind_speed_kt) : '—';
-      const windGust = station.wind_gust_kt != null ? Math.round(station.wind_gust_kt) : '—';
+      const windSpeed = station.wind_speed_kt != null ? Math.round(station.wind_speed_kt) : "—";
+      const windGust = station.wind_gust_kt != null ? Math.round(station.wind_gust_kt) : "—";
       // Show arrow, cardinal direction, and degrees
-      const direction = station.wind_direction != null
-        ? `${station.wind_direction_cardinal || degreesToCardinal(station.wind_direction)} (${station.wind_direction}°) ${getDirectionalArrow(station.wind_direction)}`
-        : '—';
-      const temp = station.air_temp_c != null ? station.air_temp_c.toFixed(1) : '—';
-      const pressure = station.pressure_hpa != null ? station.pressure_hpa.toFixed(1) : '—';
+      const direction =
+        station.wind_direction != null
+          ? `${station.wind_direction_cardinal || degreesToCardinal(station.wind_direction)} (${station.wind_direction}°) ${getDirectionalArrow(station.wind_direction)}`
+          : "—";
+      const temp = station.air_temp_c != null ? station.air_temp_c.toFixed(1) : "—";
+      const pressure = station.pressure_hpa != null ? station.pressure_hpa.toFixed(1) : "—";
       const updated = formatTimestamp(station.observation_time);
 
       // Determine source badge and link
-      let sourceBadge = '';
+      let sourceBadge = "";
       if (sourceLinks[id]) {
-        if (id.startsWith('4600')) {
+        if (id.startsWith("4600")) {
           // Environment Canada buoys (4600xxx)
           sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #006400; text-decoration: none;">🇨🇦 Env Canada 🔗</a>`;
-        } else if (id.startsWith('46') || id === 'CPMW1' || id === 'SISW1') {
+        } else if (id.startsWith("46") || id === "CPMW1" || id === "SISW1") {
           // NOAA buoys/stations (46xxx but not 4600xxx)
           sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #003087; text-decoration: none;">🇺🇸 NOAA 🔗</a>`;
-        } else if (id.startsWith('K')) {
+        } else if (id.startsWith("K")) {
           // NOAA NWS airports (KXXX)
           sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #003087; text-decoration: none;">🇺🇸 NOAA 🔗</a>`;
-        } else if (id === 'CRPILE' || id === 'CRCHAN' || id === 'COLEB') {
+        } else if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
           // Surrey FlowWorks (no public link)
           sourceBadge = '<br><span style="font-size: 0.75em; color: #006837;">🏛️ Surrey</span>';
-        } else if (id === 'whiterock_east') {
+        } else if (id === "whiterock_east") {
           // White Rock City
           sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #0066cc; text-decoration: none;">🏛️ White Rock 🔗</a>`;
-        } else if (id === 'JERICHO') {
+        } else if (id === "JERICHO") {
           // Jericho Sailing Centre
           sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #2563eb; text-decoration: none;">⛵ JSCA 🔗</a>`;
-        } else if (id.startsWith('C')) {
+        } else if (id.startsWith("C")) {
           // Environment Canada weather stations
           sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #006400; text-decoration: none;">🇨🇦 Env Canada 🔗</a>`;
         }
@@ -385,11 +416,11 @@ async function loadWindTable() {
       tableHTML += `
         <tr ${rowClass}
             data-name="${station.name}"
-            data-wind_speed_kt="${station.wind_speed_kt || ''}"
-            data-wind_gust_kt="${station.wind_gust_kt || ''}"
-            data-wind_direction="${station.wind_direction || ''}"
-            data-air_temp_c="${station.air_temp_c || ''}"
-            data-pressure_hpa="${station.pressure_hpa || ''}"
+            data-wind_speed_kt="${station.wind_speed_kt || ""}"
+            data-wind_gust_kt="${station.wind_gust_kt || ""}"
+            data-wind_direction="${station.wind_direction || ""}"
+            data-air_temp_c="${station.air_temp_c || ""}"
+            data-pressure_hpa="${station.pressure_hpa || ""}"
             data-observation_time="${station.observation_time}">
           <td><strong>${station.name}</strong>${sourceBadge}</td>
           <td>${direction}</td>
@@ -407,40 +438,45 @@ async function loadWindTable() {
       `;
     });
 
-    tableHTML += '</tbody>';
+    tableHTML += "</tbody>";
     table.innerHTML = tableHTML;
 
     // Add sort functionality
     initializeSortableTable();
 
     // Default sort by wind speed (descending) to show strongest winds first
-    const speedHeader = document.querySelector('#wind-conditions-table th[data-column="wind_speed_kt"]');
+    const speedHeader = document.querySelector(
+      '#wind-conditions-table th[data-column="wind_speed_kt"]',
+    );
     if (speedHeader) {
-      currentSort.column = 'wind_speed_kt';
+      currentSort.column = "wind_speed_kt";
       currentSort.ascending = false; // Descending to show highest first
-      sortTable('wind_speed_kt', 'number', false);
+      sortTable("wind_speed_kt", "number", false);
       updateSortIndicators(speedHeader);
     }
 
     // Display offline stations list (data > 4 hours old)
-    const offlineListContainer = document.getElementById('offline-stations-list');
+    const offlineListContainer = document.getElementById("offline-stations-list");
     if (offlineListContainer && offlineStations.length > 0) {
       // Sort offline stations by name
       offlineStations.sort((a, b) => a[1].name.localeCompare(b[1].name));
 
-      let offlineHTML = '<div style="margin-top: 1rem; padding: 1rem; background: #fff9e6; border-left: 3px solid #f59e0b; border-radius: 4px;">';
-      offlineHTML += '<h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #92400e;">Stations with Stale Data (>4 hours)</h3>';
-      offlineHTML += '<p style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: #78350f;">The following stations have not reported wind data in over 4 hours:</p>';
+      let offlineHTML =
+        '<div style="margin-top: 1rem; padding: 1rem; background: #fff9e6; border-left: 3px solid #f59e0b; border-radius: 4px;">';
+      offlineHTML +=
+        '<h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #92400e;">Stations with Stale Data (>4 hours)</h3>';
+      offlineHTML +=
+        '<p style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: #78350f;">The following stations have not reported wind data in over 4 hours:</p>';
 
       // Use single column on mobile, 2 columns on desktop
       const isMobile = window.innerWidth < 768;
-      const columnStyle = isMobile ? '' : 'columns: 2; column-gap: 2rem;';
+      const columnStyle = isMobile ? "" : "columns: 2; column-gap: 2rem;";
       offlineHTML += `<ul style="margin: 0; padding-left: 1.5rem; ${columnStyle}">`;
 
       offlineStations.forEach(([id, station]) => {
         const hours = Math.floor(station.ageHours);
         const minutes = Math.round((station.ageHours - hours) * 60);
-        let ageText = '';
+        let ageText = "";
         if (hours > 0) {
           ageText = `${hours}h`;
           if (minutes > 0) ageText += ` ${minutes}m`;
@@ -449,7 +485,7 @@ async function loadWindTable() {
         }
 
         // Add source link if available
-        let stationLink = station.name.replace(' 💨', '').replace(' 🌊', '');
+        let stationLink = station.name.replace(" 💨", "").replace(" 🌊", "");
         if (sourceLinks[id]) {
           stationLink = `<a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="color: #0066cc; text-decoration: none;">${stationLink}</a>`;
         }
@@ -457,10 +493,10 @@ async function loadWindTable() {
         offlineHTML += `<li style="margin-bottom: 0.25rem; break-inside: avoid;"><strong>${stationLink}</strong> (${ageText} ago)</li>`;
       });
 
-      offlineHTML += '</ul></div>';
+      offlineHTML += "</ul></div>";
       offlineListContainer.innerHTML = offlineHTML;
     } else if (offlineListContainer) {
-      offlineListContainer.innerHTML = '';
+      offlineListContainer.innerHTML = "";
     }
 
     // Update footer timestamp (use wind data timestamp)
@@ -468,12 +504,12 @@ async function loadWindTable() {
     if (timestamp && windData._meta) {
       timestamp.textContent = `Updated: ${formatTimestamp(windData._meta.generated_utc)}`;
     }
-
   } catch (error) {
-    console.error('Error loading wind table:', error);
+    console.error("Error loading wind table:", error);
     const table = document.getElementById("wind-conditions-table");
     if (table) {
-      table.innerHTML = '<tbody><tr><td colspan="7" style="text-align: center; color: #e53935; padding: 2rem;">Error loading wind data</td></tr></tbody>';
+      table.innerHTML =
+        '<tbody><tr><td colspan="7" style="text-align: center; color: #e53935; padding: 2rem;">Error loading wind data</td></tr></tbody>';
     }
   }
 }
@@ -485,11 +521,11 @@ function populateStationDropdown() {
   const select = document.getElementById("wind-station-select");
   if (!select || !allStationsList) return;
 
-  select.innerHTML = '';
+  select.innerHTML = "";
 
   // Populate dropdown with all stations
   allStationsList.forEach(([id, station]) => {
-    const option = document.createElement('option');
+    const option = document.createElement("option");
     option.value = id;
     option.textContent = station.name;
     select.appendChild(option);
@@ -504,7 +540,7 @@ async function loadWindTimeseries() {
     // Load both wind station and buoy timeseries data
     const [windData, buoyData] = await Promise.all([
       fetchWithTimeout(`/data/wind_timeseries_48hr.json?t=${Date.now()}`),
-      fetchWithTimeout(`/data/buoy_timeseries_48h.json?t=${Date.now()}`)
+      fetchWithTimeout(`/data/buoy_timeseries_48h.json?t=${Date.now()}`),
     ]);
 
     // Merge wind and buoy data
@@ -512,15 +548,19 @@ async function loadWindTimeseries() {
 
     // Add buoys that have wind data
     Object.entries(buoyData)
-      .filter(([key]) => key !== '_meta')
+      .filter(([key]) => key !== "_meta")
       .forEach(([id, buoy]) => {
         // Check if buoy has wind speed data
-        if (buoy.timeseries && buoy.timeseries.wind_speed &&
-            buoy.timeseries.wind_speed.data && buoy.timeseries.wind_speed.data.length > 0) {
+        if (
+          buoy.timeseries &&
+          buoy.timeseries.wind_speed &&
+          buoy.timeseries.wind_speed.data &&
+          buoy.timeseries.wind_speed.data.length > 0
+        ) {
           windTimeseriesData[id] = {
-            name: buoy.name + ' 🌊',
+            name: buoy.name + " 🌊",
             timeseries: buoy.timeseries,
-            isBuoy: true // Flag to handle different data structure
+            isBuoy: true, // Flag to handle different data structure
           };
         }
       });
@@ -531,7 +571,7 @@ async function loadWindTimeseries() {
 
     // Get all stations (exclude _meta)
     allStationsList = Object.entries(windTimeseriesData)
-      .filter(([key]) => key !== '_meta')
+      .filter(([key]) => key !== "_meta")
       .sort((a, b) => a[1].name.localeCompare(b[1].name));
 
     // Populate dropdown with all stations
@@ -545,21 +585,22 @@ async function loadWindTimeseries() {
     }
 
     // Add change listener to dropdown
-    select.addEventListener('change', (e) => {
+    select.addEventListener("change", (e) => {
       renderWindChart(e.target.value);
       renderWind24HourTable(e.target.value);
     });
 
     // Add "jump to" search listener
     if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
+      searchInput.addEventListener("input", (e) => {
         const searchText = e.target.value.toLowerCase();
         if (!searchText) return;
 
         // Find first matching station (by name or ID)
-        const match = allStationsList.find(([id, station]) =>
-          station.name.toLowerCase().includes(searchText) ||
-          id.toLowerCase().includes(searchText)
+        const match = allStationsList.find(
+          ([id, station]) =>
+            station.name.toLowerCase().includes(searchText) ||
+            id.toLowerCase().includes(searchText),
         );
 
         if (match) {
@@ -571,9 +612,8 @@ async function loadWindTimeseries() {
         }
       });
     }
-
   } catch (error) {
-    console.error('Error loading wind timeseries:', error);
+    console.error("Error loading wind timeseries:", error);
     const select = document.getElementById("wind-station-select");
     if (select) {
       select.innerHTML = '<option value="">Error loading stations</option>';
@@ -585,11 +625,11 @@ async function loadWindTimeseries() {
  * Create wind direction arrow data for scatter series
  */
 function createWindDirectionArrows(windDirectionTimes, windSpeedData, windGustData) {
-  if (!windDirectionTimes || windDirectionTimes.length === 0) return { arrowData: [], maxValue: null };
+  if (!windDirectionTimes || windDirectionTimes.length === 0)
+    return { arrowData: [], maxValue: null };
 
   // Find maximum wind speed/gust to position arrows at top
-  const allSpeeds = [...windSpeedData, ...windGustData]
-    .filter(v => v != null && !isNaN(v));
+  const allSpeeds = [...windSpeedData, ...windGustData].filter((v) => v != null && !isNaN(v));
 
   const maxSpeed = allSpeeds.length > 0 ? Math.max(...allSpeeds) : 20;
   const arrowYPosition = maxSpeed * 1.05; // Position arrows 5% above max value
@@ -604,9 +644,12 @@ function createWindDirectionArrows(windDirectionTimes, windSpeedData, windGustDa
   const hoursInterval = isMobile ? 6 : 3;
 
   // Calculate approximate points per hour (assuming roughly uniform spacing)
-  const dataSpanHours = windDirectionTimes.length > 1
-    ? (new Date(windDirectionTimes[windDirectionTimes.length - 1].time) - new Date(windDirectionTimes[0].time)) / (1000 * 60 * 60)
-    : 24;
+  const dataSpanHours =
+    windDirectionTimes.length > 1
+      ? (new Date(windDirectionTimes[windDirectionTimes.length - 1].time) -
+          new Date(windDirectionTimes[0].time)) /
+        (1000 * 60 * 60)
+      : 24;
   const pointsPerHour = windDirectionTimes.length / dataSpanHours;
   const sampleInterval = Math.max(1, Math.round(hoursInterval * pointsPerHour));
 
@@ -625,9 +668,9 @@ function createWindDirectionArrows(windDirectionTimes, windSpeedData, windGustDa
       value: [timestamp, arrowYPosition],
       symbolRotate: -direction,
       itemStyle: {
-        color: '#004b7c',
-        opacity: 0.7
-      }
+        color: "#004b7c",
+        opacity: 0.7,
+      },
     });
   }
 
@@ -638,7 +681,7 @@ function createWindDirectionArrows(windDirectionTimes, windSpeedData, windGustDa
  * View chart for a specific station (from table link)
  */
 function viewStationChart(stationId) {
-  const select = document.getElementById('wind-station-select');
+  const select = document.getElementById("wind-station-select");
   if (!select) return;
 
   // Select the station in dropdown
@@ -649,9 +692,9 @@ function viewStationChart(stationId) {
   renderWind24HourTable(stationId);
 
   // Scroll to chart section
-  const chartSection = document.getElementById('wind-chart-section');
+  const chartSection = document.getElementById("wind-chart-section");
   if (chartSection) {
-    chartSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    chartSection.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
@@ -660,9 +703,9 @@ function viewStationChart(stationId) {
  */
 function showStationOnMap(stationId) {
   // Scroll to map section
-  const mapSection = document.getElementById('map-section');
+  const mapSection = document.getElementById("map-section");
   if (mapSection) {
-    mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    mapSection.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   // Use the winds-map module to center on the station
@@ -689,7 +732,7 @@ function renderWind24HourTable(stationId) {
   const station = filteredData[stationId];
   if (!station) return;
 
-  const table = document.getElementById('wind-24hr-table');
+  const table = document.getElementById("wind-24hr-table");
   if (!table) return;
 
   // Extract timeseries data
@@ -697,17 +740,26 @@ function renderWind24HourTable(stationId) {
   const isBuoy = station.isBuoy;
 
   // Get data arrays
-  const windSpeedArray = isBuoy && timeseries.wind_speed?.data ? timeseries.wind_speed.data : (timeseries.wind_speed || []);
-  const windGustArray = isBuoy && timeseries.wind_gust?.data ? timeseries.wind_gust.data : (timeseries.wind_gust || []);
-  const windDirArray = isBuoy && timeseries.wind_direction?.data ? timeseries.wind_direction.data : (timeseries.wind_direction || []);
-  const airTempArray = isBuoy && timeseries.air_temp?.data ? timeseries.air_temp.data : (timeseries.air_temp || []);
-  const pressureArray = isBuoy && timeseries.pressure?.data ? timeseries.pressure.data : (timeseries.pressure || []);
+  const windSpeedArray =
+    isBuoy && timeseries.wind_speed?.data
+      ? timeseries.wind_speed.data
+      : timeseries.wind_speed || [];
+  const windGustArray =
+    isBuoy && timeseries.wind_gust?.data ? timeseries.wind_gust.data : timeseries.wind_gust || [];
+  const windDirArray =
+    isBuoy && timeseries.wind_direction?.data
+      ? timeseries.wind_direction.data
+      : timeseries.wind_direction || [];
+  const airTempArray =
+    isBuoy && timeseries.air_temp?.data ? timeseries.air_temp.data : timeseries.air_temp || [];
+  const pressureArray =
+    isBuoy && timeseries.pressure?.data ? timeseries.pressure.data : timeseries.pressure || [];
 
   // Create a merged dataset by time
   const dataByTime = new Map();
 
   // Add wind speeds
-  windSpeedArray.forEach(point => {
+  windSpeedArray.forEach((point) => {
     if (!dataByTime.has(point.time)) {
       dataByTime.set(point.time, {});
     }
@@ -715,7 +767,7 @@ function renderWind24HourTable(stationId) {
   });
 
   // Add wind gusts
-  windGustArray.forEach(point => {
+  windGustArray.forEach((point) => {
     if (!dataByTime.has(point.time)) {
       dataByTime.set(point.time, {});
     }
@@ -723,7 +775,7 @@ function renderWind24HourTable(stationId) {
   });
 
   // Add wind directions
-  windDirArray.forEach(point => {
+  windDirArray.forEach((point) => {
     if (!dataByTime.has(point.time)) {
       dataByTime.set(point.time, {});
     }
@@ -731,7 +783,7 @@ function renderWind24HourTable(stationId) {
   });
 
   // Add air temperature
-  airTempArray.forEach(point => {
+  airTempArray.forEach((point) => {
     if (!dataByTime.has(point.time)) {
       dataByTime.set(point.time, {});
     }
@@ -739,7 +791,7 @@ function renderWind24HourTable(stationId) {
   });
 
   // Add pressure
-  pressureArray.forEach(point => {
+  pressureArray.forEach((point) => {
     if (!dataByTime.has(point.time)) {
       dataByTime.set(point.time, {});
     }
@@ -750,7 +802,7 @@ function renderWind24HourTable(stationId) {
   const sortedTimes = Array.from(dataByTime.keys()).sort((a, b) => new Date(b) - new Date(a));
 
   // Downsample to hourly data (only show :00 minutes to keep table manageable)
-  const hourlyTimes = sortedTimes.filter(time => {
+  const hourlyTimes = sortedTimes.filter((time) => {
     const date = new Date(time);
     return date.getMinutes() === 0;
   });
@@ -773,19 +825,20 @@ function renderWind24HourTable(stationId) {
   let shouldAddToggleRow = false;
 
   if (hourlyTimes.length === 0) {
-    tableHTML += '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No data available</td></tr>';
+    tableHTML +=
+      '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No data available</td></tr>';
   } else {
     const DEFAULT_VISIBLE_ROWS = 12;
 
     hourlyTimes.forEach((time, index) => {
       const data = dataByTime.get(time);
       const formattedTime = formatTimestamp(time);
-      const speed = data.speed != null ? Math.round(data.speed) : '—';
-      const gust = data.gust != null ? Math.round(data.gust) : '—';
-      const temp = data.temp != null ? data.temp.toFixed(1) : '—';
-      const pressure = data.pressure != null ? data.pressure.toFixed(1) : '—';
+      const speed = data.speed != null ? Math.round(data.speed) : "—";
+      const gust = data.gust != null ? Math.round(data.gust) : "—";
+      const temp = data.temp != null ? data.temp.toFixed(1) : "—";
+      const pressure = data.pressure != null ? data.pressure.toFixed(1) : "—";
 
-      let direction = '—';
+      let direction = "—";
       if (data.direction != null) {
         const cardinal = degreesToCardinal(data.direction);
         const arrow = getDirectionalArrow(data.direction);
@@ -793,7 +846,7 @@ function renderWind24HourTable(stationId) {
       }
 
       // Add 'collapsed-row' class to rows beyond the default visible count
-      const rowClass = index >= DEFAULT_VISIBLE_ROWS ? ' class="collapsed-row"' : '';
+      const rowClass = index >= DEFAULT_VISIBLE_ROWS ? ' class="collapsed-row"' : "";
 
       tableHTML += `
         <tr${rowClass}>
@@ -813,28 +866,28 @@ function renderWind24HourTable(stationId) {
     }
   }
 
-  tableHTML += '</tbody>';
+  tableHTML += "</tbody>";
   table.innerHTML = tableHTML;
 
   if (shouldAddToggleRow) {
-    const tbody = table.querySelector('tbody');
+    const tbody = table.querySelector("tbody");
     if (tbody) {
-      const toggleRow = document.createElement('tr');
-      toggleRow.id = 'toggle-row-wind-24hr';
+      const toggleRow = document.createElement("tr");
+      toggleRow.id = "toggle-row-wind-24hr";
 
-      const toggleCell = document.createElement('td');
+      const toggleCell = document.createElement("td");
       toggleCell.colSpan = 6;
-      toggleCell.style.textAlign = 'center';
-      toggleCell.style.padding = '1rem';
-      toggleCell.style.background = '#f5f9fc';
-      toggleCell.style.cursor = 'pointer';
-      toggleCell.style.borderBottom = 'none';
+      toggleCell.style.textAlign = "center";
+      toggleCell.style.padding = "1rem";
+      toggleCell.style.background = "#f5f9fc";
+      toggleCell.style.cursor = "pointer";
+      toggleCell.style.borderBottom = "none";
 
-      const toggleButton = document.createElement('button');
-      toggleButton.type = 'button';
-      toggleButton.className = 'wind-24hr-toggle-btn';
-      toggleButton.textContent = '▼ Show More Rows';
-      toggleButton.addEventListener('click', toggleWind24hrRows);
+      const toggleButton = document.createElement("button");
+      toggleButton.type = "button";
+      toggleButton.className = "wind-24hr-toggle-btn";
+      toggleButton.textContent = "▼ Show More Rows";
+      toggleButton.addEventListener("click", toggleWind24hrRows);
 
       toggleCell.appendChild(toggleButton);
       toggleRow.appendChild(toggleCell);
@@ -850,11 +903,11 @@ function setWindTimeRange(hours) {
   currentWindTimeRange = hours;
 
   // Update ALL button states (sync all toggle buttons on page)
-  document.querySelectorAll('.wind-time-range-btn').forEach(btn => {
+  document.querySelectorAll(".wind-time-range-btn").forEach((btn) => {
     if (parseInt(btn.dataset.windHours) === hours) {
-      btn.classList.add('active');
+      btn.classList.add("active");
     } else {
-      btn.classList.remove('active');
+      btn.classList.remove("active");
     }
   });
 
@@ -862,7 +915,7 @@ function setWindTimeRange(hours) {
   updateWindTimeRangeLabels();
 
   // Re-render current station chart and table
-  const selectedStation = document.getElementById('wind-station-select')?.value;
+  const selectedStation = document.getElementById("wind-station-select")?.value;
   if (selectedStation) {
     renderWindChart(selectedStation);
     renderWind24HourTable(selectedStation);
@@ -874,12 +927,12 @@ function setWindTimeRange(hours) {
  */
 function updateWindTimeRangeLabels() {
   // Update section headers
-  const chartSectionH2 = document.querySelector('#wind-chart-section h2');
+  const chartSectionH2 = document.querySelector("#wind-chart-section h2");
   if (chartSectionH2) {
     chartSectionH2.textContent = `${currentWindTimeRange}-Hour Wind Trends`;
   }
 
-  const tableSectionH2 = document.querySelector('#wind-data-table-section h2');
+  const tableSectionH2 = document.querySelector("#wind-data-table-section h2");
   if (tableSectionH2) {
     tableSectionH2.textContent = `${currentWindTimeRange}-Hour Wind Data`;
   }
@@ -896,7 +949,7 @@ function renderWindChart(stationId) {
   const station = filteredData[stationId];
   if (!station) return;
 
-  const chartContainer = document.getElementById('wind-trend-chart');
+  const chartContainer = document.getElementById("wind-trend-chart");
   if (!chartContainer) return;
 
   // Initialize chart if needed
@@ -909,19 +962,26 @@ function renderWindChart(stationId) {
   const isBuoy = station.isBuoy;
 
   // Buoys have {data: [...], name, unit} structure, wind stations have simple arrays
-  const windSpeedArray = isBuoy && timeseries.wind_speed?.data ? timeseries.wind_speed.data : (timeseries.wind_speed || []);
-  const windGustArray = isBuoy && timeseries.wind_gust?.data ? timeseries.wind_gust.data : (timeseries.wind_gust || []);
-  const windDirArray = isBuoy && timeseries.wind_direction?.data ? timeseries.wind_direction.data : (timeseries.wind_direction || []);
+  const windSpeedArray =
+    isBuoy && timeseries.wind_speed?.data
+      ? timeseries.wind_speed.data
+      : timeseries.wind_speed || [];
+  const windGustArray =
+    isBuoy && timeseries.wind_gust?.data ? timeseries.wind_gust.data : timeseries.wind_gust || [];
+  const windDirArray =
+    isBuoy && timeseries.wind_direction?.data
+      ? timeseries.wind_direction.data
+      : timeseries.wind_direction || [];
 
-  const windSpeedData = windSpeedArray.map(p => ({ time: p.time, value: p.value }));
-  const windGustData = windGustArray.map(p => ({ time: p.time, value: p.value }));
+  const windSpeedData = windSpeedArray.map((p) => ({ time: p.time, value: p.value }));
+  const windGustData = windGustArray.map((p) => ({ time: p.time, value: p.value }));
   const windDirTimes = windDirArray;
 
   // Create direction arrow data
   const { arrowData, maxValue } = createWindDirectionArrows(
     windDirTimes,
-    windSpeedData.map(d => d.value),
-    windGustData.map(d => d.value)
+    windSpeedData.map((d) => d.value),
+    windGustData.map((d) => d.value),
   );
 
   // Calculate y-axis max to ensure arrows are visible at top
@@ -935,28 +995,30 @@ function renderWindChart(stationId) {
 
   // Chart configuration
   const option = {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     title: {
-      text: `${station.name.replace(' 💨', '').replace(' 🌊', '')} - Wind Conditions`,
-      left: 'center',
+      text: `${station.name.replace(" 💨", "").replace(" 🌊", "")} - Wind Conditions`,
+      left: "center",
       textStyle: {
         fontSize: 18,
         fontWeight: 600,
-        color: '#004b7c'
-      }
+        color: "#004b7c",
+      },
     },
     tooltip: {
       ...getMobileOptimizedTooltipConfig(),
       formatter: (params) => {
         if (!params || params.length === 0) return "";
-        const time = new Date(params[0].value[0]).toLocaleString("en-US", {
-          month: "numeric",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-          timeZone: "America/Vancouver"
-        }).replace(',', '');
+        const time = new Date(params[0].value[0])
+          .toLocaleString("en-US", {
+            month: "numeric",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+            timeZone: "America/Vancouver",
+          })
+          .replace(",", "");
         let res = `<b>${time}</b><br/>`;
 
         params.forEach((p) => {
@@ -968,7 +1030,9 @@ function renderWindChart(stationId) {
 
         // Add wind direction to tooltip if available
         const timestamp = new Date(params[0].value[0]).getTime();
-        const dirPoint = windDirTimes.find(d => Math.abs(new Date(d.time).getTime() - timestamp) < 1800000);
+        const dirPoint = windDirTimes.find(
+          (d) => Math.abs(new Date(d.time).getTime() - timestamp) < 1800000,
+        );
         if (dirPoint && dirPoint.value != null) {
           const dir = Math.round(dirPoint.value);
           const compass = degreesToCardinal(dir);
@@ -976,89 +1040,91 @@ function renderWindChart(stationId) {
         }
 
         return res;
-      }
+      },
     },
     legend: {
       data: legendData,
-      top: 35
+      top: 35,
     },
     grid: {
-      left: '8%',
-      right: '5%',
-      bottom: '15%',
-      top: '20%',
-      containLabel: true
+      left: "8%",
+      right: "5%",
+      bottom: "15%",
+      top: "20%",
+      containLabel: true,
     },
     xAxis: {
-      type: 'time',
+      type: "time",
       axisLabel: {
         rotate: 45,
         formatter: (value) => {
           const date = new Date(value);
-          return date.toLocaleString("en-US", {
-            month: "numeric",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-            timeZone: "America/Vancouver"
-          }).replace(',', '');
-        }
-      }
+          return date
+            .toLocaleString("en-US", {
+              month: "numeric",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+              timeZone: "America/Vancouver",
+            })
+            .replace(",", "");
+        },
+      },
     },
     yAxis: {
-      type: 'value',
-      name: 'Speed (kt)',
-      max: yAxisMax
+      type: "value",
+      name: "Speed (kt)",
+      max: yAxisMax,
     },
     series: [
       {
-        name: 'Wind Speed',
-        type: 'line',
-        data: windSpeedData.map(d => [new Date(d.time).getTime(), d.value]),
+        name: "Wind Speed",
+        type: "line",
+        data: windSpeedData.map((d) => [new Date(d.time).getTime(), d.value]),
         smooth: true,
         lineStyle: {
           width: 2,
-          color: '#fb8c00'
+          color: "#fb8c00",
         },
         itemStyle: {
-          color: '#fb8c00'
+          color: "#fb8c00",
         },
         areaStyle: {
-          opacity: 0.1
-        }
+          opacity: 0.1,
+        },
       },
       {
-        name: 'Wind Gust',
-        type: 'scatter',
-        data: windGustData.map(d => [new Date(d.time).getTime(), d.value]),
-        symbol: 'circle',
+        name: "Wind Gust",
+        type: "scatter",
+        data: windGustData.map((d) => [new Date(d.time).getTime(), d.value]),
+        symbol: "circle",
         symbolSize: 6,
         itemStyle: {
-          color: '#e53935'
-        }
+          color: "#e53935",
+        },
       },
       {
-        name: 'Wind Direction',
-        type: 'scatter',
+        name: "Wind Direction",
+        type: "scatter",
         data: arrowData,
-        symbol: 'path://M0,10 L-4,-10 L0,-8 L4,-10 Z', // Centered arrow pointing DOWN
+        symbol: "path://M0,10 L-4,-10 L0,-8 L4,-10 Z", // Centered arrow pointing DOWN
         symbolSize: 16,
-        symbolRotate: function(params) {
+        symbolRotate: function (params) {
           return arrowData[params.dataIndex]?.symbolRotate || 0;
         },
         itemStyle: {
-          color: function(params) {
-            return arrowData[params.dataIndex]?.itemStyle?.color || '#004b7c';
+          color: function (params) {
+            return arrowData[params.dataIndex]?.itemStyle?.color || "#004b7c";
           },
-          opacity: function(params) {
+          opacity: function (params) {
             return arrowData[params.dataIndex]?.itemStyle?.opacity || 0.7;
-          }
+          },
         },
         silent: true,
-        z: 2
-      }
-    ]
+        z: 2,
+      },
+    ],
   };
 
   windChart.setOption(option);
@@ -1069,11 +1135,11 @@ function renderWindChart(stationId) {
  * Called from map popups and URL hash navigation
  */
 function selectStationAndShowChart(stationId) {
-  const select = document.getElementById('wind-station-select');
-  const chartSection = document.getElementById('wind-chart-section');
+  const select = document.getElementById("wind-station-select");
+  const chartSection = document.getElementById("wind-chart-section");
 
   if (!select || !chartSection) {
-    console.warn('Station selector or chart section not found');
+    console.warn("Station selector or chart section not found");
     return;
   }
 
@@ -1084,7 +1150,7 @@ function selectStationAndShowChart(stationId) {
         setTimeout(() => attemptSelection(retryCount + 1), 300);
         return;
       }
-      console.warn('Wind timeseries data not loaded');
+      console.warn("Wind timeseries data not loaded");
       return;
     }
 
@@ -1103,7 +1169,7 @@ function selectStationAndShowChart(stationId) {
 
     // Scroll to chart section
     setTimeout(() => {
-      chartSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      chartSection.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   };
 
@@ -1121,31 +1187,31 @@ window.selectStationAndShowChart = selectStationAndShowChart;
  * Toggle visibility of extra rows in wind 24hr table
  */
 function toggleWind24hrRows() {
-  const table = document.getElementById('wind-24hr-table');
+  const table = document.getElementById("wind-24hr-table");
   if (!table) return;
 
-  const collapsedRows = table.querySelectorAll('.collapsed-row');
-  const toggleButton = table.querySelector('.wind-24hr-toggle-btn');
+  const collapsedRows = table.querySelectorAll(".collapsed-row");
+  const toggleButton = table.querySelector(".wind-24hr-toggle-btn");
 
   if (!toggleButton || collapsedRows.length === 0) return;
 
   // Check actual computed display value (CSS or inline)
   const firstRowStyle = window.getComputedStyle(collapsedRows[0]);
-  const isCurrentlyHidden = firstRowStyle.display === 'none';
+  const isCurrentlyHidden = firstRowStyle.display === "none";
 
   // Toggle display for all collapsed rows
-  collapsedRows.forEach(row => {
-    row.style.display = isCurrentlyHidden ? 'table-row' : 'none';
+  collapsedRows.forEach((row) => {
+    row.style.display = isCurrentlyHidden ? "table-row" : "none";
   });
 
   // Update button text
-  toggleButton.textContent = isCurrentlyHidden ? '▲ Show Less Rows' : '▼ Show More Rows';
+  toggleButton.textContent = isCurrentlyHidden ? "▲ Show Less Rows" : "▼ Show More Rows";
 }
 
 function checkHashForWindStation() {
   const hash = window.location.hash;
 
-  if (hash.startsWith('#wind-')) {
+  if (hash.startsWith("#wind-")) {
     const stationId = hash.substring(6); // Remove '#wind-'
     // Short delay to ensure data starts loading, then retry logic in selectStationAndShowChart kicks in
     setTimeout(() => {
@@ -1155,29 +1221,29 @@ function checkHashForWindStation() {
 }
 
 // Event delegation for time range buttons and table Map/Chart links (replaces onclick= for CSP compliance)
-document.addEventListener('click', function(e) {
-  var btn = e.target.closest('.wind-time-range-btn');
+document.addEventListener("click", function (e) {
+  var btn = e.target.closest(".wind-time-range-btn");
   if (btn) {
     var hours = parseInt(btn.dataset.windHours, 10);
     if (hours) setWindTimeRange(hours);
     return;
   }
 
-  var link = e.target.closest('.wind-table-action-link');
+  var link = e.target.closest(".wind-table-action-link");
   if (link) {
     e.preventDefault();
     var stationId = link.dataset.stationId;
     var action = link.dataset.action;
-    if (action === 'map') {
+    if (action === "map") {
       showStationOnMap(stationId);
-    } else if (action === 'chart') {
+    } else if (action === "chart") {
       viewStationChart(stationId);
     }
   }
 });
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   loadWindTable();
   loadWindTimeseries();
   updateWindTimeRangeLabels(); // Set initial labels to 24-Hour
@@ -1186,7 +1252,7 @@ document.addEventListener('DOMContentLoaded', () => {
   checkHashForWindStation();
 
   // Handle window resize
-  window.addEventListener('resize', () => {
+  window.addEventListener("resize", () => {
     if (windChart) {
       windChart.resize();
     }

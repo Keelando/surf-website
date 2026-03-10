@@ -1,43 +1,49 @@
 """Tests for lib/directions.py — compass direction utilities."""
 
 import pytest
+
 from lib.directions import (
-    degrees_to_cardinal,
-    cardinal_to_degrees,
-    is_offshore_wind,
-    DIRS_16,
     DIRS_8,
+    cardinal_to_degrees,
+    degrees_to_cardinal,
+    is_offshore_wind,
 )
 
-
 # ── degrees → cardinal ────────────────────────────────────────
+
 
 class TestDegreesToCardinal16:
     """16-point compass tests."""
 
-    @pytest.mark.parametrize("degrees, expected", [
-        (0, "N"),
-        (45, "NE"),
-        (90, "E"),
-        (135, "SE"),
-        (180, "S"),
-        (225, "SW"),
-        (270, "W"),
-        (315, "NW"),
-    ])
+    @pytest.mark.parametrize(
+        "degrees, expected",
+        [
+            (0, "N"),
+            (45, "NE"),
+            (90, "E"),
+            (135, "SE"),
+            (180, "S"),
+            (225, "SW"),
+            (270, "W"),
+            (315, "NW"),
+        ],
+    )
     def test_cardinal_points(self, degrees, expected):
         assert degrees_to_cardinal(degrees) == expected
 
-    @pytest.mark.parametrize("degrees, expected", [
-        (22.5, "NNE"),
-        (67.5, "ENE"),
-        (112.5, "ESE"),
-        (157.5, "SSE"),
-        (202.5, "SSW"),
-        (247.5, "WSW"),
-        (292.5, "WNW"),
-        (337.5, "NNW"),
-    ])
+    @pytest.mark.parametrize(
+        "degrees, expected",
+        [
+            (22.5, "NNE"),
+            (67.5, "ENE"),
+            (112.5, "ESE"),
+            (157.5, "SSE"),
+            (202.5, "SSW"),
+            (247.5, "WSW"),
+            (292.5, "WNW"),
+            (337.5, "NNW"),
+        ],
+    )
     def test_intercardinal_points(self, degrees, expected):
         assert degrees_to_cardinal(degrees) == expected
 
@@ -57,16 +63,19 @@ class TestDegreesToCardinal16:
 class TestDegreesToCardinal8:
     """8-point compass tests."""
 
-    @pytest.mark.parametrize("degrees, expected", [
-        (0, "N"),
-        (45, "NE"),
-        (90, "E"),
-        (135, "SE"),
-        (180, "S"),
-        (225, "SW"),
-        (270, "W"),
-        (315, "NW"),
-    ])
+    @pytest.mark.parametrize(
+        "degrees, expected",
+        [
+            (0, "N"),
+            (45, "NE"),
+            (90, "E"),
+            (135, "SE"),
+            (180, "S"),
+            (225, "SW"),
+            (270, "W"),
+            (315, "NW"),
+        ],
+    )
     def test_cardinal_points(self, degrees, expected):
         assert degrees_to_cardinal(degrees, points=8) == expected
 
@@ -92,15 +101,19 @@ class TestDegreesToCardinalEdge:
 
 # ── cardinal → degrees ────────────────────────────────────────
 
+
 class TestCardinalToDegrees:
-    @pytest.mark.parametrize("cardinal, expected", [
-        ("N", 0),
-        ("E", 90),
-        ("S", 180),
-        ("W", 270),
-        ("NE", 45),
-        ("NW", 315),
-    ])
+    @pytest.mark.parametrize(
+        "cardinal, expected",
+        [
+            ("N", 0),
+            ("E", 90),
+            ("S", 180),
+            ("W", 270),
+            ("NE", 45),
+            ("NW", 315),
+        ],
+    )
     def test_known_values(self, cardinal, expected):
         assert cardinal_to_degrees(cardinal) == expected
 
@@ -132,6 +145,7 @@ class TestCardinalRoundtrip:
 
 
 # ── offshore wind detection ───────────────────────────────────
+
 
 class TestIsOffshoreWind:
     def test_direct_offshore(self):

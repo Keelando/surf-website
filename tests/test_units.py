@@ -1,10 +1,16 @@
 """Tests for lib/units.py — unit conversion utilities."""
 
 import pytest
-from lib.units import kmh_to_knots, knots_to_kmh, ms_to_kmh, meters_to_feet
 
+from lib.units import (
+    kmh_to_knots,
+    knots_to_kmh,
+    meters_to_feet,
+    ms_to_kmh,
+)
 
 # ── km/h ↔ knots ──────────────────────────────────────────────
+
 
 class TestKmhToKnots:
     def test_known_values(self):
@@ -52,6 +58,7 @@ class TestRoundtrip:
 
 # ── m/s → km/h ────────────────────────────────────────────────
 
+
 class TestMsToKmh:
     def test_known_values(self):
         assert ms_to_kmh(0) == 0.0
@@ -69,6 +76,7 @@ class TestMsToKmh:
 
 
 # ── meters → feet ─────────────────────────────────────────────
+
 
 class TestMetersToFeet:
     def test_known_values(self):

@@ -32,7 +32,7 @@ from pathlib import Path
 from lib.config import EXPORT_DIR, safe_json_write
 from lib.logging_config import setup_logging
 
-logger = setup_logging('lightstation_json_export')
+logger = setup_logging("lightstation_json_export")
 
 # ---------- Config ----------
 DB_PATH = Path.home() / ".local" / "share" / "lightstation_data.sqlite"
@@ -66,13 +66,16 @@ def query_and_export():
 
         for station_name in stations:
             # Get the most recent observation for this station
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT *
                 FROM lightstation_observation
                 WHERE station_name = ?
                 ORDER BY observation_time DESC
                 LIMIT 1
-            """, (station_name,))
+            """,
+                (station_name,),
+            )
 
             row = cur.fetchone()
             if not row:
@@ -81,15 +84,16 @@ def query_and_export():
             # Check if this observation has null key values
             # If so, fall back to the most recent observation with non-null data
             has_data = (
-                row["wind_speed_kt"] is not None or
-                row["wind_calm"] or
-                row["sea_height_ft"] is not None or
-                row["sea_condition"] is not None
+                row["wind_speed_kt"] is not None
+                or row["wind_calm"]
+                or row["sea_height_ft"] is not None
+                or row["sea_condition"] is not None
             )
 
             if not has_data:
                 # Fall back to last observation with actual data
-                cur.execute("""
+                cur.execute(
+                    """
                     SELECT *
                     FROM lightstation_observation
                     WHERE station_name = ?
@@ -99,7 +103,9 @@ def query_and_export():
                            OR sea_condition IS NOT NULL)
                     ORDER BY observation_time DESC
                     LIMIT 1
-                """, (station_name,))
+                """,
+                    (station_name,),
+                )
 
                 fallback_row = cur.fetchone()
                 if fallback_row:

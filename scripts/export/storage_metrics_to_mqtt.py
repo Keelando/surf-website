@@ -23,7 +23,7 @@ import paho.mqtt.client as mqtt
 
 from lib.logging_config import setup_logging
 
-logger = setup_logging('storage_metrics')
+logger = setup_logging("storage_metrics")
 
 # MQTT configuration from .env file
 env_path = Path("~/.config/buoy_influx_1.env").expanduser()
@@ -35,31 +35,11 @@ for line in env_path.read_text().splitlines():
 
 # Webcam archive directories
 WEBCAM_ARCHIVES = {
-    "whiterock": {
-        "path": Path("/mnt/storage/whiterock_cam"),
-        "prefix": "WR",
-        "name": "White Rock East Beach"
-    },
-    "boundarybay": {
-        "path": Path("/mnt/storage/boundarybay_cam"),
-        "prefix": "BB",
-        "name": "Boundary Bay"
-    },
-    "hollyburn": {
-        "path": Path("/mnt/storage/ambleside_cam"),
-        "prefix": "AB",
-        "name": "Hollyburn/Ambleside"
-    },
-    "coxbay": {
-        "path": Path("/mnt/storage/coxbay_cam"),
-        "prefix": "CB",
-        "name": "Cox Bay"
-    },
-    "mudbay": {
-        "path": Path("/mnt/storage/mudbay_cam"),
-        "prefix": "MB",
-        "name": "Mud Bay"
-    }
+    "whiterock": {"path": Path("/mnt/storage/whiterock_cam"), "prefix": "WR", "name": "White Rock East Beach"},
+    "boundarybay": {"path": Path("/mnt/storage/boundarybay_cam"), "prefix": "BB", "name": "Boundary Bay"},
+    "hollyburn": {"path": Path("/mnt/storage/ambleside_cam"), "prefix": "AB", "name": "Hollyburn/Ambleside"},
+    "coxbay": {"path": Path("/mnt/storage/coxbay_cam"), "prefix": "CB", "name": "Cox Bay"},
+    "mudbay": {"path": Path("/mnt/storage/mudbay_cam"), "prefix": "MB", "name": "Mud Bay"},
 }
 
 # Storage mount point
@@ -79,7 +59,7 @@ def get_disk_metrics():
             "total_gb": round(usage.total / (1024**3), 2),
             "used_gb": round(usage.used / (1024**3), 2),
             "free_gb": round(usage.free / (1024**3), 2),
-            "percent_used": round((usage.used / usage.total) * 100, 1)
+            "percent_used": round((usage.used / usage.total) * 100, 1),
         }
     except Exception as e:
         logger.error(f"Failed to get disk metrics: {e}")
@@ -106,7 +86,7 @@ def get_webcam_metrics(cam_config):
                 "oldest_image_age_hours": None,
                 "newest_image_age_hours": None,
                 "oldest_image_date": None,
-                "newest_image_date": None
+                "newest_image_date": None,
             }
 
         # Calculate total size
@@ -133,7 +113,7 @@ def get_webcam_metrics(cam_config):
             "oldest_image_age_hours": oldest_age_hours,
             "newest_image_age_hours": newest_age_hours,
             "oldest_image_date": oldest_date,
-            "newest_image_date": newest_date
+            "newest_image_date": newest_date,
         }
 
     except Exception as e:
@@ -145,30 +125,10 @@ def publish_disk_discovery(mqtt_client):
     """Publish Home Assistant MQTT Discovery for disk sensors"""
 
     sensors = {
-        "storage_total": {
-            "name": "Storage Total",
-            "unit": "GB",
-            "icon": "mdi:harddisk",
-            "device_class": None
-        },
-        "storage_used": {
-            "name": "Storage Used",
-            "unit": "GB",
-            "icon": "mdi:harddisk",
-            "device_class": None
-        },
-        "storage_free": {
-            "name": "Storage Free",
-            "unit": "GB",
-            "icon": "mdi:harddisk",
-            "device_class": None
-        },
-        "storage_percent_used": {
-            "name": "Storage Usage",
-            "unit": "%",
-            "icon": "mdi:chart-donut",
-            "device_class": None
-        }
+        "storage_total": {"name": "Storage Total", "unit": "GB", "icon": "mdi:harddisk", "device_class": None},
+        "storage_used": {"name": "Storage Used", "unit": "GB", "icon": "mdi:harddisk", "device_class": None},
+        "storage_free": {"name": "Storage Free", "unit": "GB", "icon": "mdi:harddisk", "device_class": None},
+        "storage_percent_used": {"name": "Storage Usage", "unit": "%", "icon": "mdi:chart-donut", "device_class": None},
     }
 
     for sensor_key, sensor_info in sensors.items():
@@ -184,8 +144,8 @@ def publish_disk_discovery(mqtt_client):
                 "identifiers": ["webcam_storage"],
                 "name": "Surf Server Webcam Storage",
                 "model": "External HDD",
-                "manufacturer": "Custom"
-            }
+                "manufacturer": "Custom",
+            },
         }
 
         if sensor_info["unit"]:
@@ -202,38 +162,22 @@ def publish_webcam_discovery(mqtt_client, cam_id, cam_name):
     """Publish Home Assistant MQTT Discovery for webcam sensors"""
 
     sensors = {
-        "image_count": {
-            "name": f"{cam_name} Image Count",
-            "unit": "images",
-            "icon": "mdi:image-multiple"
-        },
-        "storage_size": {
-            "name": f"{cam_name} Storage Size",
-            "unit": "MB",
-            "icon": "mdi:database"
-        },
-        "oldest_image_age": {
-            "name": f"{cam_name} Oldest Image Age",
-            "unit": "h",
-            "icon": "mdi:clock-start"
-        },
-        "newest_image_age": {
-            "name": f"{cam_name} Newest Image Age",
-            "unit": "h",
-            "icon": "mdi:clock-end"
-        },
+        "image_count": {"name": f"{cam_name} Image Count", "unit": "images", "icon": "mdi:image-multiple"},
+        "storage_size": {"name": f"{cam_name} Storage Size", "unit": "MB", "icon": "mdi:database"},
+        "oldest_image_age": {"name": f"{cam_name} Oldest Image Age", "unit": "h", "icon": "mdi:clock-start"},
+        "newest_image_age": {"name": f"{cam_name} Newest Image Age", "unit": "h", "icon": "mdi:clock-end"},
         "oldest_image_date": {
             "name": f"{cam_name} Oldest Image",
             "unit": None,
             "icon": "mdi:calendar-start",
-            "device_class": "timestamp"
+            "device_class": "timestamp",
         },
         "newest_image_date": {
             "name": f"{cam_name} Latest Image",
             "unit": None,
             "icon": "mdi:calendar-end",
-            "device_class": "timestamp"
-        }
+            "device_class": "timestamp",
+        },
     }
 
     for sensor_key, sensor_info in sensors.items():
@@ -248,8 +192,8 @@ def publish_webcam_discovery(mqtt_client, cam_id, cam_name):
                 "identifiers": ["webcam_storage"],
                 "name": "Surf Server Webcam Storage",
                 "model": "External HDD",
-                "manufacturer": "Custom"
-            }
+                "manufacturer": "Custom",
+            },
         }
 
         # Only set state_class for numeric measurements (not timestamps)
@@ -293,7 +237,9 @@ def main():
         mqtt_client.publish("storage/storage_free", disk_metrics["free_gb"], retain=True)
         mqtt_client.publish("storage/storage_percent_used", disk_metrics["percent_used"], retain=True)
 
-        logger.info(f"Disk: {disk_metrics['used_gb']} GB / {disk_metrics['total_gb']} GB ({disk_metrics['percent_used']}%)")
+        logger.info(
+            f"Disk: {disk_metrics['used_gb']} GB / {disk_metrics['total_gb']} GB " f"({disk_metrics['percent_used']}%)"
+        )
 
     # Publish webcam metrics
     for cam_id, cam_config in WEBCAM_ARCHIVES.items():
@@ -304,39 +250,23 @@ def main():
             if PUBLISH_DISCOVERY:
                 publish_webcam_discovery(mqtt_client, cam_id, cam_config["name"])
 
-            mqtt_client.publish(
-                f"storage/webcam/{cam_id}/image_count",
-                cam_metrics["image_count"],
-                retain=True
-            )
-            mqtt_client.publish(
-                f"storage/webcam/{cam_id}/storage_size",
-                cam_metrics["total_size_mb"],
-                retain=True
-            )
+            mqtt_client.publish(f"storage/webcam/{cam_id}/image_count", cam_metrics["image_count"], retain=True)
+            mqtt_client.publish(f"storage/webcam/{cam_id}/storage_size", cam_metrics["total_size_mb"], retain=True)
 
             if cam_metrics["oldest_image_age_hours"] is not None:
                 mqtt_client.publish(
-                    f"storage/webcam/{cam_id}/oldest_image_age",
-                    cam_metrics["oldest_image_age_hours"],
-                    retain=True
+                    f"storage/webcam/{cam_id}/oldest_image_age", cam_metrics["oldest_image_age_hours"], retain=True
                 )
                 mqtt_client.publish(
-                    f"storage/webcam/{cam_id}/oldest_image_date",
-                    cam_metrics["oldest_image_date"],
-                    retain=True
+                    f"storage/webcam/{cam_id}/oldest_image_date", cam_metrics["oldest_image_date"], retain=True
                 )
 
             if cam_metrics["newest_image_age_hours"] is not None:
                 mqtt_client.publish(
-                    f"storage/webcam/{cam_id}/newest_image_age",
-                    cam_metrics["newest_image_age_hours"],
-                    retain=True
+                    f"storage/webcam/{cam_id}/newest_image_age", cam_metrics["newest_image_age_hours"], retain=True
                 )
                 mqtt_client.publish(
-                    f"storage/webcam/{cam_id}/newest_image_date",
-                    cam_metrics["newest_image_date"],
-                    retain=True
+                    f"storage/webcam/{cam_id}/newest_image_date", cam_metrics["newest_image_date"], retain=True
                 )
 
             logger.info(f"{cam_config['name']}: {cam_metrics['image_count']} images, {cam_metrics['total_size_mb']} MB")

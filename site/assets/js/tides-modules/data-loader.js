@@ -33,13 +33,13 @@ export class TideDataStore {
         tideTimeseriesData_temp,
         tideHighLowData_temp,
         combinedWaterLevelData_temp,
-        stationsMetadata_temp
+        stationsMetadata_temp,
       ] = await Promise.all([
         fetchWithTimeout(`/data/tide-latest.json?t=${Date.now()}`),
         fetchWithTimeout(`/data/tide-timeseries.json?t=${Date.now()}`),
         fetchWithTimeout(`/data/tide-hi-low.json?t=${Date.now()}`),
         fetchWithTimeout(`/data/combined-water-level.json?t=${Date.now()}`).catch(() => null),
-        fetchWithTimeout(`/data/stations.json?t=${Date.now()}`).catch(() => null)
+        fetchWithTimeout(`/data/stations.json?t=${Date.now()}`).catch(() => null),
       ]);
 
       this.tideCurrentData = tideCurrentData_temp;
@@ -48,17 +48,16 @@ export class TideDataStore {
 
       if (combinedWaterLevelData_temp) {
         this.combinedWaterLevelData = combinedWaterLevelData_temp;
-        logger.info('Tides', 'Loaded combined water level data');
+        logger.info("Tides", "Loaded combined water level data");
       } else {
-        logger.warn('Tides', 'Combined water level data not available');
+        logger.warn("Tides", "Combined water level data not available");
       }
 
       if (stationsMetadata_temp) {
         this.stationsMetadata = stationsMetadata_temp.tides || {};
       }
-
     } catch (error) {
-      logger.error('Tides', 'Error loading tide data', error);
+      logger.error("Tides", "Error loading tide data", error);
       throw error;
     }
   }

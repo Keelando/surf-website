@@ -13,7 +13,6 @@ Stations:
 Integrates into existing wind_data.sqlite database.
 """
 
-
 import sqlite3
 from datetime import datetime, timezone
 
@@ -23,22 +22,17 @@ import requests
 from lib.config import WIND_DATABASE
 from lib.logging_config import setup_logging
 
-logger = setup_logging('nws_fetch')
+logger = setup_logging("nws_fetch")
 
 # NWS Stations Configuration
 # NOTE: Using /observations (multiple) instead of /observations/latest
 # because latest sometimes has incomplete data (null wind fields)
 # We'll fetch recent observations and pick the best one
 NWS_STATIONS = {
-    'KBLI': {
-        'name': 'Bellingham International Airport',
-        'url': 'https://api.weather.gov/stations/KBLI/observations'
-    },
-    'KORS': {
-        'name': 'Orcas Island Airport',
-        'url': 'https://api.weather.gov/stations/KORS/observations'
-    }
+    "KBLI": {"name": "Bellingham International Airport", "url": "https://api.weather.gov/stations/KBLI/observations"},
+    "KORS": {"name": "Orcas Island Airport", "url": "https://api.weather.gov/stations/KORS/observations"},
 }
+
 
 # Unit conversions
 def ms_to_kmh(ms):
@@ -47,11 +41,13 @@ def ms_to_kmh(ms):
         return None
     return ms * 3.6
 
+
 def pa_to_hpa(pa):
     """Convert Pascals to hectopascals (millibars)."""
     if pa is None:
         return None
     return pa / 100.0
+
 
 def m_to_km(m):
     """Convert meters to kilometers."""
@@ -59,11 +55,13 @@ def m_to_km(m):
         return None
     return m / 1000.0
 
+
 def knots_to_kmh(knots):
     """Convert knots to kilometers per hour."""
     if knots is None:
         return None
     return knots * 1.852
+
 
 def parse_metar_wind(raw_metar):
     """
@@ -90,7 +88,7 @@ def parse_metar_wind(raw_metar):
 
     # METAR wind pattern: direction (3 digits or VRB), speed (2-3 digits), optional gust (G + 2-3 digits), KT
     # Examples: 19025G33KT, VRB05KT, 00000KT, 27015KT
-    pattern = r'\b(VRB|\d{3})(\d{2,3})(?:G(\d{2,3}))?KT\b'
+    pattern = r"\b(VRB|\d{3})(\d{2,3})(?:G(\d{2,3}))?KT\b"
     match = re.search(pattern, raw_metar)
 
     if not match:
@@ -99,9 +97,9 @@ def parse_metar_wind(raw_metar):
     dir_str, speed_str, gust_str = match.groups()
 
     # Parse direction
-    if dir_str == 'VRB':
+    if dir_str == "VRB":
         wind_direction = None  # Variable direction
-    elif dir_str == '000':
+    elif dir_str == "000":
         wind_direction = None  # Calm
     else:
         wind_direction = int(dir_str)
@@ -136,9 +134,7 @@ def fetch_nws_observation(station_id, url):
         logger.info(f"Fetching NWS data for {station_id} from {url}")
 
         # NWS API requires User-Agent header
-        headers = {
-            'User-Agent': '(halibutbank.ca, contact@halibutbank.ca)'
-        }
+        headers = {"User-Agent": "(halibutbank.ca, contact@halibutbank.ca)"}
 
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
@@ -146,7 +142,7 @@ def fetch_nws_observation(station_id, url):
         data = response.json()
 
         # Parse response as feature collection
-        features = data.get('features', [])
+        features = data.get("features", [])
         if not features:
             logger.warning(f"No observations returned for {station_id}")
             return None
@@ -154,37 +150,38 @@ def fetch_nws_observation(station_id, url):
         # Score and rank observations by data completeness
         # Prefer observations with: wind_direction AND wind_speed, or parseable METAR
         from datetime import timedelta
+
         cutoff_time = datetime.now(timezone.utc) - timedelta(hours=1)
 
         scored_obs = []
         for feature in features[:5]:  # Check last 5 observations
-            props = feature.get('properties', {})
+            props = feature.get("properties", {})
 
             # Parse timestamp
-            timestamp_str = props.get('timestamp')
+            timestamp_str = props.get("timestamp")
             if not timestamp_str:
                 continue
 
-            obs_dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            obs_dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
             if obs_dt < cutoff_time:
                 continue  # Too old
 
             # Score based on data completeness
             score = 0
-            has_wind_dir = props.get('windDirection', {}).get('value') is not None
-            has_wind_speed = props.get('windSpeed', {}).get('value') is not None
-            has_metar = bool(props.get('rawMessage', '').strip())
-            has_temp = props.get('temperature', {}).get('value') is not None
+            has_wind_dir = props.get("windDirection", {}).get("value") is not None
+            has_wind_speed = props.get("windSpeed", {}).get("value") is not None
+            has_metar = bool(props.get("rawMessage", "").strip())
+            has_temp = props.get("temperature", {}).get("value") is not None
 
             if has_wind_dir and has_wind_speed:
                 score += 10  # Best: parsed wind data
             elif has_metar:
-                score += 5   # Good: can parse METAR
+                score += 5  # Good: can parse METAR
             if has_temp:
-                score += 2   # Nice to have
+                score += 2  # Nice to have
 
             # Prefer more recent (tie-breaker)
-            score += (obs_dt.timestamp() / 1000000)
+            score += obs_dt.timestamp() / 1000000
 
             scored_obs.append((score, props, obs_dt))
 
@@ -203,14 +200,14 @@ def fetch_nws_observation(station_id, url):
 
         # Extract and convert values
         # Wind speed/direction (NWS API returns km/h, not m/s!)
-        wind_speed_kmh = props.get('windSpeed', {}).get('value')  # Already in km/h
-        wind_gust_kmh = props.get('windGust', {}).get('value')    # Already in km/h
-        wind_direction = props.get('windDirection', {}).get('value')
+        wind_speed_kmh = props.get("windSpeed", {}).get("value")  # Already in km/h
+        wind_gust_kmh = props.get("windGust", {}).get("value")  # Already in km/h
+        wind_direction = props.get("windDirection", {}).get("value")
 
         # Fallback: Parse METAR rawMessage if API fields are null
         # Many NOAA land stations don't return parsed wind fields, but METAR has the data
-        if (wind_direction is None or wind_speed_kmh is None):
-            raw_metar = props.get('rawMessage', '')
+        if wind_direction is None or wind_speed_kmh is None:
+            raw_metar = props.get("rawMessage", "")
             if raw_metar:
                 metar_dir, metar_speed, metar_gust = parse_metar_wind(raw_metar)
                 if metar_dir is not None:
@@ -225,22 +222,22 @@ def fetch_nws_observation(station_id, url):
                     logger.debug(f"Parsed wind gust from METAR: {metar_gust:.1f} km/h")
 
         # Temperature
-        air_temp_c = props.get('temperature', {}).get('value')
-        dewpoint_c = props.get('dewpoint', {}).get('value')
-        wind_chill_c = props.get('windChill', {}).get('value')
-        heat_index_c = props.get('heatIndex', {}).get('value')
+        air_temp_c = props.get("temperature", {}).get("value")
+        dewpoint_c = props.get("dewpoint", {}).get("value")
+        wind_chill_c = props.get("windChill", {}).get("value")
+        heat_index_c = props.get("heatIndex", {}).get("value")
 
         # Pressure (use sea level pressure if available, otherwise barometric)
-        pressure_pa = props.get('seaLevelPressure', {}).get('value')
+        pressure_pa = props.get("seaLevelPressure", {}).get("value")
         if pressure_pa is None:
-            pressure_pa = props.get('barometricPressure', {}).get('value')
+            pressure_pa = props.get("barometricPressure", {}).get("value")
 
         # Other metrics
-        humidity = props.get('relativeHumidity', {}).get('value')
-        visibility_m = props.get('visibility', {}).get('value')
+        humidity = props.get("relativeHumidity", {}).get("value")
+        visibility_m = props.get("visibility", {}).get("value")
 
         # Precipitation (3hr is more commonly available than 1hr for airports)
-        precip_3hr_mm = props.get('precipitationLast3Hours', {}).get('value')
+        precip_3hr_mm = props.get("precipitationLast3Hours", {}).get("value")
         if precip_3hr_mm is not None:
             # Convert meters to mm
             precip_3hr_mm = precip_3hr_mm * 1000.0
@@ -250,28 +247,29 @@ def fetch_nws_observation(station_id, url):
         visibility_km = m_to_km(visibility_m)
 
         observation = {
-            'station_id': station_id,
-            'station_name': NWS_STATIONS[station_id]['name'],
-            'observation_time': observation_time,
-            'wind_speed_kmh': wind_speed_kmh,
-            'wind_gust_kmh': wind_gust_kmh,
-            'wind_direction_deg': int(wind_direction) if wind_direction is not None else None,
-            'air_temp_c': air_temp_c,
-            'dewpoint_c': dewpoint_c,
-            'wind_chill_c': wind_chill_c,
-            'heat_index_c': heat_index_c,
-            'pressure_mslp_hpa': pressure_hpa,  # Use MSLP field since NWS provides sea level
-            'humidity_percent': humidity,
-            'visibility_km': visibility_km,
-            'rainfall_1hr_mm': None,  # Not commonly available from airports
-            'rainfall_6hr_mm': precip_3hr_mm,  # Store 3hr precip in 6hr field for now
-            'source_file': f'NWS API: {url}'
+            "station_id": station_id,
+            "station_name": NWS_STATIONS[station_id]["name"],
+            "observation_time": observation_time,
+            "wind_speed_kmh": wind_speed_kmh,
+            "wind_gust_kmh": wind_gust_kmh,
+            "wind_direction_deg": int(wind_direction) if wind_direction is not None else None,
+            "air_temp_c": air_temp_c,
+            "dewpoint_c": dewpoint_c,
+            "wind_chill_c": wind_chill_c,
+            "heat_index_c": heat_index_c,
+            "pressure_mslp_hpa": pressure_hpa,  # Use MSLP field since NWS provides sea level
+            "humidity_percent": humidity,
+            "visibility_km": visibility_km,
+            "rainfall_1hr_mm": None,  # Not commonly available from airports
+            "rainfall_6hr_mm": precip_3hr_mm,  # Store 3hr precip in 6hr field for now
+            "source_file": f"NWS API: {url}",
         }
 
         wind_str = f"{wind_speed_kmh:.1f}" if wind_speed_kmh is not None else "N/A"
         temp_str = f"{air_temp_c:.1f}" if air_temp_c is not None else "N/A"
-        logger.info(f"Successfully parsed NWS observation for {station_id}: "
-                   f"Wind {wind_str} km/h, Temp {temp_str}°C")
+        logger.info(
+            f"Successfully parsed NWS observation for {station_id}: " f"Wind {wind_str} km/h, Temp {temp_str}°C"
+        )
 
         return observation
 
@@ -289,7 +287,8 @@ def insert_observation(observation):
         conn = sqlite3.connect(WIND_DATABASE)
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO wind_observation (
                 station_id, observation_time, wind_speed_kmh, wind_gust_kmh,
                 wind_direction_deg, air_temp_c, pressure_hpa, rainfall_1hr_mm,
@@ -297,31 +296,35 @@ def insert_observation(observation):
                 pressure_mslp_hpa, visibility_km, station_name, wind_chill_c,
                 heat_index_c
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            observation['station_id'],
-            observation['observation_time'],
-            observation['wind_speed_kmh'],
-            observation['wind_gust_kmh'],
-            observation['wind_direction_deg'],
-            observation['air_temp_c'],
-            None,  # pressure_hpa (leaving null, using MSLP instead)
-            observation['rainfall_1hr_mm'],
-            observation['rainfall_6hr_mm'],
-            observation['source_file'],
-            observation['humidity_percent'],
-            observation['dewpoint_c'],
-            observation['pressure_mslp_hpa'],
-            observation['visibility_km'],
-            observation['station_name'],
-            observation['wind_chill_c'],
-            observation['heat_index_c']
-        ))
+        """,
+            (
+                observation["station_id"],
+                observation["observation_time"],
+                observation["wind_speed_kmh"],
+                observation["wind_gust_kmh"],
+                observation["wind_direction_deg"],
+                observation["air_temp_c"],
+                None,  # pressure_hpa (leaving null, using MSLP instead)
+                observation["rainfall_1hr_mm"],
+                observation["rainfall_6hr_mm"],
+                observation["source_file"],
+                observation["humidity_percent"],
+                observation["dewpoint_c"],
+                observation["pressure_mslp_hpa"],
+                observation["visibility_km"],
+                observation["station_name"],
+                observation["wind_chill_c"],
+                observation["heat_index_c"],
+            ),
+        )
 
         conn.commit()
         conn.close()
 
-        logger.info(f"Inserted observation for {observation['station_id']} at "
-                   f"{datetime.fromtimestamp(observation['observation_time'], tz=timezone.utc).isoformat()}")
+        logger.info(
+            f"Inserted observation for {observation['station_id']} at "
+            f"{datetime.fromtimestamp(observation['observation_time'], tz=timezone.utc).isoformat()}"
+        )
 
     except sqlite3.Error as e:
         logger.error(f"Database error inserting {observation['station_id']}: {e}")
@@ -335,7 +338,7 @@ def main():
     fail_count = 0
 
     for station_id, config in NWS_STATIONS.items():
-        observation = fetch_nws_observation(station_id, config['url'])
+        observation = fetch_nws_observation(station_id, config["url"])
 
         if observation:
             insert_observation(observation)
@@ -346,5 +349,5 @@ def main():
     logger.info(f"=== NWS Weather Fetch Complete: {success_count} success, {fail_count} failed ===")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

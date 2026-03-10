@@ -28,7 +28,7 @@ from pathlib import Path
 from lib.config import EXPORT_DIR, safe_json_write
 from lib.logging_config import setup_logging
 
-logger = setup_logging('lightstation_timeseries_export')
+logger = setup_logging("lightstation_timeseries_export")
 
 # ---------- Config ----------
 DB_PATH = Path.home() / ".local" / "share" / "lightstation_data.sqlite"
@@ -60,7 +60,8 @@ def export_timeseries():
 
         for station_name in stations:
             # Get all observations for this station in the past 24 hours
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT
                     observation_time,
                     region,
@@ -76,7 +77,9 @@ def export_timeseries():
                 WHERE station_name = ?
                 AND observation_time >= ?
                 ORDER BY observation_time ASC
-            """, (station_name, cutoff_time))
+            """,
+                (station_name, cutoff_time),
+            )
 
             rows = cur.fetchall()
 
@@ -94,7 +97,7 @@ def export_timeseries():
                     "sea_height_ft": [],
                     "sea_condition": [],
                     "swell_intensity": [],
-                }
+                },
             }
 
             # Build timeseries for each metric
@@ -103,39 +106,33 @@ def export_timeseries():
 
                 # Wind speed (null if calm)
                 if not row["wind_calm"] and row["wind_speed_kt"] is not None:
-                    station_data["timeseries"]["wind_speed_kt"].append({
-                        "time": timestamp,
-                        "value": row["wind_speed_kt"],
-                        "gusting": bool(row["wind_gusting"])
-                    })
+                    station_data["timeseries"]["wind_speed_kt"].append(
+                        {"time": timestamp, "value": row["wind_speed_kt"], "gusting": bool(row["wind_gusting"])}
+                    )
 
                 # Wind direction (skip if calm or null)
                 if not row["wind_calm"] and row["wind_direction"]:
-                    station_data["timeseries"]["wind_direction"].append({
-                        "time": timestamp,
-                        "value": row["wind_direction"]
-                    })
+                    station_data["timeseries"]["wind_direction"].append(
+                        {"time": timestamp, "value": row["wind_direction"]}
+                    )
 
                 # Sea height
                 if row["sea_height_ft"] is not None:
-                    station_data["timeseries"]["sea_height_ft"].append({
-                        "time": timestamp,
-                        "value": row["sea_height_ft"]
-                    })
+                    station_data["timeseries"]["sea_height_ft"].append(
+                        {"time": timestamp, "value": row["sea_height_ft"]}
+                    )
 
                 # Sea condition
                 if row["sea_condition"]:
-                    station_data["timeseries"]["sea_condition"].append({
-                        "time": timestamp,
-                        "value": row["sea_condition"]
-                    })
+                    station_data["timeseries"]["sea_condition"].append(
+                        {"time": timestamp, "value": row["sea_condition"]}
+                    )
 
                 # Swell intensity
                 if row["swell_intensity"]:
-                    station_data["timeseries"]["swell_intensity"].append({
-                        "time": timestamp,
-                        "value": row["swell_intensity"]
-                    })
+                    station_data["timeseries"]["swell_intensity"].append(
+                        {"time": timestamp, "value": row["swell_intensity"]}
+                    )
 
             output[station_name] = station_data
 

@@ -125,6 +125,7 @@ def populate_station_data(conn, station_id, station_info):
 
         # Add slight variations to make data realistic
         import random
+
         variation = 1 + (random.random() - 0.5) * 0.2  # ±10% variation
 
         modified_fields = {}
@@ -151,10 +152,13 @@ def populate_station_data(conn, station_id, station_info):
         column_names = ", ".join(columns)
 
         try:
-            cur.execute(f"""
+            cur.execute(
+                f"""
                 INSERT OR IGNORE INTO wind_observation ({column_names})
                 VALUES ({placeholders})
-            """, values)
+            """,
+                values,
+            )
 
             if cur.rowcount > 0:
                 inserted += 1
@@ -222,7 +226,11 @@ def print_summary(conn):
     """)
 
     for row in cur.fetchall():
-        print(f"  {row[0]:6s} | {row[1]} | Wind: {row[2]:.1f} km/h ({row[3]:.1f} gust) @ {row[4]}° | Temp: {row[5]:.1f}°C | Press: {row[6]:.1f} hPa")
+        print(
+            f"  {row[0]:6s} | {row[1]} | "
+            f"Wind: {row[2]:.1f} km/h ({row[3]:.1f} gust) @ {row[4]}° | "
+            f"Temp: {row[5]:.1f}°C | Press: {row[6]:.1f} hPa"
+        )
 
     print("=" * 70)
 
@@ -268,6 +276,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

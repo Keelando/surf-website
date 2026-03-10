@@ -98,17 +98,17 @@ MARINE_FORECAST_FRESHNESS_WINDOW = 86400  # 24 hours
 
 # How often scripts typically run (for reference/documentation)
 UPDATE_FREQ = {
-    'buoy_observations': 1,      # Every minute
-    'noaa_buoy': 20,             # Every 20 minutes
-    'tide_observations': 30,     # Every 30 minutes
-    'tide_predictions': 1440,    # Daily (at midnight)
-    'tide_highlow': 1440,        # Daily (at midnight)
-    'storm_surge': 360,          # Every 6 hours
-    'marine_forecast': 30,       # Every 30 minutes
-    'json_exports': 1,           # Every minute (latest snapshot)
-    'timeseries_exports': 5,     # Every 5 minutes
-    'tide_json': 5,              # Every 5 minutes
-    'mqtt': 1,                   # Every minute
+    "buoy_observations": 1,  # Every minute
+    "noaa_buoy": 20,  # Every 20 minutes
+    "tide_observations": 30,  # Every 30 minutes
+    "tide_predictions": 1440,  # Daily (at midnight)
+    "tide_highlow": 1440,  # Daily (at midnight)
+    "storm_surge": 360,  # Every 6 hours
+    "marine_forecast": 30,  # Every 30 minutes
+    "json_exports": 1,  # Every minute (latest snapshot)
+    "timeseries_exports": 5,  # Every 5 minutes
+    "tide_json": 5,  # Every 5 minutes
+    "mqtt": 1,  # Every minute
 }
 
 # =============================================================================
@@ -131,8 +131,8 @@ NOAA_NDBC_BASE = "https://www.ndbc.noaa.gov/data/realtime2"
 # Maximum reasonable values (for sanity checking)
 MAX_WAVE_HEIGHT = 20.0  # meters
 MAX_WIND_SPEED = 200.0  # km/h
-MAX_WATER_TEMP = 30.0   # °C
-MIN_WATER_TEMP = -5.0   # °C (can be below freezing due to salinity)
+MAX_WATER_TEMP = 30.0  # °C
+MIN_WATER_TEMP = -5.0  # °C (can be below freezing due to salinity)
 
 # NOAA data quality: Minimum valid pressure (999 hPa is valid low pressure!)
 MIN_VALID_PRESSURE = 900.0  # hPa
@@ -143,17 +143,18 @@ MIN_VALID_PRESSURE = 900.0  # hPa
 
 # Number of decimal places for various measurements
 DECIMALS = {
-    'wave_height': 1,      # meters
-    'wind_speed': 1,       # km/h or knots
-    'water_temp': 1,       # °C
-    'pressure': 1,         # hPa
-    'tide_level': 2,       # meters
-    'storm_surge': 3,      # meters
+    "wave_height": 1,  # meters
+    "wind_speed": 1,  # km/h or knots
+    "water_temp": 1,  # °C
+    "pressure": 1,  # hPa
+    "tide_level": 2,  # meters
+    "storm_surge": 3,  # meters
 }
 
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
 
 def ensure_directories():
     """
@@ -173,26 +174,26 @@ def get_database_info():
     Useful for diagnostics and troubleshooting.
     """
     return {
-        'buoy_database': {
-            'path': str(BUOY_DATABASE),
-            'exists': BUOY_DATABASE.exists(),
-            'size_mb': BUOY_DATABASE.stat().st_size / 1024 / 1024 if BUOY_DATABASE.exists() else 0
+        "buoy_database": {
+            "path": str(BUOY_DATABASE),
+            "exists": BUOY_DATABASE.exists(),
+            "size_mb": BUOY_DATABASE.stat().st_size / 1024 / 1024 if BUOY_DATABASE.exists() else 0,
         },
-        'tide_database': {
-            'path': str(TIDE_DATABASE),
-            'exists': TIDE_DATABASE.exists(),
-            'size_mb': TIDE_DATABASE.stat().st_size / 1024 / 1024 if TIDE_DATABASE.exists() else 0
+        "tide_database": {
+            "path": str(TIDE_DATABASE),
+            "exists": TIDE_DATABASE.exists(),
+            "size_mb": TIDE_DATABASE.stat().st_size / 1024 / 1024 if TIDE_DATABASE.exists() else 0,
         },
-        'storm_surge_database': {
-            'path': str(STORM_SURGE_DATABASE),
-            'exists': STORM_SURGE_DATABASE.exists(),
-            'size_mb': STORM_SURGE_DATABASE.stat().st_size / 1024 / 1024 if STORM_SURGE_DATABASE.exists() else 0
+        "storm_surge_database": {
+            "path": str(STORM_SURGE_DATABASE),
+            "exists": STORM_SURGE_DATABASE.exists(),
+            "size_mb": STORM_SURGE_DATABASE.stat().st_size / 1024 / 1024 if STORM_SURGE_DATABASE.exists() else 0,
         },
-        'wind_database': {
-            'path': str(WIND_DATABASE),
-            'exists': WIND_DATABASE.exists(),
-            'size_mb': WIND_DATABASE.stat().st_size / 1024 / 1024 if WIND_DATABASE.exists() else 0
-        }
+        "wind_database": {
+            "path": str(WIND_DATABASE),
+            "exists": WIND_DATABASE.exists(),
+            "size_mb": WIND_DATABASE.stat().st_size / 1024 / 1024 if WIND_DATABASE.exists() else 0,
+        },
     }
 
 
@@ -260,7 +261,7 @@ if __name__ == "__main__":
         print(f"  {db_name}:")
         print(f"    Path: {info['path']}")
         print(f"    Exists: {info['exists']}")
-        if info['exists']:
+        if info["exists"]:
             print(f"    Size: {info['size_mb']:.2f} MB")
 
     print("\n✅ Configuration loaded successfully")

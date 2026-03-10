@@ -23,7 +23,6 @@ Format:
 }
 """
 
-
 import json
 import sqlite3
 from datetime import datetime, timezone
@@ -36,7 +35,7 @@ from lib.stations import get_all_wind
 # Shared utilities
 from lib.units import kmh_to_knots
 
-logger = setup_logging('wind_json_export')
+logger = setup_logging("wind_json_export")
 
 # ---------- Config ----------
 OUT_PATH = EXPORT_DIR / "latest_wind.json"
@@ -76,10 +75,10 @@ ALL_FIELDS = [
     "rainfall_1hr_mm",
     "rainfall_6hr_mm",
     # Additional fields (added 2025-12-19) - stored but previously not exported
-    "humidity_percent",      # 66% populated - relative humidity
-    "dewpoint_c",            # 66% populated - dewpoint temperature
-    "pressure_mslp_hpa",     # Mean sea level pressure (for NOAA stations)
-    "visibility_km",         # Visibility distance
+    "humidity_percent",  # 66% populated - relative humidity
+    "dewpoint_c",  # 66% populated - dewpoint temperature
+    "pressure_mslp_hpa",  # Mean sea level pressure (for NOAA stations)
+    "visibility_km",  # Visibility distance
 ]
 
 
@@ -110,7 +109,7 @@ def query_and_export():
         for station_id in WIND_STATIONS_REGISTRY.keys():
             # Get station name from registry (single source of truth)
             station_metadata = WIND_STATIONS_REGISTRY[station_id]
-            station_name = station_metadata.get('name', station_id)
+            station_name = station_metadata.get("name", station_id)
 
             # Override with legacy name if specified (for backward compatibility)
             if station_id in STATION_NAME_OVERRIDES:
@@ -119,13 +118,16 @@ def query_and_export():
             station_json = {"name": station_name}
 
             # Get the most recent observation time (for reference)
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT observation_time
                 FROM wind_observation
                 WHERE station_id = ?
                 ORDER BY observation_time DESC
                 LIMIT 1
-            """, (station_id,))
+            """,
+                (station_id,),
+            )
             latest_row = cur.fetchone()
 
             if not latest_row:
@@ -176,11 +178,14 @@ def query_and_export():
                     if field_time != latest_time:
                         if "field_times" not in station_json:
                             station_json["field_times"] = {}
-                        station_json["field_times"][field] = datetime.fromtimestamp(field_time, tz=timezone.utc).isoformat()
+                        station_json["field_times"][field] = datetime.fromtimestamp(
+                            field_time,
+                            tz=timezone.utc,
+                        ).isoformat()
 
             # Add cardinal direction
-            if 'wind_direction' in station_json and station_json['wind_direction'] is not None:
-                cardinal = degrees_to_cardinal(station_json['wind_direction'])
+            if "wind_direction" in station_json and station_json["wind_direction"] is not None:
+                cardinal = degrees_to_cardinal(station_json["wind_direction"])
                 if cardinal:
                     station_json["wind_direction_cardinal"] = cardinal
 
@@ -224,7 +229,7 @@ def query_and_export():
     latest_json["_meta"] = {
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "freshness_window_seconds": FRESHNESS_WINDOW,
-        "freshness_window_human": f"{FRESHNESS_WINDOW // 3600}h"
+        "freshness_window_human": f"{FRESHNESS_WINDOW // 3600}h",
     }
 
     # Atomic write

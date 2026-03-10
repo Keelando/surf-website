@@ -14,7 +14,6 @@ IMPORTANT DATUM NOTES:
   2. Calculating tidal residuals (storm surge = observed - predicted)
 """
 
-
 import argparse
 import os
 import sqlite3
@@ -26,11 +25,13 @@ import requests
 from lib.config import TIDE_DATABASE
 from lib.logging_config import setup_logging
 
-logger = setup_logging('surrey_tide_sync')
+logger = setup_logging("surrey_tide_sync")
 
 # ---- Configuration ----
 
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
+
+
 # Surrey FlowWorks API credentials
 def _require_env(var_name: str) -> str:
     value = os.environ.get(var_name)
@@ -51,12 +52,12 @@ SURREY_STATIONS = {
         "display_name": "Crescent Beach Ocean (Surrey)",
         "channels": {
             "water_level_predicted": 2620,  # Tidal_Prediction_CGVD28_GVRD
-            "water_level_observed": 2296,   # Anderra - CGVD28 GVRD Stage_10min
-            "tidal_residual": 2414,          # Tidal Residual (observed - predicted, Surrey's calculation)
-            "geodiff_cb_vs_cc": 2129,        # Geodifference_CBvsCC_Radar
-            "geodiff_cbvscc_pt": 2126,       # Geodifference_CBvsCC_PT (THIS IS THE ONE!)
+            "water_level_observed": 2296,  # Anderra - CGVD28 GVRD Stage_10min
+            "tidal_residual": 2414,  # Tidal Residual (observed - predicted, Surrey's calculation)
+            "geodiff_cb_vs_cc": 2129,  # Geodifference_CBvsCC_Radar
+            "geodiff_cbvscc_pt": 2126,  # Geodifference_CBvsCC_PT (THIS IS THE ONE!)
             "geodiff_cb_pt_vs_radar": 2454,  # Geodifference_CB_PTvsRadar (PT vs Radar offset)
-        }
+        },
     },
     "crescentchannel": {
         "site_id": 20183,
@@ -65,11 +66,11 @@ SURREY_STATIONS = {
         "display_name": "Crescent Channel Ocean (Surrey)",
         "channels": {
             "water_level_predicted": 2621,  # Tidal_Prediction_CGVD28_GVRD
-            "water_level_observed": 2279,   # PT - CGVD28 GVRD Stage
-            "tidal_residual": 3660,          # Tidal Residual (observed - predicted, Surrey's calculation)
-            "geodiff_pt_vs_radar": 2455,     # Geodifference_CC_PTvsRadar
-        }
-    }
+            "water_level_observed": 2279,  # PT - CGVD28 GVRD Stage
+            "tidal_residual": 3660,  # Tidal Residual (observed - predicted, Surrey's calculation)
+            "geodiff_pt_vs_radar": 2455,  # Geodifference_CC_PTvsRadar
+        },
+    },
 }
 
 
@@ -96,9 +97,7 @@ class FlowWorksAPI:
                 expires_str = data.get("Expires")
 
                 if expires_str:
-                    self.token_expiry = datetime.fromisoformat(
-                        expires_str.replace("Z", "+00:00")
-                    )
+                    self.token_expiry = datetime.fromisoformat(expires_str.replace("Z", "+00:00"))
 
                 logger.info(f"Authenticated - expires {self.token_expiry}")
                 return True
@@ -125,10 +124,7 @@ class FlowWorksAPI:
         """Get auth headers."""
         if not self._ensure_token():
             raise Exception("Failed to get valid token")
-        return {
-            "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json"
-        }
+        return {"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"}
 
     def get_channel_data(self, site_id, channel_id, hours_past=0, hours_future=0):
         """
@@ -144,7 +140,7 @@ class FlowWorksAPI:
         url = f"{self.base_url}/sites/{site_id}/channels/{channel_id}/data"
 
         # Surrey API expects Pacific time (no TZ indicator)
-        now = datetime.now(ZoneInfo('America/Vancouver'))
+        now = datetime.now(ZoneInfo("America/Vancouver"))
 
         if hours_future > 0:
             # Fetch prediction data (include 2 hours of past data to cover current time)
@@ -158,13 +154,11 @@ class FlowWorksAPI:
 
         params = {
             "startDateFilter": start.strftime("%Y-%m-%dT%H:%M:%S"),
-            "endDateFilter": end.strftime("%Y-%m-%dT%H:%M:%S")
+            "endDateFilter": end.strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
         try:
-            response = requests.get(
-                url, headers=self._get_headers(), params=params, timeout=15
-            )
+            response = requests.get(url, headers=self._get_headers(), params=params, timeout=15)
             response.raise_for_status()
             data = response.json()
 
@@ -214,10 +208,7 @@ def fetch_predictions(api, station_config, tide_conn, hours_future=96):
     """
     site_id = station_config["site_id"]
     channel_id = station_config["channels"]["water_level_predicted"]
-    station_info = {
-        "station_id": station_config["station_id"],
-        "station_name": station_config["station_name"]
-    }
+    station_info = {"station_id": station_config["station_id"], "station_name": station_config["station_name"]}
 
     # Fetch from API (FUTURE data)
     data_points = api.get_channel_data(site_id, channel_id, hours_future=hours_future)
@@ -237,16 +228,14 @@ def fetch_predictions(api, station_config, tide_conn, hours_future=96):
             continue
 
         try:
-            tide_cur.execute("""
+            tide_cur.execute(
+                """
                 INSERT OR IGNORE INTO tide_prediction
                 (station_id, station_name, prediction_time, water_level)
                 VALUES (?, ?, ?, ?)
-            """, (
-                station_info['station_id'],
-                station_info['station_name'],
-                timestamp,
-                value
-            ))
+            """,
+                (station_info["station_id"], station_info["station_name"], timestamp, value),
+            )
             if tide_cur.rowcount > 0:
                 inserted += 1
         except sqlite3.Error as e:
@@ -265,10 +254,7 @@ def fetch_observations(api, station_config, tide_conn, hours_past=48):
     """
     site_id = station_config["site_id"]
     channel_id = station_config["channels"]["water_level_observed"]
-    station_info = {
-        "station_id": station_config["station_id"],
-        "station_name": station_config["station_name"]
-    }
+    station_info = {"station_id": station_config["station_id"], "station_name": station_config["station_name"]}
 
     # Fetch from API (PAST data)
     data_points = api.get_channel_data(site_id, channel_id, hours_past=hours_past)
@@ -288,17 +274,20 @@ def fetch_observations(api, station_config, tide_conn, hours_past=48):
             continue
 
         try:
-            tide_cur.execute("""
+            tide_cur.execute(
+                """
                 INSERT OR REPLACE INTO tide_observation
                 (station_id, station_name, observation_time, water_level, quality)
                 VALUES (?, ?, ?, ?, ?)
-            """, (
-                station_info['station_id'],
-                station_info['station_name'],
-                timestamp,
-                value,
-                "CGVD28"  # Use quality field to indicate datum
-            ))
+            """,
+                (
+                    station_info["station_id"],
+                    station_info["station_name"],
+                    timestamp,
+                    value,
+                    "CGVD28",  # Use quality field to indicate datum
+                ),
+            )
             inserted += 1
         except sqlite3.Error as e:
             logger.warning(f"Failed to insert observation: {e}")
@@ -369,25 +358,43 @@ def fetch_geodetic_data(api, station_config, tide_conn, hours_past=48):
         geodiff_cbvscc_pt = geodetic_data.get("geodiff_cbvscc_pt", {}).get(timestamp)
         geodiff_pt_vs_radar = geodetic_data.get("geodiff_pt_vs_radar", {}).get(timestamp)
         geodiff_cb_pt_vs_radar = geodetic_data.get("geodiff_cb_pt_vs_radar", {}).get(timestamp)
+        value_set = [
+            tidal_residual,
+            geodiff_cb_vs_cc,
+            geodiff_cbvscc_pt,
+            geodiff_pt_vs_radar,
+            geodiff_cb_pt_vs_radar,
+        ]
 
         # Skip if all values are None
-        if all(v is None for v in [tidal_residual, geodiff_cb_vs_cc, geodiff_cbvscc_pt, geodiff_pt_vs_radar, geodiff_cb_pt_vs_radar]):
+        if all(v is None for v in value_set):
             continue
 
         try:
-            tide_cur.execute("""
+            tide_cur.execute(
+                """
                 INSERT OR REPLACE INTO surrey_geodetic_data
-                (station_id, observation_time, tidal_residual, geodiff_cb_vs_cc, geodiff_cbvscc_pt, geodiff_pt_vs_radar, geodiff_cb_pt_vs_radar)
+                (
+                    station_id,
+                    observation_time,
+                    tidal_residual,
+                    geodiff_cb_vs_cc,
+                    geodiff_cbvscc_pt,
+                    geodiff_pt_vs_radar,
+                    geodiff_cb_pt_vs_radar
+                )
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                station_id,
-                timestamp,
-                tidal_residual,
-                geodiff_cb_vs_cc,
-                geodiff_cbvscc_pt,
-                geodiff_pt_vs_radar,
-                geodiff_cb_pt_vs_radar
-            ))
+            """,
+                (
+                    station_id,
+                    timestamp,
+                    tidal_residual,
+                    geodiff_cb_vs_cc,
+                    geodiff_cbvscc_pt,
+                    geodiff_pt_vs_radar,
+                    geodiff_cb_pt_vs_radar,
+                ),
+            )
             inserted += 1
         except sqlite3.Error as e:
             logger.warning(f"Failed to insert geodetic data: {e}")
@@ -402,12 +409,9 @@ def main():
     Fetch Surrey water level data from API and store to tide database.
     """
     parser = argparse.ArgumentParser(description="Fetch Surrey tide data from FlowWorks API")
-    parser.add_argument('--predictions', action='store_true',
-                       help='Fetch tide predictions (4-day forecast)')
-    parser.add_argument('--observations', action='store_true',
-                       help='Fetch tide observations (last 2 hours)')
-    parser.add_argument('--all', action='store_true',
-                       help='Fetch all data types (default)')
+    parser.add_argument("--predictions", action="store_true", help="Fetch tide predictions (4-day forecast)")
+    parser.add_argument("--observations", action="store_true", help="Fetch tide observations (last 2 hours)")
+    parser.add_argument("--all", action="store_true", help="Fetch all data types (default)")
     args = parser.parse_args()
 
     # Default to --all if no flags specified

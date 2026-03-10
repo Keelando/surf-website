@@ -34,10 +34,17 @@ CREATE TABLE IF NOT EXISTS lightstation_observation (
 
 CREATE_INDEXES_SQL = [
     # Fast "latest by station" queries
-    "CREATE INDEX IF NOT EXISTS idx_lightstation_station_time ON lightstation_observation(station_name, observation_time DESC);",
+    (
+        "CREATE INDEX IF NOT EXISTS idx_lightstation_station_time "
+        "ON lightstation_observation(station_name, observation_time DESC);"
+    ),
     # De-dup safeguard: same station + timestamp won't double insert
-    "CREATE UNIQUE INDEX IF NOT EXISTS uniq_lightstation_station_ts ON lightstation_observation(station_name, observation_time);",
+    (
+        "CREATE UNIQUE INDEX IF NOT EXISTS uniq_lightstation_station_ts "
+        "ON lightstation_observation(station_name, observation_time);"
+    ),
 ]
+
 
 def main():
     # Ensure parent directory exists
@@ -63,6 +70,7 @@ def main():
 
     print("\n✓ Database initialized successfully!")
     print(f"Location: {DB_PATH}")
+
 
 if __name__ == "__main__":
     main()

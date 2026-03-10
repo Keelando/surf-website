@@ -32,7 +32,7 @@ from lib.stations import get_all_wind
 # Shared utilities
 from lib.units import kmh_to_knots
 
-logger = setup_logging('wind_timeseries_export')
+logger = setup_logging("wind_timeseries_export")
 
 # ---------- Config ----------
 OUT_PATH = EXPORT_DIR / "wind_timeseries_48hr.json"
@@ -43,7 +43,7 @@ WIND_STATIONS_REGISTRY = get_all_wind()
 
 # Build station names dict for compatibility
 # Note: whiterock_east is handled separately (different database)
-WIND_STATIONS = {sid: meta['name'] for sid, meta in WIND_STATIONS_REGISTRY.items()}
+WIND_STATIONS = {sid: meta["name"] for sid, meta in WIND_STATIONS_REGISTRY.items()}
 WIND_STATIONS["whiterock_east"] = "White Rock East Beach"  # Special case: different DB
 
 # White Rock East Beach database path (separate from wind database)
@@ -69,7 +69,7 @@ def downsample_to_hourly(timeseries_data):
     # Group points by hour
     hourly_buckets = {}
     for point in timeseries_data:
-        time_obj = datetime.fromisoformat(point['time'])
+        time_obj = datetime.fromisoformat(point["time"])
         # Create hour key (round down to the hour)
         hour_key = time_obj.replace(minute=0, second=0, microsecond=0)
 
@@ -78,7 +78,7 @@ def downsample_to_hourly(timeseries_data):
             hourly_buckets[hour_key] = point
         else:
             # Compare which point is closer to the hour
-            existing_time = datetime.fromisoformat(hourly_buckets[hour_key]['time'])
+            existing_time = datetime.fromisoformat(hourly_buckets[hour_key]["time"])
             existing_offset = abs((existing_time - hour_key).total_seconds())
             new_offset = abs((time_obj - hour_key).total_seconds())
             if new_offset < existing_offset:
@@ -89,7 +89,7 @@ def downsample_to_hourly(timeseries_data):
     for hour_key, point in sorted(hourly_buckets.items()):
         # Create new point with normalized timestamp
         normalized_point = point.copy()
-        normalized_point['time'] = hour_key.isoformat()
+        normalized_point["time"] = hour_key.isoformat()
         hourly.append(normalized_point)
 
     return hourly
@@ -146,10 +146,7 @@ def query_and_export_timeseries():
     output = {}
 
     for station_id, station_name in WIND_STATIONS.items():
-        station_data = {
-            "name": station_name,
-            "timeseries": {}
-        }
+        station_data = {"name": station_name, "timeseries": {}}
 
         # Special handling for White Rock East Beach (separate database)
         if station_id == "whiterock_east":
@@ -180,10 +177,13 @@ def query_and_export_timeseries():
                     rows = wr_cur.fetchall()
 
                     if rows:
-                        timeseries = [{
-                            "time": datetime.fromtimestamp(row["observation_time"], tz=timezone.utc).isoformat(),
-                            "value": round(row[field], 1) if row[field] is not None else None
-                        } for row in rows]
+                        timeseries = [
+                            {
+                                "time": datetime.fromtimestamp(row["observation_time"], tz=timezone.utc).isoformat(),
+                                "value": round(row[field], 1) if row[field] is not None else None,
+                            }
+                            for row in rows
+                        ]
 
                         # Downsample to hourly
                         hourly = downsample_to_hourly(timeseries)
@@ -224,17 +224,25 @@ def query_and_export_timeseries():
                     if meta.get("convert_to_knots", False):
                         value = round(kmh_to_knots(value), 1)
 
-                    timeseries.append({
-                        "time": datetime.fromtimestamp(row["observation_time"], tz=timezone.utc).isoformat(),
-                        "value": value
-                    })
+                    timeseries.append(
+                        {
+                            "time": datetime.fromtimestamp(row["observation_time"], tz=timezone.utc).isoformat(),
+                            "value": value,
+                        }
+                    )
 
                 # Downsample to hourly for chart display
                 hourly = downsample_to_hourly(timeseries)
 
                 if hourly:
                     # Store with simplified key (remove units from field name for JSON)
-                    json_key = metric.replace("_kmh", "").replace("_deg", "").replace("_c", "").replace("_hpa", "").replace("_mm", "")
+                    json_key = (
+                        metric.replace("_kmh", "")
+                        .replace("_deg", "")
+                        .replace("_c", "")
+                        .replace("_hpa", "")
+                        .replace("_mm", "")
+                    )
                     station_data["timeseries"][json_key] = hourly
 
             # Log if we got data for this station
@@ -248,11 +256,7 @@ def query_and_export_timeseries():
     conn.close()
 
     # Add metadata
-    output["_meta"] = {
-        "generated_utc": now.isoformat(),
-        "window_hours": 48,
-        "data_resolution": "hourly (downsampled)"
-    }
+    output["_meta"] = {"generated_utc": now.isoformat(), "window_hours": 48, "data_resolution": "hourly (downsampled)"}
 
     # Atomic write
     safe_json_write(OUT_PATH, output)

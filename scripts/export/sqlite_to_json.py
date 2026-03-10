@@ -10,7 +10,7 @@ from lib.stations import get_all_buoys
 # Shared utilities
 from lib.units import kmh_to_knots
 
-logger = setup_logging('json_export')
+logger = setup_logging("json_export")
 
 # ---------- Config ----------
 OUT_PATH = EXPORT_DIR / "latest_buoy_v2.json"
@@ -20,28 +20,52 @@ BUOYS = get_all_buoys()
 # Note: Diagnostic/backup sensor fields kept in DB but not exported (not displayed on frontend)
 ALL_FIELDS = [
     # Wave heights
-    "wave_height_sig", "wave_height_peak", "wave_height_max", "wave_height_avg",
-    "wave_height_spectral", "wave_crest_height_max",
+    "wave_height_sig",
+    "wave_height_peak",
+    "wave_height_max",
+    "wave_height_avg",
+    "wave_height_spectral",
+    "wave_crest_height_max",
     # Wave periods
-    "wave_period_sig", "wave_period_avg", "wave_period_peak", "wave_period_max_wave",
-    "wave_period_spectral", "wave_period_energy_spectral", "wave_period_sig_basic",
-    "wave_height_max_avg", "wave_period_max_avg",
+    "wave_period_sig",
+    "wave_period_avg",
+    "wave_period_peak",
+    "wave_period_max_wave",
+    "wave_period_spectral",
+    "wave_period_energy_spectral",
+    "wave_period_sig_basic",
+    "wave_height_max_avg",
+    "wave_period_max_avg",
     # Wave directions
-    "wave_direction_avg", "wave_direction_peak",
-    "wave_direction_spread_avg", "wave_direction_spread_peak",
+    "wave_direction_avg",
+    "wave_direction_peak",
+    "wave_direction_spread_avg",
+    "wave_direction_spread_peak",
     # NOAA spectral data (swell vs wind waves)
-    "swell_height", "swell_period", "swell_direction",
-    "wind_wave_height", "wind_wave_period", "wind_wave_direction",
+    "swell_height",
+    "swell_period",
+    "swell_direction",
+    "wind_wave_height",
+    "wind_wave_period",
+    "wind_wave_direction",
     # Wind (primary sensor only - secondary sensor data kept in DB but not exported)
-    "wind_speed", "wind_gust", "wind_direction", "wind_sensor_height",
+    "wind_speed",
+    "wind_gust",
+    "wind_direction",
+    "wind_sensor_height",
     # Temperature
-    "air_temp", "sea_temp",
+    "air_temp",
+    "sea_temp",
     # Pressure (primary only - secondary sensor data kept in DB but not exported)
-    "pressure", "pressure_msl",
-    "pressure_trend_char", "pressure_trend_amount",
+    "pressure",
+    "pressure_msl",
+    "pressure_trend_char",
+    "pressure_trend_amount",
     # Position
-    "buoy_lat_current", "buoy_lon_current",
+    "buoy_lat_current",
+    "buoy_lon_current",
 ]
+
 
 def query_and_export():
     latest_json = {}
@@ -55,7 +79,7 @@ def query_and_export():
         # Guard against schema drift
         cur.execute("PRAGMA table_info(buoy_observation);")
         existing_cols = {row[1] for row in cur.fetchall()}
-        
+
         available_fields = [f for f in ALL_FIELDS if f in existing_cols]
 
         if not {"buoy_id", "observation_time"}.issubset(existing_cols):
@@ -68,14 +92,17 @@ def query_and_export():
             # Get the most recent observation time (for reference)
             # Exclude future timestamps (from tide predictions)
             now_ts = datetime.now(timezone.utc).timestamp()
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT observation_time
                 FROM buoy_observation
                 WHERE buoy_id = ?
                   AND observation_time <= ?
                 ORDER BY observation_time DESC
                 LIMIT 1
-            """, (buoy_id, now_ts))
+            """,
+                (buoy_id, now_ts),
+            )
             latest_row = cur.fetchone()
 
             if not latest_row:
@@ -113,27 +140,30 @@ def query_and_export():
                 if row:
                     value = row[field]
                     field_time = row["observation_time"]
-                    
+
                     # Convert wind speeds from km/h to knots (future-proof for wind_wave_speed)
                     if "wind" in field and field.endswith(("speed", "gust")):
                         value = kmh_to_knots(value)
-                    
+
                     buoy_json[field] = value
-                    
+
                     # Track individual field timestamps if different from main observation
                     if field_time != latest_time:
                         if "field_times" not in buoy_json:
                             buoy_json["field_times"] = {}
-                        buoy_json["field_times"][field] = datetime.fromtimestamp(field_time, tz=timezone.utc).isoformat()
+                        buoy_json["field_times"][field] = datetime.fromtimestamp(
+                            field_time,
+                            tz=timezone.utc,
+                        ).isoformat()
 
             # Add cardinal directions for all directional fields
             direction_fields = [
-                'wind_direction',
-                'wind_direction_sensor_2',
-                'wave_direction_avg',
-                'wave_direction_peak',
-                'swell_direction',
-                'wind_wave_direction',
+                "wind_direction",
+                "wind_direction_sensor_2",
+                "wave_direction_avg",
+                "wave_direction_peak",
+                "swell_direction",
+                "wind_wave_direction",
             ]
 
             for field in direction_fields:
@@ -154,7 +184,7 @@ def query_and_export():
     latest_json["_meta"] = {
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "freshness_window_seconds": BUOY_FRESHNESS_WINDOW,
-        "freshness_window_human": f"{BUOY_FRESHNESS_WINDOW // 3600}h"
+        "freshness_window_human": f"{BUOY_FRESHNESS_WINDOW // 3600}h",
     }
 
     # Atomic write
@@ -165,6 +195,7 @@ def query_and_export():
 
     logger.info(f"Wrote JSON snapshot to {OUT_PATH}")
     logger.info(f"Total buoys: {buoy_count}")
+
 
 if __name__ == "__main__":
     query_and_export()

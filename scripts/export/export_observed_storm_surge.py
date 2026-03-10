@@ -8,7 +8,6 @@ to JSON for plotting alongside GDSPS hindcast predictions.
 Output: ~/site/data/storm_surge/observed_surge.json
 """
 
-
 import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
@@ -20,7 +19,7 @@ from lib.config import EXPORT_DIR, TIDE_DATABASE
 from lib.logging_config import setup_logging
 from lib.stations import STATIONS
 
-logger = setup_logging('observed_surge')
+logger = setup_logging("observed_surge")
 
 # ---------- Config ----------
 OUTPUT_PATH = EXPORT_DIR / "storm_surge" / "observed_surge.json"
@@ -33,7 +32,7 @@ TIDE_TO_SURGE_MAP = {
     "tofino": "Tofino",
     # Surrey stations - use pre-calculated tidal residuals
     "crescent_beach_ocean": "Crescent_Beach_Ocean",
-    "crescent_channel_ocean": "Crescent_Channel_Ocean"
+    "crescent_channel_ocean": "Crescent_Channel_Ocean",
 }
 
 # Number of days back to export (9 days back + today = 10 days total, matching hindcast)
@@ -48,13 +47,16 @@ def load_station_metadata():
 def fetch_observations(conn, station_id, start_time):
     """Fetch tide observations for a station since start_time."""
     cur = conn.cursor()
-    cur.execute("""
+    cur.execute(
+        """
         SELECT observation_time, water_level, quality
         FROM tide_observation
         WHERE station_id = ?
         AND observation_time >= ?
         ORDER BY observation_time ASC
-    """, (station_id, start_time))
+    """,
+        (station_id, start_time),
+    )
 
     return cur.fetchall()
 
@@ -62,13 +64,16 @@ def fetch_observations(conn, station_id, start_time):
 def fetch_predictions(conn, station_id, start_time):
     """Fetch tide predictions for a station since start_time."""
     cur = conn.cursor()
-    cur.execute("""
+    cur.execute(
+        """
         SELECT prediction_time, water_level
         FROM tide_prediction
         WHERE station_id = ?
         AND prediction_time >= ?
         ORDER BY prediction_time ASC
-    """, (station_id, start_time))
+    """,
+        (station_id, start_time),
+    )
 
     return cur.fetchall()
 
@@ -80,14 +85,17 @@ def fetch_surrey_tidal_residual(conn, station_id, start_time):
     Returns list of tuples: (observation_time, tidal_residual)
     """
     cur = conn.cursor()
-    cur.execute("""
+    cur.execute(
+        """
         SELECT observation_time, tidal_residual
         FROM surrey_geodetic_data
         WHERE station_id = ?
         AND observation_time >= ?
         AND tidal_residual IS NOT NULL
         ORDER BY observation_time ASC
-    """, (station_id, start_time))
+    """,
+        (station_id, start_time),
+    )
 
     return cur.fetchall()
 
@@ -109,11 +117,9 @@ def format_surrey_residual_data(residual_rows):
         if dt.minute % 15 != 0 or dt.second != 0:
             continue
 
-        surge_data.append({
-            "time": dt.isoformat(),
-            "observed_surge_m": round(residual, 4),
-            "source": "surrey_calculated"
-        })
+        surge_data.append(
+            {"time": dt.isoformat(), "observed_surge_m": round(residual, 4), "source": "surrey_calculated"}
+        )
 
     return surge_data
 
@@ -153,13 +159,15 @@ def calculate_observed_surge(observations, predictions):
 
         if pred_level is not None:
             surge = obs_level - pred_level
-            surge_data.append({
-                "time": dt.isoformat(),
-                "observed_surge_m": round(surge, 4),
-                "observation_m": round(obs_level, 3),
-                "prediction_m": round(pred_level, 3),
-                "quality": quality
-            })
+            surge_data.append(
+                {
+                    "time": dt.isoformat(),
+                    "observed_surge_m": round(surge, 4),
+                    "observation_m": round(obs_level, 3),
+                    "prediction_m": round(pred_level, 3),
+                    "quality": quality,
+                }
+            )
 
     return surge_data
 
@@ -177,7 +185,7 @@ def export_observed_surge():
     conn = sqlite3.connect(TIDE_DATABASE)
 
     # Calculate start time: midnight Pacific 9 days ago (matches hindcast logic)
-    pacific = pytz.timezone('America/Vancouver')
+    pacific = pytz.timezone("America/Vancouver")
     now_pacific = datetime.now(pacific)
     today_midnight_pacific = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
     start_date_pacific = today_midnight_pacific - timedelta(days=9)
@@ -227,16 +235,10 @@ def export_observed_surge():
             stations_data[surge_name] = {
                 "station_name": station_name,
                 "tide_station_id": tide_key,
-                "location": {
-                    "lat": station["lat"],
-                    "lon": station["lon"]
-                },
+                "location": {"lat": station["lat"], "lon": station["lon"]},
                 "data": surge_data,
                 "count": len(surge_data),
-                "time_range": {
-                    "start": surge_data[0]["time"],
-                    "end": surge_data[-1]["time"]
-                }
+                "time_range": {"start": surge_data[0]["time"], "end": surge_data[-1]["time"]},
             }
             logger.debug(f"  Exported {len(surge_data)} data points for {station_name}")
         else:
@@ -251,7 +253,7 @@ def export_observed_surge():
         "days_back": DAYS_BACK,
         "units": "meters",
         "calculation": "observed_surge = tide_observation - tide_prediction",
-        "stations": stations_data
+        "stations": stations_data,
     }
 
     # Write to file

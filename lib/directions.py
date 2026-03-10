@@ -16,12 +16,7 @@ Usage:
 """
 
 # 16-point compass rose (most precise)
-DIRS_16 = [
-    "N", "NNE", "NE", "ENE",
-    "E", "ESE", "SE", "SSE",
-    "S", "SSW", "SW", "WSW",
-    "W", "WNW", "NW", "NNW"
-]
+DIRS_16 = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
 
 # 8-point compass rose (less precise)
 DIRS_8 = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]

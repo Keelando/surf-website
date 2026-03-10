@@ -8,6 +8,7 @@ Checks for:
 3. Date ranges where data differs vs identical
 4. Which stations are affected
 """
+
 import json
 from datetime import datetime
 from pathlib import Path
@@ -21,7 +22,7 @@ def analyze_hindcast(json_path):
     with open(json_path) as f:
         data = json.load(f)
 
-    stations = data['stations']
+    stations = data["stations"]
     print(f"📊 Found {len(stations)} stations")
     print(f"📅 Generated: {data['generated_utc']}")
     print()
@@ -31,12 +32,12 @@ def analyze_hindcast(json_path):
     all_times = set()
 
     for station_id, station_info in stations.items():
-        hindcast = station_info['hindcast']
+        hindcast = station_info["hindcast"]
         station_data[station_id] = {
-            'name': station_info['station_name'],
-            'data': {item['time']: item['value'] for item in hindcast}
+            "name": station_info["station_name"],
+            "data": {item["time"]: item["value"] for item in hindcast},
         }
-        all_times.update(station_data[station_id]['data'].keys())
+        all_times.update(station_data[station_id]["data"].keys())
 
     all_times = sorted(all_times)
     print(f"📅 Total unique timestamps: {len(all_times)}")
@@ -54,13 +55,13 @@ def analyze_hindcast(json_path):
     after_cutoff = []
 
     for time_str in all_times:
-        time_dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
+        time_dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
 
         # Get values for all stations at this time
         values_at_time = {}
         for station_id in station_data:
-            if time_str in station_data[station_id]['data']:
-                values_at_time[station_id] = station_data[station_id]['data'][time_str]
+            if time_str in station_data[station_id]["data"]:
+                values_at_time[station_id] = station_data[station_id]["data"][time_str]
 
         if len(values_at_time) > 1:
             # Check if all values are identical
@@ -83,7 +84,7 @@ def analyze_hindcast(json_path):
         for time_str, values in before_cutoff[:5]:
             print(f"   {time_str}:")
             for station_id, value in values.items():
-                name = station_data[station_id]['name']
+                name = station_data[station_id]["name"]
                 print(f"      {name:30} = {value}")
         print()
 
@@ -92,7 +93,7 @@ def analyze_hindcast(json_path):
         for time_str, values in after_cutoff[:5]:
             print(f"   {time_str}:")
             for station_id, value in values.items():
-                name = station_data[station_id]['name']
+                name = station_data[station_id]["name"]
                 print(f"      {name:30} = {value}")
         print()
 
@@ -102,7 +103,7 @@ def analyze_hindcast(json_path):
 
     for station_id in sorted(station_data.keys()):
         station_info = station_data[station_id]
-        times = sorted(station_info['data'].keys())
+        times = sorted(station_info["data"].keys())
 
         if not times:
             print(f"{station_info['name']:30} NO DATA")
@@ -111,17 +112,17 @@ def analyze_hindcast(json_path):
         # Find first date where data differs from other stations
         unique_from = None
         for time_str in times:
-            time_dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
+            time_dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
 
             if time_dt >= cutoff_date:
                 # Check if this value differs from at least one other station
-                value = station_info['data'][time_str]
+                value = station_info["data"][time_str]
                 differs = False
 
                 for other_id, other_info in station_data.items():
                     if other_id == station_id:
                         continue
-                    if time_str in other_info['data'] and other_info['data'][time_str] != value:
+                    if time_str in other_info["data"] and other_info["data"][time_str] != value:
                         differs = True
                         break
 
@@ -166,6 +167,7 @@ def analyze_hindcast(json_path):
 
     return len(before_cutoff), len(after_cutoff)
 
+
 def main():
     # Check both test and production data
     test_file = Path("~/site/data/storm_surge/hindcast.json").expanduser()
@@ -189,6 +191,7 @@ def main():
         print()
 
     return 0 if after_nov7 == 0 else 1
+
 
 if __name__ == "__main__":
     exit(main())

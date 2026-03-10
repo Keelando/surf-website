@@ -22,7 +22,7 @@ def annotate_image(image_path, timestamp, logger):
     """
     try:
         # Convert UTC timestamp to PST
-        pst = pytz.timezone('America/Vancouver')
+        pst = pytz.timezone("America/Vancouver")
         timestamp_pst = timestamp.astimezone(pst)
 
         # Format as "Retrieval time: 2026-01-13T11:40PST"
@@ -37,10 +37,10 @@ def annotate_image(image_path, timestamp, logger):
         # Try to use a nice font, fall back to default if not available
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-        except:
+        except OSError:
             try:
                 font = ImageFont.truetype("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 24)
-            except:
+            except OSError:
                 # Use default font if no system fonts available
                 font = ImageFont.load_default()
                 logger.warning("Using default font (system fonts not found)")
@@ -56,13 +56,13 @@ def annotate_image(image_path, timestamp, logger):
         for offset_x in range(-outline_width, outline_width + 1):
             for offset_y in range(-outline_width, outline_width + 1):
                 if offset_x != 0 or offset_y != 0:
-                    draw.text((x + offset_x, y + offset_y), timestamp_str, font=font, fill='black')
+                    draw.text((x + offset_x, y + offset_y), timestamp_str, font=font, fill="black")
 
         # Draw main text (white)
-        draw.text(position, timestamp_str, font=font, fill='white')
+        draw.text(position, timestamp_str, font=font, fill="white")
 
         # Save the annotated image (overwrite original)
-        img.save(image_path, 'JPEG', quality=95)
+        img.save(image_path, "JPEG", quality=95)
 
         logger.info("Image annotation successful")
         return True

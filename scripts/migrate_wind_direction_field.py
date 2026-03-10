@@ -3,10 +3,12 @@
 Migrate wind_observation.wind_direction_deg → wind_direction
 Part of field name unification across buoy and wind databases.
 """
+
 import sqlite3
 from pathlib import Path
 
 WIND_DB = Path("~/.local/share/wind_data.sqlite").expanduser()
+
 
 def migrate():
     print(f"Migrating: {WIND_DB}")
@@ -53,6 +55,7 @@ def migrate():
         raise
     finally:
         conn.close()
+
 
 if __name__ == "__main__":
     migrate()

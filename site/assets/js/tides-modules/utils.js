@@ -10,13 +10,13 @@
  * @returns {string} Formatted date string (e.g., "Jan 6, 14:30")
  */
 export function formatTime(date) {
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
-    timeZone: 'America/Vancouver'
+    timeZone: "America/Vancouver",
   });
 }
 
@@ -31,16 +31,16 @@ export function getAgeString(date) {
   const diffMs = now - date;
   const diffMins = Math.floor(diffMs / 60000);
 
-  if (diffMins < 1) return 'just now';
-  if (diffMins === 1) return '1 minute ago';
+  if (diffMins < 1) return "just now";
+  if (diffMins === 1) return "1 minute ago";
   if (diffMins < 60) return `${diffMins} minutes ago`;
 
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours === 1) return '1 hour ago';
+  if (diffHours === 1) return "1 hour ago";
   if (diffHours < 24) return `${diffHours} hours ago`;
 
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return '1 day ago';
+  if (diffDays === 1) return "1 day ago";
   return `${diffDays} days ago`;
 }
 
@@ -50,18 +50,18 @@ export function getAgeString(date) {
  * @returns {void}
  */
 export function updateTimestamp() {
-  const timestampEl = document.getElementById('timestamp');
+  const timestampEl = document.getElementById("timestamp");
   if (!timestampEl) return;
 
   const now = new Date();
-  timestampEl.textContent = `Last updated: ${now.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
+  timestampEl.textContent = `Last updated: ${now.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
     hour12: false,
-    timeZone: 'America/Vancouver'
+    timeZone: "America/Vancouver",
   })}`;
 }
 
@@ -71,9 +71,9 @@ export function updateTimestamp() {
  * @returns {void}
  */
 export function showError() {
-  document.getElementById('tide-loading').style.display = 'none';
-  document.getElementById('tide-current-section').style.display = 'none';
-  document.getElementById('tide-error').style.display = 'block';
+  document.getElementById("tide-loading").style.display = "none";
+  document.getElementById("tide-current-section").style.display = "none";
+  document.getElementById("tide-error").style.display = "block";
 }
 
 /**
@@ -83,15 +83,15 @@ export function showError() {
  * @returns {void}
  */
 export function showSelectedTideOnMap() {
-  const select = document.getElementById('tide-station-select');
+  const select = document.getElementById("tide-station-select");
   if (!select || !select.value) return;
 
   const stationKey = select.value;
 
   // Map geodetic tide stations to their wave station IDs
   const geodeticToWaveMap = {
-    'crescent_beach_ocean': 'CRPILE',
-    'crescent_channel_ocean': 'CRCHAN'
+    crescent_beach_ocean: "CRPILE",
+    crescent_channel_ocean: "CRCHAN",
   };
 
   // If it's a geodetic station, show the wave station marker instead

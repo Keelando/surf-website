@@ -8,7 +8,6 @@ Uses separate database (tide_data.sqlite) with three tables:
 - tide_highlow: High/low events (wlp-hilo series)
 """
 
-
 import argparse
 import datetime
 import sqlite3
@@ -21,16 +20,18 @@ from lib.config import TIDE_DATABASE
 from lib.logging_config import setup_logging
 from lib.stations import STATIONS
 
-logger = setup_logging('tide_obs')
+logger = setup_logging("tide_obs")
 
 BASE_URL = "https://api-iwls.dfo-mpo.gc.ca/api/v1/stations"
 HEADERS = {"User-Agent": "keelan_w@hotmail.com"}
+
 
 def load_stations():
     """Load tide stations from unified station registry."""
     # Extract tide stations from unified stations.json
     tides = STATIONS.tides
     return {k: v["id"] for k, v in tides.items()}
+
 
 def ensure_db():
     """Create database and tables if they don't exist."""
@@ -119,6 +120,7 @@ def ensure_db():
     conn.commit()
     return conn
 
+
 def safe_get(url, params=None):
     try:
         r = requests.get(url, params=params, headers=HEADERS, timeout=15)
@@ -128,11 +130,13 @@ def safe_get(url, params=None):
         logger.error(f"{e}")
         return None
 
+
 def detect_available_codes(station_id):
     meta = safe_get(f"{BASE_URL}/{station_id}")
     if not meta or "timeSeries" not in meta:
         return []
     return [ts["code"] for ts in meta.get("timeSeries", [])]
+
 
 def insert_observations(cur, station_key, station_id, data):
     """
@@ -159,16 +163,20 @@ def insert_observations(cur, station_key, station_id, data):
             timestamp = int(ts.timestamp())
             water_level = row.get("value")
             qc = row.get("qcFlagCode")
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT OR IGNORE INTO tide_observation
                 (station_id, station_name, observation_time, water_level, quality)
                 VALUES (?, ?, ?, ?, ?)
-            """, (station_id, station_key, timestamp, water_level, qc))
+            """,
+                (station_id, station_key, timestamp, water_level, qc),
+            )
             if cur.rowcount > 0:
                 added += 1
         except Exception as e:
             logger.warning(f"Skipped bad observation row: {e}")
     return added
+
 
 def insert_predictions(cur, station_key, station_id, data):
     """Insert prediction data (wlp series) into tide_prediction table."""
@@ -178,16 +186,20 @@ def insert_predictions(cur, station_key, station_id, data):
             ts = datetime.datetime.fromisoformat(row["eventDate"].replace("Z", "+00:00"))
             timestamp = int(ts.timestamp())
             water_level = row.get("value")
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT OR IGNORE INTO tide_prediction
                 (station_id, station_name, prediction_time, water_level)
                 VALUES (?, ?, ?, ?)
-            """, (station_id, station_key, timestamp, water_level))
+            """,
+                (station_id, station_key, timestamp, water_level),
+            )
             if cur.rowcount > 0:
                 added += 1
         except Exception as e:
             logger.warning(f"Skipped bad prediction row: {e}")
     return added
+
 
 def insert_highlow(cur, station_key, station_id, data):
     """Insert high/low events (wlp-hilo series) into tide_highlow table."""
@@ -206,40 +218,40 @@ def insert_highlow(cur, station_key, station_id, data):
             # Determine event type by comparing with neighbors
             event_type = "unknown"
             if i > 0 and i < len(data) - 1:
-                prev_val = data[i-1].get("value")
-                next_val = data[i+1].get("value")
+                prev_val = data[i - 1].get("value")
+                next_val = data[i + 1].get("value")
                 if water_level > prev_val and water_level > next_val:
                     event_type = "high"
                 elif water_level < prev_val and water_level < next_val:
                     event_type = "low"
             elif i == 0 and len(data) > 1:
-                next_val = data[i+1].get("value")
+                next_val = data[i + 1].get("value")
                 event_type = "high" if water_level > next_val else "low"
             elif i == len(data) - 1 and len(data) > 1:
-                prev_val = data[i-1].get("value")
+                prev_val = data[i - 1].get("value")
                 event_type = "high" if water_level > prev_val else "low"
 
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT OR IGNORE INTO tide_highlow
                 (station_id, station_name, event_time, water_level, event_type)
                 VALUES (?, ?, ?, ?, ?)
-            """, (station_id, station_key, timestamp, water_level, event_type))
+            """,
+                (station_id, station_key, timestamp, water_level, event_type),
+            )
             if cur.rowcount > 0:
                 added += 1
         except Exception as e:
             logger.warning(f"Skipped bad high/low row: {e}")
     return added
 
+
 def main():
     parser = argparse.ArgumentParser(description="Fetch tide data from DFO IWLS API")
-    parser.add_argument('--observations', action='store_true',
-                       help='Fetch wlo observations (last 2 hours)')
-    parser.add_argument('--predictions', action='store_true',
-                       help='Fetch wlp predictions (48-hour window)')
-    parser.add_argument('--highlow', action='store_true',
-                       help='Fetch wlp-hilo events (48-hour window)')
-    parser.add_argument('--all', action='store_true',
-                       help='Fetch all data types')
+    parser.add_argument("--observations", action="store_true", help="Fetch wlo observations (last 2 hours)")
+    parser.add_argument("--predictions", action="store_true", help="Fetch wlp predictions (48-hour window)")
+    parser.add_argument("--highlow", action="store_true", help="Fetch wlp-hilo events (48-hour window)")
+    parser.add_argument("--all", action="store_true", help="Fetch all data types")
     args = parser.parse_args()
 
     if not (args.observations or args.predictions or args.highlow or args.all):
@@ -276,9 +288,12 @@ def main():
         if args.observations or args.all:
             if "wlo" in codes:
                 # Check for most recent observation in database
-                cur.execute("""
+                cur.execute(
+                    """
                     SELECT MAX(observation_time) FROM tide_observation WHERE station_id = ?
-                """, (key,))
+                """,
+                    (key,),
+                )
                 last_obs = cur.fetchone()[0]
 
                 if last_obs:
@@ -293,7 +308,7 @@ def main():
                 params = {
                     "time-series-code": "wlo",
                     "from": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "to": now.strftime("%Y-%m-%dT%H:%M:%SZ")
+                    "to": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 }
                 data = safe_get(url, params)
                 if data:
@@ -316,7 +331,7 @@ def main():
                 params = {
                     "time-series-code": "wlp",
                     "from": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "to": end.strftime("%Y-%m-%dT%H:%M:%SZ")
+                    "to": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 }
                 data = safe_get(url, params)
                 if data:
@@ -338,7 +353,7 @@ def main():
                 params = {
                     "time-series-code": "wlp-hilo",
                     "from": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "to": end.strftime("%Y-%m-%dT%H:%M:%SZ")
+                    "to": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 }
                 data = safe_get(url, params)
                 if data:
@@ -375,6 +390,7 @@ def main():
     elapsed = time.time() - start_time
     logger.info("=" * 70)
     logger.info(f"Done in {elapsed:.1f}s - total {total_added} new rows")
+
 
 if __name__ == "__main__":
     main()

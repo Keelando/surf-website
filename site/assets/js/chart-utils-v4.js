@@ -22,7 +22,7 @@
  *   180° = FROM SOUTH → arrow points up (traveling north) → rotation: -180°
  *   270° = FROM WEST → arrow points right (traveling east) → rotation: -270°
  */
-const DIRECTION_ARROW_PATH = 'path://M0,15 L-3,-5 L0,0 L3,-5 Z';
+const DIRECTION_ARROW_PATH = "path://M0,15 L-3,-5 L0,0 L3,-5 Z";
 
 /**
  * Calculate arrow rotation for direction display
@@ -74,13 +74,15 @@ async function fetchWithTimeout(url, options = {}) {
       return await response.json();
     } catch (error) {
       if (attempt === maxRetries) {
-        logger.error('ChartUtils', `Fetch failed after ${maxRetries} attempts`, error);
+        logger.error("ChartUtils", `Fetch failed after ${maxRetries} attempts`, error);
         throw error;
       }
 
       const delay = retryDelay * attempt;
-      logger.warn('ChartUtils', `Fetch attempt ${attempt} failed, retrying in ${delay}ms...`, { message: error.message });
-      await new Promise(resolve => setTimeout(resolve, delay));
+      logger.warn("ChartUtils", `Fetch attempt ${attempt} failed, retrying in ${delay}ms...`, {
+        message: error.message,
+      });
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 }
@@ -90,7 +92,7 @@ async function fetchWithTimeout(url, options = {}) {
  * Converts invalid values (null, NaN, "MM") to [timestamp, null]
  */
 function sanitizeSeriesData(dataArray) {
-  return dataArray.map(d => {
+  return dataArray.map((d) => {
     const y = parseFloat(d.value);
     if (isNaN(y) || d.value == null || d.value === "MM") {
       return [new Date(d.time).getTime(), null];
@@ -142,27 +144,27 @@ function getResponsiveGridConfig(isComparisonChart = false) {
 
   if (width < 600) {
     return {
-      left: '8%',
-      right: '8%',
-      top: '15%',
-      bottom: isComparisonChart ? '28%' : '22%',
-      containLabel: true
+      left: "8%",
+      right: "8%",
+      top: "15%",
+      bottom: isComparisonChart ? "28%" : "22%",
+      containLabel: true,
     };
   } else if (width < 1000) {
     return {
-      left: '10%',
-      right: '10%',
-      top: '12%',
-      bottom: isComparisonChart ? '20%' : '16%',
-      containLabel: true
+      left: "10%",
+      right: "10%",
+      top: "12%",
+      bottom: isComparisonChart ? "20%" : "16%",
+      containLabel: true,
     };
   } else {
     return {
-      left: '8%',
-      right: '8%',
-      top: '10%',
-      bottom: isComparisonChart ? '16%' : '10%',
-      containLabel: true
+      left: "8%",
+      right: "8%",
+      top: "10%",
+      bottom: isComparisonChart ? "16%" : "10%",
+      containLabel: true,
     };
   }
 }
@@ -175,11 +177,11 @@ function getResponsiveLegendBottom() {
   const width = window.innerWidth;
 
   if (width < 600) {
-    return '10%';  // Mobile: higher up to stay closer to rotated labels
+    return "10%"; // Mobile: higher up to stay closer to rotated labels
   } else if (width < 1000) {
-    return '7%';   // Medium: middle ground
+    return "7%"; // Medium: middle ground
   } else {
-    return '5%';   // Desktop: works well per user feedback
+    return "5%"; // Desktop: works well per user feedback
   }
 }
 
@@ -190,16 +192,14 @@ function getResponsiveLegendBottom() {
  * @param {Error} error - The error object
  */
 function showChartError(container, chartName, error) {
-  const element = typeof container === 'string'
-    ? document.getElementById(container)
-    : container;
+  const element = typeof container === "string" ? document.getElementById(container) : container;
 
   if (!element) {
-    logger.error('ChartUtils', `Chart container not found: ${container}`);
+    logger.error("ChartUtils", `Chart container not found: ${container}`);
     return;
   }
 
-  logger.error('ChartUtils', `Error rendering ${chartName}`, error);
+  logger.error("ChartUtils", `Error rendering ${chartName}`, error);
 
   element.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: center; height: 100%; min-height: 200px; padding: 2rem; text-align: center;">
@@ -236,18 +236,18 @@ function getMobileOptimizedTooltipConfig() {
   const isMobile = window.innerWidth < 768;
 
   return {
-    trigger: 'axis',
+    trigger: "axis",
     confine: true, // Keep tooltip within chart bounds
     axisPointer: {
-      type: 'line', // Show only vertical x-axis line (cleaner on mobile)
+      type: "line", // Show only vertical x-axis line (cleaner on mobile)
       label: {
-        backgroundColor: '#004b7c'
+        backgroundColor: "#004b7c",
       },
       lineStyle: {
-        color: '#004b7c',
+        color: "#004b7c",
         width: isMobile ? 2 : 1,
-        type: 'solid'
-      }
+        type: "solid",
+      },
     },
     // Smart positioning: avoid finger/cursor on mobile
     position: function (point, params, dom, rect, size) {
@@ -288,15 +288,15 @@ function getMobileOptimizedTooltipConfig() {
       return [x, y];
     },
     // Enhanced touch behavior
-    renderMode: 'html',
-    className: 'echarts-tooltip-mobile',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderColor: '#004b7c',
+    renderMode: "html",
+    className: "echarts-tooltip-mobile",
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderColor: "#004b7c",
     borderWidth: 1,
     textStyle: {
-      color: '#333',
-      fontSize: isMobile ? 12 : 14
+      color: "#333",
+      fontSize: isMobile ? 12 : 14,
     },
-    padding: isMobile ? 8 : 12
+    padding: isMobile ? 8 : 12,
   };
 }

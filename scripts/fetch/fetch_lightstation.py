@@ -21,7 +21,7 @@ import requests
 from lib.logging_config import setup_logging
 
 # Disable console logging (runs from cron, file logging only)
-logger = setup_logging('lightstation_fetch', console=False)
+logger = setup_logging("lightstation_fetch", console=False)
 
 # Configuration
 BASE_URL = "https://dd.weather.gc.ca/today/bulletins/alphanumeric"

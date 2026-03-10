@@ -26,14 +26,31 @@ async function fetchWithTimeout(url, timeout = 5000) {
 // Helper: Convert degrees to cardinal direction
 function degreesToCardinal(degrees) {
   if (degrees == null) return null;
-  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  const directions = [
+    "N",
+    "NNE",
+    "NE",
+    "ENE",
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSW",
+    "SW",
+    "WSW",
+    "W",
+    "WNW",
+    "NW",
+    "NNW",
+  ];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index];
 }
 
 // Helper: Get directional arrow (SVG, rotated to exact degrees)
 function getDirectionalArrow(degrees) {
-  if (degrees == null || degrees === '—') return '';
+  if (degrees == null || degrees === "—") return "";
 
   // Meteorological convention: direction indicates WHERE wind is COMING FROM
   const rotation = degrees;
@@ -52,7 +69,7 @@ function getDirectionalArrow(degrees) {
  * @returns {string} HTML for marker
  */
 function createDirectionalMarker(direction, speed, stale = false) {
-  const arrowColor = '#dc2626'; // Red for wind
+  const arrowColor = "#dc2626"; // Red for wind
   const opacity = stale ? 0.35 : 1.0; // Transparent if stale
 
   // Meteorological convention: direction value = where wind is COMING FROM
@@ -61,8 +78,9 @@ function createDirectionalMarker(direction, speed, stale = false) {
   const rotation = direction;
 
   // Build speed label if available
-  const speedLabel = (speed !== null && speed !== undefined)
-    ? `<div style="
+  const speedLabel =
+    speed !== null && speed !== undefined
+      ? `<div style="
         background: transparent;
         color: #2c3e50;
         padding: 2px 5px;
@@ -73,7 +91,7 @@ function createDirectionalMarker(direction, speed, stale = false) {
         text-shadow: 1px 1px 2px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9), 1px -1px 2px rgba(255,255,255,0.9), -1px 1px 2px rgba(255,255,255,0.9);
         margin-bottom: -3px;
       ">${Math.round(speed)}kt</div>`
-    : '';
+      : "";
 
   return `
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: ${opacity};">
@@ -90,17 +108,18 @@ function createDirectionalMarker(direction, speed, stale = false) {
 // Initialize the map
 function initWindsMap() {
   // Create map centered on Salish Sea
-  windsMap = L.map('winds-map', {
+  windsMap = L.map("winds-map", {
     center: [49.2, -123.3],
     zoom: 8,
     scrollWheelZoom: true,
-    zoomControl: true
+    zoomControl: true,
   });
 
   // Add OpenStreetMap tiles
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    maxZoom: 19
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19,
   }).addTo(windsMap);
 
   // Create layer group for markers
@@ -115,14 +134,14 @@ async function loadWindStationsAndMarkers() {
   try {
     // Fetch stations metadata, wind station data, and buoy data
     const [stations, windData, buoyData] = await Promise.all([
-      fetchWithTimeout('/data/stations.json'),
-      fetchWithTimeout('/data/latest_wind.json'),
-      fetchWithTimeout('/data/latest_buoy_v2.json')
+      fetchWithTimeout("/data/stations.json"),
+      fetchWithTimeout("/data/latest_wind.json"),
+      fetchWithTimeout("/data/latest_buoy_v2.json"),
     ]);
 
     // Add wind station markers
     if (stations.wind) {
-      Object.values(stations.wind).forEach(windStation => {
+      Object.values(stations.wind).forEach((windStation) => {
         const currentData = windData[windStation.id];
         addWindStationMarker(windStation, currentData);
       });
@@ -130,10 +149,12 @@ async function loadWindStationsAndMarkers() {
 
     // Add buoy markers (only those with wind data)
     if (stations.buoys) {
-      Object.values(stations.buoys).forEach(buoy => {
+      Object.values(stations.buoys).forEach((buoy) => {
         // Check if this buoy has wind data in buoyData
         const currentData = buoyData[buoy.id];
-        const windDir = currentData ? (currentData.wind_direction_deg || currentData.wind_direction) : null;
+        const windDir = currentData
+          ? currentData.wind_direction_deg || currentData.wind_direction
+          : null;
         if (currentData && (currentData.wind_speed != null || windDir != null)) {
           // Convert buoy data format to match wind data format
           const windFormatData = {
@@ -143,15 +164,14 @@ async function loadWindStationsAndMarkers() {
             wind_direction_cardinal: currentData.wind_direction_cardinal,
             air_temp_c: currentData.air_temp,
             observation_time: currentData.observation_time,
-            stale: currentData.stale
+            stale: currentData.stale,
           };
           addBuoyWindMarker(buoy, windFormatData);
         }
       });
     }
-
   } catch (error) {
-    console.error('Error loading wind stations for map:', error);
+    console.error("Error loading wind stations for map:", error);
   }
 }
 
@@ -162,7 +182,7 @@ function addWindStationMarker(station, currentData) {
   let iconSize = [30, 30];
   let iconAnchor = [15, 15];
 
-  const windDir = currentData ? (currentData.wind_direction_deg || currentData.wind_direction) : null;
+  const windDir = currentData ? currentData.wind_direction_deg || currentData.wind_direction : null;
   if (currentData && windDir !== null && windDir !== undefined) {
     const windSpeed = currentData.wind_speed_kt;
     const isStale = currentData.stale || false;
@@ -172,11 +192,11 @@ function addWindStationMarker(station, currentData) {
   }
 
   const icon = L.divIcon({
-    className: 'station-marker wind-station-marker',
+    className: "station-marker wind-station-marker",
     html: iconHtml,
     iconSize: iconSize,
     iconAnchor: iconAnchor,
-    popupAnchor: [0, -15]
+    popupAnchor: [0, -15],
   });
 
   const marker = L.marker([station.lat, station.lon], { icon: icon });
@@ -186,16 +206,17 @@ function addWindStationMarker(station, currentData) {
 
   // Add current wind data if available
   if (currentData) {
-    const bgColor = currentData.stale ? '#fff5f5' : '#f0f8ff';
-    const borderColor = currentData.stale ? '#e53935' : '#fb8c00';
-    const headerText = currentData.stale ? 'Last Wind (STALE - >3h old):' : 'Current Wind:';
+    const bgColor = currentData.stale ? "#fff5f5" : "#f0f8ff";
+    const borderColor = currentData.stale ? "#e53935" : "#fb8c00";
+    const headerText = currentData.stale ? "Last Wind (STALE - >3h old):" : "Current Wind:";
     popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
-    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; ${currentData.stale ? 'color: #c62828;' : ''}">${headerText}</div>`;
+    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; ${currentData.stale ? "color: #c62828;" : ""}">${headerText}</div>`;
 
     // Wind speed and gust
     if (currentData.wind_speed_kt != null) {
       const windSpeed = Math.round(currentData.wind_speed_kt);
-      const windGust = currentData.wind_gust_kt != null ? Math.round(currentData.wind_gust_kt) : null;
+      const windGust =
+        currentData.wind_gust_kt != null ? Math.round(currentData.wind_gust_kt) : null;
       popupContent += `<div><strong>Speed:</strong> ${windSpeed} kt`;
       if (windGust != null) {
         popupContent += ` (gust ${windGust} kt)`;
@@ -219,12 +240,12 @@ function addWindStationMarker(station, currentData) {
     // Timestamp
     if (currentData.observation_time) {
       const obsTime = new Date(currentData.observation_time);
-      const timeStr = obsTime.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
+      const timeStr = obsTime.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
         hour12: false,
-        timeZone: 'America/Vancouver',
-        timeZoneName: 'short'
+        timeZone: "America/Vancouver",
+        timeZoneName: "short",
       });
       popupContent += `<div style="font-size: 0.85em; color: #666; margin-top: 4px;">Updated: ${timeStr}</div>`;
     }
@@ -257,7 +278,7 @@ function addBuoyWindMarker(buoy, currentData) {
   let iconSize = [30, 30];
   let iconAnchor = [15, 15];
 
-  const windDir = currentData ? (currentData.wind_direction_deg || currentData.wind_direction) : null;
+  const windDir = currentData ? currentData.wind_direction_deg || currentData.wind_direction : null;
   if (currentData && windDir !== null && windDir !== undefined) {
     const windSpeed = currentData.wind_speed_kt;
     const isStale = currentData.stale || false;
@@ -267,11 +288,11 @@ function addBuoyWindMarker(buoy, currentData) {
   }
 
   const icon = L.divIcon({
-    className: 'station-marker buoy-wind-marker',
+    className: "station-marker buoy-wind-marker",
     html: iconHtml,
     iconSize: iconSize,
     iconAnchor: iconAnchor,
-    popupAnchor: [0, -15]
+    popupAnchor: [0, -15],
   });
 
   const marker = L.marker([buoy.lat, buoy.lon], { icon: icon });
@@ -281,16 +302,17 @@ function addBuoyWindMarker(buoy, currentData) {
 
   // Add current wind data if available
   if (currentData) {
-    const bgColor = currentData.stale ? '#fff5f5' : '#f0f8ff';
-    const borderColor = currentData.stale ? '#e53935' : '#0077be';
-    const headerText = currentData.stale ? 'Last Wind (STALE - >3h old):' : 'Current Wind:';
+    const bgColor = currentData.stale ? "#fff5f5" : "#f0f8ff";
+    const borderColor = currentData.stale ? "#e53935" : "#0077be";
+    const headerText = currentData.stale ? "Last Wind (STALE - >3h old):" : "Current Wind:";
     popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
-    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; ${currentData.stale ? 'color: #c62828;' : ''}">${headerText}</div>`;
+    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; ${currentData.stale ? "color: #c62828;" : ""}">${headerText}</div>`;
 
     // Wind speed and gust
     if (currentData.wind_speed_kt != null) {
       const windSpeed = Math.round(currentData.wind_speed_kt);
-      const windGust = currentData.wind_gust_kt != null ? Math.round(currentData.wind_gust_kt) : null;
+      const windGust =
+        currentData.wind_gust_kt != null ? Math.round(currentData.wind_gust_kt) : null;
       popupContent += `<div><strong>Speed:</strong> ${windSpeed} kt`;
       if (windGust != null) {
         popupContent += ` (gust ${windGust} kt)`;
@@ -314,12 +336,12 @@ function addBuoyWindMarker(buoy, currentData) {
     // Timestamp
     if (currentData.observation_time) {
       const obsTime = new Date(currentData.observation_time);
-      const timeStr = obsTime.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
+      const timeStr = obsTime.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
         hour12: false,
-        timeZone: 'America/Vancouver',
-        timeZoneName: 'short'
+        timeZone: "America/Vancouver",
+        timeZoneName: "short",
       });
       popupContent += `<div style="font-size: 0.85em; color: #666; margin-top: 4px;">Updated: ${timeStr}</div>`;
     }
@@ -328,9 +350,12 @@ function addBuoyWindMarker(buoy, currentData) {
   }
 
   // Station details
-  const typeLabel = buoy.type === 'pile_mounted_wave_station' ? 'Pile-Mounted Wave Station' :
-                    buoy.type === 'wind_monitoring_station' ? 'Wind Monitoring Station' :
-                    'Wave Buoy';
+  const typeLabel =
+    buoy.type === "pile_mounted_wave_station"
+      ? "Pile-Mounted Wave Station"
+      : buoy.type === "wind_monitoring_station"
+        ? "Wind Monitoring Station"
+        : "Wave Buoy";
 
   popupContent += `
     <div style="font-size: 0.9em; line-height: 1.4; margin-top: 8px;">
@@ -363,7 +388,7 @@ function focusStation(stationId) {
   // Center map on station
   windsMap.setView(marker.getLatLng(), 10, {
     animate: true,
-    duration: 0.5
+    duration: 0.5,
   });
 
   // Open popup after a short delay to allow map animation
@@ -374,26 +399,26 @@ function focusStation(stationId) {
 
 // Export map functions for external use
 window.windsMap = {
-  focusStation: focusStation
+  focusStation: focusStation,
 };
 
 // Event delegation for popup "View Wind Chart" links (CSP-safe)
-document.addEventListener('click', event => {
-  const target = event.target.closest('.view-data-btn[data-wind-station-id]');
+document.addEventListener("click", (event) => {
+  const target = event.target.closest(".view-data-btn[data-wind-station-id]");
   if (!target) {
     return;
   }
 
   event.preventDefault();
-  const stationId = target.getAttribute('data-wind-station-id');
-  if (stationId && typeof window.selectStationAndShowChart === 'function') {
+  const stationId = target.getAttribute("data-wind-station-id");
+  if (stationId && typeof window.selectStationAndShowChart === "function") {
     window.selectStationAndShowChart(stationId);
   }
 });
 
 // Initialize map when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
     initWindsMap();
   });
 } else {
