@@ -54,6 +54,27 @@ This calculates observed storm surge (observed - predicted) using the test datab
 ./tests/run_tide_test_workflow.sh
 ```
 
+## Frontend Console Tests (Playwright)
+
+Automated browser checks live in `tests/playwright` and make sure every public page loads without throwing console errors. Each test captures the browser console output and fails when `console.error` or `pageerror` events appear.
+
+### Setup
+
+```bash
+npm install
+npx playwright install chromium firefox   # Run once to pull both browser binaries
+```
+
+### Run
+
+```bash
+npm run test:frontend
+```
+
+The command automatically starts a local static server from `site/` and visits key routes (`/`, `/tides.html`, `/winds.html`, etc.) in both Chromium and Firefox projects. Console output for each page is attached to the Playwright report (`playwright-report/`). Failures will include the offending console text right in the test output. Playwright tears down the Python server after the suite finishes, but if a run is interrupted you can double-check the port is free with `lsof -i :4173`.
+
+To audit additional pages, edit `tests/playwright/console.spec.js` and add the route to the `monitoredRoutes` array.
+
 ## Test Fixtures
 
 ### Tide Data (DFO IWLS)

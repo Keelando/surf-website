@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "lint:js": "eslint \"site/assets/js/**/*.js\"",
-    "format:js": "biome format \"site/assets/js\" --write"
+    "format:js": "biome format \"site/assets/js\" --write",
+    "test:frontend": "playwright test"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",
+    "@playwright/test": "^1.58.2",
     "eslint": "^8.57.0"
   }
 }
