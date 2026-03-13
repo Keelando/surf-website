@@ -5,7 +5,8 @@
   "scripts": {
     "lint:js": "eslint \"site/assets/js/**/*.js\"",
     "format:js": "biome format \"site/assets/js\" --write",
-    "test:frontend": "playwright test"
+    "test:frontend": "playwright test tests/playwright/console.spec.js",
+    "screenshots": "playwright test tests/playwright/screenshots.spec.js --project=chromium"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",

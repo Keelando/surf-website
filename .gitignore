@@ -35,6 +35,7 @@ assets/GeoIP.conf.txt
 # Playwright
 playwright-report/
 test-results/
+tests/screenshots/
 
 # Linter output
 ruff.out

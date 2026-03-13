@@ -110,6 +110,19 @@
       line-height: 1.6;
     }
 
+    .warning-box {
+      background: var(--color-callout-warning-bg);
+      border-left: 4px solid var(--color-callout-warning-border);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+
+    .warning-box p {
+      margin: 0;
+      color: var(--color-text);
+    }
+
     .loading-state {
       text-align: center;
       padding: 3rem 1rem;
@@ -246,9 +259,9 @@
         This separation is crucial for coastal flood planning and marine safety.
       </p>
 
-      <div style="background: #fff3cd; border-left: 4px solid #ff9800; padding: 0.75rem 1rem; margin: 1rem 0; border-radius: 4px;">
-        <p style="margin: 0; font-weight: 600; color: #856404;">⚠️ Important Note:</p>
-        <p style="margin: 0.5rem 0 0 0; color: #856404;">
+      <div class="warning-box">
+        <p style="font-weight: 600;">⚠️ Important Note:</p>
+        <p style="margin-top: 0.5rem;">
           Storm surge forecasts <strong>do not include wave action</strong> (wave setup, wave runup, or breaking waves).
           Actual water levels during storms may be higher than predicted surge values due to wave effects.
         </p>
@@ -261,7 +274,7 @@
       <p><strong>Data Availability:</strong> Forecasts typically published ~6 hours after model initialization</p>
       <p><strong>Forecast Horizon:</strong> 10 days (240 hours)</p>
 
-      <p style="margin-top: 1rem; font-size: 0.9rem; color: #718096;">
+      <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--color-text-muted);">
         More information:
         <a href="https://eccc-msc.github.io/open-data/msc-data/nwp_gdsps/readme_gdsps_en/" target="_blank" style="color: #4299e1;">GDSPS Documentation</a> |
         <a href="https://open.canada.ca/data/en/dataset/d244c9fa-776f-446f-9ccf-1d575cc21a5c" target="_blank" style="color: #4299e1;">Open Canada Dataset</a>

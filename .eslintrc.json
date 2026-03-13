@@ -42,6 +42,17 @@
         "ignoreRestSiblings": true
       }
     ],
-    "no-undef": "off"
+    "no-undef": "off",
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "AssignmentExpression > MemberExpression.left[property.name=/^on[a-z]/]",
+        "message": "Use addEventListener() instead of assigning to event handler properties. See CONTRIBUTING.md."
+      },
+      {
+        "selector": "CallExpression[callee.property.name='setAttribute'][arguments.0.value=/^on[a-z]/]",
+        "message": "Use addEventListener() instead of setAttribute() for event handlers. See CONTRIBUTING.md."
+      }
+    ]
   }
 }

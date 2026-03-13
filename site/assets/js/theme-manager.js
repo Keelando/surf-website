@@ -1,5 +1,5 @@
 (function () {
-  const DARK_MODE_ENABLED = false;
+  const DARK_MODE_ENABLED = true;
   const STORAGE_KEY = "theme-preference";
   const Theme = {
     SYSTEM: "system",

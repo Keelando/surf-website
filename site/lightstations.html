@@ -454,6 +454,12 @@
 
   <div hx-get="/components/footer.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
 
+  <!-- Hidden theme toggle for testing — not linked from nav -->
+  <div style="text-align: center; padding: 1rem 0 0.5rem; opacity: 0.25;">
+    <button id="theme-test-toggle" title="Toggle theme"
+      style="background: none; border: none; cursor: pointer; font-size: 1.1rem; color: var(--color-text-muted); padding: 0.25rem 0.5rem;">◑</button>
+  </div>
+
   <!-- Leaflet JS -->
   <script src="/assets/vendor/leaflet.js"></script>
 
@@ -466,7 +472,7 @@
   <script src="/assets/js/chart-utils-v4.js?v=20251117"></script>
   <script src="/assets/js/lightstation-map.js?v=20260308a"></script>
   <script src="/assets/js/lightstation-charts.js?v=20260308b"></script>
-  <script src="/assets/js/lightstation-page.js?v=20260310"></script>
+  <script src="/assets/js/lightstation-page.js?v=20260313"></script>
   <script src="/assets/vendor/htmx.min.js"></script>
 </body>
 </html>
