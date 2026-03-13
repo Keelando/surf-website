@@ -675,7 +675,7 @@ function addBuoyMarker(buoy) {
   // Add tide data note for stations that provide it
   if (buoy.provides_tide) {
     popupContent += `
-      <div style="background: #fff3e0; padding: 6px; margin: 8px 0; border-radius: 4px; border-left: 3px solid #ff9800; font-size: 0.85em;">
+      <div style="background: var(--color-callout-warning-bg); padding: 6px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-accent-orange); font-size: 0.85em;">
         <strong>📊 Also provides:</strong> Tide data (Geodetic CGVD28)
       </div>`;
   }
@@ -787,7 +787,7 @@ function addTideMarker(tide, stationKey) {
       timeZoneName: "short",
     });
 
-    popupContent += `<div style="background: #fff3e0; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid #ff9800;">`;
+    popupContent += `<div style="background: var(--color-callout-warning-bg); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-accent-orange);">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 4px;">Storm Surge Forecast:</div>`;
     popupContent += `<div><strong>${surgeSign}${surgeForecast.value.toFixed(2)}m</strong></div>`;
     popupContent += `<div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 4px;">Next: ${timeStr}</div>`;

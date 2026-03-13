@@ -31,13 +31,13 @@
   <style>
     /* Lightstation map label styling */
     .lightstation-label {
-      background: rgba(255, 255, 255, 0.95) !important;
-      border: 1px solid #2c5282 !important;
+      background: var(--color-lightstation-label-bg) !important;
+      border: 1px solid var(--color-lightstation-label-border) !important;
       border-radius: 4px !important;
       padding: 2px 6px !important;
       font-size: 11px !important;
       font-weight: 600 !important;
-      color: #2c5282 !important;
+      color: var(--color-lightstation-label-text) !important;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
       white-space: nowrap !important;
       opacity: 0;
@@ -54,8 +54,8 @@
     }
 
     .region-header {
-      background: linear-gradient(to right, #004b7c, #005a94);
-      color: white;
+      background: linear-gradient(to right, var(--color-primary-dark), var(--color-primary));
+      color: var(--color-on-primary);
       padding: 0.75rem 1.5rem;
       font-size: 1.3rem;
       font-weight: bold;
@@ -68,7 +68,7 @@
     }
 
     .region-header:hover {
-      background: linear-gradient(to right, #003a5d, #005a96);
+      background: linear-gradient(to right, var(--color-primary-hover-start), var(--color-primary-hover-end));
     }
 
     .region-toggle-btn {
@@ -84,34 +84,34 @@
 
     .lightstation-card .view-chart-link {
       display: inline-block;
-      color: #2c5282;
+      color: var(--color-primary-dark);
       font-weight: 600;
       transition: background 0.2s, color 0.2s;
     }
 
     .lightstation-card .view-chart-link:hover {
-      background: #edf2f7 !important;
-      color: #1a365d;
+      background: var(--color-surface-light) !important;
+      color: var(--color-primary-dark);
     }
 
     .station-details-toggle {
       display: block;
       margin-top: 0.75rem;
       padding: 0.4rem;
-      background: #f7fafc;
-      border: 1px solid #e2e8f0;
+      background: var(--color-surface-alt);
+      border: 1px solid var(--color-border-light);
       border-radius: 4px;
       cursor: pointer;
       user-select: none;
       transition: background 0.2s;
       font-size: 0.85rem;
-      color: #2c5282;
+      color: var(--color-primary-dark);
       font-weight: 600;
       text-align: center;
     }
 
     .station-details-toggle:hover {
-      background: #edf2f7;
+      background: var(--color-surface-light);
     }
 
     .station-details-toggle .toggle-icon {
@@ -128,7 +128,7 @@
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.3s ease-out;
-      background: #f7fafc;
+      background: var(--color-surface-alt);
       border-radius: 4px;
       margin-top: 0.5rem;
     }
@@ -136,7 +136,7 @@
     .station-details-content.expanded {
       max-height: 300px;
       padding: 0.75rem;
-      border: 1px solid #e2e8f0;
+      border: 1px solid var(--color-border-light);
     }
 
     .detail-row {
@@ -144,7 +144,7 @@
       justify-content: space-between;
       padding: 0.3rem 0;
       font-size: 0.85rem;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid var(--color-border-light);
     }
 
     .detail-row:last-child {
@@ -153,11 +153,11 @@
 
     .detail-label {
       font-weight: 600;
-      color: #4a5568;
+      color: var(--color-text-light);
     }
 
     .detail-value {
-      color: #2d3748;
+      color: var(--color-text);
       text-align: right;
     }
 
@@ -166,7 +166,7 @@
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 1rem;
       padding: 1rem;
-      background: #f7fafc;
+      background: var(--color-surface-alt);
       border-radius: 0 0 6px 6px;
       max-height: 2000px;
       overflow: hidden;
@@ -179,16 +179,16 @@
     }
 
     .lightstation-card {
-      background: white;
+      background: var(--color-surface);
       padding: 1rem;
       border-radius: 6px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid var(--color-border-light);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .lightstation-card h3 {
       margin: 0 0 0.75rem 0;
-      color: #2c5282;
+      color: var(--color-primary-dark);
       font-size: 1.1rem;
     }
 
@@ -196,7 +196,7 @@
       display: flex;
       justify-content: space-between;
       padding: 0.4rem 0;
-      border-bottom: 1px solid #edf2f7;
+      border-bottom: 1px solid var(--color-border-light);
     }
 
     .condition-row:last-child {
@@ -205,18 +205,18 @@
 
     .condition-label {
       font-weight: 600;
-      color: #4a5568;
+      color: var(--color-text-light);
     }
 
     .condition-value {
-      color: #2d3748;
+      color: var(--color-text);
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
 
     .stale-warning {
-      background: #fff5f5;
-      color: #c53030;
+      background: var(--color-callout-danger-bg);
+      color: var(--color-accent-red);
       padding: 0.5rem;
       border-radius: 4px;
       font-size: 0.9rem;
@@ -226,7 +226,7 @@
 
     .report-time {
       font-size: 0.85rem;
-      color: #718096;
+      color: var(--color-text-muted);
       margin-top: 0.5rem;
       font-style: italic;
       text-align: center;
@@ -234,8 +234,8 @@
 
     /* Lightstation selector card */
     .ls-selector {
-      background: white;
-      border: 1px solid #e2e8f0;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-light);
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
       padding: 1.25rem 1.5rem;
@@ -245,8 +245,8 @@
     .ls-selector h2 {
       margin: 0 0 1rem 0;
       padding-bottom: 0.6rem;
-      border-bottom: 3px solid #0077be;
-      color: #2c5282;
+      border-bottom: 3px solid var(--color-primary);
+      color: var(--color-primary-dark);
       font-size: 1.3rem;
     }
 
@@ -267,14 +267,14 @@
       padding: 0.5rem;
       font-size: 1rem;
       border-radius: 4px;
-      border: 1px solid #cbd5e0;
+      border: 1px solid var(--color-border);
       transition: border-color 0.2s, box-shadow 0.2s;
     }
 
     .ls-selector-controls input:focus,
     .ls-selector-controls select:focus {
       outline: none;
-      border-color: #0077be;
+      border-color: var(--color-primary);
       box-shadow: 0 0 0 3px rgba(0, 119, 190, 0.15);
     }
 
@@ -289,8 +289,8 @@
     .ls-map-btn {
       display: inline-block;
       padding: 0.5rem 1rem;
-      background: #0077be;
-      color: white;
+      background: var(--color-primary);
+      color: var(--color-on-primary);
       text-decoration: none;
       border-radius: 4px;
       font-size: 0.9rem;
@@ -299,7 +299,7 @@
     }
 
     .ls-map-btn:hover {
-      background: #005a94;
+      background: var(--color-primary-light);
     }
 
     /* Mobile responsive styles */

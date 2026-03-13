@@ -262,31 +262,31 @@ async function loadBuoyData() {
 
         // Special styling for NOAA buoys
         if (id === "46087" || id === "46088" || id === "46267") {
-          card.style.borderLeft = "4px solid #003087";
+          card.style.borderLeft = "4px solid var(--color-source-noaa-border)";
         }
 
         // Special styling for Surrey FlowWorks stations
         if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
-          card.style.borderLeft = "4px solid #006837";
+          card.style.borderLeft = "4px solid var(--color-accent-green)";
         }
 
         // No data in DB at all (e.g. buoy offline and records purged) — render minimal card
         if (b.no_data) {
           let noDataContent = `<div class="buoy-card-inner"><h2>${b.name || id}`;
           if (id === "46087" || id === "46088" || id === "46267") {
-            noDataContent += ` <span style="font-size: 0.7em; color: #003087; font-weight: normal;">🇺🇸 NOAA</span>`;
+            noDataContent += ` <span style="font-size: 0.7em; color: var(--color-source-noaa-text); font-weight: normal;">🇺🇸 NOAA</span>`;
           } else if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
-            noDataContent += ` <span style="font-size: 0.7em; color: #006837; font-weight: normal;">🏛️ Surrey (FlowWorks)</span>`;
+            noDataContent += ` <span style="font-size: 0.7em; color: var(--color-accent-green); font-weight: normal;">🏛️ Surrey (FlowWorks)</span>`;
           } else {
-            noDataContent += ` <span style="font-size: 0.7em; color: #006400; font-weight: normal;">🇨🇦 Env Canada</span>`;
+            noDataContent += ` <span style="font-size: 0.7em; color: var(--color-source-envcan-text); font-weight: normal;">🇨🇦 Env Canada</span>`;
           }
           noDataContent += `</h2>
-            <p class="buoy-metric" style="margin: 1rem 0; padding: 1rem; background: #ffebee; border-left: 4px solid #e53935; border-radius: 4px; color: #c62828; font-weight: 600;">
+            <p class="buoy-metric" style="margin: 1rem 0; padding: 1rem; background: var(--color-callout-danger-bg); border-left: 4px solid var(--color-accent-red); border-radius: 4px; color: var(--color-error-text); font-weight: 600;">
               🔴 Station offline — no data available
             </p>`;
           if (sourceLinks[id]) {
-            noDataContent += `<p style="margin-top: 0.75rem; margin-bottom: 0; padding-top: 0.5rem; border-top: 1px solid #e0e0e0; text-align: center;">
-              <a href="${sourceLinks[id]}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85em; color: #004b7c; text-decoration: none; font-weight: 500;">🔗 View Source Data</a>
+            noDataContent += `<p style="margin-top: 0.75rem; margin-bottom: 0; padding-top: 0.5rem; border-top: 1px solid var(--color-border); text-align: center;">
+              <a href="${sourceLinks[id]}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85em; color: var(--color-primary-dark); text-decoration: none; font-weight: 500;">🔗 View Source Data</a>
             </p>`;
           }
           noDataContent += `</div>`;
@@ -320,9 +320,9 @@ async function loadBuoyData() {
 
         let ageWarning = "";
         if (isDown) {
-          ageWarning = ` <span style="color: #e53935; font-weight: bold; background: #ffebee; padding: 0.2rem 0.5rem; border-radius: 3px;">🔴 STATION DOWN (${formatDataAge(ageMinutes)})</span>`;
+          ageWarning = ` <span style="color: var(--color-accent-red); font-weight: bold; background: var(--color-callout-danger-bg); padding: 0.2rem 0.5rem; border-radius: 3px;">🔴 STATION DOWN (${formatDataAge(ageMinutes)})</span>`;
         } else if (isStale) {
-          ageWarning = ` <span style="color: #c62828; font-weight: bold;">⚠️ STALE (${formatDataAge(ageMinutes)})</span>`;
+          ageWarning = ` <span style="color: var(--color-error-text); font-weight: bold;">⚠️ STALE (${formatDataAge(ageMinutes)})</span>`;
         }
 
         // Round wind speeds to integers
@@ -334,15 +334,15 @@ async function loadBuoyData() {
 
         // Add source badge
         if (id === "46087" || id === "46088" || id === "46267") {
-          cardContent += ` <span style="font-size: 0.7em; color: #003087; font-weight: normal;">🇺🇸 NOAA</span>`;
+          cardContent += ` <span style="font-size: 0.7em; color: var(--color-source-noaa-text); font-weight: normal;">🇺🇸 NOAA</span>`;
         } else if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
-          cardContent += ` <span style="font-size: 0.7em; color: #006837; font-weight: normal;">🏛️ Surrey (FlowWorks)</span>`;
+          cardContent += ` <span style="font-size: 0.7em; color: var(--color-accent-green); font-weight: normal;">🏛️ Surrey (FlowWorks)</span>`;
         } else {
-          cardContent += ` <span style="font-size: 0.7em; color: #006400; font-weight: normal;">🇨🇦 Env Canada</span>`;
+          cardContent += ` <span style="font-size: 0.7em; color: var(--color-source-envcan-text); font-weight: normal;">🇨🇦 Env Canada</span>`;
         }
 
         cardContent += `</h2>`;
-        cardContent += `<p style="font-size: 0.9em; color: #666; margin-top: -0.5rem;">Last Update: ${updated}${ageWarning}</p>`;
+        cardContent += `<p style="font-size: 0.9em; color: var(--color-text-muted); margin-top: -0.5rem;">Last Update: ${updated}${ageWarning}</p>`;
 
         // === CONDENSED VIEW (Always visible) ===
         cardContent += `<div class="card-compact-view">`;
@@ -355,10 +355,10 @@ async function loadBuoyData() {
         // If station is down (>12 hours), show station down message instead of data
         if (isDown) {
           cardContent += `
-          <p class="buoy-metric" style="margin: 1rem 0; padding: 1rem; background: #ffebee; border-left: 4px solid #e53935; border-radius: 4px; color: #c62828; font-weight: 600;">
+          <p class="buoy-metric" style="margin: 1rem 0; padding: 1rem; background: var(--color-callout-danger-bg); border-left: 4px solid var(--color-accent-red); border-radius: 4px; color: var(--color-error-text); font-weight: 600;">
             🔴 Station Down - No recent data available
           </p>
-          <p style="font-size: 0.85em; color: #666; text-align: center; margin-top: 0.5rem;">
+          <p style="font-size: 0.85em; color: var(--color-text-muted); text-align: center; margin-top: 0.5rem;">
             Last data received ${formatDataAge(ageMinutes)}
           </p>
         `;
@@ -450,12 +450,12 @@ async function loadBuoyData() {
           <button class="toggle-details-btn" style="
             flex: 1;
             padding: 0.5rem;
-            background: #f0f4f8;
-            border: 1px solid #d0d7de;
+            background: var(--color-card-muted-bg);
+            border: 1px solid var(--color-card-muted-border);
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.85em;
-            color: #004b7c;
+            color: var(--color-primary-dark);
             font-weight: 600;
             transition: background 0.2s;
           ">
@@ -464,12 +464,12 @@ async function loadBuoyData() {
           <button class="toggle-history-btn" style="
             flex: 1;
             padding: 0.5rem;
-            background: #f0f4f8;
-            border: 1px solid #d0d7de;
+            background: var(--color-card-muted-bg);
+            border: 1px solid var(--color-card-muted-border);
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.85em;
-            color: #004b7c;
+            color: var(--color-primary-dark);
             font-weight: 600;
             transition: background 0.2s;
           ">
@@ -479,23 +479,23 @@ async function loadBuoyData() {
       `;
 
         // === EXPANDABLE DETAILS SECTION (Hidden by default) ===
-        cardContent += `<div id="card-details-${id}" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e0e0e0;">`;
+        cardContent += `<div id="card-details-${id}" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border);">`;
 
         // Show warning banner if station is down
         if (isDown) {
           cardContent += `
-          <div style="margin-bottom: 1rem; padding: 0.75rem; background: #fff3cd; border-left: 4px solid #ff9800; border-radius: 4px;">
-            <p style="margin: 0; color: #856404; font-weight: 600;">⚠️ Station Down - Showing Last Known Data</p>
-            <p style="margin: 0.25rem 0 0 0; font-size: 0.85em; color: #856404;">
+          <div style="margin-bottom: 1rem; padding: 0.75rem; background: var(--color-callout-warning-bg); border-left: 4px solid var(--color-accent-orange); border-radius: 4px;">
+            <p style="margin: 0; color: var(--color-warning-text); font-weight: 600;">⚠️ Station Down - Showing Last Known Data</p>
+            <p style="margin: 0.25rem 0 0 0; font-size: 0.85em; color: var(--color-warning-text);">
               This data is from ${formatDataAge(ageMinutes)} and does not reflect current conditions.
             </p>
           </div>
         `;
         } else if (isStale) {
           cardContent += `
-          <div style="margin-bottom: 1rem; padding: 0.75rem; background: #fff3cd; border-left: 4px solid #ffa726; border-radius: 4px;">
-            <p style="margin: 0; color: #856404; font-weight: 600;">⚠️ Stale Data Warning</p>
-            <p style="margin: 0.25rem 0 0 0; font-size: 0.85em; color: #856404;">
+          <div style="margin-bottom: 1rem; padding: 0.75rem; background: var(--color-callout-warning-bg); border-left: 4px solid var(--color-accent-orange); border-radius: 4px;">
+            <p style="margin: 0; color: var(--color-warning-text); font-weight: 600;">⚠️ Stale Data Warning</p>
+            <p style="margin: 0.25rem 0 0 0; font-size: 0.85em; color: var(--color-warning-text);">
               This data is ${formatDataAge(ageMinutes)} old. Newer data may not be available.
             </p>
           </div>
@@ -507,28 +507,28 @@ async function loadBuoyData() {
 
         if (isNOAA) {
           // NOAA Spectral Wave Breakdown
-          cardContent += `<p class="buoy-metric" style="font-weight: 600; color: #004b7c; margin-bottom: 0.5rem;">Detailed Wave Metrics</p>`;
+          cardContent += `<p class="buoy-metric" style="font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">Detailed Wave Metrics</p>`;
 
           // Significant/Combined Wave Metrics
           cardContent += `
-          <p class="buoy-metric" style="font-weight: 600; color: #004b7c; margin-bottom: 0.5rem;">📊 Significant Wave (Combined)</p>
+          <p class="buoy-metric" style="font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">📊 Significant Wave (Combined)</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Sig Height:</b> ${b.wave_height_sig ?? "—"} m</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Avg Period:</b> ${b.wave_period_avg ?? "—"} s</p>
         `;
 
           // Spectral wave breakdown
           cardContent += `
-          <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: #004b7c; margin-bottom: 0.5rem;">💨 Wind Waves (Local Chop)</p>
+          <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">💨 Wind Waves (Local Chop)</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Height:</b> ${b.wind_wave_height ?? "—"} m</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Period:</b> ${b.wind_wave_period ?? "—"} s</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Direction:</b> ${b.wind_wave_direction_cardinal ?? "—"} (${b.wind_wave_direction ?? "—"}°) ${getDirectionalArrow(b.wind_wave_direction, "wave")}</p>
 
-          <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: #004b7c; margin-bottom: 0.5rem;">🌊 Ocean Swell (Long Period)</p>
+          <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">🌊 Ocean Swell (Long Period)</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Height:</b> ${b.swell_height ?? "—"} m</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Period:</b> ${b.swell_period ?? "—"} s</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Direction:</b> ${b.swell_direction_cardinal ?? "—"} (${b.swell_direction ?? "—"}°) ${getDirectionalArrow(b.swell_direction, "wave")}</p>
 
-          <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: #004b7c; margin-bottom: 0.5rem;">📈 Peak Metrics</p>
+          <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">📈 Peak Metrics</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Period:</b> ${b.wave_period_peak ?? "—"} s</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Direction:</b> ${b.wave_direction_peak_cardinal ?? "—"} (${b.wave_direction_peak ?? "—"}°) ${getDirectionalArrow(b.wave_direction_peak, "wave")}</p>
         `;
@@ -538,7 +538,7 @@ async function loadBuoyData() {
             b.wave_period_peak != null || b.wave_height_peak != null || b.wave_height_max != null;
 
           if (hasPeakData) {
-            cardContent += `<p class="buoy-metric" style="font-weight: 600; color: #004b7c; margin-bottom: 0.5rem;">📊 Additional Metrics</p>`;
+            cardContent += `<p class="buoy-metric" style="font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">📊 Additional Metrics</p>`;
 
             // Show peak wave height (English Bay, Southern Strait)
             if (b.wave_height_peak != null) {
@@ -550,7 +550,7 @@ async function loadBuoyData() {
               const sigHeight = b.wave_height_sig || 0;
               const ratio = sigHeight > 0 ? (b.wave_height_max / sigHeight).toFixed(1) : "";
               const ratioText = ratio
-                ? ` <span style="color: #666; font-size: 0.9em;">(${ratio}× sig)</span>`
+                ? ` <span style="color: var(--color-text-muted); font-size: 0.9em;">(${ratio}× sig)</span>`
                 : "";
               cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Max Wave Height:</b> ${b.wave_height_max.toFixed(heightPrecision)} m${ratioText}</p>`;
             }
@@ -566,54 +566,54 @@ async function loadBuoyData() {
               const avgSpread = b.wave_direction_spread_avg;
 
               cardContent += `
-              <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: #004b7c;">
+              <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: var(--color-primary-dark);">
                 🧭 Wave Direction Angular Spread
-                <span class="spread-info-btn" style="cursor: pointer; font-size: 0.9em; margin-left: 0.3rem; color: #0077be; user-select: none;" title="Click for explanation">ℹ️</span>
+                <span class="spread-info-btn" style="cursor: pointer; font-size: 0.9em; margin-left: 0.3rem; color: var(--color-primary); user-select: none;" title="Click for explanation">ℹ️</span>
               </p>
             `;
 
               // Show Peak Spread (dominant frequency) with labels
               if (peakSpread != null) {
                 let peakDesc = "";
-                let peakColor = "#666";
+                let peakColor = "var(--color-text-muted)";
 
                 if (peakSpread < 25) {
                   peakDesc = "very organized";
-                  peakColor = "#38a169";
+                  peakColor = "var(--color-accent-green)";
                 } else if (peakSpread < 35) {
                   peakDesc = "organized";
-                  peakColor = "#48bb78";
+                  peakColor = "var(--color-accent-green)";
                 } else if (peakSpread < 45) {
                   peakDesc = "moderate";
-                  peakColor = "#d69e2e";
+                  peakColor = "var(--color-accent-orange)";
                 } else {
                   peakDesc = "confused";
-                  peakColor = "#e53e3e";
+                  peakColor = "var(--color-accent-red)";
                 }
 
-                cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Spread:</b> ${peakSpread}° <span style="color: ${peakColor}; font-weight: 600;">(${peakDesc})</span> <span style="font-size: 0.85em; color: #666;">— dominant swell</span></p>`;
+                cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Spread:</b> ${peakSpread}° <span style="color: ${peakColor}; font-weight: 600;">(${peakDesc})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— dominant swell</span></p>`;
               }
 
               // Show Average Spread (all frequencies) with labels
               if (avgSpread != null) {
                 let avgDesc = "";
-                let avgColor = "#666";
+                let avgColor = "var(--color-text-muted)";
 
                 if (avgSpread < 30) {
                   avgDesc = "very clean";
-                  avgColor = "#38a169";
+                  avgColor = "var(--color-accent-green)";
                 } else if (avgSpread < 45) {
                   avgDesc = "clean";
-                  avgColor = "#48bb78";
+                  avgColor = "var(--color-accent-green)";
                 } else if (avgSpread < 60) {
                   avgDesc = "mixed";
-                  avgColor = "#d69e2e";
+                  avgColor = "var(--color-accent-orange)";
                 } else {
                   avgDesc = "messy";
-                  avgColor = "#e53e3e";
+                  avgColor = "var(--color-accent-red)";
                 }
 
-                cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Average Spread:</b> ${avgSpread}° <span style="color: ${avgColor}; font-weight: 600;">(${avgDesc})</span> <span style="font-size: 0.85em; color: #666;">— all frequencies</span></p>`;
+                cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Average Spread:</b> ${avgSpread}° <span style="color: ${avgColor}; font-weight: 600;">(${avgDesc})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— all frequencies</span></p>`;
               }
 
               // Add visual angular spread vectors
@@ -624,16 +624,16 @@ async function loadBuoyData() {
                 (peakDir != null && peakSpread != null) ||
                 (avgDir != null && avgSpread != null)
               ) {
-                cardContent += `<div style="margin-top: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0;">`;
-                cardContent += `<p class="buoy-metric" style="font-weight: 600; color: #004b7c; margin-bottom: 0.5rem;">Visual Direction & Spread</p>`;
+                cardContent += `<div style="margin-top: 0.75rem; padding: 0.75rem; background: var(--color-surface-alt); border-radius: 4px; border: 1px solid var(--color-border-light);">`;
+                cardContent += `<p class="buoy-metric" style="font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">Visual Direction & Spread</p>`;
 
                 // Peak direction + spread vector
                 if (peakDir != null && peakSpread != null) {
                   cardContent += `
                   <div style="margin: 0.5rem 0;">
-                    <span style="font-size: 0.85em; color: #666; font-weight: 600;">Peak:</span>
+                    <span style="font-size: 0.85em; color: var(--color-text-muted); font-weight: 600;">Peak:</span>
                     ${createAngularSpreadVector(peakDir, peakSpread, 70)}
-                    <span style="font-size: 0.75em; color: #666; margin-left: 0.5rem;">${b.wave_direction_peak_cardinal ?? degreesToCardinal(peakDir)} ${Math.round(peakDir)}° ± ${Math.round(peakSpread / 2)}°</span>
+                    <span style="font-size: 0.75em; color: var(--color-text-muted); margin-left: 0.5rem;">${b.wave_direction_peak_cardinal ?? degreesToCardinal(peakDir)} ${Math.round(peakDir)}° ± ${Math.round(peakSpread / 2)}°</span>
                   </div>
                 `;
                 }
@@ -642,22 +642,22 @@ async function loadBuoyData() {
                 if (avgDir != null && avgSpread != null) {
                   cardContent += `
                   <div style="margin: 0.5rem 0;">
-                    <span style="font-size: 0.85em; color: #666; font-weight: 600;">Average:</span>
+                    <span style="font-size: 0.85em; color: var(--color-text-muted); font-weight: 600;">Average:</span>
                     ${createAngularSpreadVector(avgDir, avgSpread, 70)}
-                    <span style="font-size: 0.75em; color: #666; margin-left: 0.5rem;">${b.wave_direction_avg_cardinal ?? degreesToCardinal(avgDir)} ${Math.round(avgDir)}° ± ${Math.round(avgSpread / 2)}°</span>
+                    <span style="font-size: 0.75em; color: var(--color-text-muted); margin-left: 0.5rem;">${b.wave_direction_avg_cardinal ?? degreesToCardinal(avgDir)} ${Math.round(avgDir)}° ± ${Math.round(avgSpread / 2)}°</span>
                   </div>
                 `;
                 }
 
-                cardContent += `<p style="font-size: 0.75em; color: #999; margin-top: 0.5rem; margin-bottom: 0;">Arrows show wave travel direction. Sector shows angular spread.</p>`;
+                cardContent += `<p style="font-size: 0.75em; color: var(--color-text-light); margin-top: 0.5rem; margin-bottom: 0;">Arrows show wave travel direction. Sector shows angular spread.</p>`;
                 cardContent += `</div>`;
               }
 
               // Add collapsible explanatory footnote (hidden by default)
               if (peakSpread != null && avgSpread != null) {
                 cardContent += `
-                <div id="spread-info-${id}" style="display: none; font-size: 0.85em; color: #555; margin-top: 0.5rem; padding: 0.75rem; background: #f0f8ff; border-left: 3px solid #0077be; border-radius: 4px; line-height: 1.5;">
-                  <strong style="color: #2c5282;">Angular Spread</strong> measures how organized the waves are:<br>
+                <div id="spread-info-${id}" style="display: none; font-size: 0.85em; color: var(--color-text-light); margin-top: 0.5rem; padding: 0.75rem; background: var(--color-callout-info-bg); border-left: 3px solid var(--color-primary); border-radius: 4px; line-height: 1.5;">
+                  <strong style="color: var(--color-tagline-text);">Angular Spread</strong> measures how organized the waves are:<br>
                   <br>
                   <strong>Lower numbers</strong> = waves coming from one direction (clean swell)<br>
                   <strong>Higher numbers</strong> = waves from multiple directions (choppy/messy)<br>
@@ -665,7 +665,7 @@ async function loadBuoyData() {
                   • <strong>Peak:</strong> The main swell direction<br>
                   • <strong>Average:</strong> Overall surface (includes wind chop)<br>
                   <br>
-                  <span style="font-size: 0.9em; color: #718096;">Beach conditions may differ from open-ocean buoy readings.</span>
+                  <span style="font-size: 0.9em; color: var(--color-text-muted);">Beach conditions may differ from open-ocean buoy readings.</span>
                 </div>
               `;
               }
@@ -686,7 +686,7 @@ async function loadBuoyData() {
         cardContent += `</div>`; // Close expandable details section
 
         // === EXPANDABLE HISTORY SECTION (Hidden by default) ===
-        cardContent += `<div id="card-history-${id}" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e0e0e0;"></div>`;
+        cardContent += `<div id="card-history-${id}" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border);"></div>`;
 
         // === NAVIGATION LINKS ===
         const hasChartData = b.wave_height_sig != null || b.wind_speed != null;
@@ -730,10 +730,10 @@ async function loadBuoyData() {
         // Add source link at the bottom of the card
         if (sourceLinks[id]) {
           cardContent += `
-          <p style="margin-top: 0.75rem; margin-bottom: 0; padding-top: 0.5rem; border-top: 1px solid #e0e0e0; text-align: center;">
+          <p style="margin-top: 0.75rem; margin-bottom: 0; padding-top: 0.5rem; border-top: 1px solid var(--color-border); text-align: center;">
             <a href="${sourceLinks[id]}" target="_blank" rel="noopener noreferrer" style="
               font-size: 0.85em;
-              color: #004b7c;
+              color: var(--color-primary-dark);
               text-decoration: none;
               font-weight: 500;
             ">
@@ -928,7 +928,7 @@ async function toggleCardHistory(buoyId) {
       } else {
         setSafeHTML(
           historyDiv,
-          '<p style="color: #999; text-align: center; padding: 1rem;">No historical data available</p>',
+          '<p style="color: var(--color-text-light); text-align: center; padding: 1rem;">No historical data available</p>',
         );
         historyDiv.style.display = "block";
         button.textContent = "▲ Hide History";
@@ -938,7 +938,7 @@ async function toggleCardHistory(buoyId) {
       logger.error("BuoyData", "Error loading history", error);
       setSafeHTML(
         historyDiv,
-        '<p style="color: #e53935; text-align: center; padding: 1rem;">Error loading historical data</p>',
+        '<p style="color: var(--color-error-text); text-align: center; padding: 1rem;">Error loading historical data</p>',
       );
       historyDiv.style.display = "block";
       button.textContent = "▲ Hide History";
@@ -1005,21 +1005,21 @@ function renderHistoryTable(buoyId, timeseries) {
   // Responsive scroll indicator - only show on mobile, positioned OUTSIDE table
   const scrollIndicator =
     window.innerWidth < 768
-      ? `<div style="text-align: center; margin-bottom: 0.25rem; padding: 0.25rem 0.5rem; background: rgba(0, 75, 124, 0.1); font-size: 0.65rem; color: #004b7c; border-radius: 4px;">← Scroll table horizontally →</div>`
+      ? `<div style="text-align: center; margin-bottom: 0.25rem; padding: 0.25rem 0.5rem; background: var(--color-active-indicator-bg); font-size: 0.65rem; color: var(--color-primary-dark); border-radius: 4px;">← Scroll table horizontally →</div>`
       : "";
 
   let tableHTML = `
     ${scrollIndicator}
-    <div style="overflow-x: auto; margin-top: 0.5rem; width: 100%; max-width: 100%; -webkit-overflow-scrolling: touch; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+    <div style="overflow-x: auto; margin-top: 0.5rem; width: 100%; max-width: 100%; -webkit-overflow-scrolling: touch; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box;">
       <table style="border-collapse: collapse; font-size: 0.8rem; width: max-content; min-width: 100%; table-layout: auto;">
         <thead>
-          <tr style="background: #f5f5f5;">
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; text-align: left; white-space: nowrap; min-width: 55px;">Time</th>
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; text-align: center; white-space: nowrap; min-width: 95px;">Wind [kn]</th>
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; text-align: center; white-space: nowrap; min-width: 50px;">Wave Ht [m]</th>
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; text-align: center; white-space: nowrap; min-width: 60px;">Period [s]</th>
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; text-align: center; white-space: nowrap; min-width: 55px;">Sea [°C]</th>
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #ddd; text-align: center; white-space: nowrap; min-width: 55px;">Air [°C]</th>
+          <tr style="background: var(--color-surface-alt);">
+            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); border-right: 1px solid var(--color-border); text-align: left; white-space: nowrap; min-width: 55px;">Time</th>
+            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); border-right: 1px solid var(--color-border); text-align: center; white-space: nowrap; min-width: 95px;">Wind [kn]</th>
+            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); border-right: 1px solid var(--color-border); text-align: center; white-space: nowrap; min-width: 50px;">Wave Ht [m]</th>
+            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); border-right: 1px solid var(--color-border); text-align: center; white-space: nowrap; min-width: 60px;">Period [s]</th>
+            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); border-right: 1px solid var(--color-border); text-align: center; white-space: nowrap; min-width: 55px;">Sea [°C]</th>
+            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); text-align: center; white-space: nowrap; min-width: 55px;">Air [°C]</th>
           </tr>
         </thead>
         <tbody>
@@ -1086,12 +1086,12 @@ function renderHistoryTable(buoyId, timeseries) {
 
     tableHTML += `
       <tr style="${rowBg}">
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #eee; border-right: 1px solid #eee; white-space: nowrap;">${timeStr}</td>
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #eee; border-right: 1px solid #eee; text-align: center; white-space: nowrap;">${windDisplay}</td>
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #eee; border-right: 1px solid #eee; text-align: center;">${waveHeightVal != null ? waveHeightVal.toFixed(waveHeightDecimals) : "—"}</td>
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #eee; border-right: 1px solid #eee; text-align: center;">${wavePeriodVal != null ? wavePeriodVal.toFixed(1) : "—"}</td>
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #eee; border-right: 1px solid #eee; text-align: center;">${seaTempVal != null ? seaTempVal.toFixed(1) : "—"}</td>
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid #eee; text-align: center;">${airTempVal != null ? airTempVal.toFixed(1) : "—"}</td>
+        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); border-right: 1px solid var(--color-border-light); white-space: nowrap;">${timeStr}</td>
+        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); border-right: 1px solid var(--color-border-light); text-align: center; white-space: nowrap;">${windDisplay}</td>
+        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); border-right: 1px solid var(--color-border-light); text-align: center;">${waveHeightVal != null ? waveHeightVal.toFixed(waveHeightDecimals) : "—"}</td>
+        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); border-right: 1px solid var(--color-border-light); text-align: center;">${wavePeriodVal != null ? wavePeriodVal.toFixed(1) : "—"}</td>
+        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); border-right: 1px solid var(--color-border-light); text-align: center;">${seaTempVal != null ? seaTempVal.toFixed(1) : "—"}</td>
+        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); text-align: center;">${airTempVal != null ? airTempVal.toFixed(1) : "—"}</td>
       </tr>
     `;
   });
@@ -1105,7 +1105,7 @@ function renderHistoryTable(buoyId, timeseries) {
   // Add duplicate Hide button at bottom of history table
   tableHTML += `
     <div style="text-align: center; margin-top: 0.75rem;">
-      <button class="hide-history-btn" style="padding: 0.5rem 1rem; background: #004b7c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;">
+      <button class="hide-history-btn" style="padding: 0.5rem 1rem; background: var(--color-primary-dark); color: var(--color-on-primary); border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;">
         ▲ Hide History
       </button>
     </div>
@@ -1114,7 +1114,7 @@ function renderHistoryTable(buoyId, timeseries) {
   // Add note for Neah Bay explaining swell data
   if (isNeahBay) {
     tableHTML += `
-      <div style="margin-top: 0.5rem; padding: 0.5rem; background: #f0f8ff; border-left: 3px solid #003087; font-size: 0.75rem; color: #555; line-height: 1.4;">
+      <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--color-callout-info-bg); border-left: 3px solid var(--color-source-noaa-border); font-size: 0.75rem; color: var(--color-text-light); line-height: 1.4;">
         <strong>Note:</strong> Neah Bay displays <strong>swell data</strong> (long-period ocean waves from distant storms) rather than combined wave metrics. Wind waves are typically much smaller at this location.
       </div>
     `;

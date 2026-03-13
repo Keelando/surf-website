@@ -431,7 +431,13 @@ function getSpreadDescription(spread, type = "peak") {
       ? { veryGood: "very organized", good: "organized", moderate: "moderate", bad: "confused" }
       : { veryGood: "very clean", good: "clean", moderate: "mixed", bad: "messy" };
 
-  const colors = { veryGood: "#38a169", good: "#48bb78", moderate: "#d69e2e", bad: "#e53e3e" };
+  const root = getComputedStyle(document.documentElement);
+  const colors = {
+    veryGood: root.getPropertyValue("--color-accent-green").trim() || "#38a169",
+    good: root.getPropertyValue("--color-accent-green").trim() || "#48bb78",
+    moderate: root.getPropertyValue("--color-accent-orange").trim() || "#d69e2e",
+    bad: root.getPropertyValue("--color-accent-red").trim() || "#e53e3e",
+  };
 
   let level = "bad";
   if (spread < thresholds.veryGood) level = "veryGood";
@@ -486,14 +492,14 @@ function createDetailedWaveDisplay(data) {
     if (data.wave_direction_spread_peak != null) {
       const peakDesc = getSpreadDescription(data.wave_direction_spread_peak, "peak");
       const peakSpreadMetric = createElement("div", "wave-metric");
-      peakSpreadMetric.innerHTML = `<span class="wave-label">Peak Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_peak)}° <span style="color: ${peakDesc.color}; font-weight: 600;">(${peakDesc.label})</span> <span style="font-size: 0.85em; color: #666;">— dominant swell</span></span>`;
+      peakSpreadMetric.innerHTML = `<span class="wave-label">Peak Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_peak)}° <span style="color: ${peakDesc.color}; font-weight: 600;">(${peakDesc.label})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— dominant swell</span></span>`;
       dataGrid.appendChild(peakSpreadMetric);
 
       // Average spread
       if (data.wave_direction_spread_avg != null) {
         const avgDesc = getSpreadDescription(data.wave_direction_spread_avg, "avg");
         const avgSpreadMetric = createElement("div", "wave-metric");
-        avgSpreadMetric.innerHTML = `<span class="wave-label">Avg Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_avg)}° <span style="color: ${avgDesc.color}; font-weight: 600;">(${avgDesc.label})</span> <span style="font-size: 0.85em; color: #666;">— all frequencies</span></span>`;
+        avgSpreadMetric.innerHTML = `<span class="wave-label">Avg Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_avg)}° <span style="color: ${avgDesc.color}; font-weight: 600;">(${avgDesc.label})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— all frequencies</span></span>`;
         dataGrid.appendChild(avgSpreadMetric);
       }
 
@@ -911,7 +917,7 @@ async function loadWebcams() {
 
   if (webcams.length === 0) {
     container.innerHTML =
-      '<p style="text-align: center; color: #718096; padding: 2rem;">No webcams currently available.</p>';
+      '<p style="text-align: center; color: var(--color-text-muted); padding: 2rem;">No webcams currently available.</p>';
     return;
   }
 

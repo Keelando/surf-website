@@ -65,20 +65,37 @@ Pattern: `const tc = getChartThemeColors();` at top of render functions, then `t
 
 Each page's chart orchestrator registers a `themechange` listener to re-call `setOption()`.
 
-### 7. Fix inline style colors in JS files — 🔄 In Progress
+### 7. Fix inline style colors in JS files — ✅ Completed
 
-Most critical inline colors (chart error UI, tide/surge metadata, lightstation tables, etc.) now reference CSS variables. Remaining TODO: sweep the remaining interactive widgets (`tides-modules/display.js`, map marker helpers) to replace any lingering literal hex values.
+Replaced hardcoded hex colors with CSS variable references across all JS files:
 
-- `chart-utils-v4.js` `showChartError()` — use `var()` in inline style strings
-- `tides-modules/display.js` — use `var()` in inline styles
-- Map marker JS (winds-map.js, etc.) — use `getChartThemeColors()` for dynamically set colors
+- `lightstation-page.js` — stale warning, nav link backgrounds/borders, notes text
+- `wave-table-v4.js` — swell label, error text, toggle button colors
+- `wind-stations.js` — source badges, offline callout, toggle cell, chart colors (now uses `getChartThemeColors()`), action links, error text; added `registerChartThemeListener` for chart re-render on toggle
+- `tides-modules/sunlight.js` — nav button colors
+- `wind-chart-v4.js` — arrow color fallback now uses `getChartThemeColors().marker`
+- `lightstation-map.js` — popup backgrounds, headers, gradient, text, buttons, stale warnings
+- `stations-map.js` — warning callout backgrounds/borders
+- `main.js` — source badges, error/stale states, warning banners, section headings, toggle buttons, borders, history table, spread info callout, muted text
+- `webcams-v4.js` — muted text, empty state, spread description colors (now reads computed CSS vars)
+- `forecasts.js` — source link color
+- `tides-modules/ui-controls.js` — geodetic station option color
 
-### 8. Fix inline `<style>` blocks in HTML files — 🔄 In Progress
+**Remaining (low priority):** SVG fill colors in inline `<svg>` elements (lighthouse icon, compass rose, directional arrows) don't support CSS `var()`. These are decorative and render acceptably in both themes.
 
-Primary pages now include the blocking script/meta tags and most inline styles were converted to variables, but we still need to audit for stragglers (e.g., button hover snippets in `index.html`). These should be updated or moved into CSS modules before launch.
+### 8. Fix inline `<style>` blocks in HTML files — ✅ Completed
 
-- `index.html` `.time-range-btn` — replace hardcoded colors with `var(--color-*)` references
-- Check other HTML files for similar inline style blocks
+All inline `<style>` blocks converted from hardcoded hex colors to CSS variable references:
+
+- `index.html` — `.time-range-btn` buttons (bg, text, active, hover states)
+- `winds.html` — `.data-table` (header gradients, borders, zebra rows, hover, stale rows), `.wind-time-range-btn` buttons
+- `lightstations.html` — All 30+ rules: labels, region headers, cards, details toggles, condition rows, stale warnings, report times, selector, map button, input focus
+- `forecasts.html` — Forecast zones, warning sections, extended days, metadata, error states, resources (warning card gradients kept as intentional high-contrast alerts)
+- `storm_surge.html` — Section containers, station selector, metadata, info boxes, loading states
+- `guide.html` — Guide headings, conversion/sea/label tables, compass grid, callouts
+- `tides.html` — Geodetic station option color
+
+**Remaining (low priority):** Some inline `style=""` attributes on HTML elements still have hardcoded colors. These are fewer in number and less impactful since most content is dynamically rendered by JS (which is now theme-aware).
 
 ---
 

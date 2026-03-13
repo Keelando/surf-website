@@ -119,7 +119,7 @@ async function loadLightstationData() {
     if (fallbackContainer) {
       setSafeHTML(
         fallbackContainer,
-        '<p style="text-align: center; color: #e53e3e; padding: 2rem;">Failed to load lightstation data.</p>'
+        '<p style="text-align: center; color: var(--color-error-text); padding: 2rem;">Failed to load lightstation data.</p>'
       );
     }
   }
@@ -242,7 +242,7 @@ function createStationCard(station) {
   if (station.stale) {
     const warning = document.createElement('div');
     warning.className = 'stale-warning';
-    warning.style.color = '#c62828';
+    warning.style.color = 'var(--color-accent-red)';
     warning.style.fontWeight = '600';
     warning.style.marginTop = '0.5rem';
     warning.textContent = '⚠️ STALE DATA (>12h old)';
@@ -263,8 +263,8 @@ function createStationCard(station) {
   chartLink.style.flex = '1';
   chartLink.style.textAlign = 'center';
   chartLink.style.padding = '0.4rem';
-  chartLink.style.background = '#f7fafc';
-  chartLink.style.border = '1px solid #e2e8f0';
+  chartLink.style.background = 'var(--color-surface-alt)';
+  chartLink.style.border = '1px solid var(--color-border-light)';
   chartLink.style.borderRadius = '4px';
   chartLink.style.textDecoration = 'none';
   chartLink.style.fontSize = '0.85rem';
@@ -282,8 +282,8 @@ function createStationCard(station) {
   mapLink.style.flex = '1';
   mapLink.style.textAlign = 'center';
   mapLink.style.padding = '0.4rem';
-  mapLink.style.background = '#f7fafc';
-  mapLink.style.border = '1px solid #e2e8f0';
+  mapLink.style.background = 'var(--color-surface-alt)';
+  mapLink.style.border = '1px solid var(--color-border-light)';
   mapLink.style.borderRadius = '4px';
   mapLink.style.textDecoration = 'none';
   mapLink.style.fontSize = '0.85rem';
@@ -382,7 +382,7 @@ function createStationCard(station) {
       notesRow.style.alignItems = 'flex-start';
       setSafeHTML(
         notesRow,
-        `<span class="detail-label">Notes:</span><span class="detail-value" style="text-align: left; margin-top: 0.3rem; font-size: 0.8rem; color: #666;">${meta.notes}</span>`
+        `<span class="detail-label">Notes:</span><span class="detail-value" style="text-align: left; margin-top: 0.3rem; font-size: 0.8rem; color: var(--color-text-muted);">${meta.notes}</span>`
       );
       detailsContent.appendChild(notesRow);
     }

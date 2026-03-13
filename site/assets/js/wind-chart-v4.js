@@ -48,7 +48,7 @@ function createWindDirectionArrowData(windDirectionData, windSpeedData, windGust
       value: [timestamp, arrowYPosition],
       symbolRotate: -direction,
       itemStyle: {
-        color: colorOverride || "#004b7c",
+        color: colorOverride || getChartThemeColors().marker,
         opacity: 0.7,
       },
     });

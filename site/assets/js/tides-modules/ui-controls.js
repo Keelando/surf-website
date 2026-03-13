@@ -76,7 +76,7 @@ export function populateStationDropdown(
     geodeticStations.forEach((stationKey) => {
       const displayName = (STATION_DISPLAY_NAMES[stationKey] || stationKey) + " 📊";
       // Use unicode em-space (\u2003) for indentation - browsers don't support padding in option elements
-      optionsHTML += `<option value="${stationKey}" class="geodetic-station" style="color: #888; font-style: italic;">\u2003\u2003${displayName}</option>`;
+      optionsHTML += `<option value="${stationKey}" class="geodetic-station" style="color: var(--color-text-muted); font-style: italic;">\u2003\u2003${displayName}</option>`;
     });
     optionsHTML += "</optgroup>";
   }

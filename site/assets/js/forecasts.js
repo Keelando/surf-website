@@ -122,7 +122,7 @@ function renderZoneForecast(zoneKey, zoneData) {
     <div class="forecast-zone" id="${zoneKey}">
       <h2>
         ${zoneName}
-        ${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="font-size: 0.75em; margin-left: 0.5rem; color: #4299e1; text-decoration: none;">📄 View Source</a>` : ""}
+        ${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="font-size: 0.75em; margin-left: 0.5rem; color: var(--color-accent-blue); text-decoration: none;">📄 View Source</a>` : ""}
       </h2>
   `;
 

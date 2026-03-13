@@ -391,25 +391,25 @@ async function loadWindTable() {
       if (sourceLinks[id]) {
         if (id.startsWith("4600")) {
           // Environment Canada buoys (4600xxx)
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #006400; text-decoration: none;">🇨🇦 Env Canada 🔗</a>`;
+          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-source-envcan-text); text-decoration: none;">🇨🇦 Env Canada 🔗</a>`;
         } else if (id.startsWith("46") || id === "CPMW1" || id === "SISW1") {
           // NOAA buoys/stations (46xxx but not 4600xxx)
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #003087; text-decoration: none;">🇺🇸 NOAA 🔗</a>`;
+          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-source-noaa-text); text-decoration: none;">🇺🇸 NOAA 🔗</a>`;
         } else if (id.startsWith("K")) {
           // NOAA NWS airports (KXXX)
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #003087; text-decoration: none;">🇺🇸 NOAA 🔗</a>`;
+          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-source-noaa-text); text-decoration: none;">🇺🇸 NOAA 🔗</a>`;
         } else if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
           // Surrey FlowWorks (no public link)
-          sourceBadge = '<br><span style="font-size: 0.75em; color: #006837;">🏛️ Surrey</span>';
+          sourceBadge = '<br><span style="font-size: 0.75em; color: var(--color-accent-green);">🏛️ Surrey</span>';
         } else if (id === "whiterock_east") {
           // White Rock City
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #0066cc; text-decoration: none;">🏛️ White Rock 🔗</a>`;
+          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-accent-blue); text-decoration: none;">🏛️ White Rock 🔗</a>`;
         } else if (id === "JERICHO") {
           // Jericho Sailing Centre
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #2563eb; text-decoration: none;">⛵ JSCA 🔗</a>`;
+          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-accent-blue); text-decoration: none;">⛵ JSCA 🔗</a>`;
         } else if (id.startsWith("C")) {
           // Environment Canada weather stations
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: #006400; text-decoration: none;">🇨🇦 Env Canada 🔗</a>`;
+          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-source-envcan-text); text-decoration: none;">🇨🇦 Env Canada 🔗</a>`;
         }
       }
 
@@ -430,9 +430,9 @@ async function loadWindTable() {
           <td>${pressure}</td>
           <td>${updated}</td>
           <td style="white-space: nowrap;">
-            <a href="#map-section" class="wind-table-action-link" data-action="map" data-station-id="${id}" style="color: #0077be; text-decoration: none; cursor: pointer; margin-right: 0.5rem;">Map</a>
-            <span style="color: #ccc;">/</span>
-            <a href="#wind-chart-section" class="wind-table-action-link" data-action="chart" data-station-id="${id}" style="color: #0077be; text-decoration: none; cursor: pointer; margin-left: 0.5rem;">Chart</a>
+            <a href="#map-section" class="wind-table-action-link" data-action="map" data-station-id="${id}" style="color: var(--color-primary); text-decoration: none; cursor: pointer; margin-right: 0.5rem;">Map</a>
+            <span style="color: var(--color-border);">/</span>
+            <a href="#wind-chart-section" class="wind-table-action-link" data-action="chart" data-station-id="${id}" style="color: var(--color-primary); text-decoration: none; cursor: pointer; margin-left: 0.5rem;">Chart</a>
           </td>
         </tr>
       `;
@@ -462,11 +462,11 @@ async function loadWindTable() {
       offlineStations.sort((a, b) => a[1].name.localeCompare(b[1].name));
 
       let offlineHTML =
-        '<div style="margin-top: 1rem; padding: 1rem; background: #fff9e6; border-left: 3px solid #f59e0b; border-radius: 4px;">';
+        '<div style="margin-top: 1rem; padding: 1rem; background: var(--color-callout-warning-bg); border-left: 3px solid var(--color-status-warning); border-radius: 4px;">';
       offlineHTML +=
-        '<h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #92400e;">Stations with Stale Data (>4 hours)</h3>';
+        '<h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--color-warning-text);">Stations with Stale Data (>4 hours)</h3>';
       offlineHTML +=
-        '<p style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: #78350f;">The following stations have not reported wind data in over 4 hours:</p>';
+        '<p style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: var(--color-warning-text);">The following stations have not reported wind data in over 4 hours:</p>';
 
       // Use single column on mobile, 2 columns on desktop
       const isMobile = window.innerWidth < 768;
@@ -487,7 +487,7 @@ async function loadWindTable() {
         // Add source link if available
         let stationLink = station.name.replace(" 💨", "").replace(" 🌊", "");
         if (sourceLinks[id]) {
-          stationLink = `<a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="color: #0066cc; text-decoration: none;">${stationLink}</a>`;
+          stationLink = `<a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="color: var(--color-accent-blue); text-decoration: none;">${stationLink}</a>`;
         }
 
         offlineHTML += `<li style="margin-bottom: 0.25rem; break-inside: avoid;"><strong>${stationLink}</strong> (${ageText} ago)</li>`;
@@ -509,7 +509,7 @@ async function loadWindTable() {
     const table = document.getElementById("wind-conditions-table");
     if (table) {
       table.innerHTML =
-        '<tbody><tr><td colspan="7" style="text-align: center; color: #e53935; padding: 2rem;">Error loading wind data</td></tr></tbody>';
+        '<tbody><tr><td colspan="7" style="text-align: center; color: var(--color-error-text); padding: 2rem;">Error loading wind data</td></tr></tbody>';
     }
   }
 }
@@ -879,7 +879,7 @@ function renderWind24HourTable(stationId) {
       toggleCell.colSpan = 6;
       toggleCell.style.textAlign = "center";
       toggleCell.style.padding = "1rem";
-      toggleCell.style.background = "#f5f9fc";
+      toggleCell.style.background = "var(--color-surface-light)";
       toggleCell.style.cursor = "pointer";
       toggleCell.style.borderBottom = "none";
 
@@ -993,16 +993,19 @@ function renderWindChart(stationId) {
     legendData.push("Wind Direction");
   }
 
+  // Get theme-aware colors
+  const tc = getChartThemeColors();
+
   // Chart configuration
   const option = {
-    backgroundColor: "#ffffff",
+    backgroundColor: tc.background,
     title: {
       text: `${station.name.replace(" 💨", "").replace(" 🌊", "")} - Wind Conditions`,
       left: "center",
       textStyle: {
         fontSize: 18,
         fontWeight: 600,
-        color: "#004b7c",
+        color: tc.text,
       },
     },
     tooltip: {
@@ -1085,10 +1088,10 @@ function renderWindChart(stationId) {
         smooth: true,
         lineStyle: {
           width: 2,
-          color: "#fb8c00",
+          color: tc.series.secondary,
         },
         itemStyle: {
-          color: "#fb8c00",
+          color: tc.series.secondary,
         },
         areaStyle: {
           opacity: 0.1,
@@ -1101,7 +1104,7 @@ function renderWindChart(stationId) {
         symbol: "circle",
         symbolSize: 6,
         itemStyle: {
-          color: "#e53935",
+          color: tc.negative,
         },
       },
       {
@@ -1115,7 +1118,7 @@ function renderWindChart(stationId) {
         },
         itemStyle: {
           color: function (params) {
-            return arrowData[params.dataIndex]?.itemStyle?.color || "#004b7c";
+            return arrowData[params.dataIndex]?.itemStyle?.color || tc.marker;
           },
           opacity: function (params) {
             return arrowData[params.dataIndex]?.itemStyle?.opacity || 0.7;
@@ -1257,4 +1260,14 @@ document.addEventListener("DOMContentLoaded", () => {
       windChart.resize();
     }
   });
+
+  // Re-render chart on theme change
+  if (typeof registerChartThemeListener === "function") {
+    registerChartThemeListener(() => {
+      const selectedStation = document.getElementById("wind-station-select")?.value;
+      if (selectedStation && windChart) {
+        renderWindChart(selectedStation);
+      }
+    });
+  }
 });

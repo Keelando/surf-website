@@ -70,7 +70,7 @@ function generateWaveHeightTable(chartData) {
         <th>Southern Georgia Strait</th>
         <th>Sentry Shoal</th>
         <th>La Perouse Bank</th>
-        <th>Neah Bay<br><span style="font-size: 0.8em; font-weight: normal; color: #666;">(Swell)</span></th>
+        <th>Neah Bay<br><span style="font-size: 0.8em; font-weight: normal; color: var(--color-text-muted);">(Swell)</span></th>
         <th>New Dungeness</th>
         <th>Angeles Point</th>
       </tr>
@@ -144,7 +144,7 @@ function generateWaveHeightTable(chartData) {
     const table = document.getElementById("wave-height-table");
     if (table) {
       table.innerHTML =
-        '<tbody><tr><td colspan="10" style="text-align: center; color: #e53935; padding: 2rem;">Error generating table</td></tr></tbody>';
+        '<tbody><tr><td colspan="10" style="text-align: center; color: var(--color-error-text); padding: 2rem;">Error generating table</td></tr></tbody>';
     }
   }
 }
@@ -171,13 +171,13 @@ function updateTableToggleButton(shouldShow) {
     const btn = document.createElement("button");
     btn.textContent = "▼ Show More Rows";
     btn.style.cssText =
-      "padding: 0.5rem 1.5rem; background: #0077be; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.2s;";
+      "padding: 0.5rem 1.5rem; background: var(--color-primary); color: var(--color-on-primary); border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.2s;";
     btn.addEventListener("click", toggleWaveTableRows);
     btn.addEventListener("mouseover", function () {
-      this.style.background = "#005a94";
+      this.style.background = "var(--color-primary-light)";
     });
     btn.addEventListener("mouseout", function () {
-      this.style.background = "#0077be";
+      this.style.background = "var(--color-primary)";
     });
 
     toggleBtn.appendChild(btn);

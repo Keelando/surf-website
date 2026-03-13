@@ -149,8 +149,8 @@ export function displaySunlightTimes(
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
         <h3 style="margin: 0;">Sunlight Times for ${dayLabel}</h3>
         <div class="chart-nav-buttons" style="display: flex; gap: 0.5rem;">
-          <button id="sunlight-prev-day-btn" title="Previous day" style="padding: 0.5rem 1rem; background: #0077be; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem;">◀</button>
-          <button id="sunlight-next-day-btn" title="Next day" style="padding: 0.5rem 1rem; background: #0077be; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem;">▶</button>
+          <button id="sunlight-prev-day-btn" title="Previous day" style="padding: 0.5rem 1rem; background: var(--color-primary); color: var(--color-on-primary); border: none; border-radius: 4px; cursor: pointer; font-size: 1rem;">◀</button>
+          <button id="sunlight-next-day-btn" title="Next day" style="padding: 0.5rem 1rem; background: var(--color-primary); color: var(--color-on-primary); border: none; border-radius: 4px; cursor: pointer; font-size: 1rem;">▶</button>
         </div>
       </div>
       <div class="sunlight-cards-grid">

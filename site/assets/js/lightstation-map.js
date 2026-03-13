@@ -229,17 +229,17 @@ function addLightstationMapMarker(lightstation) {
   if (latestLightstationData && latestLightstationData[lookupName]) {
     const obs = latestLightstationData[lookupName];
     const isStale = obs.stale || false;
-    const bgColor = isStale ? "#fff5f5" : "#f0f8ff";
-    const borderColor = isStale ? "#e53935" : "#0077be";
+    const bgColor = isStale ? "var(--color-callout-danger-bg)" : "var(--color-callout-info-bg)";
+    const borderColor = isStale ? "var(--color-accent-red)" : "var(--color-primary)";
     const headerText = isStale ? "Latest Conditions (STALE - >12h old):" : "Latest Conditions:";
-    const headerColor = isStale ? "#c62828" : "#004b7c";
+    const headerColor = isStale ? "var(--color-accent-red)" : "var(--map-popup-heading)";
 
     popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 6px; color: ${headerColor}; font-size: 0.95em;">${headerText}</div>`;
 
     // Wave Height (prominent display)
     if (obs.sea_height_ft !== null) {
-      popupContent += `<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 8px; border-radius: 4px; margin-bottom: 6px; text-align: center; font-weight: 600;">`;
+      popupContent += `<div style="background: linear-gradient(135deg, var(--color-callout-gradient-start) 0%, var(--color-callout-gradient-end) 100%); color: var(--color-on-primary); padding: 6px 8px; border-radius: 4px; margin-bottom: 6px; text-align: center; font-weight: 600;">`;
       popupContent += `🌊 Wave Height: ${obs.sea_height_ft} ft`;
       popupContent += `</div>`;
     }
@@ -295,14 +295,14 @@ function addLightstationMapMarker(lightstation) {
         ageText = " (just now)";
       }
 
-      popupContent += `<div style="font-size: 0.85em; color: #555; margin-top: 6px; padding-top: 4px; border-top: 1px solid rgba(0,75,124,0.2);">📅 Report: ${formattedDate}${ageText}</div>`;
+      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-border);">📅 Report: ${formattedDate}${ageText}</div>`;
     } else if (obs.report_time_str) {
-      popupContent += `<div style="font-size: 0.85em; color: #555; margin-top: 6px; padding-top: 4px; border-top: 1px solid rgba(0,75,124,0.2);">📅 Report: ${obs.report_time_str}</div>`;
+      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-border);">📅 Report: ${obs.report_time_str}</div>`;
     }
 
     // Staleness warning (already shown in header, but keep for emphasis)
     if (obs.stale) {
-      popupContent += `<div style="color: #c53030; font-size: 0.85em; margin-top: 4px; font-weight: 600;">⚠️ STALE DATA</div>`;
+      popupContent += `<div style="color: var(--color-accent-red); font-size: 0.85em; margin-top: 4px; font-weight: 600;">⚠️ STALE DATA</div>`;
     }
 
     popupContent += `</div>`;
@@ -317,9 +317,9 @@ function addLightstationMapMarker(lightstation) {
       <div><strong>Source:</strong> ${lightstation.source}</div>
       <div><strong>Type:</strong> Lightstation</div>
       ${lightstation.established ? `<div><strong>Established:</strong> ${lightstation.established}</div>` : ""}
-      ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: #666;">${lightstation.notes}</div>` : ""}
+      ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${lightstation.notes}</div>` : ""}
     </div>
-    <a href="#lightstation-data-table-section" class="view-data-btn" data-lightstation-id="${lightstation.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Data →</a>
+    <a href="#lightstation-data-table-section" class="view-data-btn" data-lightstation-id="${lightstation.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Data →</a>
   </div>`;
 
   marker.bindPopup(popupContent);

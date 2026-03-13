@@ -43,12 +43,12 @@
     .data-table table {
       width: 100%;
       border-collapse: collapse;
-      background: white;
+      background: var(--color-surface);
     }
 
     .data-table th {
-      background: linear-gradient(to bottom, #004b7c, #003d66);
-      color: white;
+      background: linear-gradient(to bottom, var(--color-primary-dark), var(--color-primary-hover-start));
+      color: var(--color-on-primary);
       padding: 0.65rem 0.75rem;
       text-align: left;
       font-weight: 600;
@@ -62,7 +62,7 @@
     }
 
     .data-table th.sortable:hover {
-      background: linear-gradient(to bottom, #005a94, #004b7c);
+      background: linear-gradient(to bottom, var(--color-primary-hover-end), var(--color-primary-dark));
     }
 
     .data-table th .sort-indicator {
@@ -87,7 +87,7 @@
 
     .data-table td {
       padding: 0.5rem 0.75rem;
-      border-bottom: 1px solid #e0e7ee;
+      border-bottom: 1px solid var(--color-border-light);
       font-size: 0.95rem;
     }
 
@@ -101,21 +101,21 @@
     }
 
     .data-table tbody tr:nth-child(even) {
-      background: rgba(0, 75, 124, 0.03);
+      background: var(--color-table-zebra);
     }
 
     .data-table tbody tr:hover {
-      background: #f5f9fc;
+      background: var(--color-surface-light);
     }
 
     .data-table tbody tr.stale {
       opacity: 0.6;
-      background: #f9fafb;
-      color: #6b7280;
+      background: var(--color-surface-alt);
+      color: var(--color-text-muted);
     }
 
     .data-table tbody tr.stale:hover {
-      background: #f3f4f6;
+      background: var(--color-surface-light);
     }
 
     .w-full {
@@ -159,22 +159,22 @@
       font-size: 0.9rem;
       font-weight: 600;
       transition: all 0.2s;
-      background: #e0e0e0;
-      color: #666;
+      background: var(--color-card-muted-bg);
+      color: var(--color-text-muted);
     }
 
     .wind-time-range-btn:hover {
-      background: #d0d0d0;
+      background: var(--color-card-muted-hover);
       transform: translateY(-1px);
     }
 
     .wind-time-range-btn.active {
-      background: #0077be;
-      color: white;
+      background: var(--color-primary);
+      color: var(--color-on-primary);
     }
 
     .wind-time-range-btn.active:hover {
-      background: #005a94;
+      background: var(--color-primary-light);
     }
 
     /* Wind table collapsed rows - hidden by default */
