@@ -59,13 +59,23 @@ function renderComparisonChart(waveComparisonChart, chartData) {
     }
 
     const buoyOrder = ["4600146", "4600304", "4600303", "4600131", "CRPILE"];
-    const buoyColors = {
-      4600146: "#1e88e5",
-      4600304: "#43a047",
-      4600303: "#fb8c00",
-      4600131: "#e53935",
-      CRPILE: "#9c27b0",
-    };
+    const theme = getChartThemeColors();
+    const colors = theme.series;
+    const textColor = theme.text;
+    const mutedText = theme.mutedText;
+    const axisColor = theme.axisLine;
+    const gridColor = theme.gridLine;
+    const palette = [
+      colors.primary,
+      colors.quaternary,
+      colors.secondary,
+      colors.tertiary,
+      colors.quinary,
+    ];
+    const buoyColors = buoyOrder.reduce((acc, id, idx) => {
+      acc[id] = palette[idx % palette.length];
+      return acc;
+    }, {});
 
     // Track global max wave height across all buoys for arrow positioning
     let globalMaxHeight = 0;
@@ -113,8 +123,8 @@ function renderComparisonChart(waveComparisonChart, chartData) {
             data: [
               {
                 yAxis: threshold,
-                lineStyle: { type: "dashed", color: "#e53935", width: 1.5 },
-                label: { formatter: `${threshold}m`, color: "#e53935" },
+                lineStyle: { type: "dashed", color: theme.negative, width: 1.5 },
+                label: { formatter: `${threshold}m`, color: theme.negative },
               },
             ],
           }
@@ -144,7 +154,7 @@ function renderComparisonChart(waveComparisonChart, chartData) {
         arrowData.push({
           value: [new Date(dirPoint.time).getTime(), arrowYPosition],
           symbolRotate: calculateArrowRotation(dirPoint.value),
-          itemStyle: { color: "#1e88e5", opacity: 0.7 },
+          itemStyle: { color: colors.primary, opacity: 0.7 },
         });
       }
 
@@ -160,7 +170,7 @@ function renderComparisonChart(waveComparisonChart, chartData) {
           },
           itemStyle: {
             color: function (params) {
-              return arrowData[params.dataIndex]?.itemStyle?.color || "#1e88e5";
+              return arrowData[params.dataIndex]?.itemStyle?.color || colors.primary;
             },
             opacity: function (params) {
               return arrowData[params.dataIndex]?.itemStyle?.opacity || 0.7;
@@ -173,10 +183,12 @@ function renderComparisonChart(waveComparisonChart, chartData) {
     }
 
     waveComparisonChart.setOption({
+      backgroundColor: theme.background,
+      textStyle: { color: textColor },
       title: {
         text: "Sig Wave Height (All)",
         left: "center",
-        textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14 },
+        textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14, color: textColor },
       },
 
       tooltip: {
@@ -213,6 +225,7 @@ function renderComparisonChart(waveComparisonChart, chartData) {
           ...(halibutDirData.length > 0 ? ["Wave Dir (Halibut)"] : []),
         ],
         bottom: "3%", // Fixed lower position for comparison chart (multi-row legend needs more space)
+        textStyle: { color: textColor },
       },
 
       grid: getResponsiveGridConfig(true),
@@ -225,9 +238,11 @@ function renderComparisonChart(waveComparisonChart, chartData) {
           formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
           hideOverlap: true,
           margin: 10,
+          color: mutedText,
         },
         axisTick: { show: true },
-        splitLine: { show: true, lineStyle: { color: "#eee" } },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { show: true, lineStyle: { color: gridColor } },
       },
 
       yAxis: {
@@ -243,7 +258,10 @@ function renderComparisonChart(waveComparisonChart, chartData) {
         },
         scale: false,
         boundaryGap: [0, 0],
-        splitLine: { show: true, lineStyle: { color: "#eee" } },
+        axisLabel: { color: mutedText },
+        nameTextStyle: { color: textColor },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { show: true, lineStyle: { color: gridColor } },
       },
 
       series: series,

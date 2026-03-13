@@ -49,6 +49,8 @@ let windSpeedChart = null;
 let waveHeightChart = null;
 let lightstationTimeseriesData = null;
 let allLightstations = [];
+let currentLightstationStation = null;
+let detachLightstationThemeListener = null;
 
 /**
  * Load lightstation timeseries data and populate station selector
@@ -189,6 +191,8 @@ function renderLightstationCharts(stationName) {
   if (!stationName) return;
 
   const station = lightstationTimeseriesData ? lightstationTimeseriesData[stationName] : null;
+  currentLightstationStation = stationName;
+  ensureLightstationThemeListener();
 
   // Update 24-hour reports title with station name
   const title = document.getElementById("lightstation-24hr-title");
@@ -215,7 +219,7 @@ function showNoDataMessage(stationName) {
   if (tbody) {
     setSafeHTML(
       tbody,
-      '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #e53e3e;">⚠️ No data available from the past 24 hours for this station.<br/><span style="font-size: 0.9rem; color: #718096; margin-top: 0.5rem; display: inline-block;">Most recent observation may be older than 24 hours.</span></td></tr>',
+      '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-accent-red,#e53e3e);">⚠️ No data available from the past 24 hours for this station.<br/><span style="font-size: 0.9rem; color: var(--color-text-muted,#718096); margin-top: 0.5rem; display: inline-block;">Most recent observation may be older than 24 hours.</span></td></tr>',
     );
   }
 
@@ -227,8 +231,8 @@ function showNoDataMessage(stationName) {
         text: `${stationName} - Wind Speed`,
         subtext: "No data from the past 24 hours",
         left: "center",
-        textStyle: { fontSize: 18, fontWeight: 600, color: "#004b7c" },
-        subtextStyle: { fontSize: 14, color: "#e53e3e" },
+        textStyle: { fontSize: 18, fontWeight: 600, color: "var(--color-primary-dark,#004b7c)" },
+        subtextStyle: { fontSize: 14, color: "var(--color-accent-red,#e53e3e)" },
       },
     });
   }
@@ -240,8 +244,8 @@ function showNoDataMessage(stationName) {
         text: `${stationName} - Sea State`,
         subtext: "No data from the past 24 hours",
         left: "center",
-        textStyle: { fontSize: 18, fontWeight: 600, color: "#004b7c" },
-        subtextStyle: { fontSize: 14, color: "#e53e3e" },
+        textStyle: { fontSize: 18, fontWeight: 600, color: "var(--color-primary-dark,#004b7c)" },
+        subtextStyle: { fontSize: 14, color: "var(--color-accent-red,#e53e3e)" },
       },
     });
   }
@@ -274,14 +278,14 @@ function render24HourTable(stationName, station) {
   if (sortedTimes.length === 0) {
     setSafeHTML(
       tbody,
-      '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #718096;">No data available for this station</td></tr>',
+      '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-text-muted,#718096);">No data available for this station</td></tr>',
     );
     return;
   }
 
   // Build table rows
   let tableHTML = "";
-  sortedTimes.forEach((time) => {
+  sortedTimes.forEach((time, rowIndex) => {
     // Find data for this timestamp
     const windData = timeseries.wind_speed_kt?.find((p) => p.time === time);
     const seaData = timeseries.sea_height_ft?.find((p) => p.time === time);
@@ -334,13 +338,17 @@ function render24HourTable(stationName, station) {
       conditionsText = "—"; // Don't duplicate
     }
 
+    const rowBackground =
+      rowIndex % 2 === 0 ? "var(--color-surface)" : "var(--color-table-zebra)";
+    const borderColor = "var(--color-border-light)";
+
     tableHTML += `
-      <tr style="background: ${sortedTimes.indexOf(time) % 2 === 0 ? "white" : "rgba(0, 75, 124, 0.03)"};">
-        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #e0e7ee; font-size: 0.95rem;">${formattedTime}</td>
-        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #e0e7ee; font-size: 0.95rem;">${windText}</td>
-        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #e0e7ee; font-size: 0.95rem;">${seaText}</td>
-        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #e0e7ee; font-size: 0.95rem;">${swellText}</td>
-        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #e0e7ee; font-size: 0.95rem;">${conditionsText}</td>
+      <tr style="background: ${rowBackground};">
+        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid ${borderColor}; font-size: 0.95rem;">${formattedTime}</td>
+        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid ${borderColor}; font-size: 0.95rem;">${windText}</td>
+        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid ${borderColor}; font-size: 0.95rem;">${seaText}</td>
+        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid ${borderColor}; font-size: 0.95rem;">${swellText}</td>
+        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid ${borderColor}; font-size: 0.95rem;">${conditionsText}</td>
       </tr>
     `;
   });
@@ -364,6 +372,12 @@ function renderWindSpeedChart(stationName, station) {
 
   const timeseries = station.timeseries;
   const windSpeedData = timeseries.wind_speed_kt || [];
+  const theme = getChartThemeColors();
+  const colors = theme.series;
+  const textColor = theme.text;
+  const mutedText = theme.mutedText;
+  const axisColor = theme.axisLine;
+  const gridColor = theme.gridLine;
 
   // Prepare data for ECharts
   const speedData = windSpeedData.map((p) => [new Date(p.time).getTime(), p.value]);
@@ -378,14 +392,15 @@ function renderWindSpeedChart(stationName, station) {
     .map((p) => [new Date(p.time).getTime(), p.value]);
 
   const option = {
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.background,
+    textStyle: { color: textColor },
     title: {
       text: `${station.name} - Wind Speed`,
       left: "center",
       textStyle: {
         fontSize: 18,
         fontWeight: 600,
-        color: "#004b7c",
+        color: textColor,
       },
     },
     tooltip: {
@@ -417,6 +432,7 @@ function renderWindSpeedChart(stationName, station) {
       top: 35,
       textStyle: {
         fontSize: 14,
+        color: textColor,
       },
     },
     grid: {
@@ -429,13 +445,13 @@ function renderWindSpeedChart(stationName, station) {
     xAxis: {
       type: "time",
       boundaryGap: false,
-      splitLine: {
-        show: true,
-        lineStyle: {
-          color: "#e0e7ee",
-          type: "dashed",
+        splitLine: {
+          show: true,
+          lineStyle: {
+          color: gridColor,
+            type: "dashed",
+          },
         },
-      },
       axisLabel: {
         formatter: (value) => {
           const date = new Date(value);
@@ -451,7 +467,9 @@ function renderWindSpeedChart(stationName, station) {
             .replace(",", "\n");
         },
         fontSize: 12,
+        color: mutedText,
       },
+      axisLine: { lineStyle: { color: axisColor } },
     },
     yAxis: {
       type: "value",
@@ -461,8 +479,12 @@ function renderWindSpeedChart(stationName, station) {
       nameTextStyle: {
         fontSize: 13,
         fontWeight: 600,
+        color: textColor,
       },
       min: 0,
+      axisLabel: { color: mutedText },
+      axisLine: { lineStyle: { color: axisColor } },
+      splitLine: { lineStyle: { color: gridColor } },
     },
     dataZoom: [
       {
@@ -486,10 +508,10 @@ function renderWindSpeedChart(stationName, station) {
         smooth: true,
         lineStyle: {
           width: 2,
-          color: "#4299e1",
+          color: colors.primary,
         },
         itemStyle: {
-          color: "#4299e1",
+          color: colors.primary,
         },
         symbol: "circle",
         symbolSize: 6,
@@ -502,7 +524,7 @@ function renderWindSpeedChart(stationName, station) {
         type: "scatter",
         data: gustingSpeedData,
         itemStyle: {
-          color: "#e53e3e",
+          color: theme.negative,
         },
         symbol: "diamond",
         symbolSize: 8,
@@ -530,11 +552,20 @@ function renderWaveHeightChart(stationName, station) {
 
   const timeseries = station.timeseries;
   const waveData = timeseries.sea_height_ft || [];
+  const theme = getChartThemeColors();
+  const colors = theme.series;
+  const textColor = theme.text;
+  const mutedText = theme.mutedText;
+  const axisColor = theme.axisLine;
+  const gridColor = theme.gridLine;
+  const gradientTop = theme.isDark ? "rgba(94, 234, 212, 0.25)" : "rgba(56, 161, 105, 0.3)";
+  const gradientBottom = theme.isDark ? "rgba(94, 234, 212, 0.06)" : "rgba(56, 161, 105, 0.05)";
 
   if (waveData.length === 0) {
     // Show "no data" message
     waveHeightChart.clear();
     waveHeightChart.setOption({
+      backgroundColor: theme.background,
       title: {
         text: `${station.name} - Sea State`,
         subtext: "No wave height data available",
@@ -542,11 +573,11 @@ function renderWaveHeightChart(stationName, station) {
         textStyle: {
           fontSize: 18,
           fontWeight: 600,
-          color: "#004b7c",
+          color: textColor,
         },
         subtextStyle: {
           fontSize: 14,
-          color: "#718096",
+          color: mutedText,
         },
       },
     });
@@ -557,14 +588,15 @@ function renderWaveHeightChart(stationName, station) {
   const heightData = waveData.map((p) => [new Date(p.time).getTime(), p.value]);
 
   const option = {
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.background,
+    textStyle: { color: textColor },
     title: {
       text: `${station.name} - Sea State (Wave Height)`,
       left: "center",
       textStyle: {
         fontSize: 18,
         fontWeight: 600,
-        color: "#004b7c",
+        color: textColor,
       },
     },
     tooltip: {
@@ -596,6 +628,7 @@ function renderWaveHeightChart(stationName, station) {
       top: 35,
       textStyle: {
         fontSize: 14,
+        color: textColor,
       },
     },
     grid: {
@@ -608,13 +641,13 @@ function renderWaveHeightChart(stationName, station) {
     xAxis: {
       type: "time",
       boundaryGap: false,
-      splitLine: {
-        show: true,
-        lineStyle: {
-          color: "#e0e7ee",
-          type: "dashed",
+        splitLine: {
+          show: true,
+          lineStyle: {
+          color: gridColor,
+            type: "dashed",
+          },
         },
-      },
       axisLabel: {
         formatter: (value) => {
           const date = new Date(value);
@@ -630,7 +663,9 @@ function renderWaveHeightChart(stationName, station) {
             .replace(",", "\n");
         },
         fontSize: 12,
+        color: mutedText,
       },
+      axisLine: { lineStyle: { color: axisColor } },
     },
     yAxis: {
       type: "value",
@@ -640,8 +675,12 @@ function renderWaveHeightChart(stationName, station) {
       nameTextStyle: {
         fontSize: 13,
         fontWeight: 600,
+        color: textColor,
       },
       min: 0,
+      axisLabel: { color: mutedText },
+      axisLine: { lineStyle: { color: axisColor } },
+      splitLine: { lineStyle: { color: gridColor } },
     },
     dataZoom: [
       {
@@ -665,10 +704,10 @@ function renderWaveHeightChart(stationName, station) {
         smooth: true,
         lineStyle: {
           width: 3,
-          color: "#38a169",
+          color: colors.quaternary,
         },
         itemStyle: {
-          color: "#38a169",
+          color: colors.quaternary,
         },
         areaStyle: {
           color: {
@@ -678,8 +717,8 @@ function renderWaveHeightChart(stationName, station) {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: "rgba(56, 161, 105, 0.3)" },
-              { offset: 1, color: "rgba(56, 161, 105, 0.05)" },
+              { offset: 0, color: gradientTop },
+              { offset: 1, color: gradientBottom },
             ],
           },
         },
@@ -710,3 +749,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (lightstationMapBtn)
     lightstationMapBtn.addEventListener("click", showSelectedLightstationOnMap);
 });
+
+function ensureLightstationThemeListener() {
+  if (detachLightstationThemeListener) return;
+  detachLightstationThemeListener = registerChartThemeListener(() => {
+    if (currentLightstationStation) {
+      renderLightstationCharts(currentLightstationStation);
+    }
+  });
+}

@@ -11,6 +11,12 @@
 function renderTemperatureChart(tempChart, buoy) {
   try {
     const ts = buoy.timeseries;
+    const theme = getChartThemeColors();
+    const colors = theme.series;
+    const textColor = theme.text;
+    const mutedText = theme.mutedText;
+    const axisColor = theme.axisLine;
+    const gridColor = theme.gridLine;
     const airTempData = ts.air_temp?.data || [];
     const seaTempData = ts.sea_temp?.data || [];
 
@@ -29,10 +35,12 @@ function renderTemperatureChart(tempChart, buoy) {
     }
 
     tempChart.setOption({
+      backgroundColor: theme.background,
+      textStyle: { color: textColor },
       title: {
         text: `${buoy.name} - Temperature`,
         left: "center",
-        textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14 },
+        textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14, color: textColor },
       },
       tooltip: {
         ...getMobileOptimizedTooltipConfig(),
@@ -48,7 +56,11 @@ function renderTemperatureChart(tempChart, buoy) {
           return res;
         },
       },
-      legend: { data: ["Air Temperature", "Sea Temperature"], bottom: getResponsiveLegendBottom() },
+      legend: {
+        data: ["Air Temperature", "Sea Temperature"],
+        bottom: getResponsiveLegendBottom(),
+        textStyle: { color: textColor },
+      },
       grid: getResponsiveGridConfig(false),
       xAxis: {
         type: "time",
@@ -58,16 +70,21 @@ function renderTemperatureChart(tempChart, buoy) {
           formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
           hideOverlap: true,
           margin: 10,
+          color: mutedText,
         },
         axisTick: { show: true },
-        splitLine: { show: true, lineStyle: { color: "#eee" } },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { show: true, lineStyle: { color: gridColor } },
       },
       yAxis: {
         type: "value",
         name: "Temperature (°C)",
         min: yMin,
         max: yMax,
-        axisLabel: { formatter: "{value} °C" },
+        axisLabel: { formatter: "{value} °C", color: mutedText },
+        nameTextStyle: { color: textColor },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { lineStyle: { color: gridColor } },
       },
       series: [
         {
@@ -76,7 +93,7 @@ function renderTemperatureChart(tempChart, buoy) {
           data: sanitizeSeriesData(airTempData),
           smooth: true,
           connectNulls: false,
-          itemStyle: { color: "#f4511e" },
+          itemStyle: { color: colors.secondary },
         },
         {
           name: "Sea Temperature",
@@ -84,7 +101,7 @@ function renderTemperatureChart(tempChart, buoy) {
           data: sanitizeSeriesData(seaTempData),
           smooth: true,
           connectNulls: false,
-          itemStyle: { color: "#00acc1" },
+          itemStyle: { color: colors.quinary },
         },
       ],
     });

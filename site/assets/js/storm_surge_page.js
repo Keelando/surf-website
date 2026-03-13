@@ -7,6 +7,8 @@ let hindcastChart = null;
 let forecastData = null;
 let hindcastData = null;
 let observedSurgeData = null;
+let detachForecastThemeListener = null;
+let detachHindcastThemeListener = null;
 
 // Station display order
 const STATION_ORDER = [
@@ -98,7 +100,7 @@ async function loadForecastData() {
     if (container) {
       setSafeHTML(
         container,
-        '<p style="text-align:center;color:#999;">⚠️ Forecast data unavailable</p>',
+        '<p style="text-align:center;color:var(--color-text-muted,#999);">⚠️ Forecast data unavailable</p>',
       );
     }
   }
@@ -316,6 +318,15 @@ function updateForecastChart(stationId) {
   // Update peak display and get peak data for markers (use forecastStationId for lookup)
   const peakData = updatePeakToday(forecastStationId);
 
+  const theme = getChartThemeColors();
+  const textColor = theme.text;
+  const mutedText = theme.mutedText;
+  const axisColor = theme.axisLine;
+  const gridColor = theme.gridLine;
+  const gradientTop = theme.isDark ? "rgba(92, 198, 255, 0.35)" : "rgba(0, 119, 190, 0.3)";
+  const gradientBottom = theme.isDark ? "rgba(92, 198, 255, 0.05)" : "rgba(0, 119, 190, 0.05)";
+  const peakColor = theme.negative;
+
   // Prepare data
   const forecastData_series = [];
 
@@ -357,12 +368,12 @@ function updateForecastChart(stationId) {
     }
 
     // Add vertical lines for each midnight up to the last time
-    while (currentMidnight <= lastTime) {
-      midnightLines.push({
-        xAxis: currentMidnight.toISOString(),
-        lineStyle: { color: "#ddd", type: "solid", width: 1 },
-        label: { show: false },
-      });
+      while (currentMidnight <= lastTime) {
+        midnightLines.push({
+          xAxis: currentMidnight.toISOString(),
+          lineStyle: { color: gridColor, type: "solid", width: 1 },
+          label: { show: false },
+        });
 
       // Move to next day
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);
@@ -382,8 +393,8 @@ function updateForecastChart(stationId) {
         markPointData.push({
           coord: [peak.time, peak.value],
           itemStyle: {
-            color: "#ff4444",
-            borderColor: "#fff",
+            color: peakColor,
+            borderColor: theme.background,
             borderWidth: 2,
           },
         });
@@ -402,7 +413,7 @@ function updateForecastChart(stationId) {
     smooth: true,
     symbol: "none",
     legendHoverLink: false,
-    itemStyle: { color: "#0077be" },
+    itemStyle: { color: colors.primary },
     lineStyle: { width: 2 },
     areaStyle: {
       color: {
@@ -412,8 +423,8 @@ function updateForecastChart(stationId) {
         x2: 0,
         y2: 1,
         colorStops: [
-          { offset: 0, color: "rgba(0, 119, 190, 0.3)" },
-          { offset: 1, color: "rgba(0, 119, 190, 0.05)" },
+          { offset: 0, color: gradientTop },
+          { offset: 1, color: gradientBottom },
         ],
       },
     },
@@ -424,11 +435,12 @@ function updateForecastChart(stationId) {
         // Sea level line (horizontal)
         {
           yAxis: 0,
-          lineStyle: { type: "dashed", color: "#999", width: 1 },
+          lineStyle: { type: "dashed", color: mutedText, width: 1 },
           label: {
             show: true,
             position: "end",
             formatter: "Sea Level",
+            color: mutedText,
           },
         },
         // Midnight gridlines (vertical)
@@ -448,6 +460,8 @@ function updateForecastChart(stationId) {
   // Set chart options (notMerge: true to replace all data when switching stations)
   forecastChart.setOption(
     {
+      backgroundColor: theme.background,
+      textStyle: { color: textColor },
       title: {
         text:
           window.innerWidth < 600
@@ -460,10 +474,11 @@ function updateForecastChart(stationId) {
           fontWeight: "bold",
           overflow: "truncate",
           width: window.innerWidth < 600 ? window.innerWidth - 40 : null,
+          color: textColor,
         },
         subtextStyle: {
           fontSize: 10,
-          color: "#666",
+          color: mutedText,
         },
       },
       tooltip: {
@@ -509,9 +524,11 @@ function updateForecastChart(stationId) {
           rotate: window.innerWidth < 600 ? 30 : 0,
           fontSize: 10,
           hideOverlap: true,
+          color: mutedText,
         },
         axisTick: { show: true },
-        splitLine: { show: true, lineStyle: { color: "#eee" } },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { show: true, lineStyle: { color: gridColor } },
       },
       yAxis: {
         type: "value",
@@ -523,8 +540,11 @@ function updateForecastChart(stationId) {
             const sign = value >= 0 ? "+" : "";
             return `${sign}${value.toFixed(1)}`;
           },
+          color: mutedText,
         },
-        splitLine: { show: true, lineStyle: { color: "#eee" } },
+        nameTextStyle: { color: textColor },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { show: true, lineStyle: { color: gridColor } },
       },
       legend: {
         show: peakLabels.length > 0,
@@ -538,14 +558,14 @@ function updateForecastChart(stationId) {
                 {
                   name: `🔴 Peaks: ${peakLabels.join(" | ")}`,
                   icon: "circle",
-                  itemStyle: { color: "#ff4444", borderColor: "#fff", borderWidth: 2 },
+                  itemStyle: { color: peakColor, borderColor: theme.background, borderWidth: 2 },
                 },
               ]
             : ["Storm Surge Forecast"],
         bottom: 5,
         left: "center",
         right: 20,
-        textStyle: { fontSize: window.innerWidth < 600 ? 8 : 10 },
+        textStyle: { fontSize: window.innerWidth < 600 ? 8 : 10, color: textColor },
         itemGap: window.innerWidth < 600 ? 8 : 15,
         padding: [5, 10],
       },
@@ -560,11 +580,23 @@ function updateForecastChart(stationId) {
     forecastData_series.map((d) => d[0]),
     values,
   );
+  ensureForecastThemeListener();
 
   logger.info(
     "StormSurge",
     `Loaded ${values.length} hours of forecast for ${displayStation.station_name}`,
   );
+}
+
+function ensureForecastThemeListener() {
+  if (detachForecastThemeListener) return;
+  detachForecastThemeListener = registerChartThemeListener(() => {
+    const selector = document.getElementById("forecast-station-select");
+    const station = selector?.value || "Point_Atkinson";
+    if (station) {
+      updateForecastChart(station);
+    }
+  });
 }
 
 function updateForecastMetadata(station, times, values) {
@@ -662,7 +694,7 @@ async function loadHindcastData() {
     if (container) {
       setSafeHTML(
         container,
-        '<p style="text-align:center;color:#999;">⚠️ Hindcast data unavailable</p>',
+        '<p style="text-align:center;color:var(--color-text-muted,#999);">⚠️ Hindcast data unavailable</p>',
       );
     }
   }
@@ -744,11 +776,18 @@ function updateHindcastChart(stationId) {
     if (container) {
       setSafeHTML(
         container,
-        '<p style="text-align:center;color:#999;">No hindcast data available for this station yet. Data accumulates over time.</p>',
+        '<p style="text-align:center;color:var(--color-text-muted,#999);">No hindcast data available for this station yet. Data accumulates over time.</p>',
       );
     }
     return;
   }
+
+  const theme = getChartThemeColors();
+  const colors = theme.series;
+  const textColor = theme.text;
+  const mutedText = theme.mutedText;
+  const axisColor = theme.axisLine;
+  const gridColor = theme.gridLine;
 
   // Prepare data - group by forecast date
   // Filter out data before the minimum date (9 days back from today)
@@ -796,7 +835,7 @@ function updateHindcastChart(stationId) {
     if (container) {
       setSafeHTML(
         container,
-        `<p style="text-align:center;color:#999;">No hindcast data available for this station from ${minDate} onwards. Data accumulates over time.</p>`,
+        `<p style="text-align:center;color:var(--color-text-muted,#999);">No hindcast data available for this station from ${minDate} onwards. Data accumulates over time.</p>`,
       );
     }
     return;
@@ -805,7 +844,7 @@ function updateHindcastChart(stationId) {
   // Prepare series for each forecast date
   const series = sortedDates.map((date, index) => {
     const data = forecastDates[date];
-    const color = getColorForIndex(index, sortedDates.length);
+    const color = getColorForIndex(index, sortedDates.length, theme);
 
     return {
       name: "", // Don't show individual forecast dates in legend
@@ -831,8 +870,8 @@ function updateHindcastChart(stationId) {
       smooth: false,
       symbol: "circle",
       symbolSize: 3,
-      itemStyle: { color: "#000000" },
-      lineStyle: { width: 3, type: "solid" },
+      itemStyle: { color: textColor },
+      lineStyle: { width: 3, type: "solid", color: textColor },
       z: 10, // Render on top
     });
 
@@ -864,7 +903,7 @@ function updateHindcastChart(stationId) {
     while (currentMidnight <= lastTime) {
       midnightLines.push({
         xAxis: currentMidnight.toISOString(),
-        lineStyle: { color: "#ddd", type: "solid", width: 1 },
+        lineStyle: { color: gridColor, type: "solid", width: 1 },
         label: { show: false },
       });
 
@@ -883,6 +922,8 @@ function updateHindcastChart(stationId) {
   // Set chart options (notMerge: true to replace all data when switching stations)
   hindcastChart.setOption(
     {
+      backgroundColor: theme.background,
+      textStyle: { color: textColor },
       title: {
         text:
           window.innerWidth < 600
@@ -898,8 +939,9 @@ function updateHindcastChart(stationId) {
           fontWeight: "bold",
           overflow: "truncate",
           width: window.innerWidth < 600 ? window.innerWidth - 40 : null,
+          color: textColor,
         },
-        subtextStyle: { fontSize: 10, color: "#666" },
+        subtextStyle: { fontSize: 10, color: mutedText },
       },
       tooltip: {
         ...getMobileOptimizedTooltipConfig(),
@@ -931,6 +973,7 @@ function updateHindcastChart(stationId) {
         left: "center",
         data: ["Observed Surge (Actual)"], // Only show observed surge in legend
         type: "plain",
+        textStyle: { color: textColor },
       },
       grid: {
         left: window.innerWidth < 600 ? "8%" : "8%",
@@ -952,8 +995,10 @@ function updateHindcastChart(stationId) {
           },
           rotate: window.innerWidth < 600 ? 45 : 0,
           fontSize: 10,
+          color: mutedText,
         },
-        splitLine: { show: true, lineStyle: { color: "#eee" } },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { show: true, lineStyle: { color: gridColor } },
       },
       yAxis: {
         type: "value",
@@ -963,8 +1008,11 @@ function updateHindcastChart(stationId) {
             const sign = value >= 0 ? "+" : "";
             return `${sign}${value.toFixed(2)}`;
           },
+          color: mutedText,
         },
-        splitLine: { show: true, lineStyle: { color: "#eee" } },
+        nameTextStyle: { color: textColor },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { show: true, lineStyle: { color: gridColor } },
       },
       series: series.concat([
         {
@@ -972,7 +1020,7 @@ function updateHindcastChart(stationId) {
           name: "Sea Level",
           type: "line",
           data: allTimes.map((t) => [t, 0]),
-          lineStyle: { type: "dashed", color: "#999", width: 1 },
+          lineStyle: { type: "dashed", color: mutedText, width: 1 },
           symbol: "none",
           showSymbol: false,
           silent: true,
@@ -992,6 +1040,7 @@ function updateHindcastChart(stationId) {
 
   // Update metadata
   updateHindcastMetadata(displayStation);
+  ensureHindcastThemeListener();
 
   logger.info(
     "StormSurge",
@@ -999,20 +1048,44 @@ function updateHindcastChart(stationId) {
   );
 }
 
-function getColorForIndex(index, total) {
-  const colors = [
-    "#e53935", // red
-    "#1e88e5", // blue
-    "#43a047", // green
-    "#fb8c00", // orange
-    "#8e24aa", // purple
-    "#00acc1", // cyan
-    "#fdd835", // yellow
-    "#6d4c41", // brown
-    "#546e7a", // blue-grey
-    "#f06292", // pink
+function ensureHindcastThemeListener() {
+  if (detachHindcastThemeListener) return;
+  detachHindcastThemeListener = registerChartThemeListener(() => {
+    const selector = document.getElementById("hindcast-station-select");
+    const station = selector?.value || "Point_Atkinson";
+    if (station) {
+      updateHindcastChart(station);
+    }
+  });
+}
+
+function getColorForIndex(index, total, theme) {
+  const lightPalette = [
+    "#e53935",
+    "#1e88e5",
+    "#43a047",
+    "#fb8c00",
+    "#8e24aa",
+    "#00acc1",
+    "#fdd835",
+    "#6d4c41",
+    "#546e7a",
+    "#f06292",
   ];
-  return colors[index % colors.length];
+  const darkPalette = [
+    "#f87171",
+    "#60a5fa",
+    "#4ade80",
+    "#fbbf24",
+    "#c084fc",
+    "#5eead4",
+    "#fde047",
+    "#f97316",
+    "#38bdf8",
+    "#f472b6",
+  ];
+  const palette = theme?.isDark ? darkPalette : lightPalette;
+  return palette[index % palette.length];
 }
 
 function updateHindcastMetadata(station) {

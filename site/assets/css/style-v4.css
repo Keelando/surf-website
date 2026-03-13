@@ -3,6 +3,8 @@
 ----------------------------- */
 
 :root {
+  color-scheme: light;
+
   /* Primary Colors */
   --color-primary-dark: #004b7c;
   --color-primary: #0077be;
@@ -36,6 +38,121 @@
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
+
+  /* Extended Palette */
+  --color-footer-link: #90cdf4;
+  --color-status-dot: #6b7280;
+  --color-status-ok: #10b981;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  --color-primary-hover-start: #003a5d;
+  --color-primary-hover-end: #005a96;
+  --color-source-noaa-border: #003087;
+  --color-source-noaa-bg: rgba(0, 48, 135, 0.08);
+  --color-source-envcan-border: #006400;
+  --color-source-envcan-bg: rgba(0, 100, 0, 0.08);
+  --color-source-noaa-text: #003087;
+  --color-source-envcan-text: #006400;
+  --color-wave-section-bg: #f5f8ff;
+  --color-wave-section-border: #e0e8f0;
+  --color-stale-warning: #f57c00;
+  --color-card-muted-bg: #f0f4f8;
+  --color-card-muted-border: #d0d7de;
+  --color-card-muted-hover: #e1e8ed;
+  --color-card-muted-active: #d0d7e0;
+  --color-active-indicator-bg: #e3f2fd;
+  --color-data-row-hover: #f5f5f5;
+  --color-table-zebra: rgba(0, 75, 124, 0.03);
+  --color-about-text: #1a1a1a;
+  --color-tagline-text: #2c5282;
+  --color-tagline-border: rgba(66, 153, 225, 0.2);
+  --color-tagline-shadow: rgba(0, 0, 0, 0.05);
+  --color-site-intro-text: #4a5568;
+  --color-site-intro-link: #0077be;
+  --color-site-intro-bg: rgba(224, 242, 255, 0.4);
+  --color-site-intro-border: rgba(66, 153, 225, 0.15);
+  --site-tagline-bg: linear-gradient(
+    to bottom,
+    rgba(224, 242, 255, 0.5),
+    rgba(224, 242, 255, 0.8)
+  );
+  --color-legend-text: #333333;
+  --color-lightstation-label-text: #2c3e50;
+  --color-lightstation-label-bg: rgba(255, 255, 255, 0.9);
+  --color-lightstation-label-border: rgba(0, 75, 124, 0.2);
+  --color-warning-text: #ff9800;
+  --color-error-text: #e53935;
+  --color-on-primary: #ffffff;
+  --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --shadow-strong: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-primary-dark: #59b6ff;
+  --color-primary: #5cc6ff;
+  --color-primary-light: #6fd2ff;
+  --color-primary-lighter: #81ddff;
+  --color-background: #0d1b2a;
+  --color-surface: #162232;
+  --color-surface-alt: #1c2a3a;
+  --color-surface-light: #1f2f45;
+  --color-border: #2a3f55;
+  --color-border-light: #31465c;
+  --color-text: #e5edf5;
+  --color-text-muted: #95a7c3;
+  --color-text-light: #b6c4d8;
+  --color-accent-blue: #63c9ff;
+  --color-accent-green: #57d59d;
+  --color-accent-orange: #ffae52;
+  --color-accent-red: #ff7a7a;
+  --color-footer-link: #8dd3ff;
+  --color-status-dot: #76889c;
+  --color-status-ok: #4ade80;
+  --color-status-warning: #facc15;
+  --color-status-error: #fb7185;
+  --color-primary-hover-start: #1a4662;
+  --color-primary-hover-end: #236487;
+  --color-source-noaa-border: #4a8dff;
+  --color-source-noaa-bg: rgba(58, 105, 255, 0.12);
+  --color-source-envcan-border: #34d399;
+  --color-source-envcan-bg: rgba(52, 211, 153, 0.12);
+  --color-source-noaa-text: #9cc4ff;
+  --color-source-envcan-text: #8ff2c9;
+  --color-wave-section-bg: rgba(53, 74, 105, 0.4);
+  --color-wave-section-border: #2d425a;
+  --color-stale-warning: #fcd34d;
+  --color-card-muted-bg: #1f2f45;
+  --color-card-muted-border: #2f415a;
+  --color-card-muted-hover: #2a3b53;
+  --color-card-muted-active: #1d2b3d;
+  --color-active-indicator-bg: rgba(80, 154, 211, 0.22);
+  --color-data-row-hover: rgba(255, 255, 255, 0.05);
+  --color-table-zebra: rgba(255, 255, 255, 0.02);
+  --color-about-text: var(--color-text);
+  --color-tagline-text: #d1e8ff;
+  --color-tagline-border: rgba(99, 180, 255, 0.25);
+  --color-tagline-shadow: rgba(0, 0, 0, 0.45);
+  --color-site-intro-text: var(--color-text-muted);
+  --color-site-intro-link: #8dd3ff;
+  --color-site-intro-bg: rgba(16, 28, 45, 0.85);
+  --color-site-intro-border: rgba(255, 255, 255, 0.08);
+  --site-tagline-bg: linear-gradient(
+    to bottom,
+    rgba(17, 30, 47, 0.85),
+    rgba(13, 23, 36, 0.95)
+  );
+  --color-legend-text: var(--color-text);
+  --color-lightstation-label-text: var(--color-text);
+  --color-lightstation-label-bg: rgba(13, 27, 42, 0.92);
+  --color-lightstation-label-border: rgba(255, 255, 255, 0.08);
+  --color-warning-text: #fcd34d;
+  --color-error-text: #ff8787;
+  --color-on-primary: #ffffff;
+  --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.6);
+  --shadow-medium: 0 6px 18px rgba(0, 0, 0, 0.5);
+  --shadow-strong: 0 12px 30px rgba(0, 0, 0, 0.45);
 }
 
 /* -----------------------------
@@ -53,6 +170,7 @@ body {
   margin: 0;
   padding: 0;
   line-height: 1.5;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 footer {
@@ -97,8 +215,9 @@ footer {
 }
 
 .footer-sources a {
-  color: #90cdf4;
+  color: var(--color-footer-link);
   text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 .footer-sources a:hover {
@@ -153,22 +272,22 @@ footer {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #6b7280;
+  background: var(--color-status-dot);
   transition: background 0.3s;
 }
 
 .status-ok .status-dot {
-  background: #10b981;
+  background: var(--color-status-ok);
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
 }
 
 .status-warning .status-dot {
-  background: #f59e0b;
+  background: var(--color-status-warning);
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
 }
 
 .status-error .status-dot {
-  background: #ef4444;
+  background: var(--color-status-error);
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
 }
 
@@ -237,11 +356,18 @@ footer .github-link:hover {
   border-radius: 8px;
   text-align: left;
   box-shadow: 0 2px 6px rgba(0,75,124,0.2);
-  transition: background 0.2s;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .region-header:hover {
-  background: linear-gradient(to right, #003a5d, #005a96);
+  background: linear-gradient(
+    to right,
+    var(--color-primary-hover-start),
+    var(--color-primary-hover-end)
+  );
 }
 
 .region-toggle-btn {
@@ -260,11 +386,17 @@ footer .github-link:hover {
 }
 
 .buoy-card {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-medium);
   padding: 1.25rem;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
   animation: fadeIn 0.4s ease-in;
   display: flex;
   flex-direction: column;
@@ -348,7 +480,7 @@ footer .github-link:hover {
 
 .buoy-card h2 {
   margin-top: 0;
-  color: #0066a1;
+  color: var(--color-primary-light);
   font-size: 1.2em;
   display: flex;
   align-items: center;
@@ -365,7 +497,7 @@ footer .github-link:hover {
   margin-top: 0.75rem;
   font-size: 1.05em;
   color: var(--color-primary-dark);
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 0.25rem;
 }
 
@@ -377,7 +509,7 @@ footer .github-link:hover {
 .section-divider {
   margin: 0.75rem 0;
   padding-top: 0.75rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--color-border-light);
 }
 
 .error {
@@ -388,23 +520,32 @@ footer .github-link:hover {
 
 /* NOAA buoy styling */
 .noaa-card {
-  border-left: 4px solid #003087;
-  background: linear-gradient(to right, #f8f9ff 0%, #ffffff 10%);
+  border-left: 4px solid var(--color-source-noaa-border);
+  background: linear-gradient(
+    to right,
+    var(--color-source-noaa-bg) 0%,
+    var(--color-surface) 12%
+  );
 }
 
 /* Environment Canada styling */
 .envcan-card {
-  border-left: 4px solid #006400;
-  background: linear-gradient(to right, #f8fff8 0%, #ffffff 10%);
+  border-left: 4px solid var(--color-source-envcan-border);
+  background: linear-gradient(
+    to right,
+    var(--color-source-envcan-bg) 0%,
+    var(--color-surface) 12%
+  );
 }
 
 /* Wave section container */
 .wave-section {
-  background: #f5f8ff;
+  background: var(--color-wave-section-bg);
   padding: 1rem;
   border-radius: 6px;
   margin: 0.5rem 0;
-  border: 1px solid #e0e8f0;
+  border: 1px solid var(--color-wave-section-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Data source badges */
@@ -417,18 +558,18 @@ footer .github-link:hover {
 }
 
 .source-badge.envcan {
-  color: #006400;
-  background: rgba(0, 100, 0, 0.1);
+  color: var(--color-source-envcan-text);
+  background: var(--color-source-envcan-bg);
 }
 
 .source-badge.noaa {
-  color: #003087;
-  background: rgba(0, 48, 135, 0.1);
+  color: var(--color-source-noaa-text);
+  background: var(--color-source-noaa-bg);
 }
 
 /* Staleness warning */
 .stale-warning {
-  color: #f57c00;
+  color: var(--color-stale-warning);
   font-weight: bold;
   font-size: 0.9em;
 }
@@ -437,8 +578,8 @@ footer .github-link:hover {
 .expand-btn {
   margin-top: 0.75rem;
   padding: 0.5rem 1rem;
-  background: #f0f4f8;
-  border: 1px solid #d0d7de;
+  background: var(--color-card-muted-bg);
+  border: 1px solid var(--color-card-muted-border);
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9em;
@@ -446,15 +587,15 @@ footer .github-link:hover {
   font-weight: 600;
   width: 100%;
   text-align: center;
-  transition: background 0.2s;
+  transition: background 0.2s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 .expand-btn:hover {
-  background: #e1e8ed;
+  background: var(--color-card-muted-hover);
 }
 
 .expand-btn:active {
-  background: #d0d7e0;
+  background: var(--color-card-muted-active);
 }
 
 /* -----------------------------
@@ -497,9 +638,10 @@ footer .github-link:hover {
   padding: 1rem;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
   overflow: hidden;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Active buoy indicator */
@@ -509,10 +651,11 @@ footer .github-link:hover {
   color: var(--color-primary-dark);
   margin-top: 0.5rem;
   padding: 0.5rem;
-  background: #e3f2fd;
+  background: var(--color-active-indicator-bg);
   border-radius: 4px;
   display: inline-block;
   min-width: 200px;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .active-indicator.active {
@@ -536,10 +679,11 @@ footer .github-link:hover {
 }
 
 .data-table {
-  background: white;
+  background: var(--color-surface);
   border-radius: 8px;
   overflow-x: auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-medium);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .data-table table {
@@ -569,11 +713,11 @@ footer .github-link:hover {
 }
 
 .data-table tbody tr:nth-child(even) {
-  background: rgba(0, 75, 124, 0.03);
+  background: var(--color-table-zebra);
 }
 
 .data-table tr:hover {
-  background: #f5f5f5;
+  background: var(--color-data-row-hover);
 }
 
 /* -----------------------------
@@ -585,11 +729,12 @@ footer .github-link:hover {
   margin: 40px auto;
   padding: 30px 20px;
   background: var(--color-surface-alt);
-  color: #1a1a1a;
+  color: var(--color-about-text);
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-medium);
   font-size: 1.05rem;
   line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .about-section h3 {
@@ -651,7 +796,7 @@ footer .github-link:hover {
   gap: 0.5rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--color-border);
   justify-content: center;
 }
 
@@ -660,19 +805,19 @@ footer .github-link:hover {
   align-items: center;
   gap: 0.3rem;
   padding: 0.4rem 0.8rem;
-  background: #f0f4f8;
-  border: 1px solid #d0d7de;
+  background: var(--color-card-muted-bg);
+  border: 1px solid var(--color-card-muted-border);
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.85em;
   color: var(--color-primary-dark);
   font-weight: 500;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .buoy-nav-link:hover {
-  background: #003a5d !important;
+  background: var(--color-primary-hover-start) !important;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
@@ -683,11 +828,11 @@ footer .github-link:hover {
 
 .toggle-details-btn:hover,
 .toggle-history-btn:hover {
-  background: #e1e8ed !important;
+  background: var(--color-card-muted-hover) !important;
 }
 
 .hide-history-btn:hover {
-  background: #003a5d !important;
+  background: var(--color-primary-hover-start) !important;
 }
 
 .wind-table-action-link:hover {
@@ -835,15 +980,16 @@ header h2 {
 ----------------------------- */
 
 .site-tagline {
-  background: linear-gradient(to bottom, rgba(224, 242, 255, 0.5), rgba(224, 242, 255, 0.8));
+  background: var(--site-tagline-bg);
   text-align: center;
   font-size: 1rem;
   font-style: italic;
-  color: #2c5282;
+  color: var(--color-tagline-text);
   padding: 1rem 1.5rem;
   margin: 0;
-  border-bottom: 1px solid rgba(66, 153, 225, 0.2);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--color-tagline-border);
+  box-shadow: 0 2px 4px var(--color-tagline-shadow);
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 @media (max-width: 768px) {
@@ -858,8 +1004,9 @@ header h2 {
 ----------------------------- */
 
 .site-intro-details {
-  background: rgba(224, 242, 255, 0.4);
-  border-bottom: 1px solid rgba(66, 153, 225, 0.15);
+  background: var(--color-site-intro-bg);
+  border-bottom: 1px solid var(--color-site-intro-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Desktop: hide the toggle, always show content */
@@ -871,14 +1018,16 @@ header h2 {
   display: block; /* override UA <details> hiding on desktop */
   text-align: center;
   font-size: 0.95rem;
-  color: #4a5568;
+  color: var(--color-site-intro-text);
   padding: 0.75rem 1.5rem;
+  transition: color 0.3s ease, background-color 0.3s ease;
 }
 
 .site-intro a {
-  color: #0077be;
+  color: var(--color-site-intro-link);
   font-weight: 600;
   text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 .site-intro a:hover {
@@ -893,9 +1042,10 @@ header h2 {
     padding: 0.55rem 1rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #0077be;
+    color: var(--color-site-intro-link);
     cursor: pointer;
     list-style: none;
+    transition: color 0.3s ease;
   }
 
   .site-intro-summary::-webkit-details-marker {
@@ -944,9 +1094,10 @@ header h2 {
   gap: 2rem;
   margin-top: 1rem;
   padding: 1rem;
-  background: white;
+  background: var(--color-surface);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-soft);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .legend-item {
@@ -954,7 +1105,8 @@ header h2 {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.95rem;
-  color: #333;
+  color: var(--color-legend-text);
+  transition: color 0.3s ease;
 }
 
 .legend-icon {
@@ -965,9 +1117,9 @@ header h2 {
 .lightstation-label {
   font-size: 13px !important;
   font-weight: 600;
-  color: #2c3e50;
-  background: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid rgba(0, 75, 124, 0.2) !important;
+  color: var(--color-lightstation-label-text);
+  background: var(--color-lightstation-label-bg) !important;
+  border: 1px solid var(--color-lightstation-label-border) !important;
   border-radius: 4px;
   padding: 2px 6px !important;
   box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
@@ -1245,7 +1397,7 @@ header h2 {
 .wind-24hr-toggle-btn {
   padding: 0.5rem 1.5rem;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -1257,18 +1409,18 @@ header h2 {
 .wind-24hr-toggle-btn:hover,
 .wind-24hr-toggle-btn:focus-visible {
   background: var(--color-primary-dark);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 /* Color utilities (extended) */
 .color-white {
-  color: white;
+  color: var(--color-on-primary);
 }
 
 .color-warning {
-  color: #ff9800;
+  color: var(--color-warning-text);
 }
 
 .color-error {
-  color: #e53935;
+  color: var(--color-error-text);
 }

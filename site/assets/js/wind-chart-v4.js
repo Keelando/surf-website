@@ -10,7 +10,7 @@
  * @param {Array} windGustData - Array of {time, value} wind gust points for max calculation
  * @returns {Object} Object with arrowData and maxValue for y-axis scaling
  */
-function createWindDirectionArrowData(windDirectionData, windSpeedData, windGustData) {
+function createWindDirectionArrowData(windDirectionData, windSpeedData, windGustData, colorOverride) {
   if (!windDirectionData || windDirectionData.length === 0)
     return { arrowData: [], maxValue: null };
 
@@ -48,7 +48,7 @@ function createWindDirectionArrowData(windDirectionData, windSpeedData, windGust
       value: [timestamp, arrowYPosition],
       symbolRotate: -direction,
       itemStyle: {
-        color: "#004b7c",
+        color: colorOverride || "#004b7c",
         opacity: 0.7,
       },
     });
@@ -65,6 +65,12 @@ function createWindDirectionArrowData(windDirectionData, windSpeedData, windGust
 function renderWindChart(windChart, buoy) {
   try {
     const ts = buoy.timeseries;
+    const theme = getChartThemeColors();
+    const colors = theme.series;
+    const textColor = theme.text;
+    const mutedText = theme.mutedText;
+    const axisColor = theme.axisLine;
+    const gridColor = theme.gridLine;
     const windSpeedData = ts.wind_speed?.data || [];
     const windGustData = ts.wind_gust?.data || [];
     const windDirectionData = ts.wind_direction?.data || [];
@@ -74,6 +80,7 @@ function renderWindChart(windChart, buoy) {
       windDirectionData,
       windSpeedData,
       windGustData,
+      colors.primary,
     );
 
     // Calculate y-axis max to ensure arrows are visible at top
@@ -86,10 +93,12 @@ function renderWindChart(windChart, buoy) {
     }
 
     windChart.setOption({
+      backgroundColor: theme.background,
+      textStyle: { color: textColor },
       title: {
         text: `${buoy.name} - Wind Conditions`,
         left: "center",
-        textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14 },
+        textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14, color: textColor },
       },
       tooltip: {
         ...getMobileOptimizedTooltipConfig(),
@@ -118,7 +127,11 @@ function renderWindChart(windChart, buoy) {
           return res;
         },
       },
-      legend: { data: legendData, bottom: getResponsiveLegendBottom() },
+      legend: {
+        data: legendData,
+        bottom: getResponsiveLegendBottom(),
+        textStyle: { color: textColor },
+      },
       grid: getResponsiveGridConfig(false),
       xAxis: {
         type: "time",
@@ -128,14 +141,20 @@ function renderWindChart(windChart, buoy) {
           formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
           hideOverlap: true,
           margin: 10,
+          color: mutedText,
         },
         axisTick: { show: true },
-        splitLine: { show: true, lineStyle: { color: "#eee" } },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { show: true, lineStyle: { color: gridColor } },
       },
       yAxis: {
         type: "value",
         name: "Speed (kt)",
         max: yAxisMax, // Set max to accommodate arrows at top
+        axisLine: { lineStyle: { color: axisColor } },
+        axisLabel: { color: mutedText },
+        nameTextStyle: { color: textColor },
+        splitLine: { lineStyle: { color: gridColor } },
       },
       series: [
         {
@@ -144,7 +163,7 @@ function renderWindChart(windChart, buoy) {
           data: sanitizeSeriesData(windSpeedData),
           smooth: true,
           connectNulls: false,
-          itemStyle: { color: "#fb8c00" },
+          itemStyle: { color: colors.secondary },
           areaStyle: { opacity: 0.1 },
         },
         {
@@ -153,7 +172,7 @@ function renderWindChart(windChart, buoy) {
           data: sanitizeSeriesData(windGustData),
           symbol: "circle",
           symbolSize: 6,
-          itemStyle: { color: "#e53935" },
+          itemStyle: { color: theme.negative },
         },
         {
           name: "Wind Direction",
@@ -168,7 +187,7 @@ function renderWindChart(windChart, buoy) {
           itemStyle: {
             color: function (params) {
               // Read color from data point
-              return arrowData[params.dataIndex]?.itemStyle?.color || "#004b7c";
+              return arrowData[params.dataIndex]?.itemStyle?.color || colors.primary;
             },
             opacity: function (params) {
               // Read opacity from data point

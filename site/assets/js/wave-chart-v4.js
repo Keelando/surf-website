@@ -10,7 +10,7 @@
  * @param {Array} waveHeightData - Array of {time, value} wave height points for max calculation
  * @returns {Object} Object with arrowData and maxValue for y-axis scaling
  */
-function createWaveDirectionArrowData(waveDirectionData, waveHeightData) {
+function createWaveDirectionArrowData(waveDirectionData, waveHeightData, colorOverride) {
   if (!waveDirectionData || waveDirectionData.length === 0)
     return { arrowData: [], maxValue: null };
 
@@ -41,7 +41,7 @@ function createWaveDirectionArrowData(waveDirectionData, waveHeightData) {
       value: [timestamp, arrowYPosition],
       symbolRotate: calculateArrowRotation(direction),
       itemStyle: {
-        color: "#1e88e5",
+        color: colorOverride || "#1e88e5",
         opacity: 0.7,
       },
     });
@@ -60,13 +60,14 @@ function createWaveDirectionArrowData(waveDirectionData, waveHeightData) {
 function renderWaveChart(waveChart, buoy, buoyId) {
   try {
     const ts = buoy.timeseries;
+    const theme = getChartThemeColors();
 
     if (buoyId === "46087" || buoyId === "46088") {
       // NOAA BUOYS (Neah Bay & New Dungeness) - Dual charts with spectral wave separation
-      renderSpectralCharts(waveChart, buoy, ts);
+      renderSpectralCharts(waveChart, buoy, ts, theme);
     } else {
       // ALL OTHER BUOYS - Standard single wave chart
-      renderStandardWaveChart(waveChart, buoy, buoyId, ts);
+      renderStandardWaveChart(waveChart, buoy, buoyId, ts, theme);
     }
   } catch (error) {
     showChartError("wave-chart", "Wave Chart", error);
@@ -119,7 +120,12 @@ function createSpectralDirectionArrows(directionData, heightData, color) {
  * Render NOAA spectral dual-chart display (wave heights + periods)
  * Used for Neah Bay (46087) and New Dungeness (46088)
  */
-function renderSpectralCharts(waveChart, buoy, ts) {
+function renderSpectralCharts(waveChart, buoy, ts, theme) {
+  const colors = theme.series;
+  const textColor = theme.text;
+  const mutedText = theme.mutedText;
+  const axisColor = theme.axisLine;
+  const gridColor = theme.gridLine;
   // Chart 1: Wave Heights (All three components with fallbacks)
   const sigWaveHeight = ts.wave_height_sig?.data || [];
   const windWaveHeight = ts.wind_wave_height?.data || [];
@@ -133,9 +139,9 @@ function renderSpectralCharts(waveChart, buoy, ts) {
   const windWaveArrows = createSpectralDirectionArrows(
     windWaveDirection,
     windWaveHeight,
-    "#1e88e5",
+    colors.primary,
   );
-  const swellArrows = createSpectralDirectionArrows(swellDirection, swellHeight, "#fb8c00");
+  const swellArrows = createSpectralDirectionArrows(swellDirection, swellHeight, colors.secondary);
 
   // Debug: Check what data we actually have
   logger.debug("WaveChart", `${buoy.name} wave data available`, {
@@ -150,10 +156,12 @@ function renderSpectralCharts(waveChart, buoy, ts) {
 
   waveChart.setOption(
     {
+      backgroundColor: theme.background,
+      textStyle: { color: textColor },
       title: {
         text: `${buoy.name} - Wave Height Components`,
         left: "center",
-        textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14 },
+        textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14, color: textColor },
       },
       tooltip: {
         ...getMobileOptimizedTooltipConfig(),
@@ -196,6 +204,7 @@ function renderSpectralCharts(waveChart, buoy, ts) {
       legend: {
         data: ["Wind Waves", "Ocean Swell", "Total (Significant)"],
         bottom: getResponsiveLegendBottom(),
+        textStyle: { color: textColor },
       },
       grid: {
         left: window.innerWidth < 600 ? "12%" : "10%",
@@ -212,9 +221,11 @@ function renderSpectralCharts(waveChart, buoy, ts) {
           formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
           hideOverlap: true,
           margin: 10,
+          color: mutedText,
         },
         axisTick: { show: true },
-        splitLine: { show: true, lineStyle: { color: "#eee" } },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { show: true, lineStyle: { color: gridColor } },
       },
       yAxis: {
         type: "value",
@@ -222,6 +233,10 @@ function renderSpectralCharts(waveChart, buoy, ts) {
         min: 0,
         max: (value) => Math.max(0.5, Math.ceil(value.max * 1.1)),
         scale: true,
+        axisLabel: { color: mutedText },
+        nameTextStyle: { color: textColor },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { lineStyle: { color: gridColor } },
       },
       series: [
         {
@@ -230,7 +245,7 @@ function renderSpectralCharts(waveChart, buoy, ts) {
           data: sanitizeSeriesData(windWaveHeight),
           smooth: true,
           connectNulls: false,
-          itemStyle: { color: "#1e88e5" },
+          itemStyle: { color: colors.primary },
           showSymbol: false,
         },
         {
@@ -239,7 +254,7 @@ function renderSpectralCharts(waveChart, buoy, ts) {
           data: sanitizeSeriesData(swellHeight),
           smooth: true,
           connectNulls: false,
-          itemStyle: { color: "#fb8c00" },
+          itemStyle: { color: colors.secondary },
           showSymbol: false,
         },
         {
@@ -251,9 +266,9 @@ function renderSpectralCharts(waveChart, buoy, ts) {
           lineStyle: {
             type: "dashed",
             width: 2,
-            color: "#999999",
+            color: colors.tertiary,
           },
-          itemStyle: { color: "#999999" },
+          itemStyle: { color: colors.tertiary },
           showSymbol: false,
           z: 1,
         },
@@ -269,7 +284,7 @@ function renderSpectralCharts(waveChart, buoy, ts) {
           },
           itemStyle: {
             color: function (params) {
-              return windWaveArrows[params.dataIndex]?.itemStyle?.color || "#1e88e5";
+              return windWaveArrows[params.dataIndex]?.itemStyle?.color || colors.primary;
             },
             opacity: function (params) {
               return windWaveArrows[params.dataIndex]?.itemStyle?.opacity || 0.8;
@@ -290,7 +305,7 @@ function renderSpectralCharts(waveChart, buoy, ts) {
           },
           itemStyle: {
             color: function (params) {
-              return swellArrows[params.dataIndex]?.itemStyle?.color || "#fb8c00";
+              return swellArrows[params.dataIndex]?.itemStyle?.color || colors.secondary;
             },
             opacity: function (params) {
               return swellArrows[params.dataIndex]?.itemStyle?.opacity || 0.8;
@@ -313,9 +328,9 @@ function renderSpectralCharts(waveChart, buoy, ts) {
   const windWavePeriodArrows = createSpectralDirectionArrows(
     windWaveDirection,
     windWavePeriod,
-    "#1e88e5",
+    colors.primary,
   );
-  const swellPeriodArrows = createSpectralDirectionArrows(swellDirection, swellPeriod, "#fb8c00");
+  const swellPeriodArrows = createSpectralDirectionArrows(swellDirection, swellPeriod, colors.secondary);
 
   // Debug: Check what period data we have
   logger.debug("WaveChart", `${buoy.name} period data available`, {
@@ -337,10 +352,12 @@ function renderSpectralCharts(waveChart, buoy, ts) {
 
     window.wavePeriodChart.setOption(
       {
+        backgroundColor: theme.background,
+        textStyle: { color: textColor },
         title: {
           text: `${buoy.name} - Wave Period Components`,
           left: "center",
-          textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14 },
+          textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14, color: textColor },
         },
         tooltip: {
           trigger: "axis",
@@ -384,6 +401,7 @@ function renderSpectralCharts(waveChart, buoy, ts) {
         legend: {
           data: ["Wind Wave Period", "Swell Period", "Average Period"],
           bottom: getResponsiveLegendBottom(),
+          textStyle: { color: textColor },
         },
         grid: {
           left: window.innerWidth < 600 ? "12%" : "10%",
@@ -400,14 +418,21 @@ function renderSpectralCharts(waveChart, buoy, ts) {
             formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
             hideOverlap: true,
             margin: 10,
+            color: mutedText,
           },
           axisTick: { show: true },
-          splitLine: { show: true, lineStyle: { color: "#eee" } },
+          axisLine: { lineStyle: { color: axisColor } },
+          splitLine: { show: true, lineStyle: { color: gridColor } },
         },
         yAxis: {
           type: "value",
           name: "Period (s)",
           min: 0,
+          max: (value) => Math.max(5, Math.ceil(value.max * 1.2)),
+          axisLabel: { color: mutedText },
+          nameTextStyle: { color: textColor },
+          axisLine: { lineStyle: { color: axisColor } },
+          splitLine: { lineStyle: { color: gridColor } },
         },
         series: [
           {
@@ -416,7 +441,7 @@ function renderSpectralCharts(waveChart, buoy, ts) {
             data: sanitizeSeriesData(windWavePeriod),
             smooth: true,
             connectNulls: false,
-            itemStyle: { color: "#1e88e5" },
+            itemStyle: { color: colors.primary },
             showSymbol: false,
           },
           {
@@ -425,7 +450,7 @@ function renderSpectralCharts(waveChart, buoy, ts) {
             data: sanitizeSeriesData(swellPeriod),
             smooth: true,
             connectNulls: false,
-            itemStyle: { color: "#fb8c00" },
+            itemStyle: { color: colors.secondary },
             showSymbol: false,
           },
           {
@@ -437,9 +462,9 @@ function renderSpectralCharts(waveChart, buoy, ts) {
             lineStyle: {
               type: "dashed",
               width: 2,
-              color: "#999999",
+              color: colors.tertiary,
             },
-            itemStyle: { color: "#999999" },
+            itemStyle: { color: colors.tertiary },
             showSymbol: false,
             z: 1,
           },
@@ -455,7 +480,7 @@ function renderSpectralCharts(waveChart, buoy, ts) {
             },
             itemStyle: {
               color: function (params) {
-                return windWavePeriodArrows[params.dataIndex]?.itemStyle?.color || "#1e88e5";
+                return windWavePeriodArrows[params.dataIndex]?.itemStyle?.color || colors.primary;
               },
               opacity: function (params) {
                 return windWavePeriodArrows[params.dataIndex]?.itemStyle?.opacity || 0.8;
@@ -476,7 +501,7 @@ function renderSpectralCharts(waveChart, buoy, ts) {
             },
             itemStyle: {
               color: function (params) {
-                return swellPeriodArrows[params.dataIndex]?.itemStyle?.color || "#fb8c00";
+                return swellPeriodArrows[params.dataIndex]?.itemStyle?.color || colors.secondary;
               },
               opacity: function (params) {
                 return swellPeriodArrows[params.dataIndex]?.itemStyle?.opacity || 0.8;
@@ -501,7 +526,12 @@ function renderSpectralCharts(waveChart, buoy, ts) {
 /**
  * Render standard wave chart (all buoys except New Dungeness)
  */
-function renderStandardWaveChart(waveChart, buoy, buoyId, ts) {
+function renderStandardWaveChart(waveChart, buoy, buoyId, ts, theme) {
+  const colors = theme.series;
+  const textColor = theme.text;
+  const mutedText = theme.mutedText;
+  const axisColor = theme.axisLine;
+  const gridColor = theme.gridLine;
   // Hide the period chart if it exists
   const periodChartContainer = document.getElementById("wave-period-chart");
   if (periodChartContainer) {
@@ -542,7 +572,7 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts) {
 
   // Create direction arrow data if available
   const { arrowData, maxValue } = hasWaveDirection
-    ? createWaveDirectionArrowData(waveDirectionData, waveHeightData)
+    ? createWaveDirectionArrowData(waveDirectionData, waveHeightData, colors.primary)
     : { arrowData: [], maxValue: null };
 
   // Calculate y-axis max to ensure arrows are visible at top (only if arrows exist)
@@ -559,7 +589,7 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts) {
       smooth: true,
       connectNulls: false,
       yAxisIndex: 0,
-      itemStyle: { color: "#1e88e5" },
+      itemStyle: { color: colors.primary },
       areaStyle: { opacity: 0.1 },
     },
     {
@@ -569,7 +599,7 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts) {
       smooth: true,
       connectNulls: false,
       yAxisIndex: 1,
-      itemStyle: { color: "#43a047" },
+      itemStyle: { color: colors.quaternary },
     },
   ];
 
@@ -586,7 +616,7 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts) {
       symbol: "circle",
       symbolSize: 5,
       yAxisIndex: 1,
-      itemStyle: { color: "#66bb6a", opacity: 0.6 },
+      itemStyle: { color: colors.senary, opacity: 0.6 },
     });
   }
 
@@ -605,7 +635,7 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts) {
       yAxisIndex: 0,
       itemStyle: {
         color: function (params) {
-          return arrowData[params.dataIndex]?.itemStyle?.color || "#1e88e5";
+          return arrowData[params.dataIndex]?.itemStyle?.color || colors.primary;
         },
         opacity: function (params) {
           return arrowData[params.dataIndex]?.itemStyle?.opacity || 1.0;
@@ -618,10 +648,12 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts) {
 
   waveChart.setOption(
     {
+      backgroundColor: theme.background,
+      textStyle: { color: textColor },
       title: {
         text: chartTitle,
         left: "center",
-        textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14 },
+        textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14, color: textColor },
       },
       tooltip: {
         ...getMobileOptimizedTooltipConfig(),
@@ -657,6 +689,7 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts) {
       legend: {
         data: legendData,
         bottom: getResponsiveLegendBottom(),
+        textStyle: { color: textColor },
       },
       grid: getResponsiveGridConfig(false),
       xAxis: {
@@ -667,9 +700,11 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts) {
           formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
           hideOverlap: true,
           margin: 10,
+          color: mutedText,
         },
         axisTick: { show: true },
-        splitLine: { show: true, lineStyle: { color: "#eee" } },
+        axisLine: { lineStyle: { color: axisColor } },
+        splitLine: { show: true, lineStyle: { color: gridColor } },
       },
       yAxis: [
         {
@@ -679,15 +714,19 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts) {
           min: 0,
           max: yAxisMax,
           scale: true,
-          nameTextStyle: { color: "#1e88e5" },
-          axisLine: { lineStyle: { color: "#1e88e5" } },
+          nameTextStyle: { color: colors.primary },
+          axisLine: { lineStyle: { color: colors.primary } },
+          axisLabel: { color: mutedText },
+          splitLine: { lineStyle: { color: gridColor } },
         },
         {
           type: "value",
           name: "Period (s)",
           position: "right",
-          nameTextStyle: { color: "#43a047" },
-          axisLine: { lineStyle: { color: "#43a047" } },
+          nameTextStyle: { color: colors.quaternary },
+          axisLine: { lineStyle: { color: colors.quaternary } },
+          axisLabel: { color: mutedText },
+          splitLine: { lineStyle: { color: gridColor } },
         },
       ],
       series: series,

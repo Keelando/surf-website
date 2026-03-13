@@ -3,6 +3,25 @@
  * CSS for the Leaflet map and station popups
  */
 
+:root {
+  --map-popup-bg: var(--color-surface, #ffffff);
+  --map-popup-text: var(--color-text, #1f2933);
+  --map-popup-heading: var(--color-primary-dark, #004b7c);
+  --map-popup-border: var(--color-border, #d1d9e0);
+  --map-popup-shadow: 0 3px 14px rgba(0, 0, 0, 0.2);
+  --map-marker-border: var(--color-primary-dark, #004b7c);
+  --map-button-text: var(--color-on-primary, #ffffff);
+}
+
+[data-theme="dark"] {
+  --map-popup-bg: rgba(18, 29, 44, 0.95);
+  --map-popup-text: var(--color-text, #e5edf5);
+  --map-popup-heading: var(--color-primary, #5cc6ff);
+  --map-popup-border: rgba(255, 255, 255, 0.08);
+  --map-popup-shadow: 0 8px 26px rgba(0, 0, 0, 0.65);
+  --map-marker-border: var(--color-primary, #5cc6ff);
+}
+
 /* Brighten the map tiles slightly */
 .leaflet-tile {
   filter: brightness(1.15) contrast(0.95);
@@ -13,6 +32,11 @@
   max-height: 70vh;
   overflow-y: auto;
   overflow-x: hidden;
+  background: var(--map-popup-bg);
+  color: var(--map-popup-text);
+  border: 1px solid var(--map-popup-border);
+  border-radius: 8px;
+  box-shadow: var(--map-popup-shadow);
 }
 
 /* Smaller max-height for mobile devices */
@@ -27,12 +51,15 @@
 .station-popup {
   padding: 0.5rem;
   min-width: 200px;
+  color: var(--map-popup-text);
 }
 
 .station-popup h3 {
   margin: 0 0 0.5rem 0;
-  color: #004b7c;
+  color: var(--map-popup-heading);
   font-size: 1.1rem;
+  border-bottom: 1px solid var(--map-popup-border);
+  padding-bottom: 0.35rem;
 }
 
 .station-popup p {
@@ -41,7 +68,7 @@
 }
 
 .station-popup strong {
-  color: #333;
+  color: var(--map-popup-heading);
 }
 
 /* Data types list styling */
@@ -49,7 +76,7 @@
   margin: 0.5rem 0 0.5rem 1.2rem;
   padding: 0;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--map-popup-text);
 }
 
 .data-types-list li {
@@ -62,8 +89,8 @@
   display: inline-block;
   margin-top: 0.75rem;
   padding: 0.5rem 1rem;
-  background: #0077be;
-  color: white !important;
+  background: var(--color-primary, #0077be);
+  color: var(--map-button-text) !important;
   text-decoration: none !important;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -73,17 +100,17 @@
 }
 
 .view-data-btn:hover {
-  background: #005a8e;
-  color: white !important;
+  background: var(--color-primary-dark, #005a8e);
+  color: var(--map-button-text) !important;
 }
 
 .view-data-btn:active {
-  background: #004570;
-  color: white !important;
+  background: var(--color-primary-lighter, #004570);
+  color: var(--map-button-text) !important;
 }
 
 .view-data-btn:visited {
-  color: white !important;
+  color: var(--map-button-text) !important;
 }
 
 /* Station markers */
@@ -117,8 +144,8 @@
 
 /* Enhanced buoy markers with data */
 .buoy-marker-enhanced {
-  background: white;
-  border: 2px solid #004b7c;
+  background: var(--map-popup-bg);
+  border: 2px solid var(--map-marker-border);
   border-radius: 8px;
   padding: 4px 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
@@ -136,7 +163,7 @@
 .wave-arrow {
   display: inline-block;
   font-size: 18px;
-  color: #004b7c;
+  color: var(--map-popup-heading);
   margin-right: 4px;
   transition: transform 0.3s ease;
 }
@@ -145,5 +172,5 @@
   display: inline-block;
   font-size: 12px;
   font-weight: bold;
-  color: #004b7c;
+  color: var(--map-popup-heading);
 }

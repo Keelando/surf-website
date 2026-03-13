@@ -1,7 +1,12 @@
-// Nav initialization - runs when nav.html is loaded by HTMX
-// This file replaces the inline script that was previously in nav.html
+// Navigation initialization (runs whenever the nav HTMX fragment is swapped in)
 (function () {
-  setTimeout(() => {
+  const LABELS = {
+    system: "System",
+    light: "Light",
+    dark: "Dark",
+  };
+
+  function highlightActivePage() {
     const path = window.location.pathname;
     let activePage = "buoys";
 
@@ -16,33 +21,107 @@
     document.querySelectorAll(".nav-link").forEach((link) => {
       if (link.dataset.page === activePage) {
         link.classList.add("active");
+      } else {
+        link.classList.remove("active");
       }
     });
+  }
 
-    // Start clock only once, even if nav is loaded multiple times
-    if (!window._navClockStarted) {
-      window._navClockStarted = true;
+  function initClock() {
+    if (window._navClockStarted) return;
+    window._navClockStarted = true;
 
-      const updateClock = () => {
-        const clocks = document.querySelectorAll(".nav-clock");
-        if (!clocks.length) return;
+    const updateClock = () => {
+      const clocks = document.querySelectorAll(".nav-clock");
+      if (!clocks.length) return;
 
-        const now = new Date();
-        const timeString = now.toLocaleTimeString("en-US", {
-          timeZone: "America/Vancouver",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-        });
+      const now = new Date();
+      const timeString = now.toLocaleTimeString("en-US", {
+        timeZone: "America/Vancouver",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      });
 
-        clocks.forEach((clock) => {
-          clock.textContent = `PST ${timeString}`;
-        });
-      };
+      clocks.forEach((clock) => {
+        clock.textContent = `PST ${timeString}`;
+      });
+    };
 
-      updateClock();
-      setInterval(updateClock, 1000);
+    updateClock();
+    setInterval(updateClock, 1000);
+  }
+
+  function getThemeState() {
+    if (window.ThemeManager && typeof window.ThemeManager.getState === "function") {
+      return window.ThemeManager.getState();
     }
-  }, 0);
+
+    const fallbackTheme = document.documentElement.getAttribute("data-theme") || "light";
+    return { theme: fallbackTheme, preference: "system" };
+  }
+
+  function getNextPreference(current) {
+    if (current === "system") return "light";
+    if (current === "light") return "dark";
+    return "system";
+  }
+
+  function updateToggle(button) {
+    if (!button) return;
+    const { theme, preference } = getThemeState();
+    const nextPreference = getNextPreference(preference);
+
+    const iconSpan = button.querySelector(".theme-toggle-icon");
+    const textSpan = button.querySelector(".theme-toggle-text");
+
+    if (iconSpan) {
+      iconSpan.textContent =
+        preference === "system" ? "⚙" : theme === "dark" ? "☾" : "☀";
+    }
+
+    if (textSpan) {
+      textSpan.textContent = LABELS[preference] || preference;
+    }
+
+    const ariaPressed =
+      preference === "dark" ? "true" : preference === "light" ? "false" : "mixed";
+    button.setAttribute("aria-pressed", ariaPressed);
+    button.setAttribute(
+      "aria-label",
+      `Theme: ${LABELS[preference] || preference}. Switch to ${LABELS[nextPreference]} mode`,
+    );
+  }
+
+  function initThemeToggle() {
+    const button = document.querySelector(".theme-toggle");
+    if (!button) return;
+
+    if (!button.dataset.bound) {
+      button.dataset.bound = "true";
+      button.addEventListener("click", () => {
+        if (window.ThemeManager && typeof window.ThemeManager.cycle === "function") {
+          window.ThemeManager.cycle();
+        }
+      });
+    }
+
+    updateToggle(button);
+
+    if (!window._navThemeListenerAttached) {
+      window._navThemeListenerAttached = true;
+      window.addEventListener("themechange", () => {
+        document.querySelectorAll(".theme-toggle").forEach(updateToggle);
+      });
+    }
+  }
+
+  function initNav() {
+    highlightActivePage();
+    initClock();
+    initThemeToggle();
+  }
+
+  setTimeout(initNav, 0);
 })();

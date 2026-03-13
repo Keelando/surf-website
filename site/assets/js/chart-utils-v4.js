@@ -102,6 +102,60 @@ function sanitizeSeriesData(dataArray) {
 }
 
 /**
+ * Determine current theme ("light" or "dark")
+ */
+function getCurrentThemeMode() {
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+}
+
+/**
+ * Get palette and typography tokens for charts based on current theme
+ */
+function getChartThemeColors() {
+  const mode = getCurrentThemeMode();
+  const isDark = mode === "dark";
+
+  return {
+    mode,
+    isDark,
+    background: isDark ? "#162232" : "#ffffff",
+    text: isDark ? "#e5edf5" : "#1a202c",
+    mutedText: isDark ? "#9fb3c8" : "#4a5568",
+    axisLine: isDark ? "#3f4f67" : "#d0d7de",
+    gridLine: isDark ? "rgba(255, 255, 255, 0.08)" : "#e7edf3",
+    tooltipBg: isDark ? "rgba(10, 18, 31, 0.95)" : "rgba(255, 255, 255, 0.95)",
+    tooltipText: isDark ? "#e6edf5" : "#1f2933",
+    tooltipBorder: isDark ? "#4dbdff" : "#004b7c",
+    marker: isDark ? "#4dbdff" : "#004b7c",
+    series: {
+      primary: isDark ? "#5cc6ff" : "#1e88e5",
+      secondary: isDark ? "#fcbf49" : "#fb8c00",
+      tertiary: isDark ? "#94a3b8" : "#999999",
+      quaternary: isDark ? "#7dd3fc" : "#43a047",
+      quinary: isDark ? "#f472b6" : "#8e24aa",
+      senary: isDark ? "#a5f3fc" : "#66bb6a",
+    },
+    positive: isDark ? "#4ade80" : "#2e7d32",
+    negative: isDark ? "#f87171" : "#c53030",
+  };
+}
+
+/**
+ * Listen for theme changes and invoke callback
+ * @param {Function} callback
+ * @returns {Function} Cleanup function
+ */
+function registerChartThemeListener(callback) {
+  if (typeof callback !== "function") {
+    return () => {};
+  }
+
+  const handler = () => callback(getChartThemeColors());
+  window.addEventListener("themechange", handler);
+  return () => window.removeEventListener("themechange", handler);
+}
+
+/**
  * Format time as compact label for chart axes
  * Example: "Mon 14h"
  */
@@ -204,9 +258,9 @@ function showChartError(container, chartName, error) {
   element.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: center; height: 100%; min-height: 200px; padding: 2rem; text-align: center;">
       <div>
-        <div style="color: #e53935; font-size: 1.2rem; margin-bottom: 0.5rem;">⚠️ Chart Error</div>
-        <div style="color: #666; font-size: 0.9rem;">Unable to load ${chartName}</div>
-        <div style="color: #999; font-size: 0.8rem; margin-top: 0.5rem;">Check console for details</div>
+        <div style="color: var(--color-accent-red, #e53935); font-size: 1.2rem; margin-bottom: 0.5rem;">⚠️ Chart Error</div>
+        <div style="color: var(--color-text-muted, #666); font-size: 0.9rem;">Unable to load ${chartName}</div>
+        <div style="color: var(--color-text-light, #999); font-size: 0.8rem; margin-top: 0.5rem;">Check console for details</div>
       </div>
     </div>
   `;
@@ -234,6 +288,7 @@ function safeRenderChart(renderFn, container, chartName, ...args) {
  */
 function getMobileOptimizedTooltipConfig() {
   const isMobile = window.innerWidth < 768;
+  const theme = getChartThemeColors();
 
   return {
     trigger: "axis",
@@ -241,10 +296,11 @@ function getMobileOptimizedTooltipConfig() {
     axisPointer: {
       type: "line", // Show only vertical x-axis line (cleaner on mobile)
       label: {
-        backgroundColor: "#004b7c",
+        backgroundColor: theme.tooltipBorder,
+        color: theme.tooltipText,
       },
       lineStyle: {
-        color: "#004b7c",
+        color: theme.tooltipBorder,
         width: isMobile ? 2 : 1,
         type: "solid",
       },
@@ -290,11 +346,11 @@ function getMobileOptimizedTooltipConfig() {
     // Enhanced touch behavior
     renderMode: "html",
     className: "echarts-tooltip-mobile",
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    borderColor: "#004b7c",
+    backgroundColor: theme.tooltipBg,
+    borderColor: theme.tooltipBorder,
     borderWidth: 1,
     textStyle: {
-      color: "#333",
+      color: theme.tooltipText,
       fontSize: isMobile ? 12 : 14,
     },
     padding: isMobile ? 8 : 12,

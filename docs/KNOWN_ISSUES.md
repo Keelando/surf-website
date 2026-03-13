@@ -1,6 +1,6 @@
 # Known Issues
 
-## 🔧 Storm Surge Hindcast Missing Tide Observations (Feb 8, 2026) - OPEN
+## ✅ Storm Surge Hindcast Missing Tide Observations (Feb 8, 2026) - RESOLVED (Mar 13, 2026)
 
 ### Issue
 Storm surge hindcast page (`/storm_surge.html`) only shows predicted water levels, not actual observed tide data. This prevents comparison of forecast accuracy vs reality.

@@ -6,6 +6,7 @@
 let chartData = null;
 let waveChart, windChart, tempChart, waveComparisonChart;
 let currentTimeRange = 24; // Default to 24 hours
+let detachThemeListener = null;
 
 /**
  * Filter timeseries data to specified time range (hours)
@@ -105,6 +106,7 @@ function initCharts() {
   });
 
   renderComparisonChart(waveComparisonChart, chartData);
+  ensureChartThemeListener();
 }
 
 /**
@@ -135,6 +137,15 @@ function updateCharts(buoyId) {
   renderWindChart(windChart, buoy);
   renderTemperatureChart(tempChart, buoy);
   renderComparisonChart(waveComparisonChart, filteredData);
+}
+function ensureChartThemeListener() {
+  if (detachThemeListener) return;
+  detachThemeListener = registerChartThemeListener(() => {
+    const selectedBuoy = document.getElementById("chart-buoy-select")?.value;
+    if (selectedBuoy && chartData && chartData[selectedBuoy]) {
+      updateCharts(selectedBuoy);
+    }
+  });
 }
 
 /**

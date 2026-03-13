@@ -4,6 +4,7 @@
 
 let surgeChart = null;
 let surgeData = null;
+let detachSurgeThemeListener = null;
 
 // Station display order
 const STATION_ORDER = [
@@ -32,7 +33,7 @@ async function loadStormSurgeData() {
     const container = document.getElementById("surge-chart");
     if (container) {
       container.innerHTML =
-        '<p style="text-align:center;color:#999;">⚠️ Storm surge data unavailable</p>';
+        '<p style="text-align:center;color:var(--color-text-muted,#999);">⚠️ Storm surge data unavailable</p>';
     }
   }
 }
@@ -160,12 +161,23 @@ function updateSurgeChart(stationId) {
   const yMin = Math.floor((minVal - padding) * 10) / 10;
   const yMax = Math.ceil((maxVal + padding) * 10) / 10;
 
+  const theme = getChartThemeColors();
+  const colors = theme.series;
+  const textColor = theme.text;
+  const mutedText = theme.mutedText;
+  const axisColor = theme.axisLine;
+  const gridColor = theme.gridLine;
+  const gradientTop = theme.isDark ? "rgba(92, 198, 255, 0.35)" : "rgba(0, 119, 190, 0.3)";
+  const gradientBottom = theme.isDark ? "rgba(92, 198, 255, 0.05)" : "rgba(0, 119, 190, 0.05)";
+
   // Set chart options
   surgeChart.setOption({
+    backgroundColor: theme.background,
+    textStyle: { color: textColor },
     title: {
       text: `${displayName} - Storm Surge Forecast`,
       left: "center",
-      textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14 },
+      textStyle: { fontSize: window.innerWidth < 600 ? 12 : 14, color: textColor },
     },
     tooltip: {
       ...getMobileOptimizedTooltipConfig(),
@@ -220,11 +232,13 @@ function updateSurgeChart(stationId) {
         fontSize: 10,
         hideOverlap: true,
         margin: 10,
+        color: mutedText,
       },
       axisTick: { show: true, alignWithLabel: true },
+      axisLine: { lineStyle: { color: axisColor } },
       splitLine: {
         show: true,
-        lineStyle: { color: "#eee" },
+        lineStyle: { color: gridColor },
         interval: (index) => {
           // Show gridlines only at midnight Pacific Time
           const d = new Date(times[index]);
@@ -249,8 +263,11 @@ function updateSurgeChart(stationId) {
           const sign = value >= 0 ? "+" : "";
           return `${sign}${value.toFixed(1)}`;
         },
+        color: mutedText,
       },
-      splitLine: { show: true, lineStyle: { color: "#eee" } },
+      nameTextStyle: { color: textColor },
+      axisLine: { lineStyle: { color: axisColor } },
+      splitLine: { show: true, lineStyle: { color: gridColor } },
     },
     series: [
       {
@@ -259,7 +276,7 @@ function updateSurgeChart(stationId) {
         data: values,
         smooth: true,
         symbol: "none",
-        itemStyle: { color: "#0077be" },
+        itemStyle: { color: colors.primary },
         areaStyle: {
           color: {
             type: "linear",
@@ -268,33 +285,46 @@ function updateSurgeChart(stationId) {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: "rgba(0, 119, 190, 0.3)" },
-              { offset: 1, color: "rgba(0, 119, 190, 0.05)" },
+              { offset: 0, color: gradientTop },
+              { offset: 1, color: gradientBottom },
             ],
           },
         },
-        markLine: {
-          silent: true,
-          symbol: "none",
-          lineStyle: { type: "dashed", color: "#999", width: 1 },
-          label: {
-            show: true,
-            position: "end",
-            formatter: "Sea Level",
+          markLine: {
+            silent: true,
+            symbol: "none",
+            lineStyle: { type: "dashed", color: mutedText, width: 1 },
+            label: {
+              show: true,
+              position: "end",
+              formatter: "Sea Level",
+              color: mutedText,
+            },
+            data: [{ yAxis: 0 }],
           },
-          data: [{ yAxis: 0 }],
-        },
       },
     ],
   });
 
   // Update metadata display
   updateMetadata(station, times, values, displayName);
+  ensureSurgeThemeListener();
 
   logger.info(
     "StormSurgeChart",
     `Loaded ${values.length} hours of storm surge forecast for ${displayName}`,
   );
+}
+
+function ensureSurgeThemeListener() {
+  if (detachSurgeThemeListener) return;
+  detachSurgeThemeListener = registerChartThemeListener(() => {
+    const selector = document.getElementById("surge-station-select");
+    const station = selector?.value || STATION_ORDER[0];
+    if (station) {
+      updateSurgeChart(station);
+    }
+  });
 }
 
 function updateMetadata(station, times, values, displayName = null) {

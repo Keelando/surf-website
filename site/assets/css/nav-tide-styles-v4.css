@@ -2,6 +2,35 @@
    Navigation Bar Styles
    ===================================================== */
 
+:root {
+  --nav-background: linear-gradient(135deg, #1a365d 0%, #2c5282 50%, #1e6b8c 100%);
+  --nav-border-color: #4299e1;
+  --nav-link-color: #ffffff;
+  --nav-link-hover-bg: rgba(255, 255, 255, 0.15);
+  --nav-link-active-bg: rgba(66, 153, 225, 0.3);
+  --nav-link-active-border: rgba(66, 153, 225, 0.5);
+  --nav-clock-bg: rgba(0, 0, 0, 0.15);
+  --nav-clock-text: rgba(255, 255, 255, 0.9);
+  --theme-toggle-bg: rgba(0, 0, 0, 0.2);
+  --theme-toggle-color: #ffffff;
+  --theme-toggle-hover-bg: rgba(0, 0, 0, 0.35);
+  --theme-toggle-focus: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="dark"] {
+  --nav-background: linear-gradient(135deg, #0b1a2b 0%, #142c46 45%, #0f3a56 100%);
+  --nav-border-color: #4dbdff;
+  --nav-link-hover-bg: rgba(255, 255, 255, 0.18);
+  --nav-link-active-bg: rgba(77, 189, 255, 0.25);
+  --nav-link-active-border: rgba(77, 189, 255, 0.6);
+  --nav-clock-bg: rgba(255, 255, 255, 0.12);
+  --nav-clock-text: #e4f2ff;
+  --theme-toggle-bg: rgba(255, 255, 255, 0.08);
+  --theme-toggle-color: #e4f2ff;
+  --theme-toggle-hover-bg: rgba(255, 255, 255, 0.2);
+  --theme-toggle-focus: rgba(138, 211, 255, 0.9);
+}
+
 /* Normalize text sizing across mobile browsers (Chrome vs Firefox) */
 .main-nav,
 .main-nav * {
@@ -12,7 +41,7 @@
 
 .main-nav {
   /* Modern ocean gradient */
-  background: linear-gradient(135deg, #1a365d 0%, #2c5282 50%, #1e6b8c 100%);
+  background: var(--nav-background);
   padding: 0.5rem;
   margin: 0;
   display: flex;
@@ -20,7 +49,7 @@
   align-items: center;
   gap: 0.5rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  border-bottom: 3px solid #4299e1; /* Accent border on bottom */
+  border-bottom: 3px solid var(--nav-border-color); /* Accent border on bottom */
 
   /* Sticky disabled - uncomment below to re-enable */
   /* position: sticky; */
@@ -38,12 +67,18 @@
   flex: 1;
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .nav-clock {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--nav-clock-text);
   font-size: 0.95rem;
   font-weight: 500;
   padding: 0.5rem 1rem;
-  background: rgba(0, 0, 0, 0.15);
+  background: var(--nav-clock-bg);
   border-radius: 6px;
   font-family: 'Courier New', monospace;
   letter-spacing: 0.5px;
@@ -61,7 +96,7 @@
 }
 
 .nav-link {
-  color: #fff;
+  color: var(--nav-link-color);
   text-decoration: none;
   padding: 0.75rem 1.25rem;
   font-weight: 500;
@@ -79,19 +114,57 @@
 
 /* Modern hover effect - lift with glow */
 .nav-link:hover {
-  background: rgba(255,255,255,0.15);
+  background: var(--nav-link-hover-bg);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 /* Modern active state - pill with accent glow */
 .nav-link.active {
-  background: rgba(66, 153, 225, 0.3);
-  border: 2px solid rgba(66, 153, 225, 0.5);
+  background: var(--nav-link-active-bg);
+  border: 2px solid var(--nav-link-active-border);
   box-shadow:
     0 0 12px rgba(66, 153, 225, 0.4),
     0 2px 8px rgba(0,0,0,0.15);
   font-weight: 600;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid transparent;
+  background: var(--theme-toggle-bg);
+  color: var(--theme-toggle-color);
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--theme-toggle-hover-bg);
+  transform: translateY(-1px);
+}
+
+.theme-toggle:active {
+  transform: translateY(0);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--theme-toggle-focus);
+  outline-offset: 2px;
+}
+
+.theme-toggle-icon {
+  font-size: 1rem;
+}
+
+.theme-toggle-text {
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
 }
 
 /* Tablet - reduce padding slightly */

@@ -17,6 +17,8 @@ import { PACIFIC_TZ } from "./constants.js";
 
 let tideChart = null;
 let currentGeodeticResiduals = []; // Global storage for residuals
+let lastTideChartArgs = null;
+let detachTideThemeListener = null;
 
 /**
  * Get Pacific timezone midnight for a given date
@@ -97,11 +99,23 @@ function buildChartSeries(data) {
   } = data;
 
   const series = [];
+  const palette = theme?.series || {};
+  const isGeodetic = isCrescentBeach || isCrescentChannel;
+  const tidePredictionColor = isGeodetic
+    ? palette.primary || "#1976d2"
+    : palette.quinary || "#0077be";
+  const observationColor = palette.quaternary || "#43a047";
+  const residualColor = theme?.negative || "#e53935";
+  const zeroLineColor = theme?.mutedText || "#999";
+  const surgeColor = palette.quinary || "#9c27b0";
+  const combinedColor = palette.secondary || "#00897b";
+  const sunlightFirstColor = palette.senary || "#e91e63";
+  const sunlightSunriseColor = palette.secondary || "#ff9800";
+  const backgroundColor = theme?.background || "#ffffff";
+  const nowIndicatorAltColor = palette.secondary || "#ff9800";
 
   // 1. Tide Predictions (Astronomical Tide for DFO, Tide Forecast for geodetic)
-  const isGeodetic = isCrescentBeach || isCrescentChannel;
   const tidePredictionName = isGeodetic ? "Tide Forecast (Geodetic)" : "Astronomical Tide";
-  const tidePredictionColor = isGeodetic ? "#1976d2" : "#0077be";
 
   series.push({
     name: tidePredictionName,
@@ -119,13 +133,13 @@ function buildChartSeries(data) {
       {
         name: "First Light / Last Light",
         times: [new Date(sunlightTimes.first_light), new Date(sunlightTimes.last_light)],
-        color: "#e91e63",
+        color: sunlightFirstColor,
         width: 1,
       },
       {
         name: "Sunrise / Sunset",
         times: [new Date(sunlightTimes.sunrise), new Date(sunlightTimes.sunset)],
-        color: "#ff9800",
+        color: sunlightSunriseColor,
         width: 1.5,
       },
     ];
@@ -168,7 +182,7 @@ function buildChartSeries(data) {
       name: "Observation",
       type: "scatter",
       data: obsTimes.map((t, i) => [t, obsValues[i]]),
-      itemStyle: { color: "#43a047" },
+      itemStyle: { color: observationColor },
       symbolSize: 6,
       z: 10,
     });
@@ -181,8 +195,8 @@ function buildChartSeries(data) {
       type: "line",
       data: residuals,
       smooth: false,
-      lineStyle: { color: "#e53935", width: 2, type: "dashed" },
-      itemStyle: { color: "#e53935" },
+      lineStyle: { color: residualColor, width: 2, type: "dashed" },
+      itemStyle: { color: residualColor },
       showSymbol: true,
       symbolSize: 4,
       z: 8,
@@ -196,7 +210,7 @@ function buildChartSeries(data) {
         [times[0], 0],
         [times[times.length - 1], 0],
       ],
-      lineStyle: { color: "#999", width: 1, type: "dotted" },
+      lineStyle: { color: zeroLineColor, width: 1, type: "dotted" },
       showSymbol: false,
       silent: true,
       z: 1,
@@ -210,8 +224,8 @@ function buildChartSeries(data) {
       type: "line",
       data: surgeData,
       smooth: true,
-      lineStyle: { color: "#9c27b0", width: 2 },
-      itemStyle: { color: "#9c27b0" },
+      lineStyle: { color: surgeColor, width: 2 },
+      itemStyle: { color: surgeColor },
       showSymbol: false,
     });
   }
@@ -223,8 +237,8 @@ function buildChartSeries(data) {
       type: "line",
       data: combinedData,
       smooth: true,
-      lineStyle: { color: "#00897b", width: 3 },
-      itemStyle: { color: "#00897b" },
+      lineStyle: { color: combinedColor, width: 3 },
+      itemStyle: { color: combinedColor },
       showSymbol: false,
       z: 5,
     });
@@ -258,14 +272,14 @@ function buildChartSeries(data) {
         type: "scatter",
         data: [[now, currentEstimatedTide]],
         itemStyle: {
-          color: nearestResidual !== null ? "#e53935" : "#ff9800",
-          borderColor: "#fff",
+          color: nearestResidual !== null ? residualColor : nowIndicatorAltColor,
+          borderColor: backgroundColor,
           borderWidth: 2,
         },
         symbolSize: 12,
         z: 15,
         tooltip: {
-          formatter: function (params) {
+          formatter: function () {
             const timeStr = now.toLocaleString("en-US", {
               month: "short",
               day: "numeric",
@@ -277,7 +291,7 @@ function buildChartSeries(data) {
             let tooltip = `<strong>Now</strong><br/>${timeStr}<br/>`;
             tooltip += `Tide: ${currentEstimatedTide.toFixed(3)} m<br/>`;
             if (nearestResidual !== null) {
-              tooltip += `<span style="color: #666; font-size: 0.9em;">Predicted: ${currentPredictedTide.toFixed(3)} m<br/>`;
+              tooltip += `<span style="color: var(--color-text-muted,#666); font-size: 0.9em;">Predicted: ${currentPredictedTide.toFixed(3)} m<br/>`;
               tooltip += `Residual: ${nearestResidual >= 0 ? "+" : ""}${nearestResidual.toFixed(3)} m</span>`;
             }
             return tooltip;
@@ -351,6 +365,13 @@ export function displayTideChart(
   getSunlightTimesForDate,
 ) {
   const chartContainer = document.getElementById("tide-chart");
+  lastTideChartArgs = {
+    stationKey,
+    dayOffset,
+    tideTimeseriesData,
+    combinedWaterLevelData,
+    getSunlightTimesForDate,
+  };
 
   if (!chartContainer) return;
 
@@ -398,9 +419,15 @@ export function displayTideChart(
       tideChart = null;
     }
     chartContainer.innerHTML =
-      '<p style="text-align: center; color: #999; padding: 2rem;">No tide data available for this station</p>';
+      '<p style="text-align: center; color: var(--color-text-muted,#999); padding: 2rem;">No tide data available for this station</p>';
     return;
   }
+
+  const theme = getChartThemeColors();
+  const textColor = theme.text;
+  const mutedText = theme.mutedText;
+  const axisColor = theme.axisLine;
+  const gridColor = theme.gridLine;
 
   // Filter predictions for the target day
   const predictions = filterByDay(stationData.predictions || [], "time", dayStart, dayEnd);
@@ -417,7 +444,7 @@ export function displayTideChart(
       tideChart = null;
     }
     chartContainer.innerHTML =
-      '<p style="text-align: center; color: #999; padding: 2rem;">No prediction data available for this day</p>';
+      '<p style="text-align: center; color: var(--color-text-muted,#999); padding: 2rem;">No prediction data available for this day</p>';
     return;
   }
 
@@ -492,6 +519,8 @@ export function displayTideChart(
 
   // Build chart option
   const option = {
+    backgroundColor: theme.background,
+    textStyle: { color: textColor },
     tooltip: {
       ...getMobileOptimizedTooltipConfig(),
       formatter: function (params) {
@@ -517,7 +546,7 @@ export function displayTideChart(
     legend: {
       data: buildLegendData(chartData),
       bottom: getResponsiveLegendBottom(),
-      textStyle: { fontSize: 10 },
+      textStyle: { fontSize: 10, color: textColor },
     },
     grid: {
       left: window.innerWidth < 600 ? "8%" : "8%",
@@ -552,8 +581,10 @@ export function displayTideChart(
         interval: "auto",
         fontSize: window.innerWidth < 600 ? 9 : 10,
         rotate: window.innerWidth < 600 ? 25 : 0,
+        color: mutedText,
       },
-      splitLine: { show: true, lineStyle: { color: "#eee" } },
+      splitLine: { show: true, lineStyle: { color: gridColor } },
+      axisLine: { lineStyle: { color: axisColor } },
     },
     yAxis: {
       type: "value",
@@ -562,14 +593,19 @@ export function displayTideChart(
       nameGap: window.innerWidth < 600 ? 25 : 45,
       nameTextStyle: {
         fontSize: window.innerWidth < 600 ? 9 : 12,
+        color: textColor,
       },
+      axisLabel: { color: mutedText },
+      axisLine: { lineStyle: { color: axisColor } },
+      splitLine: { lineStyle: { color: gridColor } },
     },
-    series: buildChartSeries(chartData),
+    series: buildChartSeries(chartData, theme),
   };
 
   // Clear and render chart
   tideChart.clear();
   tideChart.setOption(option);
+  ensureTideChartThemeListener();
 
   // Force resize
   setTimeout(() => {
@@ -594,4 +630,18 @@ export function disposeChart() {
     tideChart.dispose();
     tideChart = null;
   }
+}
+
+function ensureTideChartThemeListener() {
+  if (detachTideThemeListener) return;
+  detachTideThemeListener = registerChartThemeListener(() => {
+    if (!lastTideChartArgs) return;
+    displayTideChart(
+      lastTideChartArgs.stationKey,
+      lastTideChartArgs.dayOffset,
+      lastTideChartArgs.tideTimeseriesData,
+      lastTideChartArgs.combinedWaterLevelData,
+      lastTideChartArgs.getSunlightTimesForDate,
+    );
+  });
 }
