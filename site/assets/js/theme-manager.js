@@ -1,4 +1,5 @@
 (function () {
+  const DARK_MODE_ENABLED = false;
   const STORAGE_KEY = "theme-preference";
   const Theme = {
     SYSTEM: "system",
@@ -16,6 +17,9 @@
   let appliedPreference = null;
 
   function safeGetPreference() {
+    if (!DARK_MODE_ENABLED) {
+      return Theme.LIGHT;
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored === Theme.LIGHT || stored === Theme.DARK) {
@@ -28,6 +32,9 @@
   }
 
   function safeSetPreference(preference) {
+    if (!DARK_MODE_ENABLED) {
+      return;
+    }
     try {
       if (preference === Theme.SYSTEM) {
         localStorage.removeItem(STORAGE_KEY);
@@ -47,6 +54,9 @@
   }
 
   function resolveTheme(preference) {
+    if (!DARK_MODE_ENABLED) {
+      return Theme.LIGHT;
+    }
     if (preference === Theme.LIGHT) return Theme.LIGHT;
     if (preference === Theme.DARK) return Theme.DARK;
     return getSystemTheme();
@@ -92,6 +102,10 @@
   }
 
   function setPreference(preference) {
+    if (!DARK_MODE_ENABLED) {
+      applyTheme(Theme.LIGHT, Theme.LIGHT);
+      return;
+    }
     const normalized =
       preference === Theme.LIGHT || preference === Theme.DARK
         ? preference
@@ -101,6 +115,10 @@
   }
 
   function cyclePreference() {
+    if (!DARK_MODE_ENABLED) {
+      applyTheme(Theme.LIGHT, Theme.LIGHT);
+      return;
+    }
     const current = safeGetPreference();
     const next =
       current === Theme.SYSTEM
@@ -112,7 +130,7 @@
   }
 
   function init() {
-    const preference = safeGetPreference();
+    const preference = DARK_MODE_ENABLED ? safeGetPreference() : Theme.LIGHT;
     applyTheme(resolveTheme(preference), preference);
   }
 
@@ -123,6 +141,7 @@
     : null;
 
   function handleSystemChange() {
+    if (!DARK_MODE_ENABLED) return;
     if (safeGetPreference() === Theme.SYSTEM) {
       applyTheme(resolveTheme(Theme.SYSTEM), Theme.SYSTEM);
     }

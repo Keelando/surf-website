@@ -78,7 +78,7 @@ function interpolateTide(predictions, targetTime) {
 /**
  * Build chart series array based on available data
  */
-function buildChartSeries(data) {
+function buildChartSeries(data, theme = getChartThemeColors()) {
   const {
     isCrescentBeach,
     isCrescentChannel,

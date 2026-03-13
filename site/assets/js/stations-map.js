@@ -61,11 +61,14 @@ function getDirectionalArrow(degrees, arrowType = "wind") {
   // Meteorological convention: direction indicates WHERE wind/waves are COMING FROM
   const rotation = arrowType === "wind" ? degrees : degrees + 90;
 
+  const arrowColor =
+    arrowType === "wind" ? "var(--color-wind-arrow, #dc2626)" : "var(--color-primary-dark)";
+
   // SVG arrows: wind points down, wave points right
   const svg =
     arrowType === "wind"
-      ? `<svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2v12m0 0l-3-3m3 3l3-3" stroke="#004b7c" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`
-      : `<svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 8h12m0 0l-3-3m3 3l-3 3" stroke="#004b7c" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
+      ? `<svg width="16" height="16" viewBox="0 0 16 16" style="color: ${arrowColor};"><path d="M8 2v12m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`
+      : `<svg width="16" height="16" viewBox="0 0 16 16" style="color: ${arrowColor};"><path d="M2 8h12m0 0l-3-3m3 3l-3 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
 
   return `<span style="display:inline-block;transform:rotate(${rotation}deg);margin-left:0.3rem;vertical-align:middle;">${svg}</span>`;
 }
@@ -329,7 +332,11 @@ function createTideGaugeSVG() {
 function createDirectionalMarker(direction, height, type, stale = false) {
   const isWave = type === "wave";
   const isWind = type === "wind";
-  const arrowColor = isWave ? "#1e88e5" : isWind ? "#dc2626" : "#718096"; // Blue for waves, red for wind, gray for wind-on-wave
+  const arrowColor = isWave
+    ? "var(--color-primary)"
+    : isWind
+      ? "var(--color-wind-arrow, #dc2626)"
+      : "var(--color-text-light)";
   const opacity = stale ? 0.35 : 1.0; // Transparent if stale
 
   // Meteorological convention: direction value = where wave/wind is COMING FROM
@@ -348,7 +355,7 @@ function createDirectionalMarker(direction, height, type, stale = false) {
       // Wind speed in knots (rounded to nearest integer)
       valueLabel = `<div style="
         background: transparent;
-        color: #2c3e50;
+        color: var(--map-popup-heading, var(--color-primary-dark));
         padding: 2px 5px;
         border-radius: 3px;
         font-size: 13px;
@@ -361,7 +368,7 @@ function createDirectionalMarker(direction, height, type, stale = false) {
       // Wave height in meters
       valueLabel = `<div style="
         background: transparent;
-        color: #2c3e50;
+        color: var(--map-popup-heading, var(--color-primary-dark));
         padding: 2px 5px;
         border-radius: 3px;
         font-size: 13px;
@@ -382,8 +389,8 @@ function createDirectionalMarker(direction, height, type, stale = false) {
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: ${opacity};">
       ${valueLabel}
       <div style="transform: rotate(${rotation}deg); transform-origin: center center;">
-        <svg width="26" height="30" viewBox="-6 -10 12 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));">
-          <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="${arrowColor}" fill-opacity="0.98" stroke="${arrowColor}" stroke-width="1.5"/>
+        <svg width="26" height="30" viewBox="-6 -10 12 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); color: ${arrowColor};">
+          <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="currentColor" fill-opacity="0.98" stroke="currentColor" stroke-width="1.5"/>
         </svg>
       </div>
     </div>
@@ -514,12 +521,18 @@ function addBuoyMarker(buoy) {
     const data = popupData;
     const obsTime = data.observation_time ? new Date(data.observation_time) : null;
     const isStale = data.stale || false;
-    const bgColor = isStale ? "#fff5f5" : "#f0f8ff";
-    const borderColor = isStale ? "#e53935" : "#0077be";
+    const bgColor = isStale
+      ? "var(--color-callout-danger-bg, #fff5f5)"
+      : "var(--color-callout-info-bg, #f0f8ff)";
+    const borderColor = isStale
+      ? "var(--color-accent-red)"
+      : "var(--color-primary)";
     const headerText = isStale ? "Latest Conditions (STALE - >3h old):" : "Latest Conditions:";
 
     popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
-    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; ${isStale ? "color: #c62828;" : ""}">${headerText}</div>`;
+    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; color: ${
+      isStale ? "var(--color-accent-red)" : "var(--color-primary-dark)"
+    };">${headerText}</div>`;
 
     // Show wind data (handle both buoy and wind station formats)
     const windSpeed = data.wind_speed_kt !== undefined ? data.wind_speed_kt : data.wind_speed;
@@ -643,7 +656,7 @@ function addBuoyMarker(buoy) {
         timeZone: "America/Vancouver",
         timeZoneName: "short",
       });
-      popupContent += `<div style="font-size: 0.85em; color: #666; margin-top: 4px;">Updated: ${timeStr}</div>`;
+      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 4px;">Updated: ${timeStr}</div>`;
     }
 
     popupContent += `</div>`;
@@ -677,7 +690,7 @@ function addBuoyMarker(buoy) {
   const linkText = isWindStation ? "View on Winds Page →" : "View Data →";
 
   popupContent += `
-    <a href="${linkHref}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">${linkText}</a>
+    <a href="${linkHref}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">${linkText}</a>
   </div>`;
 
   marker.bindPopup(popupContent);
@@ -777,7 +790,7 @@ function addTideMarker(tide, stationKey) {
     popupContent += `<div style="background: #fff3e0; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid #ff9800;">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 4px;">Storm Surge Forecast:</div>`;
     popupContent += `<div><strong>${surgeSign}${surgeForecast.value.toFixed(2)}m</strong></div>`;
-    popupContent += `<div style="font-size: 0.85em; color: #666; margin-top: 4px;">Next: ${timeStr}</div>`;
+    popupContent += `<div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 4px;">Next: ${timeStr}</div>`;
     popupContent += `</div>`;
   }
 
@@ -789,9 +802,9 @@ function addTideMarker(tide, stationKey) {
       <div><strong>Source:</strong> ${tide.source}</div>
       <div><strong>Type:</strong> ${stationType}</div>
       <div><strong>Coordinates:</strong> ${tide.lat.toFixed(4)}, ${tide.lon.toFixed(4)}</div>
-      ${tide.note ? `<div style="font-style: italic; margin-top: 4px; color: #666;">${tide.note}</div>` : ""}
+      ${tide.note ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${tide.note}</div>` : ""}
     </div>
-    <a href="/tides.html?station=${stationKey}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Data →</a>
+    <a href="/tides.html?station=${stationKey}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Data →</a>
   </div>`;
 
   marker.bindPopup(popupContent);
@@ -823,17 +836,21 @@ function addLightstationMarker(lightstation) {
   if (latestLightstationData && latestLightstationData[lookupName]) {
     const obs = latestLightstationData[lookupName];
     const isStale = obs.stale || false;
-    const bgColor = isStale ? "#fff5f5" : "#f0f8ff";
-    const borderColor = isStale ? "#e53935" : "#0077be";
+    const bgColor = isStale
+      ? "var(--color-callout-danger-bg, #fff5f5)"
+      : "var(--color-callout-info-bg, #f0f8ff)";
+    const borderColor = isStale
+      ? "var(--color-accent-red)"
+      : "var(--color-primary)";
     const headerText = isStale ? "Latest Conditions (STALE - >12h old):" : "Latest Conditions:";
-    const headerColor = isStale ? "#c62828" : "#004b7c";
+    const headerColor = isStale ? "var(--color-accent-red)" : "var(--color-primary-dark)";
 
     popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 6px; color: ${headerColor}; font-size: 0.95em;">${headerText}</div>`;
 
     // Wave Height (prominent display)
     if (obs.sea_height_ft !== null) {
-      popupContent += `<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 8px; border-radius: 4px; margin-bottom: 6px; text-align: center; font-weight: 600;">`;
+      popupContent += `<div style="background: linear-gradient(135deg, var(--color-callout-gradient-start), var(--color-callout-gradient-end)); color: var(--color-on-primary); padding: 6px 8px; border-radius: 4px; margin-bottom: 6px; text-align: center; font-weight: 600;">`;
       popupContent += `🌊 Wave Height: ${obs.sea_height_ft} ft`;
       popupContent += `</div>`;
     }
@@ -889,14 +906,14 @@ function addLightstationMarker(lightstation) {
         ageText = " (just now)";
       }
 
-      popupContent += `<div style="font-size: 0.85em; color: #555; margin-top: 6px; padding-top: 4px; border-top: 1px solid rgba(0,75,124,0.2);">📅 Report: ${formattedDate}${ageText}</div>`;
+      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-divider, rgba(0,75,124,0.2));">📅 Report: ${formattedDate}${ageText}</div>`;
     } else if (obs.report_time_str) {
-      popupContent += `<div style="font-size: 0.85em; color: #555; margin-top: 6px; padding-top: 4px; border-top: 1px solid rgba(0,75,124,0.2);">📅 Report: ${obs.report_time_str}</div>`;
+      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-divider, rgba(0,75,124,0.2));">📅 Report: ${obs.report_time_str}</div>`;
     }
 
     // Staleness warning (already shown in header, but keep for emphasis)
     if (obs.stale) {
-      popupContent += `<div style="color: #c53030; font-size: 0.85em; margin-top: 4px; font-weight: 600;">⚠️ STALE DATA</div>`;
+      popupContent += `<div style="color: var(--color-accent-red); font-size: 0.85em; margin-top: 4px; font-weight: 600;">⚠️ STALE DATA</div>`;
     }
 
     popupContent += `</div>`;
@@ -912,9 +929,9 @@ function addLightstationMarker(lightstation) {
       <div><strong>Type:</strong> Lightstation</div>
       <div><strong>Coordinates:</strong> ${lightstation.lat.toFixed(4)}, ${lightstation.lon.toFixed(4)}</div>
       ${lightstation.established ? `<div><strong>Established:</strong> ${lightstation.established}</div>` : ""}
-      ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: #666;">${lightstation.notes}</div>` : ""}
+      ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${lightstation.notes}</div>` : ""}
     </div>
-    <a href="/lightstations.html#lightstation-${lightstation.id}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Data →</a>
+    <a href="/lightstations.html#lightstation-${lightstation.id}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Data →</a>
   </div>`;
 
   marker.bindPopup(popupContent);
@@ -941,7 +958,7 @@ function addWebcamMarker(webcam) {
   popupContent += `<h3>📹 ${webcam.name}</h3>`;
 
   // Webcam info
-  popupContent += `<div style="background: #f0f8ff; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid #2c5282;">`;
+  popupContent += `<div style="background: var(--color-callout-info-bg, #f0f8ff); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-primary-dark);">`;
   popupContent += `<div style="font-weight: 600; margin-bottom: 6px;">Webcam Details:</div>`;
   popupContent += `<div><strong>📍 Location:</strong> ${webcam.location}</div>`;
   popupContent += `<div><strong>🔄 Updates:</strong> Every ${webcam.update_frequency_minutes} minutes</div>`;
@@ -956,7 +973,7 @@ function addWebcamMarker(webcam) {
       <div><strong>Type:</strong> Webcam</div>
       <div><strong>Coordinates:</strong> ${webcam.lat.toFixed(4)}, ${webcam.lon.toFixed(4)}</div>
     </div>
-    <a href="${webcam.page_url}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #2c5282; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Webcam →</a>
+    <a href="${webcam.page_url}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary-dark); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Webcam →</a>
   </div>`;
 
   marker.bindPopup(popupContent);

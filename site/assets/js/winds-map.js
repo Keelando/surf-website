@@ -56,7 +56,7 @@ function getDirectionalArrow(degrees) {
   const rotation = degrees;
 
   // SVG wind arrow pointing down
-  const svg = `<svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2v12m0 0l-3-3m3 3l3-3" stroke="#004b7c" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
+  const svg = `<svg width="16" height="16" viewBox="0 0 16 16" style="color: var(--color-primary-dark);"><path d="M8 2v12m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
 
   return `<span style="display:inline-block;transform:rotate(${rotation}deg);margin-left:0.3rem;vertical-align:middle;">${svg}</span>`;
 }
@@ -69,7 +69,7 @@ function getDirectionalArrow(degrees) {
  * @returns {string} HTML for marker
  */
 function createDirectionalMarker(direction, speed, stale = false) {
-  const arrowColor = "#dc2626"; // Red for wind
+  const arrowColor = "var(--color-wind-arrow, #dc2626)";
   const opacity = stale ? 0.35 : 1.0; // Transparent if stale
 
   // Meteorological convention: direction value = where wind is COMING FROM
@@ -82,7 +82,7 @@ function createDirectionalMarker(direction, speed, stale = false) {
     speed !== null && speed !== undefined
       ? `<div style="
         background: transparent;
-        color: #2c3e50;
+        color: var(--map-popup-heading, var(--color-primary-dark));
         padding: 2px 5px;
         border-radius: 3px;
         font-size: 13px;
@@ -97,8 +97,8 @@ function createDirectionalMarker(direction, speed, stale = false) {
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: ${opacity};">
       ${speedLabel}
       <div style="transform: rotate(${rotation}deg); transform-origin: center center;">
-        <svg width="26" height="30" viewBox="-6 -10 12 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));">
-          <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="${arrowColor}" fill-opacity="0.98" stroke="${arrowColor}" stroke-width="1.5"/>
+        <svg width="26" height="30" viewBox="-6 -10 12 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); color: ${arrowColor};">
+          <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="currentColor" fill-opacity="0.98" stroke="currentColor" stroke-width="1.5"/>
         </svg>
       </div>
     </div>
@@ -206,11 +206,17 @@ function addWindStationMarker(station, currentData) {
 
   // Add current wind data if available
   if (currentData) {
-    const bgColor = currentData.stale ? "#fff5f5" : "#f0f8ff";
-    const borderColor = currentData.stale ? "#e53935" : "#fb8c00";
+    const bgColor = currentData.stale
+      ? "var(--color-callout-danger-bg, #fff5f5)"
+      : "var(--color-callout-info-bg, #f0f8ff)";
+    const borderColor = currentData.stale
+      ? "var(--color-accent-red)"
+      : "var(--color-accent-orange)";
     const headerText = currentData.stale ? "Last Wind (STALE - >3h old):" : "Current Wind:";
     popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
-    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; ${currentData.stale ? "color: #c62828;" : ""}">${headerText}</div>`;
+    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; color: ${
+      currentData.stale ? "var(--color-accent-red)" : "var(--color-primary-dark)"
+    };">${headerText}</div>`;
 
     // Wind speed and gust
     if (currentData.wind_speed_kt != null) {
@@ -247,7 +253,7 @@ function addWindStationMarker(station, currentData) {
         timeZone: "America/Vancouver",
         timeZoneName: "short",
       });
-      popupContent += `<div style="font-size: 0.85em; color: #666; margin-top: 4px;">Updated: ${timeStr}</div>`;
+      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 4px;">Updated: ${timeStr}</div>`;
     }
 
     popupContent += `</div>`;
@@ -261,7 +267,7 @@ function addWindStationMarker(station, currentData) {
       <div><strong>Source:</strong> ${station.source}</div>
       <div><strong>Type:</strong> Weather Station</div>
     </div>
-    <a href="#" class="view-data-btn" data-wind-station-id="${station.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Wind Chart →</a>
+    <a href="#" class="view-data-btn" data-wind-station-id="${station.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Wind Chart →</a>
   </div>`;
 
   marker.bindPopup(popupContent);
@@ -302,11 +308,17 @@ function addBuoyWindMarker(buoy, currentData) {
 
   // Add current wind data if available
   if (currentData) {
-    const bgColor = currentData.stale ? "#fff5f5" : "#f0f8ff";
-    const borderColor = currentData.stale ? "#e53935" : "#0077be";
+    const bgColor = currentData.stale
+      ? "var(--color-callout-danger-bg, #fff5f5)"
+      : "var(--color-callout-info-bg, #f0f8ff)";
+    const borderColor = currentData.stale
+      ? "var(--color-accent-red)"
+      : "var(--color-primary)";
     const headerText = currentData.stale ? "Last Wind (STALE - >3h old):" : "Current Wind:";
     popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
-    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; ${currentData.stale ? "color: #c62828;" : ""}">${headerText}</div>`;
+    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; color: ${
+      currentData.stale ? "var(--color-accent-red)" : "var(--color-primary-dark)"
+    };">${headerText}</div>`;
 
     // Wind speed and gust
     if (currentData.wind_speed_kt != null) {
@@ -343,7 +355,7 @@ function addBuoyWindMarker(buoy, currentData) {
         timeZone: "America/Vancouver",
         timeZoneName: "short",
       });
-      popupContent += `<div style="font-size: 0.85em; color: #666; margin-top: 4px;">Updated: ${timeStr}</div>`;
+      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 4px;">Updated: ${timeStr}</div>`;
     }
 
     popupContent += `</div>`;
@@ -364,7 +376,7 @@ function addBuoyWindMarker(buoy, currentData) {
       <div><strong>Source:</strong> ${buoy.source}</div>
       <div><strong>Type:</strong> ${typeLabel}</div>
     </div>
-    <a href="#" class="view-data-btn" data-wind-station-id="${buoy.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0077be; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Wind Chart →</a>
+    <a href="#" class="view-data-btn" data-wind-station-id="${buoy.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Wind Chart →</a>
   </div>`;
 
   marker.bindPopup(popupContent);

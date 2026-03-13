@@ -139,17 +139,17 @@ export function displayCurrentObservation(station, stationKey, tideDataStore) {
 
     if (!hasObservations) {
       container.innerHTML = `
-        <div style="padding: 1rem; background: #fff3e0; border-radius: 4px; border-left: 4px solid #ff9800;">
-          <div style="font-weight: bold; color: #f57c00; margin-bottom: 0.5rem;">
+        <div style="padding: 1rem; background: var(--color-callout-warning-bg, #fff3e0); border-radius: 4px; border-left: 4px solid var(--color-accent-orange);">
+          <div style="font-weight: bold; color: var(--color-warning-text, #f57c00); margin-bottom: 0.5rem;">
             📊 Predictions Only
           </div>
-          <div style="color: #666; font-size: 0.9rem;">
+          <div style="color: var(--color-text-muted); font-size: 0.9rem;">
             This station provides astronomical tide predictions but does not have real-time water level sensors.
           </div>
         </div>
       `;
     } else {
-      container.innerHTML = '<p style="color: #999;">No recent observation available</p>';
+      container.innerHTML = '<p style="color: var(--color-text-light);">No recent observation available</p>';
     }
     return;
   }
@@ -169,21 +169,27 @@ export function displayCurrentObservation(station, stationKey, tideDataStore) {
   if (methodology === "calibrate_observation" && geodeticOffset !== null) {
     observedLevel = obs.value + geodeticOffset;
     calibrationNote = `
-      <div style="color: #1976d2; margin-top: 0.5rem; font-size: 0.85rem; font-style: italic;">
+      <div style="color: var(--color-accent-blue); margin-top: 0.5rem; font-size: 0.85rem; font-style: italic;">
         📏 Calibrated (offset: ${geodeticOffset >= 0 ? "+" : ""}${geodeticOffset.toFixed(3)}m)
       </div>
     `;
   }
 
   container.innerHTML = `
-    <div style="font-size: 1.5rem; font-weight: bold; color: ${isStale ? "#e53935" : "#43a047"};">
+    <div style="font-size: 1.5rem; font-weight: bold; color: ${
+      isStale ? "var(--color-accent-red)" : "var(--color-accent-green)"
+    };">
       ${observedLevel.toFixed(2)} m
     </div>
-    <div style="color: #666; margin-top: 0.25rem; font-size: 0.9rem;">
+    <div style="color: var(--color-text-muted); margin-top: 0.25rem; font-size: 0.9rem;">
       at ${timeStr}
-      <span style="color: ${isStale ? "#e53935" : "#999"};">(${ageStr})</span>
+      <span style="color: ${isStale ? "var(--color-accent-red)" : "var(--color-text-light)"};">(${ageStr})</span>
     </div>
-    ${isStale ? '<div style="color: #e53935; margin-top: 0.25rem; font-size: 0.85rem;">⚠ Data may be stale</div>' : ""}
+    ${
+      isStale
+        ? '<div style="color: var(--color-accent-red); margin-top: 0.25rem; font-size: 0.85rem;">⚠ Data may be stale</div>'
+        : ""
+    }
     ${calibrationNote}
   `;
 }
@@ -200,7 +206,7 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
   const container = document.getElementById("current-prediction");
 
   if (!station || !station.prediction_now || station.prediction_now.value === null) {
-    container.innerHTML = '<p style="color: #999;">No prediction available</p>';
+    container.innerHTML = '<p style="color: var(--color-text-light);">No prediction available</p>';
     return;
   }
 
@@ -217,7 +223,7 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
   if (methodology === "calibrate_prediction" && geodeticOffset !== null) {
     tideLevel = pred.value + geodeticOffset;
     calibrationNote = `
-      <div style="color: #1976d2; margin-top: 0.5rem; font-size: 0.85rem; font-style: italic;">
+      <div style="color: var(--color-accent-blue); margin-top: 0.5rem; font-size: 0.85rem; font-style: italic;">
         📏 Calibrated (offset: ${geodeticOffset >= 0 ? "+" : ""}${geodeticOffset.toFixed(3)}m)
       </div>
     `;
@@ -300,12 +306,16 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
         }
 
         nextEventHtml = `
-          <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #eee; font-size: 0.85rem;">
-            <div style="color: #666;">
-              Next ${eventType} Tide: <strong style="color: #0077be;">${eventHeight} m</strong>
-              ${combinedWaterLevel ? `<span style="color: #00897b; font-weight: 600;">(${combinedWaterLevel} m total)</span>` : ""}
-              <span style="color: #43a047; font-weight: 600;">${timeUntilStr}</span>
-              <span style="color: #999;">(${eventTimeStr})</span>
+          <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border-light); font-size: 0.85rem;">
+            <div style="color: var(--color-text-muted);">
+              Next ${eventType} Tide: <strong style="color: var(--color-primary);">${eventHeight} m</strong>
+              ${
+                combinedWaterLevel
+                  ? `<span style="color: var(--color-accent-teal, #00897b); font-weight: 600;">(${combinedWaterLevel} m total)</span>`
+                  : ""
+              }
+              <span style="color: var(--color-accent-green); font-weight: 600;">${timeUntilStr}</span>
+              <span style="color: var(--color-text-light);">(${eventTimeStr})</span>
             </div>
           </div>
         `;
@@ -315,11 +325,13 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
 
   container.innerHTML = `
     <div>
-      <div style="font-size: 1.5rem; font-weight: bold; color: #0077be;">
+      <div style="font-size: 1.5rem; font-weight: bold; color: var(--color-primary);">
         ${tideLevel.toFixed(2)} m ${tideArrow}
       </div>
-      <div style="color: #666; margin-top: 0.25rem; font-size: 0.9rem;">
-        at ${timeStr}${tideDirection ? ` <span style="color: #0077be;">(${tideDirection})</span>` : ""}
+      <div style="color: var(--color-text-muted); margin-top: 0.25rem; font-size: 0.9rem;">
+        at ${timeStr}${
+          tideDirection ? ` <span style="color: var(--color-primary);">(${tideDirection})</span>` : ""
+        }
       </div>
       ${calibrationNote}
     </div>
@@ -376,16 +388,16 @@ function generatePeakForecastHtml(tideDataStore, stationKey) {
   });
 
   return `
-    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ddd;">
-      <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.75rem;">
+    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
+      <div style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
         <strong>Today's Peak Tide Forecast</strong>
       </div>
-      <div style="font-size: 0.95rem; line-height: 1.6;">
+      <div style="font-size: 0.95rem; line-height: 1.6; color: var(--color-text);">
         Today's forecasted peak water level is
-        <strong style="color: #00897b; font-size: 1.1rem;">${todayPeak.total_water_level_m.toFixed(2)} m</strong>
+        <strong style="color: var(--color-accent-teal, #00897b); font-size: 1.1rem;">${todayPeak.total_water_level_m.toFixed(2)} m</strong>
         with a storm surge of
-        <strong style="color: #9c27b0;">${todayPeak.storm_surge_m >= 0 ? "+" : ""}${todayPeak.storm_surge_m.toFixed(3)} m</strong>
-        at <strong style="color: #0077be;">${peakTimeStr}</strong>.
+        <strong style="color: var(--color-accent-purple, #9c27b0);">${todayPeak.storm_surge_m >= 0 ? "+" : ""}${todayPeak.storm_surge_m.toFixed(3)} m</strong>
+        at <strong style="color: var(--color-primary);">${peakTimeStr}</strong>.
       </div>
     </div>
   `;
@@ -419,10 +431,10 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
         residualValue >= 0 ? `+${residualValue.toFixed(3)}` : residualValue.toFixed(3);
       const color =
         Math.abs(residualValue) > 0.3
-          ? "#e53935"
+          ? "var(--color-accent-red)"
           : Math.abs(residualValue) > 0.15
-            ? "#ff9800"
-            : "#43a047";
+            ? "var(--color-accent-orange)"
+            : "var(--color-accent-green)";
       const residualTimeStr = formatTime(residualTime);
 
       // Get ECCC forecast for comparison (optional)
@@ -432,8 +444,8 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
         const forecastStr =
           forecastSurge >= 0 ? `+${forecastSurge.toFixed(3)}` : forecastSurge.toFixed(3);
         forecastHtml = `
-          <div style="color: #666; margin-top: 0.75rem; font-size: 0.9rem; padding-top: 0.75rem; border-top: 1px solid #eee;">
-            <strong>ECCC Storm Surge:</strong> <span style="color: #9c27b0; font-weight: 600;">${forecastStr} m</span>
+          <div style="color: var(--color-text-muted); margin-top: 0.75rem; font-size: 0.9rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border-light);">
+            <strong>ECCC Storm Surge:</strong> <span style="color: var(--color-accent-purple, #9c27b0); font-weight: 600;">${forecastStr} m</span>
           </div>
         `;
       }
@@ -445,14 +457,14 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
         <div style="font-size: 1.5rem; font-weight: bold; color: ${color};">
           ${residualStr} m
         </div>
-        <div style="color: #666; margin-top: 0.25rem; font-size: 0.9rem;">
+        <div style="color: var(--color-text-muted); margin-top: 0.25rem; font-size: 0.9rem;">
           Residual
         </div>
-        <div style="color: #999; margin-top: 0.25rem; font-size: 0.85rem;">
+        <div style="color: var(--color-text-light); margin-top: 0.25rem; font-size: 0.85rem;">
           at ${residualTimeStr}
         </div>
         ${forecastHtml}
-        <div style="color: #999; margin-top: 0.5rem; font-size: 0.8rem;">
+        <div style="color: var(--color-text-light); margin-top: 0.5rem; font-size: 0.8rem;">
           Latest value from chart
         </div>
         ${peakForecastHtml}
@@ -461,10 +473,10 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
     } else {
       // Geodetic station but no residuals available
       container.innerHTML = `
-        <div style="font-size: 1rem; color: #e53935;">
+        <div style="font-size: 1rem; color: var(--color-accent-red);">
           No residual data available
         </div>
-        <div style="color: #666; margin-top: 0.5rem; font-size: 0.85rem;">
+        <div style="color: var(--color-text-muted); margin-top: 0.5rem; font-size: 0.85rem;">
           Check if Surrey observations and residuals are available
         </div>
       `;
@@ -480,7 +492,11 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
     const offset = station.tide_offset.value;
     const offsetStr = offset >= 0 ? `+${offset.toFixed(2)}` : offset.toFixed(2);
     const color =
-      Math.abs(offset) > 0.3 ? "#e53935" : Math.abs(offset) > 0.15 ? "#ff9800" : "#43a047";
+      Math.abs(offset) > 0.3
+        ? "var(--color-accent-red)"
+        : Math.abs(offset) > 0.15
+          ? "var(--color-accent-orange)"
+          : "var(--color-accent-green)";
 
     // Format the calculation time
     const calcTime = new Date(station.tide_offset.observation_time);
@@ -493,8 +509,8 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
       const forecastStr =
         forecastSurge >= 0 ? `+${forecastSurge.toFixed(3)}` : forecastSurge.toFixed(3);
       forecastHtml = `
-        <div style="color: #666; margin-top: 0.5rem; font-size: 0.85rem;">
-          ECCC Forecast: <strong style="color: #ff9800;">${forecastStr} m</strong>
+        <div style="color: var(--color-text-muted); margin-top: 0.5rem; font-size: 0.85rem;">
+          ECCC Forecast: <strong style="color: var(--color-accent-orange);">${forecastStr} m</strong>
         </div>
       `;
     }
@@ -506,14 +522,14 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
       <div style="font-size: 1.5rem; font-weight: bold; color: ${color};">
         ${offsetStr} m
       </div>
-      <div style="color: #666; margin-top: 0.25rem; font-size: 0.9rem;">
+      <div style="color: var(--color-text-muted); margin-top: 0.25rem; font-size: 0.9rem;">
         Observed - Predicted
       </div>
-      <div style="color: #999; margin-top: 0.25rem; font-size: 0.85rem;">
+      <div style="color: var(--color-text-light); margin-top: 0.25rem; font-size: 0.85rem;">
         Calculated at ${calcTimeStr}
       </div>
       ${forecastHtml}
-      <div style="color: #999; margin-top: 0.25rem; font-size: 0.8rem;">
+      <div style="color: var(--color-text-light); margin-top: 0.25rem; font-size: 0.8rem;">
         ${station.tide_offset.description}
       </div>
       ${peakForecastHtml}
@@ -565,7 +581,7 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
   }
 
   if (surge === null) {
-    container.innerHTML = '<p style="color: #999;">No storm surge data available</p>';
+    container.innerHTML = '<p style="color: var(--color-text-light);">No storm surge data available</p>';
     return;
   }
 
@@ -576,10 +592,10 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
 
   container.innerHTML = `
     <div>
-      <div style="font-size: 1.5rem; font-weight: bold; color: #ff9800;">
+      <div style="font-size: 1.5rem; font-weight: bold; color: var(--color-accent-orange);">
         ${surge >= 0 ? "+" : ""}${surge.toFixed(3)} m
       </div>
-      <div style="color: #666; margin-top: 0.25rem; font-size: 0.9rem;">
+      <div style="color: var(--color-text-muted); margin-top: 0.25rem; font-size: 0.9rem;">
         Current (at ${timeStr})
       </div>
     </div>
@@ -599,7 +615,7 @@ export function displayHighLowTable(station, dayOffset = 0) {
 
   if (!station || !station.events || station.events.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="3" style="color: #999; text-align: center;">No high/low data available</td></tr>';
+      '<tr><td colspan="3" style="color: var(--color-text-light); text-align: center;">No high/low data available</td></tr>';
     return;
   }
 
@@ -639,7 +655,7 @@ export function displayHighLowTable(station, dayOffset = 0) {
 
   if (eventsForDay.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="3" style="color: #999; text-align: center;">No high/low data available for this day</td></tr>';
+      '<tr><td colspan="3" style="color: var(--color-text-light); text-align: center;">No high/low data available for this day</td></tr>';
     return;
   }
 
@@ -652,7 +668,8 @@ export function displayHighLowTable(station, dayOffset = 0) {
       const timeStr = event.time_display; // Use pre-formatted time from JSON
       const height = event.value.toFixed(2);
       const type = event.type.charAt(0).toUpperCase() + event.type.slice(1);
-      const typeColor = event.type === "high" ? "#0077be" : "#e53935";
+      const typeColor =
+        event.type === "high" ? "var(--color-primary)" : "var(--color-accent-red)";
 
       return `
       <tr>

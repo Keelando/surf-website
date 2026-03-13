@@ -31,6 +31,8 @@
   --color-accent-green: #43a047;
   --color-accent-orange: #ff9800;
   --color-accent-red: #e53935;
+  --color-accent-teal: #00897b;
+  --color-accent-purple: #9c27b0;
 
   /* Spacing Scale */
   --spacing-xs: 0.25rem;
@@ -83,6 +85,16 @@
   --color-warning-text: #ff9800;
   --color-error-text: #e53935;
   --color-on-primary: #ffffff;
+  --color-callout-info-bg: #f0f8ff;
+  --color-callout-info-border: rgba(0, 75, 124, 0.2);
+  --color-callout-info-divider: rgba(0, 75, 124, 0.2);
+  --color-callout-warning-bg: #fff3e0;
+  --color-callout-warning-border: rgba(255, 152, 0, 0.25);
+  --color-callout-danger-bg: #fff5f5;
+  --color-callout-danger-border: rgba(229, 57, 53, 0.25);
+  --color-callout-gradient-start: #667eea;
+  --color-callout-gradient-end: #764ba2;
+  --color-wind-arrow: #dc2626;
   --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.08);
   --shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.12);
   --shadow-strong: 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -107,6 +119,8 @@
   --color-accent-green: #57d59d;
   --color-accent-orange: #ffae52;
   --color-accent-red: #ff7a7a;
+  --color-accent-teal: #34d399;
+  --color-accent-purple: #c084fc;
   --color-footer-link: #8dd3ff;
   --color-status-dot: #76889c;
   --color-status-ok: #4ade80;
@@ -150,6 +164,16 @@
   --color-warning-text: #fcd34d;
   --color-error-text: #ff8787;
   --color-on-primary: #ffffff;
+  --color-callout-info-bg: rgba(21, 37, 59, 0.85);
+  --color-callout-info-border: rgba(140, 190, 255, 0.32);
+  --color-callout-info-divider: rgba(140, 190, 255, 0.28);
+  --color-callout-warning-bg: rgba(255, 174, 82, 0.18);
+  --color-callout-warning-border: rgba(255, 174, 82, 0.4);
+  --color-callout-danger-bg: rgba(255, 135, 135, 0.18);
+  --color-callout-danger-border: rgba(255, 135, 135, 0.45);
+  --color-callout-gradient-start: #4c5fb4;
+  --color-callout-gradient-end: #a78bfa;
+  --color-wind-arrow: #fb7185;
   --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.6);
   --shadow-medium: 0 6px 18px rgba(0, 0, 0, 0.5);
   --shadow-strong: 0 12px 30px rgba(0, 0, 0, 0.45);

@@ -319,6 +319,7 @@ function updateForecastChart(stationId) {
   const peakData = updatePeakToday(forecastStationId);
 
   const theme = getChartThemeColors();
+  const colors = theme.series || {};
   const textColor = theme.text;
   const mutedText = theme.mutedText;
   const axisColor = theme.axisLine;
