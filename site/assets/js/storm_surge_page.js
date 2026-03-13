@@ -848,7 +848,7 @@ function updateHindcastChart(stationId) {
     const color = getColorForIndex(index, sortedDates.length, theme);
 
     return {
-      name: "", // Don't show individual forecast dates in legend
+      name: index === 0 ? "Forecast" : "",
       type: "line",
       data: data.times.map((time, i) => [time, data.values[i]]),
       smooth: true,
@@ -972,7 +972,7 @@ function updateHindcastChart(stationId) {
         show: true,
         bottom: 0,
         left: "center",
-        data: ["Observed Surge (Actual)"], // Only show observed surge in legend
+        data: ["Forecast", "Observed Surge (Actual)"],
         type: "plain",
         textStyle: { color: textColor },
       },

@@ -25,9 +25,9 @@
       if (stored === Theme.LIGHT || stored === Theme.DARK) {
         return stored;
       }
-      return Theme.SYSTEM;
+      return Theme.LIGHT;
     } catch (error) {
-      return Theme.SYSTEM;
+      return Theme.LIGHT;
     }
   }
 
@@ -120,12 +120,7 @@
       return;
     }
     const current = safeGetPreference();
-    const next =
-      current === Theme.SYSTEM
-        ? Theme.LIGHT
-        : current === Theme.LIGHT
-          ? Theme.DARK
-          : Theme.SYSTEM;
+    const next = current === Theme.DARK ? Theme.LIGHT : Theme.DARK;
     setPreference(next);
   }
 

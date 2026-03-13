@@ -108,7 +108,7 @@ function renderComparisonChart(waveComparisonChart, chartData) {
           data: sanitizeSeriesData(data),
           smooth: true,
           connectNulls: false,
-          itemStyle: { color: buoyColors[buoyId] },
+          itemStyle: { color: buoyColors[buoyId], borderColor: theme.symbolBorderColor },
           emphasis: { focus: "series" },
         };
       })

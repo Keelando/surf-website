@@ -63,9 +63,7 @@
   }
 
   function getNextPreference(current) {
-    if (current === "system") return "light";
-    if (current === "light") return "dark";
-    return "system";
+    return current === "dark" ? "light" : "dark";
   }
 
   function updateToggle(button) {
@@ -95,19 +93,20 @@
   }
 
   function initThemeToggle() {
-    const button = document.querySelector(".theme-toggle");
-    if (!button) return;
+    const buttons = document.querySelectorAll(".theme-toggle");
+    if (!buttons.length) return;
 
-    if (!button.dataset.bound) {
-      button.dataset.bound = "true";
-      button.addEventListener("click", () => {
-        if (window.ThemeManager && typeof window.ThemeManager.cycle === "function") {
-          window.ThemeManager.cycle();
-        }
-      });
-    }
-
-    updateToggle(button);
+    buttons.forEach((button) => {
+      if (!button.dataset.bound) {
+        button.dataset.bound = "true";
+        button.addEventListener("click", () => {
+          if (window.ThemeManager && typeof window.ThemeManager.cycle === "function") {
+            window.ThemeManager.cycle();
+          }
+        });
+      }
+      updateToggle(button);
+    });
 
     if (!window._navThemeListenerAttached) {
       window._navThemeListenerAttached = true;

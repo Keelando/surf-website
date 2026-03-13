@@ -80,6 +80,22 @@
 
   <div hx-get="/components/tagline-buoys.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
 
+  <div id="dark-mode-notice" style="display:none; background: linear-gradient(to right, #0e7490, #0891b2); color: #fff; padding: 0.65rem 1rem; position: relative;">
+    <div style="max-width: 1400px; margin: 0 auto; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+      <span style="font-size: 1.2rem; flex-shrink: 0;">🌙</span>
+      <span style="flex: 1; font-size: 0.95rem;">
+        <strong>Dark mode is in testing</strong> — use the toggle in the nav bar to try it.
+      </span>
+      <button onclick="document.getElementById('dark-mode-notice').style.display='none'; try{localStorage.setItem('dark_mode_notice_v1','dismissed')}catch(e){}"
+        style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.35); color: #fff; font-size: 1.4rem; line-height: 1; width: 2rem; height: 2rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0;">×</button>
+    </div>
+  </div>
+  <script>
+    (function() {
+      try { if (localStorage.getItem('dark_mode_notice_v1') !== 'dismissed') document.getElementById('dark-mode-notice').style.display = ''; } catch(e) { document.getElementById('dark-mode-notice').style.display = ''; }
+    })();
+  </script>
+
   <details class="site-intro-details">
     <summary class="site-intro-summary">How to read this data</summary>
     <div class="site-intro">
@@ -92,7 +108,7 @@
   <section id="map-section">
     <h2>Monitoring Stations</h2>
     <div class="map-legend">
-      <div class="legend-title" style="font-weight: 600; margin-bottom: 0.5rem; color: #2c5282;">Station Types:</div>
+      <div class="legend-title" style="font-weight: 600; margin-bottom: 0.5rem; color: var(--color-primary-dark);">Station Types:</div>
 
       <!-- Directional markers (with current data) -->
       <span class="legend-item">

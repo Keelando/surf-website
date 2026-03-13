@@ -479,10 +479,3 @@ window.showSelectedLightstationOnMap = showSelectedLightstationOnMap;
 
 // Load data on page load
 loadLightstationData();
-
-const themeTestToggle = document.getElementById('theme-test-toggle');
-if (themeTestToggle) {
-  themeTestToggle.addEventListener('click', function () {
-    if (window.ThemeManager) window.ThemeManager.cycle();
-  });
-}

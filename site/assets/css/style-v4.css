@@ -79,6 +79,7 @@
     rgba(224, 242, 255, 0.8)
   );
   --color-legend-text: #333333;
+  --map-popup-heading: #004b7c;
   --color-lightstation-label-text: #2c3e50;
   --color-lightstation-label-bg: rgba(255, 255, 255, 0.9);
   --color-lightstation-label-border: rgba(0, 75, 124, 0.2);
@@ -95,6 +96,7 @@
   --color-callout-gradient-start: #667eea;
   --color-callout-gradient-end: #764ba2;
   --color-wind-arrow: #dc2626;
+  --color-footer-bg: #004b7c;
   --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.08);
   --shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.12);
   --shadow-strong: 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -102,10 +104,10 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --color-primary-dark: #59b6ff;
-  --color-primary: #5cc6ff;
-  --color-primary-light: #6fd2ff;
-  --color-primary-lighter: #81ddff;
+  --color-primary-dark: #4a9fd8;
+  --color-primary: #4db8f0;
+  --color-primary-light: #5ec4f5;
+  --color-primary-lighter: #70d0f8;
   --color-background: #0d1b2a;
   --color-surface: #162232;
   --color-surface-alt: #1c2a3a;
@@ -115,7 +117,7 @@
   --color-text: #e5edf5;
   --color-text-muted: #95a7c3;
   --color-text-light: #b6c4d8;
-  --color-accent-blue: #63c9ff;
+  --color-accent-blue: #52b8e8;
   --color-accent-green: #57d59d;
   --color-accent-orange: #ffae52;
   --color-accent-red: #ff7a7a;
@@ -158,9 +160,9 @@
     rgba(13, 23, 36, 0.95)
   );
   --color-legend-text: var(--color-text);
-  --color-lightstation-label-text: var(--color-text);
-  --color-lightstation-label-bg: rgba(13, 27, 42, 0.92);
-  --color-lightstation-label-border: rgba(255, 255, 255, 0.08);
+  --color-lightstation-label-text: #2c3e50;
+  --color-lightstation-label-bg: rgba(255, 255, 255, 0.9);
+  --color-lightstation-label-border: rgba(0, 75, 124, 0.2);
   --color-warning-text: #fcd34d;
   --color-error-text: #ff8787;
   --color-on-primary: #ffffff;
@@ -174,6 +176,7 @@
   --color-callout-gradient-start: #4c5fb4;
   --color-callout-gradient-end: #a78bfa;
   --color-wind-arrow: #fb7185;
+  --color-footer-bg: #0b2a4a;
   --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.6);
   --shadow-medium: 0 6px 18px rgba(0, 0, 0, 0.5);
   --shadow-strong: 0 12px 30px rgba(0, 0, 0, 0.45);
@@ -198,7 +201,7 @@ body {
 }
 
 footer {
-  background-color: var(--color-primary-dark);
+  background-color: var(--color-footer-bg);
   color: white;
   text-align: center;
   padding: 2rem 1rem;

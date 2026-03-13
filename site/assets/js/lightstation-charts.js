@@ -512,6 +512,7 @@ function renderWindSpeedChart(stationName, station) {
         },
         itemStyle: {
           color: colors.primary,
+          borderColor: theme.symbolBorderColor,
         },
         symbol: "circle",
         symbolSize: 6,
@@ -708,6 +709,7 @@ function renderWaveHeightChart(stationName, station) {
         },
         itemStyle: {
           color: colors.quaternary,
+          borderColor: theme.symbolBorderColor,
         },
         areaStyle: {
           color: {
