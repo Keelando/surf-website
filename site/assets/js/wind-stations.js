@@ -669,7 +669,7 @@ function createWindDirectionArrows(windDirectionTimes, windSpeedData, windGustDa
       value: [timestamp, arrowYPosition],
       symbolRotate: -direction,
       itemStyle: {
-        color: "#004b7c",
+        color: getChartThemeColors().marker,
         opacity: 0.7,
       },
     });
@@ -1000,6 +1000,7 @@ function renderWindChart(stationId) {
   // Chart configuration
   const option = {
     backgroundColor: tc.background,
+    textStyle: { color: tc.text },
     title: {
       text: `${station.name.replace(" 💨", "").replace(" 🌊", "")} - Wind Conditions`,
       left: "center",
@@ -1049,6 +1050,7 @@ function renderWindChart(stationId) {
     legend: {
       data: legendData,
       top: 35,
+      textStyle: { color: tc.text },
     },
     grid: {
       left: "8%",
@@ -1061,6 +1063,7 @@ function renderWindChart(stationId) {
       type: "time",
       axisLabel: {
         rotate: 45,
+        color: tc.mutedText,
         formatter: (value) => {
           const date = new Date(value);
           return date
@@ -1075,11 +1078,17 @@ function renderWindChart(stationId) {
             .replace(",", "");
         },
       },
+      axisLine: { lineStyle: { color: tc.axisLine } },
+      splitLine: { show: true, lineStyle: { color: tc.gridLine } },
     },
     yAxis: {
       type: "value",
       name: "Speed (kt)",
       max: yAxisMax,
+      axisLabel: { color: tc.mutedText },
+      nameTextStyle: { color: tc.text },
+      axisLine: { lineStyle: { color: tc.axisLine } },
+      splitLine: { lineStyle: { color: tc.gridLine } },
     },
     series: [
       {
@@ -1112,7 +1121,7 @@ function renderWindChart(stationId) {
         name: "Wind Direction",
         type: "scatter",
         data: arrowData,
-        symbol: "path://M0,10 L-4,-10 L0,-8 L4,-10 Z", // Centered arrow pointing DOWN
+        symbol: DIRECTION_ARROW_PATH,
         symbolSize: 16,
         symbolRotate: function (params) {
           return arrowData[params.dataIndex]?.symbolRotate || 0;
