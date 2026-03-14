@@ -330,7 +330,11 @@ function renderSpectralCharts(waveChart, buoy, ts, theme) {
     windWavePeriod,
     colors.primary,
   );
-  const swellPeriodArrows = createSpectralDirectionArrows(swellDirection, swellPeriod, colors.secondary);
+  const swellPeriodArrows = createSpectralDirectionArrows(
+    swellDirection,
+    swellPeriod,
+    colors.secondary,
+  );
 
   // Debug: Check what period data we have
   logger.debug("WaveChart", `${buoy.name} period data available`, {
@@ -590,7 +594,7 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts, theme) {
       connectNulls: false,
       yAxisIndex: 0,
       itemStyle: { color: colors.primary },
-      areaStyle: { opacity: 0.1 },
+      areaStyle: theme.isDark ? { opacity: 0 } : { opacity: 0.1 },
     },
     {
       name: periodLabel,

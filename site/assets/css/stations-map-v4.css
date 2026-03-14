@@ -9,7 +9,13 @@
   --map-popup-heading: var(--color-primary-dark, #004b7c);
   --map-popup-border: var(--color-border, #d1d9e0);
   --map-popup-shadow: 0 3px 14px rgba(0, 0, 0, 0.2);
-  --map-marker-border: var(--color-primary-dark, #004b7c);
+  /* Marker vars are intentionally NOT overridden in dark mode — map tiles stay light */
+  --map-marker-bg: #ffffff;
+  --map-marker-text: #004b7c;
+  --map-marker-border: #004b7c;
+  --map-arrow-wave: #0077be;
+  --map-arrow-wind: #dc2626;
+  --map-arrow-nodir: #555555;
   --map-button-text: var(--color-on-primary, #ffffff);
 }
 
@@ -19,7 +25,6 @@
   --map-popup-heading: var(--color-primary, #5cc6ff);
   --map-popup-border: rgba(255, 255, 255, 0.08);
   --map-popup-shadow: 0 8px 26px rgba(0, 0, 0, 0.65);
-  --map-marker-border: var(--color-primary, #5cc6ff);
 }
 
 /* Brighten the map tiles slightly */
@@ -28,15 +33,20 @@
 }
 
 /* Make Leaflet popups scrollable on mobile/tablet */
+/* !important needed because leaflet.css loads after this file and overrides background */
 .leaflet-popup-content-wrapper {
   max-height: 70vh;
   overflow-y: auto;
   overflow-x: hidden;
-  background: var(--map-popup-bg);
-  color: var(--map-popup-text);
+  background: var(--map-popup-bg) !important;
+  color: var(--map-popup-text) !important;
   border: 1px solid var(--map-popup-border);
   border-radius: 8px;
   box-shadow: var(--map-popup-shadow);
+}
+
+[data-theme="dark"] .leaflet-popup-tip {
+  background: rgba(18, 29, 44, 0.95);
 }
 
 /* Smaller max-height for mobile devices */
@@ -144,7 +154,7 @@
 
 /* Enhanced buoy markers with data */
 .buoy-marker-enhanced {
-  background: var(--map-popup-bg);
+  background: var(--map-marker-bg);
   border: 2px solid var(--map-marker-border);
   border-radius: 8px;
   padding: 4px 8px;
@@ -163,7 +173,7 @@
 .wave-arrow {
   display: inline-block;
   font-size: 18px;
-  color: var(--map-popup-heading);
+  color: var(--map-marker-text);
   margin-right: 4px;
   transition: transform 0.3s ease;
 }
@@ -172,5 +182,5 @@
   display: inline-block;
   font-size: 12px;
   font-weight: bold;
-  color: var(--map-popup-heading);
+  color: var(--map-marker-text);
 }

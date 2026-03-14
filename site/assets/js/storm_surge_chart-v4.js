@@ -290,18 +290,18 @@ function updateSurgeChart(stationId) {
             ],
           },
         },
-          markLine: {
-            silent: true,
-            symbol: "none",
-            lineStyle: { type: "dashed", color: mutedText, width: 1 },
-            label: {
-              show: true,
-              position: "end",
-              formatter: "Sea Level",
-              color: mutedText,
-            },
-            data: [{ yAxis: 0 }],
+        markLine: {
+          silent: true,
+          symbol: "none",
+          lineStyle: { type: "dashed", color: mutedText, width: 1 },
+          label: {
+            show: true,
+            position: "end",
+            formatter: "Sea Level",
+            color: mutedText,
           },
+          data: [{ yAxis: 0 }],
+        },
       },
     ],
   });

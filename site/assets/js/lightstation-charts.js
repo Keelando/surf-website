@@ -338,8 +338,7 @@ function render24HourTable(stationName, station) {
       conditionsText = "—"; // Don't duplicate
     }
 
-    const rowBackground =
-      rowIndex % 2 === 0 ? "var(--color-surface)" : "var(--color-table-zebra)";
+    const rowBackground = rowIndex % 2 === 0 ? "var(--color-surface)" : "var(--color-table-zebra)";
     const borderColor = "var(--color-border-light)";
 
     tableHTML += `
@@ -445,13 +444,13 @@ function renderWindSpeedChart(stationName, station) {
     xAxis: {
       type: "time",
       boundaryGap: false,
-        splitLine: {
-          show: true,
-          lineStyle: {
+      splitLine: {
+        show: true,
+        lineStyle: {
           color: gridColor,
-            type: "dashed",
-          },
+          type: "dashed",
         },
+      },
       axisLabel: {
         formatter: (value) => {
           const date = new Date(value);
@@ -642,13 +641,13 @@ function renderWaveHeightChart(stationName, station) {
     xAxis: {
       type: "time",
       boundaryGap: false,
-        splitLine: {
-          show: true,
-          lineStyle: {
+      splitLine: {
+        show: true,
+        lineStyle: {
           color: gridColor,
-            type: "dashed",
-          },
+          type: "dashed",
         },
+      },
       axisLabel: {
         formatter: (value) => {
           const date = new Date(value);

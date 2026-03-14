@@ -369,12 +369,12 @@ function updateForecastChart(stationId) {
     }
 
     // Add vertical lines for each midnight up to the last time
-      while (currentMidnight <= lastTime) {
-        midnightLines.push({
-          xAxis: currentMidnight.toISOString(),
-          lineStyle: { color: gridColor, type: "solid", width: 1 },
-          label: { show: false },
-        });
+    while (currentMidnight <= lastTime) {
+      midnightLines.push({
+        xAxis: currentMidnight.toISOString(),
+        lineStyle: { color: gridColor, type: "solid", width: 1 },
+        label: { show: false },
+      });
 
       // Move to next day
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);

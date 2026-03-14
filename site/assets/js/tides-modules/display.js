@@ -149,7 +149,8 @@ export function displayCurrentObservation(station, stationKey, tideDataStore) {
         </div>
       `;
     } else {
-      container.innerHTML = '<p style="color: var(--color-text-light);">No recent observation available</p>';
+      container.innerHTML =
+        '<p style="color: var(--color-text-light);">No recent observation available</p>';
     }
     return;
   }
@@ -330,7 +331,9 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
       </div>
       <div style="color: var(--color-text-muted); margin-top: 0.25rem; font-size: 0.9rem;">
         at ${timeStr}${
-          tideDirection ? ` <span style="color: var(--color-primary);">(${tideDirection})</span>` : ""
+          tideDirection
+            ? ` <span style="color: var(--color-primary);">(${tideDirection})</span>`
+            : ""
         }
       </div>
       ${calibrationNote}
@@ -581,7 +584,8 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
   }
 
   if (surge === null) {
-    container.innerHTML = '<p style="color: var(--color-text-light);">No storm surge data available</p>';
+    container.innerHTML =
+      '<p style="color: var(--color-text-light);">No storm surge data available</p>';
     return;
   }
 
@@ -668,8 +672,7 @@ export function displayHighLowTable(station, dayOffset = 0) {
       const timeStr = event.time_display; // Use pre-formatted time from JSON
       const height = event.value.toFixed(2);
       const type = event.type.charAt(0).toUpperCase() + event.type.slice(1);
-      const typeColor =
-        event.type === "high" ? "var(--color-primary)" : "var(--color-accent-red)";
+      const typeColor = event.type === "high" ? "var(--color-primary)" : "var(--color-accent-red)";
 
       return `
       <tr>

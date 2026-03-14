@@ -62,7 +62,7 @@ function getDirectionalArrow(degrees, arrowType = "wind") {
   const rotation = arrowType === "wind" ? degrees : degrees + 90;
 
   const arrowColor =
-    arrowType === "wind" ? "var(--color-wind-arrow, #dc2626)" : "var(--color-primary-dark)";
+    arrowType === "wind" ? "var(--map-arrow-wind, #dc2626)" : "var(--map-arrow-wave, #0077be)";
 
   // SVG arrows: wind points down, wave points right
   const svg =
@@ -333,10 +333,10 @@ function createDirectionalMarker(direction, height, type, stale = false) {
   const isWave = type === "wave";
   const isWind = type === "wind";
   const arrowColor = isWave
-    ? "var(--color-primary)"
+    ? "var(--map-arrow-wave, #0077be)"
     : isWind
-      ? "var(--color-wind-arrow, #dc2626)"
-      : "var(--color-text-light)";
+      ? "var(--map-arrow-wind, #dc2626)"
+      : "var(--map-arrow-nodir, #555555)";
   const opacity = stale ? 0.35 : 1.0; // Transparent if stale
 
   // Meteorological convention: direction value = where wave/wind is COMING FROM
@@ -355,7 +355,7 @@ function createDirectionalMarker(direction, height, type, stale = false) {
       // Wind speed in knots (rounded to nearest integer)
       valueLabel = `<div style="
         background: transparent;
-        color: var(--map-popup-heading, var(--color-primary-dark));
+        color: var(--map-marker-text, #004b7c);
         padding: 2px 5px;
         border-radius: 3px;
         font-size: 13px;
@@ -368,7 +368,7 @@ function createDirectionalMarker(direction, height, type, stale = false) {
       // Wave height in meters
       valueLabel = `<div style="
         background: transparent;
-        color: var(--map-popup-heading, var(--color-primary-dark));
+        color: var(--map-marker-text, #004b7c);
         padding: 2px 5px;
         border-radius: 3px;
         font-size: 13px;
@@ -524,9 +524,7 @@ function addBuoyMarker(buoy) {
     const bgColor = isStale
       ? "var(--color-callout-danger-bg, #fff5f5)"
       : "var(--color-callout-info-bg, #f0f8ff)";
-    const borderColor = isStale
-      ? "var(--color-accent-red)"
-      : "var(--color-primary)";
+    const borderColor = isStale ? "var(--color-accent-red)" : "var(--color-primary)";
     const headerText = isStale ? "Latest Conditions (STALE - >3h old):" : "Latest Conditions:";
 
     popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
@@ -839,9 +837,7 @@ function addLightstationMarker(lightstation) {
     const bgColor = isStale
       ? "var(--color-callout-danger-bg, #fff5f5)"
       : "var(--color-callout-info-bg, #f0f8ff)";
-    const borderColor = isStale
-      ? "var(--color-accent-red)"
-      : "var(--color-primary)";
+    const borderColor = isStale ? "var(--color-accent-red)" : "var(--color-primary)";
     const headerText = isStale ? "Latest Conditions (STALE - >12h old):" : "Latest Conditions:";
     const headerColor = isStale ? "var(--color-accent-red)" : "var(--color-primary-dark)";
 

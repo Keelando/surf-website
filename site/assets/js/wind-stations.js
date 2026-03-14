@@ -400,7 +400,8 @@ async function loadWindTable() {
           sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-source-noaa-text); text-decoration: none;">🇺🇸 NOAA 🔗</a>`;
         } else if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
           // Surrey FlowWorks (no public link)
-          sourceBadge = '<br><span style="font-size: 0.75em; color: var(--color-accent-green);">🏛️ Surrey</span>';
+          sourceBadge =
+            '<br><span style="font-size: 0.75em; color: var(--color-accent-green);">🏛️ Surrey</span>';
         } else if (id === "whiterock_east") {
           // White Rock City
           sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-accent-blue); text-decoration: none;">🏛️ White Rock 🔗</a>`;

@@ -694,3 +694,101 @@
     font-size: 1rem;
   }
 }
+
+/* =====================================================
+   Dark Mode Overrides
+   ===================================================== */
+
+[data-theme="dark"] #tide-chart {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] #prev-day-btn,
+[data-theme="dark"] #next-day-btn {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] #prev-day-btn:hover,
+[data-theme="dark"] #next-day-btn:hover {
+  background: var(--color-surface-light);
+}
+
+[data-theme="dark"] .tide-selector-section {
+  background: var(--color-surface-alt);
+}
+
+[data-theme="dark"] .tide-card {
+  background: var(--color-surface);
+}
+
+[data-theme="dark"] .tide-card h2 {
+  color: var(--color-primary-dark);
+}
+
+[data-theme="dark"] .station-metadata {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .metadata-item strong {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .tide-metric-card {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .tide-metric-label {
+  color: var(--color-primary);
+}
+
+[data-theme="dark"] .tide-data-group {
+  border-bottom-color: var(--color-border-light);
+}
+
+[data-theme="dark"] #tide-station-select {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
+[data-theme="dark"] #highlow-table th {
+  background: var(--color-primary-dark);
+}
+
+[data-theme="dark"] #highlow-table td {
+  border-bottom-color: var(--color-border-light);
+}
+
+[data-theme="dark"] #highlow-table tr:hover {
+  background: var(--color-data-row-hover);
+}
+
+[data-theme="dark"] .sunlight-duration {
+  background: var(--color-surface-alt);
+  border-left-color: var(--color-primary);
+}
+
+[data-theme="dark"] .sunlight-duration-label {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .sunlight-duration-value {
+  color: var(--color-primary);
+}
+
+[data-theme="dark"] .station-type-permanent {
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--color-accent-teal);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+[data-theme="dark"] .station-type-temporary {
+  background: rgba(255, 174, 82, 0.12);
+  color: var(--color-accent-orange);
+  border-color: rgba(255, 174, 82, 0.3);
+}

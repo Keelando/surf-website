@@ -75,16 +75,14 @@
     const textSpan = button.querySelector(".theme-toggle-text");
 
     if (iconSpan) {
-      iconSpan.textContent =
-        preference === "system" ? "⚙" : theme === "dark" ? "☾" : "☀";
+      iconSpan.textContent = preference === "system" ? "⚙" : theme === "dark" ? "☾" : "☀";
     }
 
     if (textSpan) {
       textSpan.textContent = LABELS[preference] || preference;
     }
 
-    const ariaPressed =
-      preference === "dark" ? "true" : preference === "light" ? "false" : "mixed";
+    const ariaPressed = preference === "dark" ? "true" : preference === "light" ? "false" : "mixed";
     button.setAttribute("aria-pressed", ariaPressed);
     button.setAttribute(
       "aria-label",

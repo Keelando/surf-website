@@ -10,7 +10,12 @@
  * @param {Array} windGustData - Array of {time, value} wind gust points for max calculation
  * @returns {Object} Object with arrowData and maxValue for y-axis scaling
  */
-function createWindDirectionArrowData(windDirectionData, windSpeedData, windGustData, colorOverride) {
+function createWindDirectionArrowData(
+  windDirectionData,
+  windSpeedData,
+  windGustData,
+  colorOverride,
+) {
   if (!windDirectionData || windDirectionData.length === 0)
     return { arrowData: [], maxValue: null };
 
@@ -164,7 +169,7 @@ function renderWindChart(windChart, buoy) {
           smooth: true,
           connectNulls: false,
           itemStyle: { color: colors.secondary },
-          areaStyle: { opacity: 0.1 },
+          areaStyle: theme.isDark ? { opacity: 0 } : { opacity: 0.1 },
         },
         {
           name: "Wind Gust",

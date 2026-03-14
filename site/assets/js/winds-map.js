@@ -69,7 +69,7 @@ function getDirectionalArrow(degrees) {
  * @returns {string} HTML for marker
  */
 function createDirectionalMarker(direction, speed, stale = false) {
-  const arrowColor = "var(--color-wind-arrow, #dc2626)";
+  const arrowColor = "var(--map-arrow-wind, #dc2626)";
   const opacity = stale ? 0.35 : 1.0; // Transparent if stale
 
   // Meteorological convention: direction value = where wind is COMING FROM
@@ -82,7 +82,7 @@ function createDirectionalMarker(direction, speed, stale = false) {
     speed !== null && speed !== undefined
       ? `<div style="
         background: transparent;
-        color: var(--map-popup-heading, var(--color-primary-dark));
+        color: var(--map-marker-text, #004b7c);
         padding: 2px 5px;
         border-radius: 3px;
         font-size: 13px;
@@ -311,9 +311,7 @@ function addBuoyWindMarker(buoy, currentData) {
     const bgColor = currentData.stale
       ? "var(--color-callout-danger-bg, #fff5f5)"
       : "var(--color-callout-info-bg, #f0f8ff)";
-    const borderColor = currentData.stale
-      ? "var(--color-accent-red)"
-      : "var(--color-primary)";
+    const borderColor = currentData.stale ? "var(--color-accent-red)" : "var(--color-primary)";
     const headerText = currentData.stale ? "Last Wind (STALE - >3h old):" : "Current Wind:";
     popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 4px; color: ${
