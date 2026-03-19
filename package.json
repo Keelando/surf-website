@@ -6,7 +6,9 @@
     "lint:js": "eslint \"site/assets/js/**/*.js\"",
     "format:js": "biome format \"site/assets/js\" --write",
     "test:frontend": "playwright test tests/playwright/console.spec.js",
-    "screenshots": "playwright test tests/playwright/screenshots.spec.js --project=chromium"
+    "screenshots": "playwright test tests/playwright/screenshots.spec.js --project=chromium",
+    "test:python": ".venv/bin/pytest tests/ -v",
+    "test": ".venv/bin/pytest tests/ -v && npm run test:frontend"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",

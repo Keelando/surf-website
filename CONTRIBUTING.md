@@ -114,10 +114,52 @@ from defusedxml import ElementTree as ET
 
 ---
 
-## Formatting & linting
+## Code quality
 
-- JavaScript lives under `site/assets/js`. Format with `npm run format:js` (Biome) and lint with `npm run lint:js`.
-- Python formatting and linting run via Ruff: `ruff format . && ruff check .`.
+### Pre-commit hook
+
+A git pre-commit hook runs automatically on every commit. It checks:
+
+1. **ruff check** on staged `.py` files (lint errors block the commit)
+2. **pytest** — the full test suite (209 tests, ~0.3s)
+3. **eslint** on staged `.js` files
+
+If any step fails, the commit is rejected. Fix the issue and try again.
+
+The hook lives at `.git/hooks/pre-commit`. It is not tracked by git, so after a fresh clone you need to set it up:
+
+```bash
+cp docs/hooks/pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+### Formatting & linting tools
+
+| Tool | Language | Command | Purpose |
+|------|----------|---------|---------|
+| [Ruff](https://docs.astral.sh/ruff/) | Python | `.venv/bin/ruff check .` | Linting |
+| [Ruff](https://docs.astral.sh/ruff/) | Python | `.venv/bin/ruff format .` | Formatting |
+| [Biome](https://biomejs.dev/) | JavaScript | `npm run format:js` | Formatting |
+| [ESLint](https://eslint.org/) | JavaScript | `npm run lint:js` | Linting |
+
+### Running tests
+
+```bash
+# Python tests only
+npm run test:python
+# or directly:
+.venv/bin/pytest tests/ -v
+
+# Full suite (Python + Playwright frontend tests)
+npm run test
+```
+
+### Workflow
+
+1. Make your changes
+2. Format: `npm run format:js` (if JS changed), `.venv/bin/ruff format .` (if Python changed)
+3. Commit — the pre-commit hook runs automatically
+4. If the hook fails, fix the issue and commit again
 
 ---
 

@@ -166,9 +166,12 @@ Tide observations now included in hindcast comparison — predicted vs actual wo
 
 ---
 
-## 📋 TODO: Add Pre-Commit Hook for Linting/Formatting
+## ✅ COMPLETED: Pre-Commit Hook for Linting/Testing (2026-03-19)
 
-Add a git pre-commit hook that runs `npx biome check` (JS) and `.venv/bin/ruff check` (Python) before commits. Catches formatting and lint issues automatically.
+Git pre-commit hook at `.git/hooks/pre-commit` runs:
+1. `ruff check` on staged `.py` files
+2. `pytest tests/` (209 tests)
+3. `eslint` on staged `.js` files
 
 ---
 

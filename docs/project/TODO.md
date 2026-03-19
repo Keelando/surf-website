@@ -350,25 +350,25 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
 
 **Priority:** HIGH — currently zero automated tests; all validation is manual
 
-**Phase 1 — Pure utility functions (in progress):**
+**Phase 1 — Pure utility functions (COMPLETE):**
 - [x] `lib/units.py` — unit conversions (km/h ↔ knots, m/s → km/h, m → ft)
 - [x] `lib/directions.py` — degree ↔ cardinal, offshore wind detection
-- [ ] `lib/stations.py` — station registry lookups, filtering by type/region
-- [ ] `lib/config.py` — path resolution, `safe_json_write`
+- [x] `lib/stations.py` — station registry lookups, filtering by type/region
+- [x] `lib/config.py` — path resolution, `safe_json_write`
 
-**Phase 2 — Data transformation logic:**
-- [ ] Extract and test downsample/freshness logic from export scripts
-- [ ] Timestamp parsing/normalization edge cases
-- [ ] JSON export schema validation (spot-check key fields)
+**Phase 2 — Data transformation logic (COMPLETE):**
+- [x] Extract and test downsample/freshness logic from export scripts
+- [x] Timestamp parsing/normalization edge cases
+- [x] JSON export schema validation (spot-check key fields)
 
-**Phase 3 — Integration tests (with fixtures):**
-- [ ] Parse sample XML → SQLite round-trip (using test fixtures in `tests/fixtures/`)
-- [ ] Export SQLite → JSON round-trip
-- [ ] Station registry consistency (stations.json ↔ what scripts reference)
+**Phase 3 — Integration tests (COMPLETE):**
+- [x] Parse sample XML → SQLite round-trip (using test fixtures in `tests/fixtures/`)
+- [x] Export SQLite → JSON round-trip
+- [x] Station registry consistency (stations.json ↔ what scripts reference)
 
-**Phase 4 — CI wiring:**
-- [ ] Wire pytest + ruff + eslint into a pre-commit hook or GitHub Actions workflow
-- [ ] Add `npm run test` and `make test` convenience targets
+**Phase 4 — CI wiring (COMPLETE):**
+- [x] Wire pytest + ruff + eslint into a pre-commit hook
+- [x] Add `npm run test` and `npm run test:python` convenience targets
 
 ---
 
