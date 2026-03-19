@@ -2,46 +2,29 @@
 
 ## Upcoming Tasks
 
-### Monorepo Merge (Future)
+### Dev Branch + Preview Subdomain
 
-**Goal:** Combine `envcan_wave` (backend) and `site` (frontend) into a single repo.
+**Goal:** Use a `dev` branch for work-in-progress and serve it at `dev.halibutbank.ca` for visual QA before merging to production.
 
-**Rationale:** Both repos are public, the only "credential" (Surrey FlowWorks) is a
-shared public access account already in docs. Coordinated changes currently require
-two PRs; a monorepo simplifies this.
+**Workflow:**
+1. Work on `dev` branch, push freely
+2. Preview changes at `dev.halibutbank.ca`
+3. Open a quick PR when ready — scan the diff for anything weird
+4. Merge to `main` → production updates
 
-**Proposed structure:**
-```
-halibutbank/
-├── backend/    (was ~/envcan_wave/)
-├── frontend/   (was site/)
-└── README.md
-```
+**Implementation:**
+- DNS: Add A record for `dev.halibutbank.ca`
+- Caddy: Add a second site block (auto-TLS via Let's Encrypt)
+- Git worktree: `git worktree add ~/envcan_wave-dev dev` (no second clone needed)
+- Symlink live data: `ln -s ~/envcan_wave/site/data ~/envcan_wave-dev/site/data`
+- Backend scripts (parsers, exporters) stay on `main` — `dev` is frontend preview only
 
-**Migration steps:**
-1. Merge git histories using `git subtree` (or start fresh if history isn't critical)
-2. Update all hardcoded absolute paths in scripts (`/home/keelando/envcan_wave/` → new paths)
-3. Update cron jobs
-4. Update Caddy config if needed
-5. Archive/redirect old repos on GitHub
+**Benefits:**
+- Catch visual regressions before they hit production
+- PR history gives a changelog of "what changed and why"
+- 30-second self-review checkpoint without heavy process
 
-**Priority:** Low — no functional benefit, pure quality-of-life for development
-
----
-
-### Dark Mode Implementation
-
-**Goal:** Add dark color scheme with user preference storage
-
-**Implementation approach:**
-- Create dark color palette (dark blues, muted colors for ocean theme)
-- Use CSS `prefers-color-scheme` media query for automatic detection
-- Add manual toggle button with localStorage persistence
-- Update all charts (ECharts theme configuration)
-- Test accessibility (contrast ratios in dark mode)
-- Apply site-wide to all pages
-
-**Priority:** MEDIUM - Popular feature request, enhances late-night usability
+**Priority:** Medium — not urgent, but a good safety net since the site is live at halibutbank.ca
 
 ---
 
@@ -131,6 +114,33 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
   - Charts may connect lines across data gaps in some scenarios
   - Not currently observed as a problem in production
   - Would require injecting explicit null values at gap timestamps if needed
+
+---
+
+## Completed (2026-03-19)
+
+✅ **Automated Test Suite + Pre-Commit Hook**
+  - 209 pytest tests covering lib/ modules, data transformations, XML parsing, integration
+  - Pre-commit hook runs ruff + pytest + eslint on every commit
+  - `npm run test` and `npm run test:python` convenience targets
+  - Test files: test_units, test_directions, test_stations, test_config, test_downsample, test_timestamps, test_xml_parsing, test_integration
+
+✅ **Jericho Wind Station Integration**
+  - Fetch script, cron job, stations.json config all implemented and operational
+
+---
+
+## Completed (2026-03-14)
+
+✅ **Dark Mode**
+  - Full dark theme across all 8 pages with CSS variable system
+  - Toggle in nav with localStorage persistence, default light
+  - Map tiles intentionally stay light; markers use fixed colours
+  - Screenshot pipeline for visual QA (light + dark × 8 pages)
+
+✅ **Monorepo Merge**
+  - Frontend merged into backend under `site/` (commit `b7a44e0`)
+  - Single repo at `~/envcan_wave/`, no separate `~/site/`
 
 ---
 
@@ -341,34 +351,6 @@ Add Lighthouse performance auditing to monitor frontend performance and accessib
   - Documented new scripts and cron jobs
   - Added frontend structure documentation
 
-
----
-
-## Automated Test Suite
-
-**Goal:** Build a proper pytest test suite, starting with the core `lib/` modules and expanding outward.
-
-**Priority:** HIGH — currently zero automated tests; all validation is manual
-
-**Phase 1 — Pure utility functions (COMPLETE):**
-- [x] `lib/units.py` — unit conversions (km/h ↔ knots, m/s → km/h, m → ft)
-- [x] `lib/directions.py` — degree ↔ cardinal, offshore wind detection
-- [x] `lib/stations.py` — station registry lookups, filtering by type/region
-- [x] `lib/config.py` — path resolution, `safe_json_write`
-
-**Phase 2 — Data transformation logic (COMPLETE):**
-- [x] Extract and test downsample/freshness logic from export scripts
-- [x] Timestamp parsing/normalization edge cases
-- [x] JSON export schema validation (spot-check key fields)
-
-**Phase 3 — Integration tests (COMPLETE):**
-- [x] Parse sample XML → SQLite round-trip (using test fixtures in `tests/fixtures/`)
-- [x] Export SQLite → JSON round-trip
-- [x] Station registry consistency (stations.json ↔ what scripts reference)
-
-**Phase 4 — CI wiring (COMPLETE):**
-- [x] Wire pytest + ruff + eslint into a pre-commit hook
-- [x] Add `npm run test` and `npm run test:python` convenience targets
 
 ---
 
