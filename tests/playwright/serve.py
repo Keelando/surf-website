@@ -8,7 +8,7 @@ CSP = (
     "default-src 'self'; "
     "script-src 'self' https://unpkg.com https://cdnjs.cloudflare.com "
     "https://cdn.jsdelivr.net https://static.cloudflareinsights.com "
-    "'sha256-qdj8Uq9tuzVi4CMZz0ZHXtVRuRwzhKNNctUioI49ZJ4='; "
+    "'sha256-N2WTqoFsDaePuQFeqkjqt4SjN4WYzlUfw5vtXmSwAGg='; "
     "style-src 'self' 'unsafe-inline' https://unpkg.com; "
     "img-src 'self' data: https:; "
     "font-src 'self'; "
