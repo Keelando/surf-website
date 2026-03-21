@@ -3,6 +3,15 @@
    Generates 24-hour wave height summary table
    ----------------------------- */
 
+function setSafeHTML(element, html) {
+  if (!element) return;
+  if (typeof window.setSanitizedHTML === "function") {
+    window.setSanitizedHTML(element, html);
+  } else {
+    element.innerHTML = html;
+  }
+}
+
 /**
  * Generate 24-hour wave height summary table
  * @param {Object} chartData - Full chart data object with all buoys

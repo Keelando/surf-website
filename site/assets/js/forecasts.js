@@ -5,6 +5,15 @@
 
 let forecastData = null;
 
+function setSafeHTML(element, html) {
+  if (!element) return;
+  if (typeof window.setSanitizedHTML === "function") {
+    window.setSanitizedHTML(element, html);
+  } else {
+    element.innerHTML = html;
+  }
+}
+
 /**
  * Load and display forecast data
  */
@@ -99,7 +108,7 @@ function displayForecasts() {
     html += renderExtendedForecast(forecastData.extended_forecast);
   }
 
-  container.innerHTML = html;
+  setSafeHTML(container, html);
 }
 
 /**

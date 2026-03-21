@@ -15,6 +15,15 @@
  *   3. Call displayWarningBanners() after page load
  */
 
+function setSafeHTML(element, html) {
+  if (!element) return;
+  if (typeof window.setSanitizedHTML === "function") {
+    window.setSanitizedHTML(element, html);
+  } else {
+    element.innerHTML = html;
+  }
+}
+
 // Helper: Fetch with timeout
 async function fetchWithTimeout(url, timeout = 5000) {
   const controller = new AbortController();
@@ -194,7 +203,7 @@ async function displayWarningBanners(containerId = "warning-banner-container") {
 
     // Combine all warnings into a single banner
     const combinedBanner = createCombinedWarningBanner(activeWarnings);
-    container.innerHTML = combinedBanner;
+    setSafeHTML(container, combinedBanner);
     container.style.display = "block";
 
     // Attach dismiss handler - dismisses all warnings at once

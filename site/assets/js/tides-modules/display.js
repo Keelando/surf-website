@@ -7,6 +7,15 @@ import { STATION_DISPLAY_NAMES } from "./constants.js";
 import { isGeodeticStation, getGeodeticMethodology, getCurrentGeodeticOffset } from "./geodetic.js";
 import { formatTime, getAgeString } from "./utils.js";
 
+function setSafeHTML(element, html) {
+  if (!element) return;
+  if (typeof window.setSanitizedHTML === "function") {
+    window.setSanitizedHTML(element, html);
+  } else {
+    element.innerHTML = html;
+  }
+}
+
 /**
  * Main station display coordinator
  * Shows all station information when a station is selected
@@ -105,7 +114,9 @@ export function displayStationMetadata(stationKey, tideDataStore) {
   const typeClass = hasObservations ? "station-type-permanent" : "station-type-temporary";
   const typeLabel = hasObservations ? "📡 Real-Time Observations" : "📊 Predictions Only";
 
-  container.innerHTML = `
+  setSafeHTML(
+    container,
+    `
     <div class="metadata-item">
       <span class="station-type-badge ${typeClass}">${typeLabel}</span>
     </div>
@@ -118,7 +129,8 @@ export function displayStationMetadata(stationKey, tideDataStore) {
     <div class="metadata-item">
       <strong>Location:</strong> <span>${metadata.location}</span>
     </div>
-  `;
+  `,
+  );
 }
 
 /**
@@ -176,7 +188,9 @@ export function displayCurrentObservation(station, stationKey, tideDataStore) {
     `;
   }
 
-  container.innerHTML = `
+  setSafeHTML(
+    container,
+    `
     <div style="font-size: 1.5rem; font-weight: bold; color: ${
       isStale ? "var(--color-accent-red)" : "var(--color-accent-green)"
     };">
@@ -192,7 +206,8 @@ export function displayCurrentObservation(station, stationKey, tideDataStore) {
         : ""
     }
     ${calibrationNote}
-  `;
+  `,
+  );
 }
 
 /**
@@ -324,7 +339,9 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
     }
   }
 
-  container.innerHTML = `
+  setSafeHTML(
+    container,
+    `
     <div>
       <div style="font-size: 1.5rem; font-weight: bold; color: var(--color-primary);">
         ${tideLevel.toFixed(2)} m ${tideArrow}
@@ -339,7 +356,8 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
       ${calibrationNote}
     </div>
     ${nextEventHtml}
-  `;
+  `,
+  );
 }
 
 /**
@@ -456,7 +474,9 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
       // Get peak forecast if available
       const peakForecastHtml = generatePeakForecastHtml(tideDataStore, stationKey);
 
-      container.innerHTML = `
+      setSafeHTML(
+        container,
+        `
         <div style="font-size: 1.5rem; font-weight: bold; color: ${color};">
           ${residualStr} m
         </div>
@@ -471,7 +491,8 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
           Latest value from chart
         </div>
         ${peakForecastHtml}
-      `;
+      `,
+      );
       return;
     } else {
       // Geodetic station but no residuals available
@@ -521,7 +542,9 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
     // Get peak forecast if available
     const peakForecastHtml = generatePeakForecastHtml(tideDataStore, stationKey);
 
-    container.innerHTML = `
+    setSafeHTML(
+      container,
+      `
       <div style="font-size: 1.5rem; font-weight: bold; color: ${color};">
         ${offsetStr} m
       </div>
@@ -536,7 +559,8 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
         ${station.tide_offset.description}
       </div>
       ${peakForecastHtml}
-    `;
+    `,
+    );
     return;
   }
 
@@ -594,7 +618,9 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
   // Get peak forecast if available
   const peakHtml = generatePeakForecastHtml(tideDataStore, stationKey);
 
-  container.innerHTML = `
+  setSafeHTML(
+    container,
+    `
     <div>
       <div style="font-size: 1.5rem; font-weight: bold; color: var(--color-accent-orange);">
         ${surge >= 0 ? "+" : ""}${surge.toFixed(3)} m
@@ -604,7 +630,8 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
       </div>
     </div>
     ${peakHtml}
-  `;
+  `,
+  );
 }
 
 /**

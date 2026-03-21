@@ -122,6 +122,15 @@ const webcams = [
 let cachedMarineData = null;
 const slideshowState = {};
 
+function setSafeHTML(element, html) {
+  if (!element) return;
+  if (typeof window.setSanitizedHTML === "function") {
+    window.setSanitizedHTML(element, html);
+  } else {
+    element.innerHTML = html;
+  }
+}
+
 // ==========================================================================
 // Utility Functions
 // ==========================================================================
@@ -237,7 +246,7 @@ async function loadWebcamMetadata(webcam, card) {
           card.classList.remove("webcam-stale", "webcam-stale-error");
         }
 
-        timestampEl.innerHTML = timestampText;
+        setSafeHTML(timestampEl, timestampText);
       }
     }
     return metadata;
@@ -388,13 +397,16 @@ function createWindDisplay(data, showLabel = false) {
   windDiv.appendChild(arrow);
 
   const details = createElement("div", "condition-wind-details");
-  details.innerHTML = `
+  setSafeHTML(
+    details,
+    `
     <span class="wind-cardinal">${data.wind_direction_cardinal || ""}</span>
     <span class="wind-degrees">(${Math.round(data.wind_direction)}°)</span>
     <span class="wind-speed">${windSpeed.toFixed(0)}</span>
     ${windGust ? `<span class="wind-gust">G ${windGust.toFixed(0)}</span>` : ""}
     <span class="wind-gust">kt</span>
-  `;
+  `,
+  );
   windDiv.appendChild(details);
 
   container.appendChild(windDiv);
@@ -408,13 +420,16 @@ function createSimpleWaveDisplay(data) {
   container.appendChild(createElement("div", "condition-section-label", "Waves:"));
 
   const waveDiv = createElement("div", "condition-waves");
-  waveDiv.innerHTML = `
+  setSafeHTML(
+    waveDiv,
+    `
     <span class="wave-icon">🌊</span>
     <div class="wave-details">
       <span class="wave-height">${data.wave_height_sig.toFixed(2)}m</span>
       ${data.wave_period_avg ? `<span class="wave-period">@ ${data.wave_period_avg.toFixed(1)}s</span>` : ""}
     </div>
-  `;
+  `,
+  );
 
   container.appendChild(waveDiv);
   return container;
@@ -472,34 +487,49 @@ function createDetailedWaveDisplay(data) {
 
   // Significant height
   const sigMetric = createElement("div", "wave-metric");
-  sigMetric.innerHTML = `<span class="wave-label">Sig:</span> <span class="wave-value">${data.wave_height_sig.toFixed(1)}m @ ${data.wave_period_sig ? data.wave_period_sig.toFixed(1) + "s" : "N/A"}</span>`;
+  setSafeHTML(
+    sigMetric,
+    `<span class="wave-label">Sig:</span> <span class="wave-value">${data.wave_height_sig.toFixed(1)}m @ ${data.wave_period_sig ? data.wave_period_sig.toFixed(1) + "s" : "N/A"}</span>`,
+  );
   dataGrid.appendChild(sigMetric);
 
   // Peak height
   if (data.wave_height_max != null) {
     const peakMetric = createElement("div", "wave-metric");
-    peakMetric.innerHTML = `<span class="wave-label">Peak:</span> <span class="wave-value">${data.wave_height_max.toFixed(1)}m @ ${data.wave_period_peak ? data.wave_period_peak.toFixed(1) + "s" : "N/A"}</span>`;
+    setSafeHTML(
+      peakMetric,
+      `<span class="wave-label">Peak:</span> <span class="wave-value">${data.wave_height_max.toFixed(1)}m @ ${data.wave_period_peak ? data.wave_period_peak.toFixed(1) + "s" : "N/A"}</span>`,
+    );
     dataGrid.appendChild(peakMetric);
   }
 
   // Direction
   if (data.wave_direction_peak != null) {
     const dirMetric = createElement("div", "wave-metric");
-    dirMetric.innerHTML = `<span class="wave-label">Dir:</span> <span class="wave-value">${data.wave_direction_peak_cardinal || ""} (${Math.round(data.wave_direction_peak)}°)</span>`;
+    setSafeHTML(
+      dirMetric,
+      `<span class="wave-label">Dir:</span> <span class="wave-value">${data.wave_direction_peak_cardinal || ""} (${Math.round(data.wave_direction_peak)}°)</span>`,
+    );
     dataGrid.appendChild(dirMetric);
 
     // Peak spread
     if (data.wave_direction_spread_peak != null) {
       const peakDesc = getSpreadDescription(data.wave_direction_spread_peak, "peak");
       const peakSpreadMetric = createElement("div", "wave-metric");
-      peakSpreadMetric.innerHTML = `<span class="wave-label">Peak Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_peak)}° <span style="color: ${peakDesc.color}; font-weight: 600;">(${peakDesc.label})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— dominant swell</span></span>`;
+      setSafeHTML(
+        peakSpreadMetric,
+        `<span class="wave-label">Peak Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_peak)}° <span style="color: ${peakDesc.color}; font-weight: 600;">(${peakDesc.label})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— dominant swell</span></span>`,
+      );
       dataGrid.appendChild(peakSpreadMetric);
 
       // Average spread
       if (data.wave_direction_spread_avg != null) {
         const avgDesc = getSpreadDescription(data.wave_direction_spread_avg, "avg");
         const avgSpreadMetric = createElement("div", "wave-metric");
-        avgSpreadMetric.innerHTML = `<span class="wave-label">Avg Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_avg)}° <span style="color: ${avgDesc.color}; font-weight: 600;">(${avgDesc.label})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— all frequencies</span></span>`;
+        setSafeHTML(
+          avgSpreadMetric,
+          `<span class="wave-label">Avg Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_avg)}° <span style="color: ${avgDesc.color}; font-weight: 600;">(${avgDesc.label})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— all frequencies</span></span>`,
+        );
         dataGrid.appendChild(avgSpreadMetric);
       }
 
@@ -665,12 +695,12 @@ async function createWebcamCard(webcam, metadata) {
   const controls = createElement("div", "slideshow-controls");
 
   const prevBtn = createElement("button", "slideshow-nav prev", "‹");
-  prevBtn.onclick = () => navigateSlideshow(webcam.id, 1);
+  prevBtn.addEventListener("click", () => navigateSlideshow(webcam.id, 1));
 
   const dotsContainer = createElement("div", "slideshow-dots");
 
   const nextBtn = createElement("button", "slideshow-nav next", "›");
-  nextBtn.onclick = () => navigateSlideshow(webcam.id, -1);
+  nextBtn.addEventListener("click", () => navigateSlideshow(webcam.id, -1));
 
   controls.appendChild(prevBtn);
   controls.appendChild(dotsContainer);
@@ -684,7 +714,15 @@ async function createWebcamCard(webcam, metadata) {
   if (webcam.attribution) {
     const attr = createElement("div", "webcam-attribution");
     if (webcam.attribution.url) {
-      attr.innerHTML = `${webcam.attribution.text} &mdash; <a href="${webcam.attribution.url}" target="_blank" rel="noopener">⛵ Visit their website</a>`;
+      try {
+        const validatedUrl = new URL(webcam.attribution.url);
+        setSafeHTML(
+          attr,
+          `${webcam.attribution.text} &mdash; <a href="${validatedUrl.href}" target="_blank" rel="noopener">⛵ Visit their website</a>`,
+        );
+      } catch {
+        attr.textContent = webcam.attribution.text;
+      }
     } else {
       attr.textContent = webcam.attribution.text;
     }
@@ -731,7 +769,7 @@ async function createWebcamCard(webcam, metadata) {
       card.classList.add(isDown ? "webcam-stale-error" : "webcam-stale");
     }
 
-    timestampEl.innerHTML = timestampText;
+    setSafeHTML(timestampEl, timestampText);
     info.appendChild(timestampEl);
 
     // Source link
@@ -761,7 +799,7 @@ async function createWebcamCard(webcam, metadata) {
 
     // Refresh button
     const refreshBtn = createElement("button", "refresh-button", "Refresh Image");
-    refreshBtn.onclick = () => refreshWebcam(webcam, card, image);
+    refreshBtn.addEventListener("click", () => refreshWebcam(webcam, card, image));
     info.appendChild(refreshBtn);
   }
 
@@ -834,7 +872,7 @@ async function loadSlideshow(webcam) {
           const actualIndex = manifest.length - 1 - reverseIndex;
           const dot = createElement("div", "slideshow-dot" + (actualIndex === 0 ? " active" : ""));
           dot.dataset.index = actualIndex;
-          dot.onclick = () => goToSlide(webcam.id, actualIndex);
+          dot.addEventListener("click", () => goToSlide(webcam.id, actualIndex));
           dotsContainer.appendChild(dot);
         });
     }
@@ -942,8 +980,11 @@ async function loadWebcams() {
     if (regionInfo) {
       const header = createElement("div", "webcam-region-header");
       const count = regionWebcams.length;
-      header.innerHTML = `<h2><span class="webcam-region-toggle-btn">▼</span>${regionInfo.name} <span class="webcam-region-count">(${count} webcam${count !== 1 ? "s" : ""})</span></h2>`;
-      header.onclick = () => regionContainer.classList.toggle("collapsed");
+      setSafeHTML(
+        header,
+        `<h2><span class="webcam-region-toggle-btn">▼</span>${regionInfo.name} <span class="webcam-region-count">(${count} webcam${count !== 1 ? "s" : ""})</span></h2>`,
+      );
+      header.addEventListener("click", () => regionContainer.classList.toggle("collapsed"));
       regionContainer.appendChild(header);
     }
 
@@ -968,13 +1009,16 @@ async function loadWebcams() {
       } catch (error) {
         console.error(`Failed to load webcam ${webcam.name}:`, error);
         const errorCard = createElement("div", "webcam-card");
-        errorCard.innerHTML = `
+        setSafeHTML(
+          errorCard,
+          `
           <div class="webcam-header">
             <h3>${webcam.name}</h3>
             <p class="webcam-location">${webcam.location}</p>
           </div>
           <div class="webcam-error">Failed to load webcam data. Please try again later.</div>
-        `;
+        `,
+        );
         grid.appendChild(errorCard);
       }
     }

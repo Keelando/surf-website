@@ -243,7 +243,7 @@ async function loadBuoyData() {
         regionHeader,
         `<span class="region-toggle-btn">▼</span> ${group.region} <span style="font-size: 0.8em; font-weight: normal; opacity: 0.8;">(${group.stations.length} stations)</span>`,
       );
-      regionHeader.onclick = () => toggleRegion(group.region);
+      regionHeader.addEventListener("click", () => toggleRegion(group.region));
       regionGroup.appendChild(regionHeader);
       regionGroup.id = `region-${group.region.replace(/\s+/g, "-")}`;
 

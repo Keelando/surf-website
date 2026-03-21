@@ -2,6 +2,15 @@
    Storm Surge Chart - Multi-Station Selector
    ----------------------------- */
 
+function setSafeHTML(element, html) {
+  if (!element) return;
+  if (typeof window.setSanitizedHTML === "function") {
+    window.setSanitizedHTML(element, html);
+  } else {
+    element.innerHTML = html;
+  }
+}
+
 let surgeChart = null;
 let surgeData = null;
 let detachSurgeThemeListener = null;
@@ -365,7 +374,9 @@ function updateMetadata(station, times, values, displayName = null) {
   // Use displayName if provided, otherwise use station.station_name
   const stationName = displayName || station.station_name;
 
-  metaEl.innerHTML = `
+  setSafeHTML(
+    metaEl,
+    `
     <strong>Station:</strong> ${stationName}<br/>
     <strong>Location:</strong> ${station.location.lat.toFixed(4)}°N, ${Math.abs(station.location.lon).toFixed(4)}°W<br/>
     <strong>Model:</strong> GDSPS (Global Deterministic Storm Surge Prediction System)<br/>
@@ -373,7 +384,8 @@ function updateMetadata(station, times, values, displayName = null) {
     <strong>Data Retrieved:</strong> ${formatDate(generatedTime)}<br/>
     <strong>Forecast Period:</strong> ${formatDate(firstForecast)} to ${formatDate(lastForecast)}<br/>
     <strong>Resolution:</strong> ${values.length} hours (1-hour intervals)
-  `;
+  `,
+  );
 }
 
 // Load on page load

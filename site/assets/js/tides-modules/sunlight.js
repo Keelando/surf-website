@@ -3,6 +3,15 @@
  * Handles loading and displaying sunrise/sunset data
  */
 
+function setSafeHTML(element, html) {
+  if (!element) return;
+  if (typeof window.setSanitizedHTML === "function") {
+    window.setSanitizedHTML(element, html);
+  } else {
+    element.innerHTML = html;
+  }
+}
+
 /**
  * Sunlight data store
  */
@@ -144,7 +153,9 @@ export function displaySunlightTimes(
   }
 
   // Build modern card-based layout with CSS classes for responsive sizing
-  container.innerHTML = `
+  setSafeHTML(
+    container,
+    `
     <div class="tide-data-group">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
         <h3 style="margin: 0;">Sunlight Times for ${dayLabel}</h3>
@@ -198,7 +209,8 @@ export function displaySunlightTimes(
         </div>
       </div>
     </div>
-  `;
+  `,
+  );
 
   container.style.display = "block";
 

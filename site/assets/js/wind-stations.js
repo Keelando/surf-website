@@ -3,6 +3,15 @@
    Displays current wind conditions table and 24hr trends chart
    ----------------------------- */
 
+function setSafeHTML(element, html) {
+  if (!element) return;
+  if (typeof window.setSanitizedHTML === "function") {
+    window.setSanitizedHTML(element, html);
+  } else {
+    element.innerHTML = html;
+  }
+}
+
 // Helper: Fetch with timeout
 async function fetchWithTimeout(url, timeout = 5000) {
   const controller = new AbortController();
@@ -495,7 +504,7 @@ async function loadWindTable() {
       });
 
       offlineHTML += "</ul></div>";
-      offlineListContainer.innerHTML = offlineHTML;
+      setSafeHTML(offlineListContainer, offlineHTML);
     } else if (offlineListContainer) {
       offlineListContainer.innerHTML = "";
     }

@@ -270,10 +270,10 @@ function createStationCard(station) {
   chartLink.style.borderRadius = "4px";
   chartLink.style.textDecoration = "none";
   chartLink.style.fontSize = "0.85rem";
-  chartLink.onclick = (e) => {
+  chartLink.addEventListener("click", (e) => {
     e.preventDefault();
     viewLightstationChart(station.name);
-  };
+  });
   navLinks.appendChild(chartLink);
 
   // Show on Map button
@@ -289,7 +289,7 @@ function createStationCard(station) {
   mapLink.style.borderRadius = "4px";
   mapLink.style.textDecoration = "none";
   mapLink.style.fontSize = "0.85rem";
-  mapLink.onclick = (e) => {
+  mapLink.addEventListener("click", (e) => {
     e.preventDefault();
     const stationId =
       window.stationMetadata && window.stationMetadata[station.name]
@@ -310,7 +310,7 @@ function createStationCard(station) {
         }
       }, 800);
     }
-  };
+  });
   navLinks.appendChild(mapLink);
 
   card.appendChild(navLinks);

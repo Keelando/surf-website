@@ -1,6 +1,15 @@
 // Footer initialization - runs when footer.html is loaded by HTMX
 // This file replaces the inline script that was previously in footer.html
 (function () {
+  function setSafeHTML(element, html) {
+    if (!element) return;
+    if (typeof window.setSanitizedHTML === "function") {
+      window.setSanitizedHTML(element, html);
+    } else {
+      element.innerHTML = html;
+    }
+  }
+
   fetch("/data/system_health.json")
     .then((res) => res.json())
     .then((data) => {
@@ -57,9 +66,11 @@
         const downNames = staleStations.map((s) => shortNames[s.name] || s.name.split(" ")[0]);
         const downList = downNames.join(", ");
 
-        text.innerHTML =
+        setSafeHTML(
+          text,
           `${reporting}/${total} (${pct}%) ` +
-          `<span class="status-down-list">Down: ${downList}</span>`;
+            `<span class="status-down-list">Down: ${downList}</span>`,
+        );
 
         badge.title =
           `System Status: ${data.overall_status.toUpperCase()}\n` +
