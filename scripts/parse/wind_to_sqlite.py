@@ -2,7 +2,7 @@
 """
 Parse Environment Canada SWOB-ML wind station observations into SQLite.
 
-Similar to buoy_to_influx_sqlite.py but for land-based weather stations.
+Similar to buoy_to_sqlite.py but for land-based weather stations.
 Extracts wind speed, gusts, direction, temperature, pressure, and rainfall.
 
 Usage:
@@ -22,61 +22,6 @@ from lib.logging_config import setup_logging
 
 # Disable console logging (runs from cron, file logging only)
 logger = setup_logging("wind_parser", console=False)
-
-
-# ---- Optional Influx sink (soft dependency) ----
-class InfluxSink:
-    def __init__(self, env_path):
-        self.online = False
-        self.client = None
-        try:
-            from influxdb import InfluxDBClient
-        except ImportError as e:
-            logger.info(f"Influx client not installed ({e}); running SQLite-only")
-            return
-
-        creds = {}
-        p = Path(env_path).expanduser()
-        if not p.exists():
-            logger.info(f"Influx env file not found at {p}; running SQLite-only")
-            return
-
-        for line in p.read_text().splitlines():
-            if "=" in line:
-                k, v = line.split("=", 1)
-                creds[k.strip()] = v.strip()
-
-        try:
-            self.client = InfluxDBClient(
-                host=creds.get("INFLUX_HOST"),
-                port=int(creds.get("INFLUX_PORT", 8086)),
-                username=creds.get("INFLUX_USER"),
-                password=creds.get("INFLUX_PASS"),
-                database=creds.get("INFLUX_DB"),
-                ssl=False,
-                timeout=5,
-            )
-            self.client.ping()
-            self.online = True
-            logger.info("InfluxDB connection established")
-        except Exception as e:
-            logger.info(f"InfluxDB unavailable ({e}); running SQLite-only")
-            self.online = False
-
-    def write_point(self, measurement, tags, time_iso, fields_dict):
-        if not self.online:
-            return
-        point = {
-            "measurement": measurement,
-            "tags": tags,
-            "time": time_iso,
-            "fields": fields_dict,
-        }
-        try:
-            self.client.write_points([point])
-        except Exception as e:
-            logger.warning(f"Lost Influx connection: {e}. Disabling Influx for this run")
-            self.online = False
 
 
 # ---- SQLite setup ----
@@ -259,9 +204,6 @@ def insert_sqlite(cur, station_id, station_name, ts_epoch, field_vals, source_fi
 
 
 def main():
-    # Influx (soft)
-    influx = InfluxSink("~/.config/buoy_influx_1.env")
-
     # SQLite
     conn = sqlite3.connect(WIND_DATABASE)
     cur = conn.cursor()
@@ -300,15 +242,7 @@ def main():
 
             station_id, station_name, timestamp, fields = parsed
 
-            # Try Influx (if online)
-            influx.write_point(
-                measurement="wind_observation",
-                tags={"station_id": station_id, "station_name": station_name or ""},
-                time_iso=timestamp.isoformat(),
-                fields_dict=fields,
-            )
-
-            # Always write SQLite
+            # Write to SQLite
             insert_sqlite(cur, station_id, station_name, fields["observation_time"], fields, xml_path.name)
             conn.commit()
 

@@ -40,8 +40,15 @@ def _require_env(var_name: str) -> str:
 USERNAME = _require_env("SURREY_API_USERNAME")
 PASSWORD = _require_env("SURREY_API_PASSWORD")
 
-# Windy API Configuration
+# Windy API Configuration (check env first, then config/.env file)
 WINDY_API_KEY = os.environ.get("WINDY_API_KEY")
+if not WINDY_API_KEY:
+    _env_file = os.path.join(os.path.dirname(__file__), "..", "..", "config", ".env")
+    if os.path.exists(_env_file):
+        for _line in open(_env_file):
+            if _line.startswith("WINDY_API_KEY="):
+                WINDY_API_KEY = _line.strip().split("=", 1)[1]
+                break
 
 # Windy station metadata
 # Station IDs match registered stations in Windy (0, 1, 2)

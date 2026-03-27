@@ -172,7 +172,7 @@ After making changes:
 sudo caddy reload --config /etc/caddy/Caddyfile
 
 # Manually run a parser/exporter if you can't wait for cron
-.venv/bin/python3 scripts/parse/buoy_to_influx_sqlite.py
+.venv/bin/python3 scripts/parse/buoy_to_sqlite.py
 .venv/bin/python3 scripts/export/sqlite_to_json.py
 ```
 
