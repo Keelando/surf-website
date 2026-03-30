@@ -1,8 +1,6 @@
 (function () {
-  const DARK_MODE_ENABLED = true;
   const STORAGE_KEY = "theme-preference";
   const Theme = {
-    SYSTEM: "system",
     LIGHT: "light",
     DARK: "dark",
   };
@@ -17,9 +15,6 @@
   let appliedPreference = null;
 
   function safeGetPreference() {
-    if (!DARK_MODE_ENABLED) {
-      return Theme.LIGHT;
-    }
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored === Theme.LIGHT || stored === Theme.DARK) {
@@ -32,33 +27,11 @@
   }
 
   function safeSetPreference(preference) {
-    if (!DARK_MODE_ENABLED) {
-      return;
-    }
     try {
-      if (preference === Theme.SYSTEM) {
-        localStorage.removeItem(STORAGE_KEY);
-      } else {
-        localStorage.setItem(STORAGE_KEY, preference);
-      }
+      localStorage.setItem(STORAGE_KEY, preference);
     } catch (error) {
       // Ignore storage errors (Safari private mode, etc.)
     }
-  }
-
-  function getSystemTheme() {
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? Theme.DARK
-      : Theme.LIGHT;
-  }
-
-  function resolveTheme(preference) {
-    if (!DARK_MODE_ENABLED) {
-      return Theme.LIGHT;
-    }
-    if (preference === Theme.LIGHT) return Theme.LIGHT;
-    if (preference === Theme.DARK) return Theme.DARK;
-    return getSystemTheme();
   }
 
   function ensureThemeColorMeta() {
@@ -101,56 +74,30 @@
   }
 
   function setPreference(preference) {
-    if (!DARK_MODE_ENABLED) {
-      applyTheme(Theme.LIGHT, Theme.LIGHT);
-      return;
-    }
-    const normalized =
-      preference === Theme.LIGHT || preference === Theme.DARK ? preference : Theme.SYSTEM;
+    const normalized = preference === Theme.DARK ? Theme.DARK : Theme.LIGHT;
     safeSetPreference(normalized);
-    applyTheme(resolveTheme(normalized), normalized);
+    applyTheme(normalized, normalized);
   }
 
   function cyclePreference() {
-    if (!DARK_MODE_ENABLED) {
-      applyTheme(Theme.LIGHT, Theme.LIGHT);
-      return;
-    }
     const current = safeGetPreference();
     const next = current === Theme.DARK ? Theme.LIGHT : Theme.DARK;
     setPreference(next);
   }
 
   function init() {
-    const preference = DARK_MODE_ENABLED ? safeGetPreference() : Theme.LIGHT;
-    applyTheme(resolveTheme(preference), preference);
+    const preference = safeGetPreference();
+    applyTheme(preference, preference);
   }
 
   init();
-
-  const mediaQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
-
-  function handleSystemChange() {
-    if (!DARK_MODE_ENABLED) return;
-    if (safeGetPreference() === Theme.SYSTEM) {
-      applyTheme(resolveTheme(Theme.SYSTEM), Theme.SYSTEM);
-    }
-  }
-
-  if (mediaQuery) {
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", handleSystemChange);
-    } else if (typeof mediaQuery.addListener === "function") {
-      mediaQuery.addListener(handleSystemChange);
-    }
-  }
 
   window.ThemeManager = {
     getPreference: () => safeGetPreference(),
     setPreference,
     cycle: cyclePreference,
     getState: () => ({
-      theme: appliedTheme || resolveTheme(safeGetPreference()),
+      theme: appliedTheme || safeGetPreference(),
       preference: appliedPreference || safeGetPreference(),
     }),
   };

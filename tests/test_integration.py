@@ -1,4 +1,4 @@
-"""Integration tests: station registry consistency, JSON export schema, XML→SQLite round-trip."""
+"""Integration tests: station registry consistency, JSON export schema, XML→SQLite round-trip, system health."""
 
 import json
 import sqlite3
@@ -127,6 +127,39 @@ class TestJsonExportSchema:
             if isinstance(data, dict) and ("observation" in data or "prediction_now" in data):
                 return  # found at least one
         pytest.fail("No tide station has observation or prediction_now")
+
+
+# ── System health ────────────────────────────────────────────
+
+
+class TestSystemHealth:
+    """Verify system health report meets minimum station availability."""
+
+    HEALTH_FILE = EXPORT_DIR / "system_health.json"
+    MIN_HEALTHY_STATIONS = 43
+
+    @pytest.fixture
+    def health_json(self):
+        if not self.HEALTH_FILE.exists():
+            pytest.skip("system_health.json not found")
+        return json.loads(self.HEALTH_FILE.read_text())
+
+    def test_minimum_station_availability(self, health_json):
+        freshness = health_json.get("checks", {}).get("data_freshness", {})
+        total = freshness.get("total_stations", 0)
+        stale = freshness.get("stale_count", 0)
+        healthy = total - stale
+        pct = (healthy / total * 100) if total else 0
+        stale_names = [
+            s.get("name", s.get("id")) for s in freshness.get("stale_stations", [])
+        ]
+        print(f"\n  Station health: {healthy}/{total} up ({pct:.0f}%)")
+        if stale_names:
+            print(f"  Down: {', '.join(stale_names)}")
+        assert healthy >= self.MIN_HEALTHY_STATIONS, (
+            f"Only {healthy}/{total} stations healthy ({pct:.0f}%, minimum {self.MIN_HEALTHY_STATIONS}). "
+            f"Down: {', '.join(stale_names)}"
+        )
 
 
 # ── XML → SQLite round-trip ──────────────────────────────────
