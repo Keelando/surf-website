@@ -78,6 +78,9 @@ TIDE_HIGHLOW_RETENTION_DAYS = 3
 # How long to keep storm surge forecasts (for hindcast analysis)
 STORM_SURGE_RETENTION_DAYS = 30
 
+# How long to keep lightstation observations
+LIGHTSTATION_RETENTION_DAYS = 7
+
 # =============================================================================
 # Freshness Windows (seconds)
 # =============================================================================

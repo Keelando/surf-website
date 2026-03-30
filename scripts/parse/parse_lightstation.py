@@ -14,6 +14,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from lib.config import LIGHTSTATION_RETENTION_DAYS
 from lib.logging_config import setup_logging
 
 # Disable console logging (runs from cron, file logging only)
@@ -31,6 +32,78 @@ REGIONS = [
     "CENTRAL COAST",
     "HECATE STRAIT",
 ]
+
+
+def extract_observation_day(report_time_line):
+    """
+    Extract the day-of-week from a report time line like "4 PM Sunday".
+
+    Returns:
+        Day name string (e.g., "Sunday") or None if not parseable.
+    """
+    match = re.match(r"\d+\s+(?:AM|PM)\s+(\w+day)", report_time_line)
+    if match:
+        return match.group(1)
+    return None
+
+
+def is_stale_retransmission(header_line, report_time_line, reference_time=None):
+    """
+    Check if a report is a stale retransmission by comparing the
+    day-of-week in the header date against the observation time line.
+
+    Args:
+        header_line: "FPCN61 CWVR 301510"
+        report_time_line: "8 AM Monday"
+        reference_time: Optional datetime for resolving year/month (for testing)
+
+    Returns:
+        True if stale (day-of-week mismatch), False if current,
+        None if unable to determine (caller should parse anyway).
+    """
+    match = re.search(r"FPCN61\s+CWVR\s+(\d{6})", header_line)
+    if not match:
+        return None
+
+    ddhhmm = match.group(1)
+    day = int(ddhhmm[0:2])
+
+    now_utc = reference_time or datetime.now(timezone.utc)
+    year, month = now_utc.year, now_utc.month
+
+    try:
+        dt = datetime(year, month, day, tzinfo=timezone.utc)
+    except ValueError:
+        # Day doesn't exist in current month — roll back
+        month -= 1
+        if month == 0:
+            month, year = 12, year - 1
+        try:
+            dt = datetime(year, month, day, tzinfo=timezone.utc)
+        except ValueError:
+            return None
+
+    if dt > now_utc + timedelta(hours=1):
+        month -= 1
+        if month == 0:
+            month, year = 12, year - 1
+        try:
+            dt = datetime(year, month, day, tzinfo=timezone.utc)
+        except ValueError:
+            month -= 1
+            if month == 0:
+                month, year = 12, year - 1
+            try:
+                dt = datetime(year, month, day, tzinfo=timezone.utc)
+            except ValueError:
+                return None
+
+    header_day_name = dt.strftime("%A")
+    obs_day_name = extract_observation_day(report_time_line)
+    if obs_day_name is None:
+        return None
+
+    return header_day_name != obs_day_name
 
 
 def parse_report_time(header_line, report_time_line):
@@ -201,6 +274,14 @@ def parse_report_file(filepath):
             if re.match(r"\d+\s+(AM|PM)\s+\w+", line):
                 report_time_str = line
                 if observation_time is None:
+                    # Check for stale retransmission before parsing
+                    stale = is_stale_retransmission(header_line, line)
+                    if stale:
+                        logger.info(
+                            f"Skipping stale retransmission {filepath.name}: "
+                            f"header date does not match '{line}'"
+                        )
+                        return []
                     observation_time = parse_report_time(header_line, line)
                 continue
 
@@ -284,6 +365,34 @@ def insert_observations(observations):
     logger.info(f"Inserted {inserted} new observations, skipped {skipped} duplicates")
 
 
+def purge_old_data():
+    """Remove observations and raw files older than the retention window."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=LIGHTSTATION_RETENTION_DAYS)
+    cutoff_epoch = int(cutoff.timestamp())
+
+    # Purge DB rows
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM lightstation_observation WHERE observation_time < ?", (cutoff_epoch,))
+    deleted = cur.rowcount
+    conn.commit()
+    conn.close()
+    if deleted:
+        logger.info(f"Purged {deleted} observations older than {LIGHTSTATION_RETENTION_DAYS} days")
+
+    # Purge raw files older than retention window
+    if DATA_DIR.exists():
+        removed = 0
+        for filepath in DATA_DIR.glob("FPCN61_CWVR_*"):
+            # Use file modification time for age check
+            mtime = datetime.fromtimestamp(filepath.stat().st_mtime, tz=timezone.utc)
+            if mtime < cutoff:
+                filepath.unlink()
+                removed += 1
+        if removed:
+            logger.info(f"Removed {removed} raw report files older than {LIGHTSTATION_RETENTION_DAYS} days")
+
+
 def main():
     logger.info("=== Parsing BC Lightstation Reports ===")
 
@@ -312,6 +421,9 @@ def main():
         logger.info(f"✓ Processing complete! Total: {len(all_observations)} observations")
     else:
         logger.warning("No observations parsed")
+
+    # Purge old data
+    purge_old_data()
 
     logger.info("=== Parse complete ===")
 
