@@ -15,6 +15,8 @@ Usage:
 """
 
 import json
+import os
+import shutil
 import sqlite3
 import sys
 from datetime import datetime, timedelta, timezone
@@ -550,6 +552,55 @@ def check_webcam_freshness() -> List[Dict]:
     return stale
 
 
+def check_storage_mount() -> Dict:
+    """Check if external storage drive is mounted and report disk usage."""
+    log("\n=== Checking Storage Mount ===")
+
+    mount_path = Path("/mnt/storage")
+    mounted = os.path.ismount(mount_path)
+
+    if not mounted:
+        log("  ❌ /mnt/storage is NOT mounted — webcam archiving is disabled")
+        return {
+            "status": "error",
+            "mounted": False,
+            "message": "External storage drive is not mounted",
+        }
+
+    try:
+        usage = shutil.disk_usage(mount_path)
+        usage_percent = (usage.used / usage.total) * 100
+        total_gb = usage.total / (1024**3)
+        used_gb = usage.used / (1024**3)
+        free_gb = usage.free / (1024**3)
+
+        status = "ok"
+        if usage_percent > 90:
+            status = "error"
+            log(f"  ❌ /mnt/storage: {usage_percent:.1f}% full (CRITICAL)")
+        elif usage_percent > 80:
+            status = "warning"
+            log(f"  ⚠️  /mnt/storage: {usage_percent:.1f}% full (WARNING)")
+        else:
+            log(f"  ✅ /mnt/storage: {usage_percent:.1f}% full ({free_gb:.1f}GB free)")
+
+        return {
+            "status": status,
+            "mounted": True,
+            "total_gb": round(total_gb, 1),
+            "used_gb": round(used_gb, 1),
+            "free_gb": round(free_gb, 1),
+            "usage_percent": round(usage_percent, 1),
+        }
+    except Exception as e:
+        log(f"  ❌ /mnt/storage: Error reading disk usage - {e}")
+        return {
+            "status": "error",
+            "mounted": True,
+            "error": str(e),
+        }
+
+
 def check_database_integrity() -> Dict:
     """Check database health: size, WAL mode, recent writes."""
     log("\n=== Checking Database Integrity ===")
@@ -705,12 +756,13 @@ def main():
     log(f"Time: {datetime.now(timezone.utc).isoformat()}")
 
     # Run all checks
+    storage_mount = check_storage_mount()
     data_freshness = check_data_freshness()
     db_integrity = check_database_integrity()
     export_freshness = check_export_freshness()
 
     # Determine overall status
-    statuses = [data_freshness["status"], db_integrity["status"], export_freshness["status"]]
+    statuses = [storage_mount["status"], data_freshness["status"], db_integrity["status"], export_freshness["status"]]
 
     if "error" in statuses:
         overall_status = "error"
@@ -724,6 +776,7 @@ def main():
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "overall_status": overall_status,
         "checks": {
+            "storage_mount": storage_mount,
             "data_freshness": data_freshness,
             "database_integrity": db_integrity,
             "export_freshness": export_freshness,
@@ -739,6 +792,7 @@ def main():
     logger.info(
         "Health check complete: "
         f"{overall_status.upper()} | "
+        f"Storage: {storage_mount['status']} | "
         f"Data: {data_freshness['status']} "
         f"({data_freshness['stale_count']} stale/{data_freshness['total_stations']} total) | "
         f"DB: {db_integrity['status']} | "

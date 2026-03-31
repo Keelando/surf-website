@@ -20,7 +20,9 @@ Requirements:
 import json
 import os
 import shutil
+import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -135,6 +137,35 @@ WEBCAM_CONFIGS = {
 }
 
 
+STORAGE_MOUNT = Path("/mnt/storage")
+
+
+def ensure_storage_mounted(logger):
+    """Check if /mnt/storage is mounted; attempt mount if not.
+
+    Returns True if mounted (or successfully remounted), False otherwise.
+    """
+    if os.path.ismount(STORAGE_MOUNT):
+        return True
+
+    logger.warning(f"{STORAGE_MOUNT} is not mounted — attempting to mount")
+    try:
+        result = subprocess.run(
+            ["mount", str(STORAGE_MOUNT)],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if result.returncode == 0 and os.path.ismount(STORAGE_MOUNT):
+            logger.info(f"{STORAGE_MOUNT} remounted successfully")
+            return True
+        logger.warning(f"Mount failed: {result.stderr.strip()}")
+    except (subprocess.TimeoutExpired, OSError) as e:
+        logger.warning(f"Mount attempt failed: {e}")
+
+    return False
+
+
 def setup_logger(config_name):
     """Setup logging for this webcam using centralized logging config."""
     return setup_logging(f"webcam_{config_name}", console=False)
@@ -169,8 +200,14 @@ def main():
     else:
         logger.info("Daylight check disabled for this webcam - capturing 24/7")
 
+    # Check if external storage is mounted
+    storage_mounted = ensure_storage_mounted(logger)
+    if not storage_mounted:
+        logger.warning("External storage unavailable — will update website only, skipping archive")
+
     # Ensure directories exist
-    config["archive_dir"].mkdir(parents=True, exist_ok=True)
+    if storage_mounted:
+        config["archive_dir"].mkdir(parents=True, exist_ok=True)
     config["website_dir"].mkdir(parents=True, exist_ok=True)
 
     # Generate timestamp-based filename
@@ -179,8 +216,12 @@ def main():
     timestamp_unix = int(timestamp.timestamp())
     filename = f"{config['prefix']}_{timestamp_readable}_{timestamp_unix}.jpg"
 
-    # Capture to archive directory first
-    archive_path = config["archive_dir"] / filename
+    # Capture to archive directory, or a temp file if storage is unmounted
+    if storage_mounted:
+        archive_path = config["archive_dir"] / filename
+    else:
+        _tmpdir = tempfile.mkdtemp(prefix="webcam_")
+        archive_path = Path(_tmpdir) / filename
 
     # Check if this is a direct image URL, YouTube stream, or Yawcam
     if "image_url" in config:
@@ -242,8 +283,17 @@ def main():
     except Exception as e:
         logger.error(f"Failed to write metadata: {e}")
 
-    # Cleanup old archives
-    cleanup_old_archives(config["archive_dir"], config["prefix"], logger)
+    # Cleanup old archives (only when storage is mounted)
+    if storage_mounted:
+        cleanup_old_archives(config["archive_dir"], config["prefix"], logger)
+    else:
+        # Clean up temp capture file
+        try:
+            archive_path.unlink(missing_ok=True)
+            archive_path.parent.rmdir()
+        except OSError:
+            pass
+        logger.warning("Completed without archiving — storage was unavailable")
 
     logger.info(f"=== {config['name']} Webcam Capture Completed Successfully ===")
     sys.exit(0)

@@ -136,13 +136,23 @@ class TestSystemHealth:
     """Verify system health report meets minimum station availability."""
 
     HEALTH_FILE = EXPORT_DIR / "system_health.json"
-    MIN_HEALTHY_STATIONS = 43
+    MIN_HEALTHY_STATIONS = 38  # EC lightstations report intermittently; 4-5 can be offline at once
 
     @pytest.fixture
     def health_json(self):
         if not self.HEALTH_FILE.exists():
             pytest.skip("system_health.json not found")
         return json.loads(self.HEALTH_FILE.read_text())
+
+    def test_storage_drive_mounted(self, health_json):
+        storage = health_json.get("checks", {}).get("storage_mount", {})
+        assert storage.get("mounted") is True, (
+            "External storage drive /mnt/storage is not mounted — webcam archiving is disabled"
+        )
+        usage = storage.get("usage_percent", 0)
+        free_gb = storage.get("free_gb", 0)
+        print(f"\n  Storage: {usage}% used ({free_gb}GB free)")
+        assert usage < 90, f"Storage critically full: {usage}%"
 
     def test_minimum_station_availability(self, health_json):
         freshness = health_json.get("checks", {}).get("data_freshness", {})

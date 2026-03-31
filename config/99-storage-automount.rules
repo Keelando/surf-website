@@ -1,0 +1,4 @@
+# Auto-mount /mnt/storage when the external SSD is plugged in
+# Install: sudo cp config/99-storage-automount.rules /etc/udev/rules.d/
+# Reload: sudo udevadm control --reload-rules
+ACTION=="add", ENV{ID_FS_UUID}=="85af7264-6ebb-446c-81e0-94eec769b5d8", RUN+="/bin/mount /mnt/storage"
