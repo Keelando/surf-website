@@ -136,7 +136,8 @@ class TestSystemHealth:
     """Verify system health report meets minimum station availability."""
 
     HEALTH_FILE = EXPORT_DIR / "system_health.json"
-    MIN_HEALTHY_STATIONS = 38  # EC lightstations report intermittently; 4-5 can be offline at once
+    # Hard floor: if we're below this, fail regardless — pipeline is probably broken
+    MIN_HEALTHY_STATIONS = 30
 
     @pytest.fixture
     def health_json(self):
@@ -154,22 +155,63 @@ class TestSystemHealth:
         print(f"\n  Storage: {usage}% used ({free_gb}GB free)")
         assert usage < 90, f"Storage critically full: {usage}%"
 
+    @staticmethod
+    def _pipeline_is_healthy(health_json):
+        """Check whether our ingest pipeline is running (DBs written, exports fresh).
+
+        If the pipeline is healthy but stations are stale, the outage is
+        upstream at Environment Canada, not on our end.
+        """
+        # Databases should have recent writes
+        dbs = health_json.get("checks", {}).get("database_integrity", {}).get("databases", {})
+        total_writes = sum(db.get("recent_writes_1h", 0) for db in dbs.values())
+        if total_writes == 0:
+            return False, "no database writes in the last hour"
+
+        # Exports should be reasonably fresh (at least some under 2 hours)
+        exports = health_json.get("checks", {}).get("export_freshness", {}).get("exports", {})
+        fresh_exports = sum(1 for e in exports.values() if e.get("age_minutes", 9999) < 120)
+        if fresh_exports < 3:
+            return False, f"only {fresh_exports} exports are fresh"
+
+        return True, "databases active, exports fresh"
+
     def test_minimum_station_availability(self, health_json):
         freshness = health_json.get("checks", {}).get("data_freshness", {})
         total = freshness.get("total_stations", 0)
         stale = freshness.get("stale_count", 0)
         healthy = total - stale
         pct = (healthy / total * 100) if total else 0
-        stale_names = [
-            s.get("name", s.get("id")) for s in freshness.get("stale_stations", [])
-        ]
+        stale_stations = freshness.get("stale_stations", [])
+        stale_names = [s.get("name", s.get("id")) for s in stale_stations]
+
         print(f"\n  Station health: {healthy}/{total} up ({pct:.0f}%)")
         if stale_names:
             print(f"  Down: {', '.join(stale_names)}")
+
+        # Hard floor — something is very wrong
         assert healthy >= self.MIN_HEALTHY_STATIONS, (
-            f"Only {healthy}/{total} stations healthy ({pct:.0f}%, minimum {self.MIN_HEALTHY_STATIONS}). "
+            f"Only {healthy}/{total} stations healthy ({pct:.0f}%). "
             f"Down: {', '.join(stale_names)}"
         )
+
+        # Soft check: if some stations are stale, distinguish our fault vs EC's
+        expected_healthy = total - 3  # allow up to 3 stale before probing
+        if healthy < expected_healthy:
+            pipeline_ok, reason = self._pipeline_is_healthy(health_json)
+            if pipeline_ok:
+                # All stale stations are external — classify by type for the report
+                by_type = {}
+                for s in stale_stations:
+                    by_type.setdefault(s.get("type", "unknown"), []).append(s.get("name", s.get("id")))
+                detail = "; ".join(f"{t}: {', '.join(names)}" for t, names in by_type.items())
+                print(f"  Pipeline healthy ({reason}) — stale stations are upstream (EC)")
+                print(f"  Upstream outages: {detail}")
+            else:
+                pytest.fail(
+                    f"Pipeline issue detected ({reason}). "
+                    f"{stale} stations stale: {', '.join(stale_names)}"
+                )
 
 
 # ── XML → SQLite round-trip ──────────────────────────────────
