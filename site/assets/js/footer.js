@@ -20,8 +20,6 @@
 
       const freshness = data.checks.data_freshness;
       const total = freshness.total_stations;
-      const reporting = total - freshness.stale_count;
-      const pct = Math.round((reporting / total) * 100);
 
       badge.classList.remove("status-ok", "status-warning", "status-error");
       badge.classList.add("status-" + data.overall_status);
@@ -57,6 +55,8 @@
       const staleStations = freshness.stale_stations.filter(
         (s) => s.severity === "error" || s.severity === "warning",
       );
+      const reporting = total - staleStations.length;
+      const pct = Math.round((reporting / total) * 100);
 
       if (staleStations.length === 0) {
         text.textContent = `${reporting}/${total} stations (${pct}%)`;
