@@ -4,6 +4,7 @@
 User-agent: *
 Allow: /
 Disallow: /cdn-cgi/
+Disallow: /data/
 
 # Sitemap location
 Sitemap: https://halibutbank.ca/sitemap.xml
