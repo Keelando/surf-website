@@ -589,6 +589,24 @@
         "rainfall"
       ]
     },
+    "CWAS": {
+      "id": "CWAS",
+      "name": "Pam Rocks",
+      "location": "Howe Sound",
+      "lat": 49.488,
+      "lon": -123.3,
+      "source": "Environment Canada",
+      "type": "weather_station",
+      "update_frequency_minutes": 60,
+      "data_types": [
+        "wind_speed",
+        "wind_gust",
+        "wind_direction",
+        "air_temp",
+        "pressure",
+        "rainfall"
+      ]
+    },
     "CWSB": {
       "id": "CWSB",
       "name": "Point Atkinson",

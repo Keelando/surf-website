@@ -329,6 +329,7 @@ async function loadWindTable() {
     // Station-specific source links (used in table and offline list)
     const sourceLinks = {
       // Environment Canada Marine Stations
+      CWAS: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06300&stationID=WAS",
       CWGT: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06100&stationID=WGT",
       CWGB: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=WGB",
       CWEL: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06200&stationID=WEL",
