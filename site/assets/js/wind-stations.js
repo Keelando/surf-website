@@ -662,7 +662,12 @@ function createWindDirectionArrows(windDirectionTimes, windSpeedData, windGustDa
         (1000 * 60 * 60)
       : 24;
   const pointsPerHour = windDirectionTimes.length / dataSpanHours;
-  const sampleInterval = Math.max(1, Math.round(hoursInterval * pointsPerHour));
+  // For sparse data (< 8 points), show every point rather than risk showing 0-1 arrows
+  const maxArrows = isMobile ? 4 : 8;
+  const sampleInterval =
+    windDirectionTimes.length <= maxArrows
+      ? 1
+      : Math.max(1, Math.round(hoursInterval * pointsPerHour));
 
   for (let i = 0; i < windDirectionTimes.length; i += sampleInterval) {
     const dirPoint = windDirectionTimes[i];
