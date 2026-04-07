@@ -246,7 +246,7 @@ async function loadWindTable() {
         const ageHours = obsTime ? (Date.now() - obsTime.getTime()) / (1000 * 60 * 60) : Infinity;
 
         const stationData = {
-          name: station.name + " 💨",
+          name: station.name,
           wind_speed_kt: station.wind_speed_kt != null ? Math.round(station.wind_speed_kt) : null,
           wind_gust_kt: station.wind_gust_kt != null ? Math.round(station.wind_gust_kt) : null,
           wind_direction: station.wind_direction_deg || station.wind_direction,
@@ -296,10 +296,8 @@ async function loadWindTable() {
             stationMeta?.type === "weather_station" ||
             stationMeta?.type === "c_man_station" ||
             stationMeta?.type === "land_station";
-          const icon = isWindStation ? " 💨" : " 🌊";
-
           const stationData = {
-            name: buoy.name + icon,
+            name: isWindStation ? buoy.name : buoy.name + " 🌊",
             wind_speed_kt: buoy.wind_speed != null ? Math.round(buoy.wind_speed) : null,
             wind_gust_kt: buoy.wind_gust != null ? Math.round(buoy.wind_gust) : null,
             wind_direction: buoy.wind_direction_deg || buoy.wind_direction,
@@ -366,13 +364,33 @@ async function loadWindTable() {
       JERICHO: "https://jsca.bc.ca/services/weather/",
     };
 
+    // Short names for mobile display
+    const shortNames = {
+      "Vancouver Int'l Airport": "YVR",
+      "Southern Georgia Strait": "S. Georgia Str.",
+      "Jericho Sailing Centre": "Jericho",
+      "Crescent Channel Ocean": "Crescent Ch.",
+      "White Rock East Beach": "White Rock",
+      "Orcas Island Airport": "Orcas Island",
+      "Boundary Bay Airport": "Boundary Bay",
+      "Crescent Beach Ocean": "Crescent Beach",
+      "Bellingham Airport": "Bellingham",
+      "Tsawwassen Ferry": "Tsawwassen",
+      "Ballenas Island": "Ballenas Is.",
+      "Entrance Island": "Entrance Is.",
+      "La Perouse Bank": "La Perouse",
+      "Point Atkinson": "Pt. Atkinson",
+      "Sisters Island": "Sisters Is.",
+      "Saturna Island": "Saturna Is.",
+    };
+
     let tableHTML = `
       <thead>
         <tr>
           <th class="sortable" data-column="name" data-type="string">Station <span class="sort-indicator"></span></th>
-          <th class="sortable" data-column="wind_direction" data-type="number">Direction <span class="sort-indicator"></span></th>
-          <th class="sortable" data-column="wind_speed_kt" data-type="number">Speed (kt) <span class="sort-indicator"></span></th>
-          <th class="sortable" data-column="wind_gust_kt" data-type="number">Gust (kt) <span class="sort-indicator"></span></th>
+          <th class="sortable" data-column="wind_direction" data-type="number"><span class="hide-mobile">Direction</span><span class="show-mobile">Dir</span> <span class="sort-indicator"></span></th>
+          <th class="sortable" data-column="wind_speed_kt" data-type="number"><span class="hide-mobile">Speed (kt)</span><span class="show-mobile">kt</span> <span class="sort-indicator"></span></th>
+          <th class="sortable" data-column="wind_gust_kt" data-type="number"><span class="hide-mobile">Gust (kt)</span><span class="show-mobile">Gst</span> <span class="sort-indicator"></span></th>
           <th class="sortable" data-column="air_temp_c" data-type="number">Temp (°C) <span class="sort-indicator"></span></th>
           <th class="sortable" data-column="pressure_hpa" data-type="number">Pressure (hPa) <span class="sort-indicator"></span></th>
           <th class="sortable" data-column="observation_time" data-type="date">Updated <span class="sort-indicator"></span></th>
@@ -387,42 +405,36 @@ async function loadWindTable() {
       // Round wind speeds to integers
       const windSpeed = station.wind_speed_kt != null ? Math.round(station.wind_speed_kt) : "—";
       const windGust = station.wind_gust_kt != null ? Math.round(station.wind_gust_kt) : "—";
-      // Show arrow, cardinal direction, and degrees
-      const direction =
+      // Show arrow + cardinal direction (degrees in tooltip)
+      const cardinal =
         station.wind_direction != null
-          ? `${station.wind_direction_cardinal || degreesToCardinal(station.wind_direction)} (${station.wind_direction}°) ${getDirectionalArrow(station.wind_direction)}`
+          ? station.wind_direction_cardinal || degreesToCardinal(station.wind_direction)
+          : null;
+      const direction =
+        cardinal != null
+          ? `${getDirectionalArrow(station.wind_direction)} ${cardinal}<span class="hide-mobile"> (${station.wind_direction}°)</span>`
           : "—";
       const temp = station.air_temp_c != null ? station.air_temp_c.toFixed(1) : "—";
       const pressure = station.pressure_hpa != null ? station.pressure_hpa.toFixed(1) : "—";
       const updated = formatTimestamp(station.observation_time);
 
-      // Determine source badge and link
-      let sourceBadge = "";
-      if (sourceLinks[id]) {
-        if (id.startsWith("4600")) {
-          // Environment Canada buoys (4600xxx)
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-source-envcan-text); text-decoration: none;">🇨🇦 Env Canada 🔗</a>`;
-        } else if (id.startsWith("46") || id === "CPMW1" || id === "SISW1") {
-          // NOAA buoys/stations (46xxx but not 4600xxx)
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-source-noaa-text); text-decoration: none;">🇺🇸 NOAA 🔗</a>`;
-        } else if (id.startsWith("K")) {
-          // NOAA NWS airports (KXXX)
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-source-noaa-text); text-decoration: none;">🇺🇸 NOAA 🔗</a>`;
-        } else if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
-          // Surrey FlowWorks (no public link)
-          sourceBadge =
-            '<br><span style="font-size: 0.75em; color: var(--color-accent-green);">🏛️ Surrey</span>';
-        } else if (id === "whiterock_east") {
-          // White Rock City
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-accent-blue); text-decoration: none;">🏛️ White Rock 🔗</a>`;
-        } else if (id === "JERICHO") {
-          // Jericho Sailing Centre
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-accent-blue); text-decoration: none;">⛵ JSCA 🔗</a>`;
-        } else if (id.startsWith("C")) {
-          // Environment Canada weather stations
-          sourceBadge = `<br><a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="font-size: 0.75em; color: var(--color-source-envcan-text); text-decoration: none;">🇨🇦 Env Canada 🔗</a>`;
-        }
+      // Determine source link and flag
+      const sourceLink = sourceLinks[id] || null;
+      let flag = "";
+      if (id.startsWith("4600") || (id.startsWith("C") && id !== "CPMW1" && id !== "COLEB")) {
+        flag = "🇨🇦";
+      } else if (id.startsWith("46") || id === "CPMW1" || id === "SISW1" || id.startsWith("K")) {
+        flag = "🇺🇸";
+      } else if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
+        flag = "🏛️";
+      } else if (id === "whiterock_east") {
+        flag = "🏛️";
+      } else if (id === "JERICHO") {
+        flag = "⛵";
       }
+      const flagSpan = flag
+        ? ` <span class="hide-mobile" style="font-size: 0.8em;">${flag}</span>`
+        : "";
 
       tableHTML += `
         <tr ${rowClass}
@@ -433,8 +445,8 @@ async function loadWindTable() {
             data-air_temp_c="${station.air_temp_c || ""}"
             data-pressure_hpa="${station.pressure_hpa || ""}"
             data-observation_time="${station.observation_time}">
-          <td><strong>${station.name}</strong>${sourceBadge}</td>
-          <td>${direction}</td>
+          <td>${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;"><strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${shortNames[station.name] || station.name}</span></strong>${flagSpan}</a>` : `<strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${shortNames[station.name] || station.name}</span></strong>${flagSpan}`}</td>
+          <td style="white-space: nowrap;">${direction}</td>
           <td>${windSpeed}</td>
           <td>${windGust}</td>
           <td>${temp}</td>
@@ -496,7 +508,7 @@ async function loadWindTable() {
         }
 
         // Add source link if available
-        let stationLink = station.name.replace(" 💨", "").replace(" 🌊", "");
+        let stationLink = station.name.replace(" 🌊", "");
         if (sourceLinks[id]) {
           stationLink = `<a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="color: var(--color-accent-blue); text-decoration: none;">${stationLink}</a>`;
         }
@@ -1017,7 +1029,7 @@ function renderWindChart(stationId) {
     backgroundColor: tc.background,
     textStyle: { color: tc.text },
     title: {
-      text: `${station.name.replace(" 💨", "").replace(" 🌊", "")} - Wind Conditions`,
+      text: `${station.name.replace(" 🌊", "")} - Wind Conditions`,
       left: "center",
       textStyle: {
         fontSize: 18,

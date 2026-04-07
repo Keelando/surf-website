@@ -126,6 +126,11 @@
       height: 500px;
     }
 
+    /* Mobile-only elements hidden on desktop */
+    .show-mobile {
+      display: none !important;
+    }
+
     @media (max-width: 768px) {
       .wind-cards-grid {
         grid-template-columns: 1fr;
@@ -135,6 +140,14 @@
       .data-table th.hide-mobile,
       .data-table td.hide-mobile {
         display: none;
+      }
+
+      .hide-mobile {
+        display: none !important;
+      }
+
+      .show-mobile {
+        display: inline !important;
       }
 
       /* Fix dropdown overflow on mobile */
@@ -235,8 +248,7 @@
     <h2>Station Locations</h2>
     <div id="winds-map" style="width: 100%; height: 400px; border-radius: 8px; border: 1px solid #e0e7ee;"></div>
     <div class="map-legend" style="margin-top: 1rem; text-align: center; font-size: 0.9rem;">
-      <span style="margin-right: 1.5rem;">💨 Weather Station</span>
-      <span>🌊 Buoy (with wind data)</span>
+      <span>🌊 = Buoy / marine station</span>
     </div>
   </section>
 
