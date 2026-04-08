@@ -7,46 +7,7 @@ let windsMap = null;
 let windMarkersLayer = null;
 let windMarkers = {}; // Store markers by ID for easy access
 
-// Helper: Fetch with timeout
-async function fetchWithTimeout(url, timeout = 5000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(id);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
-  }
-}
-
-// Helper: Convert degrees to cardinal direction
-function degreesToCardinal(degrees) {
-  if (degrees == null) return null;
-  const directions = [
-    "N",
-    "NNE",
-    "NE",
-    "ENE",
-    "E",
-    "ESE",
-    "SE",
-    "SSE",
-    "S",
-    "SSW",
-    "SW",
-    "WSW",
-    "W",
-    "WNW",
-    "NW",
-    "NNW",
-  ];
-  const index = Math.round(degrees / 22.5) % 16;
-  return directions[index];
-}
+// degreesToCardinal and fetchWithTimeout provided by wind-stations.js and chart-utils-v4.js (loaded earlier)
 
 // Helper: Get directional arrow (SVG, rotated to exact degrees)
 function getDirectionalArrow(degrees) {
@@ -129,44 +90,27 @@ function initWindsMap() {
   loadWindStationsAndMarkers();
 }
 
-// Load wind stations and buoys with wind data
+// Load wind stations and buoys with wind data (pre-fetched by wind-data.js)
 async function loadWindStationsAndMarkers() {
   try {
-    // Fetch stations metadata, wind station data, and buoy data
-    const [stations, windData, buoyData] = await Promise.all([
-      fetchWithTimeout("/data/stations.json"),
-      fetchWithTimeout("/data/latest_wind.json"),
-      fetchWithTimeout("/data/latest_buoy_v2.json"),
-    ]);
+    await window.windData.ready;
+    const stations = window.windData.stations;
+    const latestAll = window.windData.latestAll;
 
     // Add wind station markers
     if (stations.wind) {
       Object.values(stations.wind).forEach((windStation) => {
-        const currentData = windData[windStation.id];
+        const currentData = latestAll[windStation.id];
         addWindStationMarker(windStation, currentData);
       });
     }
 
-    // Add buoy markers (only those with wind data)
+    // Add buoy markers (only those with wind data — already normalized)
     if (stations.buoys) {
       Object.values(stations.buoys).forEach((buoy) => {
-        // Check if this buoy has wind data in buoyData
-        const currentData = buoyData[buoy.id];
-        const windDir = currentData
-          ? currentData.wind_direction_deg || currentData.wind_direction
-          : null;
-        if (currentData && (currentData.wind_speed != null || windDir != null)) {
-          // Convert buoy data format to match wind data format
-          const windFormatData = {
-            wind_speed_kt: currentData.wind_speed,
-            wind_gust_kt: currentData.wind_gust,
-            wind_direction_deg: windDir,
-            wind_direction_cardinal: currentData.wind_direction_cardinal,
-            air_temp_c: currentData.air_temp,
-            observation_time: currentData.observation_time,
-            stale: currentData.stale,
-          };
-          addBuoyWindMarker(buoy, windFormatData);
+        const currentData = latestAll[buoy.id];
+        if (currentData) {
+          addBuoyWindMarker(buoy, currentData);
         }
       });
     }

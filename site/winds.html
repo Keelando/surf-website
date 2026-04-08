@@ -21,7 +21,7 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/winds.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20260309" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20260407" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=20260314" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=20260313b" />
@@ -219,12 +219,12 @@
         <thead>
           <tr>
             <th>Station</th>
+            <th>Updated</th>
+            <th>Direction</th>
             <th>Wind Speed</th>
             <th>Gust</th>
-            <th>Direction</th>
             <th>Temp</th>
             <th>Pressure</th>
-            <th>Updated</th>
           </tr>
         </thead>
         <tbody>
@@ -290,6 +290,7 @@
       <button class="wind-time-range-btn" data-wind-hours="48">48 Hours</button>
     </div>
 
+    <h3 id="wind-24hr-station-name" style="text-align: center; color: var(--color-primary-dark); margin-bottom: 0.75rem; display: none;"></h3>
     <div class="data-table">
       <table id="wind-24hr-table">
         <thead>
@@ -325,8 +326,9 @@
   <script src="/assets/js/logger.js?v=20251117"></script>
   <script src="/assets/js/warning-banner.js?v=20251117"></script>
   <script src="/assets/js/chart-utils-v4.js?v=20251224"></script>
-  <script src="/assets/js/wind-stations.js?v=20260314b"></script>
-  <script src="/assets/js/winds-map.js?v=20260314"></script>
+  <script src="/assets/js/wind-data.js?v=20260408"></script>
+  <script src="/assets/js/wind-stations.js?v=20260408"></script>
+  <script src="/assets/js/winds-map.js?v=20260408"></script>
   <script src="/assets/vendor/htmx.min.js"></script>
 </body>
 </html>

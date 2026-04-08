@@ -64,7 +64,7 @@
   --color-card-muted-active: #d0d7e0;
   --color-active-indicator-bg: #e3f2fd;
   --color-data-row-hover: #f5f5f5;
-  --color-table-zebra: rgba(0, 75, 124, 0.03);
+  --color-table-zebra: rgba(0, 75, 124, 0.06);
   --color-about-text: #1a1a1a;
   --color-tagline-text: #2c5282;
   --color-tagline-border: rgba(66, 153, 225, 0.2);
@@ -145,7 +145,7 @@
   --color-card-muted-active: #1d2b3d;
   --color-active-indicator-bg: rgba(80, 154, 211, 0.22);
   --color-data-row-hover: rgba(255, 255, 255, 0.05);
-  --color-table-zebra: rgba(255, 255, 255, 0.02);
+  --color-table-zebra: rgba(255, 255, 255, 0.05);
   --color-about-text: var(--color-text);
   --color-tagline-text: #d1e8ff;
   --color-tagline-border: rgba(99, 180, 255, 0.25);
@@ -433,6 +433,14 @@ footer .github-link:hover {
 .buoy-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Mobile/desktop visibility utilities */
+.show-mobile { display: none; }
+
+@media (max-width: 767px) {
+  .show-mobile { display: inline; }
+  .hide-mobile { display: none; }
 }
 
 /* Responsive grid adjustments */

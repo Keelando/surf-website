@@ -12,23 +12,7 @@ function setSafeHTML(element, html) {
   }
 }
 
-// Helper: Fetch with timeout
-async function fetchWithTimeout(url, timeout = 5000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(id);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
-  }
-}
-
-// Helper: Convert degrees to cardinal direction
+// Helper: Convert degrees to cardinal direction (also used by winds-map.js via global scope)
 function degreesToCardinal(degrees) {
   if (degrees == null) return null;
   const directions = [
@@ -68,19 +52,32 @@ function getDirectionalArrow(degrees, arrowType = "wind") {
   return `<span style="display:inline-block;transform:rotate(${rotation}deg);margin-left:0.3rem;vertical-align:middle;">${svg}</span>`;
 }
 
-// Helper: Format timestamp to local time
+// Helper: Format timestamp to local time (time first, then date)
 function formatTimestamp(isoString) {
   const date = new Date(isoString);
-  return date
-    .toLocaleString("en-US", {
-      month: "numeric",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "America/Vancouver",
-    })
-    .replace(",", "");
+  const time = date.toLocaleString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "America/Vancouver",
+  });
+  const day = date.toLocaleString("en-US", {
+    month: "numeric",
+    day: "numeric",
+    timeZone: "America/Vancouver",
+  });
+  return `${time} ${day}`;
+}
+
+// Helper: Format timestamp to time only (for mobile)
+function formatTimeOnly(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "America/Vancouver",
+  });
 }
 
 // Global chart instance
@@ -111,26 +108,16 @@ function filterWindTimeseriesData(data, hours) {
     const station = data[stationId];
     filtered[stationId] = {
       name: station.name,
-      isBuoy: station.isBuoy,
       timeseries: {},
     };
 
-    // Handle both buoy format (with .data) and wind station format (direct arrays)
+    // All timeseries are now normalized to flat arrays by wind-data.js
     Object.keys(station.timeseries || {}).forEach((metricKey) => {
       const metric = station.timeseries[metricKey];
-
       if (Array.isArray(metric)) {
-        // Wind station format: direct array
         filtered[stationId].timeseries[metricKey] = metric.filter(
           (point) => new Date(point.time) >= cutoff,
         );
-      } else if (metric.data && Array.isArray(metric.data)) {
-        // Buoy format: {data: [...], name, unit}
-        filtered[stationId].timeseries[metricKey] = {
-          name: metric.name,
-          unit: metric.unit,
-          data: metric.data.filter((point) => new Date(point.time) >= cutoff),
-        };
       }
     });
   });
@@ -223,100 +210,43 @@ function updateSortIndicators(activeHeader) {
  */
 async function loadWindTable() {
   try {
-    // Load stations metadata, wind stations, and buoy data
-    const [stationsMetadata, windData, buoyData] = await Promise.all([
-      fetchWithTimeout(`/data/stations.json?t=${Date.now()}`),
-      fetchWithTimeout(`/data/latest_wind.json?t=${Date.now()}`),
-      fetchWithTimeout(`/data/latest_buoy_v2.json?t=${Date.now()}`),
-    ]);
+    // Wait for shared data store (fetched once by wind-data.js)
+    await window.windData.ready;
+    const latestAll = window.windData.latestAll;
 
     const table = document.getElementById("wind-conditions-table");
     if (!table) return;
 
-    // Combine wind stations and buoys
+    // Classify stations into active vs offline by data age
     const allStations = [];
-    const offlineStations = []; // Stations with data > 4 hours old
+    const offlineStations = [];
 
-    // Add wind stations
-    Object.entries(windData)
+    Object.entries(latestAll)
       .filter(([key]) => key !== "_meta")
       .forEach(([id, station]) => {
-        // Calculate data age
         const obsTime = station.observation_time ? new Date(station.observation_time) : null;
         const ageHours = obsTime ? (Date.now() - obsTime.getTime()) / (1000 * 60 * 60) : Infinity;
 
+        const displayName = station._isWindType ? station.name : station.name + " \u{1F30A}";
+
         const stationData = {
-          name: station.name,
+          name: displayName,
           wind_speed_kt: station.wind_speed_kt != null ? Math.round(station.wind_speed_kt) : null,
           wind_gust_kt: station.wind_gust_kt != null ? Math.round(station.wind_gust_kt) : null,
-          wind_direction: station.wind_direction_deg || station.wind_direction,
+          wind_direction: station.wind_direction_deg,
           wind_direction_cardinal: station.wind_direction_cardinal,
           air_temp_c: station.air_temp_c,
           pressure_hpa: station.pressure_hpa,
           observation_time: station.observation_time,
           ageHours: ageHours,
-          stale: ageHours >= 2 && ageHours < 4, // Mark as stale if 2-4 hours old
-          type: "land",
+          stale: ageHours >= 2 && ageHours < 4,
+          type: station._sourceType,
         };
 
         if (ageHours >= 4) {
-          // Data is too old - add to offline list
           offlineStations.push([id, stationData]);
         } else {
-          // Data is fresh enough - add to main table
           allStations.push([id, stationData]);
-        }
-      });
-
-    // Add buoys (with wind data)
-    Object.entries(buoyData)
-      .filter(([key]) => key !== "_meta")
-      .forEach(([id, buoy]) => {
-        // Only add buoys that have wind data
-        const buoyWindDir = buoy.wind_direction_deg || buoy.wind_direction;
-        if (buoy.wind_speed != null || buoyWindDir != null) {
-          // Use field-specific timestamp for wind if available, otherwise use main observation_time
-          let windObsTime = buoy.observation_time;
-          if (
-            buoy.field_times &&
-            (buoy.field_times.wind_speed || buoy.field_times.wind_direction)
-          ) {
-            // Use the most recent wind-related field timestamp
-            windObsTime = buoy.field_times.wind_speed || buoy.field_times.wind_direction;
-          }
-
-          // Calculate data age
-          const obsTime = windObsTime ? new Date(windObsTime) : null;
-          const ageHours = obsTime ? (Date.now() - obsTime.getTime()) / (1000 * 60 * 60) : Infinity;
-
-          // Determine icon based on station type from metadata
-          const stationMeta = stationsMetadata.buoys?.[id];
-          const isWindStation =
-            stationMeta?.type === "wind_monitoring_station" ||
-            stationMeta?.type === "weather_station" ||
-            stationMeta?.type === "c_man_station" ||
-            stationMeta?.type === "land_station";
-          const stationData = {
-            name: isWindStation ? buoy.name : buoy.name + " 🌊",
-            wind_speed_kt: buoy.wind_speed != null ? Math.round(buoy.wind_speed) : null,
-            wind_gust_kt: buoy.wind_gust != null ? Math.round(buoy.wind_gust) : null,
-            wind_direction: buoy.wind_direction_deg || buoy.wind_direction,
-            wind_direction_cardinal: buoy.wind_direction_cardinal,
-            air_temp_c: buoy.air_temp,
-            pressure_hpa: buoy.pressure,
-            observation_time: windObsTime,
-            ageHours: ageHours,
-            stale: ageHours >= 2 && ageHours < 4, // Mark as stale if 2-4 hours old
-            type: isWindStation ? "land" : "buoy",
-          };
-
-          if (ageHours >= 4) {
-            // Data is too old - add to offline list
-            offlineStations.push([id, stationData]);
-          } else {
-            // Data is fresh enough - add to main table
-            allStations.push([id, stationData]);
-          }
         }
       });
 
@@ -366,34 +296,33 @@ async function loadWindTable() {
 
     // Short names for mobile display
     const shortNames = {
-      "Vancouver Int'l Airport": "YVR",
-      "Southern Georgia Strait": "S. Georgia Str.",
+      "Bellingham International Airport": "Bellingham",
+      "Southern Georgia Strait": "S. Georgia",
+      "Colebrook Pump House": "Colebrook",
       "Jericho Sailing Centre": "Jericho",
       "Crescent Channel Ocean": "Crescent Ch.",
       "White Rock East Beach": "White Rock",
       "Orcas Island Airport": "Orcas Island",
       "Boundary Bay Airport": "Boundary Bay",
-      "Crescent Beach Ocean": "Crescent Beach",
-      "Bellingham Airport": "Bellingham",
-      "Tsawwassen Ferry": "Tsawwassen",
-      "Ballenas Island": "Ballenas Is.",
+      "Crescent Beach Ocean": "Crescent Bch.",
       "Entrance Island": "Entrance Is.",
       "La Perouse Bank": "La Perouse",
       "Point Atkinson": "Pt. Atkinson",
-      "Sisters Island": "Sisters Is.",
-      "Saturna Island": "Saturna Is.",
+      "Sisters Islets": "Sisters Is.",
+      "YVR Airport": "YVR",
+      Tsawwassen: "Tsawwassen",
     };
 
     let tableHTML = `
       <thead>
         <tr>
           <th class="sortable" data-column="name" data-type="string">Station <span class="sort-indicator"></span></th>
+          <th class="sortable" data-column="observation_time" data-type="date">Updated <span class="sort-indicator"></span></th>
           <th class="sortable" data-column="wind_direction" data-type="number"><span class="hide-mobile">Direction</span><span class="show-mobile">Dir</span> <span class="sort-indicator"></span></th>
           <th class="sortable" data-column="wind_speed_kt" data-type="number"><span class="hide-mobile">Speed (kt)</span><span class="show-mobile">kt</span> <span class="sort-indicator"></span></th>
           <th class="sortable" data-column="wind_gust_kt" data-type="number"><span class="hide-mobile">Gust (kt)</span><span class="show-mobile">Gst</span> <span class="sort-indicator"></span></th>
           <th class="sortable" data-column="air_temp_c" data-type="number">Temp (°C) <span class="sort-indicator"></span></th>
           <th class="sortable" data-column="pressure_hpa" data-type="number">Pressure (hPa) <span class="sort-indicator"></span></th>
-          <th class="sortable" data-column="observation_time" data-type="date">Updated <span class="sort-indicator"></span></th>
           <th>View:</th>
         </tr>
       </thead>
@@ -436,6 +365,9 @@ async function loadWindTable() {
         ? ` <span class="hide-mobile" style="font-size: 0.8em;">${flag}</span>`
         : "";
 
+      const baseName = station.name.replace(" 🌊", "");
+      const mobileName = shortNames[baseName] || station.name;
+
       tableHTML += `
         <tr ${rowClass}
             data-name="${station.name}"
@@ -445,13 +377,13 @@ async function loadWindTable() {
             data-air_temp_c="${station.air_temp_c || ""}"
             data-pressure_hpa="${station.pressure_hpa || ""}"
             data-observation_time="${station.observation_time}">
-          <td>${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;"><strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${shortNames[station.name] || station.name}</span></strong>${flagSpan}</a>` : `<strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${shortNames[station.name] || station.name}</span></strong>${flagSpan}`}</td>
+          <td>${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;"><strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}</a>` : `<strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}`}</td>
+          <td style="white-space: nowrap;"><span class="hide-mobile">${updated}</span><span class="show-mobile">${formatTimeOnly(station.observation_time)}</span></td>
           <td style="white-space: nowrap;">${direction}</td>
           <td>${windSpeed}</td>
           <td>${windGust}</td>
           <td>${temp}</td>
           <td>${pressure}</td>
-          <td>${updated}</td>
           <td style="white-space: nowrap;">
             <a href="#map-section" class="wind-table-action-link" data-action="map" data-station-id="${id}" style="color: var(--color-primary); text-decoration: none; cursor: pointer; margin-right: 0.5rem;">Map</a>
             <span style="color: var(--color-border);">/</span>
@@ -560,33 +492,9 @@ function populateStationDropdown() {
  */
 async function loadWindTimeseries() {
   try {
-    // Load both wind station and buoy timeseries data
-    const [windData, buoyData] = await Promise.all([
-      fetchWithTimeout(`/data/wind_timeseries_48hr.json?t=${Date.now()}`),
-      fetchWithTimeout(`/data/buoy_timeseries_48h.json?t=${Date.now()}`),
-    ]);
-
-    // Merge wind and buoy data
-    windTimeseriesData = { ...windData };
-
-    // Add buoys that have wind data
-    Object.entries(buoyData)
-      .filter(([key]) => key !== "_meta")
-      .forEach(([id, buoy]) => {
-        // Check if buoy has wind speed data
-        if (
-          buoy.timeseries &&
-          buoy.timeseries.wind_speed &&
-          buoy.timeseries.wind_speed.data &&
-          buoy.timeseries.wind_speed.data.length > 0
-        ) {
-          windTimeseriesData[id] = {
-            name: buoy.name + " 🌊",
-            timeseries: buoy.timeseries,
-            isBuoy: true, // Flag to handle different data structure
-          };
-        }
-      });
+    // Wait for shared data store (fetched and normalized by wind-data.js)
+    await window.windData.ready;
+    windTimeseriesData = window.windData.timeseries;
 
     const select = document.getElementById("wind-station-select");
     const searchInput = document.getElementById("wind-station-search");
@@ -763,25 +671,20 @@ function renderWind24HourTable(stationId) {
   const table = document.getElementById("wind-24hr-table");
   if (!table) return;
 
-  // Extract timeseries data
-  const timeseries = station.timeseries;
-  const isBuoy = station.isBuoy;
+  // Update station name heading above the table
+  const stationNameEl = document.getElementById("wind-24hr-station-name");
+  if (stationNameEl) {
+    stationNameEl.textContent = station.name.replace(" \u{1F30A}", "");
+    stationNameEl.style.display = "block";
+  }
 
-  // Get data arrays
-  const windSpeedArray =
-    isBuoy && timeseries.wind_speed?.data
-      ? timeseries.wind_speed.data
-      : timeseries.wind_speed || [];
-  const windGustArray =
-    isBuoy && timeseries.wind_gust?.data ? timeseries.wind_gust.data : timeseries.wind_gust || [];
-  const windDirArray =
-    isBuoy && timeseries.wind_direction?.data
-      ? timeseries.wind_direction.data
-      : timeseries.wind_direction || [];
-  const airTempArray =
-    isBuoy && timeseries.air_temp?.data ? timeseries.air_temp.data : timeseries.air_temp || [];
-  const pressureArray =
-    isBuoy && timeseries.pressure?.data ? timeseries.pressure.data : timeseries.pressure || [];
+  // Extract timeseries data (all normalized to flat arrays by wind-data.js)
+  const timeseries = station.timeseries;
+  const windSpeedArray = timeseries.wind_speed || [];
+  const windGustArray = timeseries.wind_gust || [];
+  const windDirArray = timeseries.wind_direction || [];
+  const airTempArray = timeseries.air_temp || [];
+  const pressureArray = timeseries.pressure || [];
 
   // Create a merged dataset by time
   const dataByTime = new Map();
@@ -861,6 +764,7 @@ function renderWind24HourTable(stationId) {
     hourlyTimes.forEach((time, index) => {
       const data = dataByTime.get(time);
       const formattedTime = formatTimestamp(time);
+      const mobileTime = formatTimeOnly(time);
       const speed = data.speed != null ? Math.round(data.speed) : "—";
       const gust = data.gust != null ? Math.round(data.gust) : "—";
       const temp = data.temp != null ? data.temp.toFixed(1) : "—";
@@ -878,7 +782,7 @@ function renderWind24HourTable(stationId) {
 
       tableHTML += `
         <tr${rowClass}>
-          <td>${formattedTime}</td>
+          <td style="white-space: nowrap;"><span class="hide-mobile">${formattedTime}</span><span class="show-mobile">${mobileTime}</span></td>
           <td>${direction}</td>
           <td>${speed}</td>
           <td>${gust}</td>
@@ -985,21 +889,11 @@ function renderWindChart(stationId) {
     windChart = echarts.init(chartContainer);
   }
 
-  // Extract timeseries data (handle both wind station and buoy formats)
+  // Extract timeseries data (all normalized to flat arrays by wind-data.js)
   const timeseries = station.timeseries;
-  const isBuoy = station.isBuoy;
-
-  // Buoys have {data: [...], name, unit} structure, wind stations have simple arrays
-  const windSpeedArray =
-    isBuoy && timeseries.wind_speed?.data
-      ? timeseries.wind_speed.data
-      : timeseries.wind_speed || [];
-  const windGustArray =
-    isBuoy && timeseries.wind_gust?.data ? timeseries.wind_gust.data : timeseries.wind_gust || [];
-  const windDirArray =
-    isBuoy && timeseries.wind_direction?.data
-      ? timeseries.wind_direction.data
-      : timeseries.wind_direction || [];
+  const windSpeedArray = timeseries.wind_speed || [];
+  const windGustArray = timeseries.wind_gust || [];
+  const windDirArray = timeseries.wind_direction || [];
 
   const windSpeedData = windSpeedArray.map((p) => ({ time: p.time, value: p.value }));
   const windGustData = windGustArray.map((p) => ({ time: p.time, value: p.value }));
@@ -1174,7 +1068,7 @@ function renderWindChart(stationId) {
  * Select a station in the dropdown and display its chart
  * Called from map popups and URL hash navigation
  */
-function selectStationAndShowChart(stationId) {
+async function selectStationAndShowChart(stationId) {
   const select = document.getElementById("wind-station-select");
   const chartSection = document.getElementById("wind-chart-section");
 
@@ -1183,37 +1077,21 @@ function selectStationAndShowChart(stationId) {
     return;
   }
 
-  // Wait for timeseries data to load if needed
-  const attemptSelection = (retryCount = 0) => {
-    if (!windTimeseriesData || Object.keys(windTimeseriesData).length === 0) {
-      if (retryCount < 10) {
-        setTimeout(() => attemptSelection(retryCount + 1), 300);
-        return;
-      }
-      console.warn("Wind timeseries data not loaded");
-      return;
-    }
+  // Wait for shared data to be ready (no more retry polling)
+  await window.windData.ready;
 
-    // Check if station exists
-    if (!windTimeseriesData[stationId]) {
-      console.warn(`Station ${stationId} not found in timeseries data`);
-      return;
-    }
+  if (!windTimeseriesData || !windTimeseriesData[stationId]) {
+    console.warn(`Station ${stationId} not found in timeseries data`);
+    return;
+  }
 
-    // Select the station
-    select.value = stationId;
+  select.value = stationId;
+  renderWindChart(stationId);
+  renderWind24HourTable(stationId);
 
-    // Render the chart and table
-    renderWindChart(stationId);
-    renderWind24HourTable(stationId);
-
-    // Scroll to chart section
-    setTimeout(() => {
-      chartSection.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-  };
-
-  attemptSelection();
+  setTimeout(() => {
+    chartSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 100);
 }
 
 // Make function globally accessible
