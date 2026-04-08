@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Pre-commit hook: runs pytest, ruff, and eslint on staged files.
+# Fails fast on first error to keep feedback quick.
+#
+# Install: ln -sf ../../scripts/hooks/pre-commit .git/hooks/pre-commit
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# ── Python: ruff check ───────────────────────────────────────
+STAGED_PY=$(git diff --cached --name-only --diff-filter=ACM -- '*.py')
+if [ -n "$STAGED_PY" ]; then
+    echo "🐍 ruff check (staged .py files)..."
+    echo "$STAGED_PY" | xargs .venv/bin/ruff check --no-fix
+fi
+
+# ── Python: pytest (exclude TestSystemHealth — depends on external station availability) ──
+echo "🧪 pytest..."
+.venv/bin/pytest tests/ -q --tb=line --deselect=tests/test_integration.py::TestSystemHealth
+
+# ── JavaScript: eslint ───────────────────────────────────────
+STAGED_JS=$(git diff --cached --name-only --diff-filter=ACM -- 'site/assets/js/**/*.js')
+if [ -n "$STAGED_JS" ]; then
+    echo "📐 eslint (staged .js files)..."
+    echo "$STAGED_JS" | xargs npx eslint
+fi
+
+echo "✅ All checks passed."
