@@ -142,7 +142,7 @@ SURREY_API_PASSWORD=surreyrain
 0 9 * * * crontab -l > /home/keelando/envcan_wave/config/crontab.txt
 
 # Git auto-backup - envcan_wave repo (07:03 UTC / 11:03pm PT)
-3 7 * * * cd /home/keelando/envcan_wave && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
+3 7 * * * cd /home/keelando/envcan_wave && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit --no-verify -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
 
 
 # Sync venv with requirements.txt (07:04 UTC / 11:04pm PT, after git backup)
@@ -155,7 +155,7 @@ SURREY_API_PASSWORD=surreyrain
 0 0 * * * find /home/keelando/envcan_wave/logs -name "*.log" -type f -mtime +7 -delete
 
 # Git auto-backup - minecraft bot (07:05 UTC / 11:05pm PT)
-5 7 * * * cd /home/keelando/minecraft && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/minecraft/git_backup.log 2>&1
+5 7 * * * cd /home/keelando/minecraft && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit --no-verify -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/minecraft/git_backup.log 2>&1
 
 
 # Generate minecraft codebase digests (daily at 07:00 UTC / 11pm PT)
