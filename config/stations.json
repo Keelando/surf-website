@@ -18,7 +18,9 @@
         "air_temp",
         "sea_temp",
         "pressure"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=02&siteID=14305&stationID=46146",
+      "flag": "🇨🇦"
     },
     "4600303": {
       "id": "4600303",
@@ -38,7 +40,10 @@
         "air_temp",
         "sea_temp",
         "pressure"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=02&siteID=14305&stationID=46303",
+      "short_name": "S. Georgia",
+      "flag": "🇨🇦"
     },
     "4600304": {
       "id": "4600304",
@@ -58,7 +63,9 @@
         "air_temp",
         "sea_temp",
         "pressure"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46304",
+      "flag": "🇨🇦"
     },
     "4600131": {
       "id": "4600131",
@@ -78,7 +85,9 @@
         "air_temp",
         "sea_temp",
         "pressure"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46131",
+      "flag": "🇨🇦"
     },
     "4600206": {
       "id": "4600206",
@@ -99,7 +108,10 @@
         "air_temp",
         "sea_temp",
         "pressure"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46206",
+      "short_name": "La Perouse",
+      "flag": "🇨🇦"
     },
     "46087": {
       "id": "46087",
@@ -125,7 +137,9 @@
         "air_temp",
         "sea_temp",
         "pressure"
-      ]
+      ],
+      "source_url": "https://www.ndbc.noaa.gov/station_page.php?station=46087",
+      "flag": "🇺🇸"
     },
     "46088": {
       "id": "46088",
@@ -151,7 +165,9 @@
         "air_temp",
         "sea_temp",
         "pressure"
-      ]
+      ],
+      "source_url": "https://www.ndbc.noaa.gov/station_page.php?station=46088",
+      "flag": "🇺🇸"
     },
     "46267": {
       "id": "46267",
@@ -169,7 +185,9 @@
         "air_temp",
         "sea_temp"
       ],
-      "note": "Wind data typically missing"
+      "note": "Wind data typically missing",
+      "source_url": "https://www.ndbc.noaa.gov/station_page.php?station=46267",
+      "flag": "🇺🇸"
     },
     "CRPILE": {
       "id": "CRPILE",
@@ -207,7 +225,9 @@
         "water_level_predicted": 2620,
         "water_level_observed": 2296
       },
-      "note": "Water levels referenced to CGVD28 GVRD datum"
+      "note": "Water levels referenced to CGVD28 GVRD datum",
+      "short_name": "Crescent Bch.",
+      "flag": "🏛️"
     },
     "CRCHAN": {
       "id": "CRCHAN",
@@ -237,7 +257,9 @@
         "water_level_predicted": 2621,
         "water_level_observed": 2279
       },
-      "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum"
+      "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum",
+      "short_name": "Crescent Ch.",
+      "flag": "🏛️"
     }
   },
   "tides": {
@@ -551,7 +573,10 @@
         "air_temp",
         "pressure",
         "rainfall"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06100&stationID=WGT",
+      "short_name": "Sisters Is.",
+      "flag": "🇨🇦"
     },
     "CWGB": {
       "id": "CWGB",
@@ -569,7 +594,9 @@
         "air_temp",
         "pressure",
         "rainfall"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=WGB",
+      "flag": "🇨🇦"
     },
     "CWEL": {
       "id": "CWEL",
@@ -587,7 +614,10 @@
         "air_temp",
         "pressure",
         "rainfall"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06200&stationID=WEL",
+      "short_name": "Entrance Is.",
+      "flag": "🇨🇦"
     },
     "CWAS": {
       "id": "CWAS",
@@ -605,7 +635,9 @@
         "air_temp",
         "pressure",
         "rainfall"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06300&stationID=WAS",
+      "flag": "🇨🇦"
     },
     "CWSB": {
       "id": "CWSB",
@@ -623,7 +655,10 @@
         "air_temp",
         "pressure",
         "rainfall"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06300&stationID=WSB",
+      "short_name": "Pt. Atkinson",
+      "flag": "🇨🇦"
     },
     "CVTF": {
       "id": "CVTF",
@@ -641,7 +676,9 @@
         "air_temp",
         "pressure",
         "rainfall"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06500&stationID=VTF",
+      "flag": "🇨🇦"
     },
     "CWVF": {
       "id": "CWVF",
@@ -659,7 +696,9 @@
         "air_temp",
         "pressure",
         "rainfall"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06600&stationID=WVF",
+      "flag": "🇨🇦"
     },
     "CWEZ": {
       "id": "CWEZ",
@@ -677,7 +716,9 @@
         "air_temp",
         "pressure",
         "rainfall"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06700&stationID=WEZ",
+      "flag": "🇨🇦"
     },
     "CWQK": {
       "id": "CWQK",
@@ -695,7 +736,9 @@
         "air_temp",
         "pressure",
         "rainfall"
-      ]
+      ],
+      "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06800&stationID=WQK",
+      "flag": "🇨🇦"
     },
     "CYVR": {
       "id": "CYVR",
@@ -713,7 +756,10 @@
         "air_temp",
         "pressure",
         "rainfall"
-      ]
+      ],
+      "source_url": "https://spaces.navcanada.ca/workspace/aeroview/CYVR",
+      "short_name": "YVR",
+      "flag": "🇨🇦"
     },
     "CZBB": {
       "id": "CZBB",
@@ -731,7 +777,10 @@
         "air_temp",
         "pressure",
         "humidity"
-      ]
+      ],
+      "source_url": "https://spaces.navcanada.ca/workspace/aeroview/CZBB",
+      "short_name": "Boundary Bay",
+      "flag": "🇨🇦"
     },
     "JERICHO": {
       "id": "JERICHO",
@@ -755,7 +804,10 @@
         "wind_chill",
         "heat_index"
       ],
-      "note": "Excellent English Bay coverage for sailors - includes wind chill for wetsuit selection"
+      "note": "Excellent English Bay coverage for sailors - includes wind chill for wetsuit selection",
+      "source_url": "https://jsca.bc.ca/services/weather/",
+      "short_name": "Jericho",
+      "flag": "⛵"
     },
     "KBLI": {
       "id": "KBLI",
@@ -779,7 +831,10 @@
         "wind_chill",
         "heat_index"
       ],
-      "note": "Northern Puget Sound coverage - NWS API provides sea level pressure and visibility"
+      "note": "Northern Puget Sound coverage - NWS API provides sea level pressure and visibility",
+      "source_url": "https://www.weather.gov/wrh/timeseries?site=KBLI",
+      "short_name": "Bellingham",
+      "flag": "🇺🇸"
     },
     "KORS": {
       "id": "KORS",
@@ -803,7 +858,10 @@
         "wind_chill",
         "heat_index"
       ],
-      "note": "San Juan Islands coverage - fills gap between Canadian stations and northern Puget Sound"
+      "note": "San Juan Islands coverage - fills gap between Canadian stations and northern Puget Sound",
+      "source_url": "https://www.weather.gov/wrh/timeseries?site=KORS",
+      "short_name": "Orcas Island",
+      "flag": "🇺🇸"
     },
     "whiterock_east": {
       "id": "whiterock_east",
@@ -825,7 +883,10 @@
         "dewpoint",
         "precipitation"
       ],
-      "note": "Coastal weather station at White Rock pier - excellent Boundary Bay coverage"
+      "note": "Coastal weather station at White Rock pier - excellent Boundary Bay coverage",
+      "source_url": "https://www.whiterockcity.ca/1000/Weather-Station",
+      "short_name": "White Rock",
+      "flag": "🏛️"
     },
     "COLEB": {
       "id": "COLEB",
@@ -850,7 +911,9 @@
         "wind_gust": 1427,
         "air_temp": 1439
       },
-      "note": "LAND-BASED wind monitoring station at pump house - NOT a buoy, NO wave data"
+      "note": "LAND-BASED wind monitoring station at pump house - NOT a buoy, NO wave data",
+      "short_name": "Colebrook",
+      "flag": "🏛️"
     },
     "CPMW1": {
       "id": "CPMW1",
@@ -866,7 +929,9 @@
         "wind_gust",
         "wind_direction",
         "air_temp"
-      ]
+      ],
+      "source_url": "https://www.ndbc.noaa.gov/station_page.php?station=cpmw1",
+      "flag": "🇺🇸"
     },
     "SISW1": {
       "id": "SISW1",
@@ -883,7 +948,9 @@
         "wind_direction",
         "air_temp",
         "pressure"
-      ]
+      ],
+      "source_url": "https://www.ndbc.noaa.gov/station_page.php?station=sisw1",
+      "flag": "🇺🇸"
     }
   },
   "lightstations": {

@@ -23,44 +23,58 @@ Audit performed 2026-04-07, updated 2026-04-08. Covers `site/winds.html`, `site/
 - Added station name heading above the 24-hour data table
 - Improved alternating row contrast (zebra stripe alpha: 0.03→0.06 light, 0.02→0.05 dark)
 
-## Stage 2 — Code Organization (TODO)
+## Stage 2 — Code Organization
 
-### 1. Function duplication across files
-- `degreesToCardinal()` — still in `wind-stations.js` (winds-map.js copy removed, but chart-utils doesn't have it)
-- `getDirectionalArrow()` — diverged implementations in `wind-stations.js` and `winds-map.js` (unused `arrowType` param vs `currentColor`)
-- `setSafeHTML()` — duplicated in 11 JS files across the site
-- `formatTimestamp()` / `formatTimeOnly()` — duplicated in 4 JS files
-- Popup HTML generation — nearly identical in `addWindStationMarker()` and `addBuoyWindMarker()` in `winds-map.js` (~65 lines duplicated)
+### Step 1. Extract shared utils (DONE 2026-04-09)
+- Moved `degreesToCardinal`, `getDirectionalArrow`, `formatTimestamp`, `formatTimeOnly` to `chart-utils-v4.js`
+- Consolidated `degreesToCompass()` (wind-chart-v4.js, wave-chart-v4.js) into `degreesToCardinal()`
+- Fixed dark-mode bug: arrow color now uses `var(--color-primary-dark, #004b7c)` instead of hardcoded `#004b7c`
+- Removed duplicates from `wind-stations.js`, `winds-map.js`, `main.js`
+- Updated `comparison-chart-v4.js` call site
+- `setSafeHTML()` left in place (site-wide concern, not winds-specific)
 
-### 2. Oversized functions
-- `loadWindTable()` — still ~250 lines, does 7 things (process stations, build source links, build short names, render table, init sorting, render offline list, update footer)
-- `renderWindChart()` — ~190 lines
-- `renderWind24HourTable()` — ~170 lines
-- `addWindStationMarker()` and `addBuoyWindMarker()` — nearly identical ~100-line functions that should be unified
+### Step 2. Unify marker functions (DONE 2026-04-09)
+- Merged `addWindStationMarker()` + `addBuoyWindMarker()` into single `addWindMarker(station, currentData, isBuoy)`
+- Extracted `getStationTypeLabel()` helper
+- ~200 lines → ~110 lines in `winds-map.js`
 
-### 3. Hardcoded data that should be in config/stations.json
-- `sourceLinks` object (37 lines of URLs)
-- `shortNames` object
-- Station type detection via ID prefix (`id.startsWith("4600")`, `id.startsWith("C")`, etc.) — fragile
+### Step 3. Unify arrow data functions (DONE 2026-04-09)
+- Unified `createWindDirectionArrows()` (wind-stations.js) and `createWindDirectionArrowData()` (wind-chart-v4.js) into single `createWindDirectionArrowData()` in `chart-utils-v4.js`
+- Kept the sparse-data-aware sampling from wind-stations.js version + `colorOverride` param from wind-chart-v4.js version
+- Accepts both `{time, value}` objects and raw values for speed/gust arrays
 
-### 4. Extract constants
+### Step 4. Clarify renderWindChart implementations (DONE 2026-04-09)
+- Renamed wind-chart-v4.js version to `renderBuoyWindChart()` (used on index/buoy page)
+- Updated call site in `charts-v4.js`
+- Improved wind-stations.js `renderWindChart()` to use shared chart-utils patterns: `sanitizeSeriesData()`, `getResponsiveGridConfig()`, `formatCompactTimeLabel`, responsive title font, dark-mode area opacity, `try/catch` with `showChartError`
+
+### Step 5. Move hardcoded mappings to config (DONE 2026-04-09)
+- Added `source_url`, `short_name`, `flag` fields to `config/stations.json` for all wind and buoy stations
+- Replaced ~70 lines of hardcoded `sourceLinks` object, `shortNames` object, and flag if/else logic with `getStationMeta(id)` lookup
+- New stations only need config changes — no JS edits required
+
+### Step 6. Extract constants (TODO)
 - Stale/offline thresholds: `2` and `4` hours (used in 2 places each)
-- Arrow sampling: `isMobile ? 6 : 3` hours, `maxArrows = isMobile ? 4 : 8`
-- Popup animation delay: `300ms`
-- Timestamp matching tolerance: `1800000` (30 min)
+- Popup animation delay: `300ms` and `500ms` in winds-map.js / wind-stations.js
+- Timestamp matching tolerance: `1800000` (30 min) in tooltip formatters
+- Default visible rows: `12`
 
-### 5. `window.*` global exports scattered throughout
+### Step 7. Break up oversized functions (TODO)
+- `loadWindTable()` — still ~200 lines, does: process stations, render table, init sorting, render offline list, update footer
+- `renderWind24HourTable()` — ~170 lines (includes 5 near-identical forEach loops for the dataByTime merge)
+
+### Step 8. Address `window.*` globals (TODO)
 - `viewStationChart`, `showStationOnMap`, `selectStationAndShowChart` manually attached to `window`
 - `windsMap.focusStation` exported via `window.windsMap`
 - Plan module boundaries and inter-file communication
 
-### Recommended order
-1. Extract shared utils — move `degreesToCardinal`, `getDirectionalArrow`, `fetchWithTimeout`, `setSafeHTML`, `formatTimestamp` to a shared module
-2. Unify marker functions in `winds-map.js` — merge the two popup/marker builders
-3. Move hardcoded mappings (`sourceLinks`, `shortNames`, flag logic) into `stations.json` or a config
-4. Extract constants for thresholds, breakpoints, and magic numbers
-5. Break up `loadWindTable()` and other oversized functions
-6. Address `window.*` globals
+### Step 9. Review all Stage 2 changes (TODO)
+- Visual QA: take screenshots (light + dark) and compare against pre-refactor baseline
+- Run full test suite and lint
+- Verify no regressions on index page (buoy charts), winds page (table, map, chart, 24hr table), and other pages that share chart-utils
+- Check mobile rendering (table short names, responsive charts, arrow sampling)
+- Confirm source links, flags, and short names render correctly from config
+- Verify dark mode arrow colors fixed across all pages
 
 ## Stage 3 — Polish (TODO)
 
@@ -79,7 +93,7 @@ Audit performed 2026-04-07, updated 2026-04-08. Covers `site/winds.html`, `site/
 - `#e0e7ee` on map div border, `#ccc` on search input and dropdown
 
 ### 5. Dead code
-- `arrowType` parameter in `getDirectionalArrow()` (wind-stations.js) never used
+- `arrowType` parameter in `getDirectionalArrow()` — resolved in Stage 2 Step 1 (moved to chart-utils with both wind+wave support)
 
 ### 6. Event listener hygiene
 - Chart resize listener never cleaned up

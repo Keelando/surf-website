@@ -134,7 +134,7 @@ function updateCharts(buoyId) {
 
   // Render each chart using the dedicated modules
   renderWaveChart(waveChart, buoy, buoyId);
-  renderWindChart(windChart, buoy);
+  renderBuoyWindChart(windChart, buoy);
   renderTemperatureChart(tempChart, buoy);
   renderComparisonChart(waveComparisonChart, filteredData);
 }

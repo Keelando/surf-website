@@ -12,73 +12,8 @@ function setSafeHTML(element, html) {
   }
 }
 
-// Helper: Convert degrees to cardinal direction (also used by winds-map.js via global scope)
-function degreesToCardinal(degrees) {
-  if (degrees == null) return null;
-  const directions = [
-    "N",
-    "NNE",
-    "NE",
-    "ENE",
-    "E",
-    "ESE",
-    "SE",
-    "SSE",
-    "S",
-    "SSW",
-    "SW",
-    "WSW",
-    "W",
-    "WNW",
-    "NW",
-    "NNW",
-  ];
-  const index = Math.round(degrees / 22.5) % 16;
-  return directions[index];
-}
-
-// Helper: Get directional arrow (SVG, rotated to exact degrees)
-// Based on buoy page implementation - provides infinite precision
-function getDirectionalArrow(degrees, arrowType = "wind") {
-  if (degrees == null || degrees === "—") return "";
-
-  // Meteorological convention: direction indicates WHERE wind is COMING FROM
-  // Arrow rotation: wind arrow points down by default, rotates to show direction wind is blowing TO
-  const rotation = degrees; // Wind arrow points down, so rotate by degrees directly
-
-  // SVG wind arrow pointing down
-  const svg = `<svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2v12m0 0l-3-3m3 3l3-3" stroke="#004b7c" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
-
-  return `<span style="display:inline-block;transform:rotate(${rotation}deg);margin-left:0.3rem;vertical-align:middle;">${svg}</span>`;
-}
-
-// Helper: Format timestamp to local time (time first, then date)
-function formatTimestamp(isoString) {
-  const date = new Date(isoString);
-  const time = date.toLocaleString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "America/Vancouver",
-  });
-  const day = date.toLocaleString("en-US", {
-    month: "numeric",
-    day: "numeric",
-    timeZone: "America/Vancouver",
-  });
-  return `${time} ${day}`;
-}
-
-// Helper: Format timestamp to time only (for mobile)
-function formatTimeOnly(isoString) {
-  const date = new Date(isoString);
-  return date.toLocaleString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "America/Vancouver",
-  });
-}
+// degreesToCardinal, getDirectionalArrow, formatTimestamp, formatTimeOnly
+// provided by chart-utils-v4.js (loaded earlier)
 
 // Global chart instance
 let windChart = null;
@@ -86,6 +21,14 @@ let windTimeseriesData = null;
 let allStationsList = []; // Store all stations
 let currentSort = { column: null, ascending: true };
 let currentWindTimeRange = 24; // Default to 24 hours
+
+/**
+ * Look up station metadata (source_url, short_name, flag) from stations.json
+ */
+function getStationMeta(id) {
+  const s = window.windData?.stations;
+  return s?.wind?.[id] || s?.buoys?.[id] || {};
+}
 
 /**
  * Filter wind timeseries data to specified time range (hours)
@@ -254,64 +197,7 @@ async function loadWindTable() {
     const stations = allStations;
     stations.sort((a, b) => a[1].name.localeCompare(b[1].name));
 
-    // Station-specific source links (used in table and offline list)
-    const sourceLinks = {
-      // Environment Canada Marine Stations
-      CWAS: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06300&stationID=WAS",
-      CWGT: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06100&stationID=WGT",
-      CWGB: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=WGB",
-      CWEL: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06200&stationID=WEL",
-      CWSB: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06300&stationID=WSB",
-      CVTF: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06500&stationID=VTF",
-      CWVF: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06600&stationID=WVF",
-      CWEZ: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06700&stationID=WEZ",
-      CWQK: "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06800&stationID=WQK",
-      // Environment Canada Airports
-      CYVR: "https://spaces.navcanada.ca/workspace/aeroview/CYVR",
-      CZBB: "https://spaces.navcanada.ca/workspace/aeroview/CZBB",
-      // Environment Canada Buoys
-      4600146:
-        "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=02&siteID=14305&stationID=46146",
-      4600304:
-        "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46304",
-      4600303:
-        "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=02&siteID=14305&stationID=46303",
-      4600131:
-        "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46131",
-      4600206:
-        "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46206",
-      // NOAA Buoys and Stations
-      46087: "https://www.ndbc.noaa.gov/station_page.php?station=46087",
-      46088: "https://www.ndbc.noaa.gov/station_page.php?station=46088",
-      46267: "https://www.ndbc.noaa.gov/station_page.php?station=46267",
-      CPMW1: "https://www.ndbc.noaa.gov/station_page.php?station=cpmw1",
-      SISW1: "https://www.ndbc.noaa.gov/station_page.php?station=sisw1",
-      // NOAA NWS Airports
-      KBLI: "https://www.weather.gov/wrh/timeseries?site=KBLI",
-      KORS: "https://www.weather.gov/wrh/timeseries?site=KORS",
-      // Municipal/Other
-      whiterock_east: "https://www.whiterockcity.ca/1000/Weather-Station",
-      JERICHO: "https://jsca.bc.ca/services/weather/",
-    };
-
-    // Short names for mobile display
-    const shortNames = {
-      "Bellingham International Airport": "Bellingham",
-      "Southern Georgia Strait": "S. Georgia",
-      "Colebrook Pump House": "Colebrook",
-      "Jericho Sailing Centre": "Jericho",
-      "Crescent Channel Ocean": "Crescent Ch.",
-      "White Rock East Beach": "White Rock",
-      "Orcas Island Airport": "Orcas Island",
-      "Boundary Bay Airport": "Boundary Bay",
-      "Crescent Beach Ocean": "Crescent Bch.",
-      "Entrance Island": "Entrance Is.",
-      "La Perouse Bank": "La Perouse",
-      "Point Atkinson": "Pt. Atkinson",
-      "Sisters Islets": "Sisters Is.",
-      "YVR Airport": "YVR",
-      Tsawwassen: "Tsawwassen",
-    };
+    // Station metadata (source_url, short_name, flag) from stations.json via getStationMeta()
 
     let tableHTML = `
       <thead>
@@ -347,26 +233,15 @@ async function loadWindTable() {
       const pressure = station.pressure_hpa != null ? station.pressure_hpa.toFixed(1) : "—";
       const updated = formatTimestamp(station.observation_time);
 
-      // Determine source link and flag
-      const sourceLink = sourceLinks[id] || null;
-      let flag = "";
-      if (id.startsWith("4600") || (id.startsWith("C") && id !== "CPMW1" && id !== "COLEB")) {
-        flag = "🇨🇦";
-      } else if (id.startsWith("46") || id === "CPMW1" || id === "SISW1" || id.startsWith("K")) {
-        flag = "🇺🇸";
-      } else if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
-        flag = "🏛️";
-      } else if (id === "whiterock_east") {
-        flag = "🏛️";
-      } else if (id === "JERICHO") {
-        flag = "⛵";
-      }
+      // Look up source link, flag, and short name from stations.json
+      const meta = getStationMeta(id);
+      const sourceLink = meta.source_url || null;
+      const flag = meta.flag || "";
       const flagSpan = flag
         ? ` <span class="hide-mobile" style="font-size: 0.8em;">${flag}</span>`
         : "";
 
-      const baseName = station.name.replace(" 🌊", "");
-      const mobileName = shortNames[baseName] || station.name;
+      const mobileName = meta.short_name || station.name;
 
       tableHTML += `
         <tr ${rowClass}
@@ -439,10 +314,11 @@ async function loadWindTable() {
           ageText = `${minutes}m`;
         }
 
-        // Add source link if available
+        // Add source link if available (from stations.json)
+        const offlineMeta = getStationMeta(id);
         let stationLink = station.name.replace(" 🌊", "");
-        if (sourceLinks[id]) {
-          stationLink = `<a href="${sourceLinks[id]}" target="_blank" rel="noopener" style="color: var(--color-accent-blue); text-decoration: none;">${stationLink}</a>`;
+        if (offlineMeta.source_url) {
+          stationLink = `<a href="${offlineMeta.source_url}" target="_blank" rel="noopener" style="color: var(--color-accent-blue); text-decoration: none;">${stationLink}</a>`;
         }
 
         offlineHTML += `<li style="margin-bottom: 0.25rem; break-inside: avoid;"><strong>${stationLink}</strong> (${ageText} ago)</li>`;
@@ -552,66 +428,7 @@ async function loadWindTimeseries() {
   }
 }
 
-/**
- * Create wind direction arrow data for scatter series
- */
-function createWindDirectionArrows(windDirectionTimes, windSpeedData, windGustData) {
-  if (!windDirectionTimes || windDirectionTimes.length === 0)
-    return { arrowData: [], maxValue: null };
-
-  // Find maximum wind speed/gust to position arrows at top
-  const allSpeeds = [...windSpeedData, ...windGustData].filter((v) => v != null && !isNaN(v));
-
-  const maxSpeed = allSpeeds.length > 0 ? Math.max(...allSpeeds) : 20;
-  const arrowYPosition = maxSpeed * 1.05; // Position arrows 5% above max value
-
-  const arrowData = [];
-
-  // Responsive sampling based on data density and screen size
-  // For 24h of 10-min data (144 points), sample intelligently:
-  // Mobile (< 600px): every 6 hours (~36 points → 4 arrows)
-  // Desktop: every 3 hours (~18 points → 8 arrows)
-  const isMobile = window.innerWidth < 600;
-  const hoursInterval = isMobile ? 6 : 3;
-
-  // Calculate approximate points per hour (assuming roughly uniform spacing)
-  const dataSpanHours =
-    windDirectionTimes.length > 1
-      ? (new Date(windDirectionTimes[windDirectionTimes.length - 1].time) -
-          new Date(windDirectionTimes[0].time)) /
-        (1000 * 60 * 60)
-      : 24;
-  const pointsPerHour = windDirectionTimes.length / dataSpanHours;
-  // For sparse data (< 8 points), show every point rather than risk showing 0-1 arrows
-  const maxArrows = isMobile ? 4 : 8;
-  const sampleInterval =
-    windDirectionTimes.length <= maxArrows
-      ? 1
-      : Math.max(1, Math.round(hoursInterval * pointsPerHour));
-
-  for (let i = 0; i < windDirectionTimes.length; i += sampleInterval) {
-    const dirPoint = windDirectionTimes[i];
-    if (!dirPoint || dirPoint.value == null) continue;
-
-    const timestamp = new Date(dirPoint.time).getTime();
-    const direction = dirPoint.value; // Meteorological direction (coming FROM)
-
-    // Arrow SVG points DOWN by default
-    // Wind direction indicates where wind comes FROM, arrow shows where it's blowing TO
-    // ECharts rotates counter-clockwise, so negate to get clockwise rotation
-    // 0° North wind → -0° = arrow points down, 90° East → -90° = arrow points left
-    arrowData.push({
-      value: [timestamp, arrowYPosition],
-      symbolRotate: -direction,
-      itemStyle: {
-        color: getChartThemeColors().marker,
-        opacity: 0.7,
-      },
-    });
-  }
-
-  return { arrowData, maxValue: arrowYPosition };
-}
+// createWindDirectionArrowData provided by chart-utils-v4.js (loaded earlier)
 
 /**
  * View chart for a specific station (from table link)
@@ -871,7 +688,8 @@ function updateWindTimeRangeLabels() {
 }
 
 /**
- * Render wind chart for selected station
+ * Render wind chart for selected station (winds page).
+ * For the buoy page wind chart, see renderBuoyWindChart() in wind-chart-v4.js.
  */
 function renderWindChart(stationId) {
   if (!windTimeseriesData || !stationId) return;
@@ -884,184 +702,148 @@ function renderWindChart(stationId) {
   const chartContainer = document.getElementById("wind-trend-chart");
   if (!chartContainer) return;
 
-  // Initialize chart if needed
-  if (!windChart) {
-    windChart = echarts.init(chartContainer);
-  }
+  try {
+    // Initialize chart if needed
+    if (!windChart) {
+      windChart = echarts.init(chartContainer);
+    }
 
-  // Extract timeseries data (all normalized to flat arrays by wind-data.js)
-  const timeseries = station.timeseries;
-  const windSpeedArray = timeseries.wind_speed || [];
-  const windGustArray = timeseries.wind_gust || [];
-  const windDirArray = timeseries.wind_direction || [];
+    // Extract timeseries data (all normalized to flat arrays by wind-data.js)
+    const timeseries = station.timeseries;
+    const windSpeedData = timeseries.wind_speed || [];
+    const windGustData = timeseries.wind_gust || [];
+    const windDirData = timeseries.wind_direction || [];
 
-  const windSpeedData = windSpeedArray.map((p) => ({ time: p.time, value: p.value }));
-  const windGustData = windGustArray.map((p) => ({ time: p.time, value: p.value }));
-  const windDirTimes = windDirArray;
+    // Create direction arrow data
+    const { arrowData, maxValue } = createWindDirectionArrowData(
+      windDirData,
+      windSpeedData,
+      windGustData,
+    );
 
-  // Create direction arrow data
-  const { arrowData, maxValue } = createWindDirectionArrows(
-    windDirTimes,
-    windSpeedData.map((d) => d.value),
-    windGustData.map((d) => d.value),
-  );
+    // Calculate y-axis max to ensure arrows are visible at top
+    const yAxisMax = maxValue ? Math.ceil(maxValue * 1.1) : null;
 
-  // Calculate y-axis max to ensure arrows are visible at top
-  const yAxisMax = maxValue ? Math.ceil(maxValue * 1.1) : null;
+    // Build legend data
+    const legendData = ["Wind Speed", "Wind Gust"];
+    if (arrowData.length > 0) {
+      legendData.push("Wind Direction");
+    }
 
-  // Build legend data
-  const legendData = ["Wind Speed", "Wind Gust"];
-  if (arrowData.length > 0) {
-    legendData.push("Wind Direction");
-  }
+    // Get theme-aware colors
+    const tc = getChartThemeColors();
 
-  // Get theme-aware colors
-  const tc = getChartThemeColors();
-
-  // Chart configuration
-  const option = {
-    backgroundColor: tc.background,
-    textStyle: { color: tc.text },
-    title: {
-      text: `${station.name.replace(" 🌊", "")} - Wind Conditions`,
-      left: "center",
-      textStyle: {
-        fontSize: 18,
-        fontWeight: 600,
-        color: tc.text,
-      },
-    },
-    tooltip: {
-      ...getMobileOptimizedTooltipConfig(),
-      formatter: (params) => {
-        if (!params || params.length === 0) return "";
-        const time = new Date(params[0].value[0])
-          .toLocaleString("en-US", {
-            month: "numeric",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-            timeZone: "America/Vancouver",
-          })
-          .replace(",", "");
-        let res = `<b>${time}</b><br/>`;
-
-        params.forEach((p) => {
-          if (p.seriesName === "Wind Direction") return; // Skip arrow series
-          if (p.value && p.value[1] != null) {
-            res += `${p.marker} ${p.seriesName}: ${Math.round(p.value[1])} kt<br/>`;
-          }
-        });
-
-        // Add wind direction to tooltip if available
-        const timestamp = new Date(params[0].value[0]).getTime();
-        const dirPoint = windDirTimes.find(
-          (d) => Math.abs(new Date(d.time).getTime() - timestamp) < 1800000,
-        );
-        if (dirPoint && dirPoint.value != null) {
-          const dir = Math.round(dirPoint.value);
-          const compass = degreesToCardinal(dir);
-          res += `🧭 Direction: ${dir}° (${compass})<br/>`;
-        }
-
-        return res;
-      },
-    },
-    legend: {
-      data: legendData,
-      top: 35,
+    windChart.setOption({
+      backgroundColor: tc.background,
       textStyle: { color: tc.text },
-    },
-    grid: {
-      left: "8%",
-      right: "5%",
-      bottom: "15%",
-      top: "20%",
-      containLabel: true,
-    },
-    xAxis: {
-      type: "time",
-      axisLabel: {
-        rotate: 45,
-        color: tc.mutedText,
-        formatter: (value) => {
-          const date = new Date(value);
-          return date
-            .toLocaleString("en-US", {
-              month: "numeric",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-              timeZone: "America/Vancouver",
-            })
-            .replace(",", "");
+      title: {
+        text: `${station.name.replace(" 🌊", "")} - Wind Conditions`,
+        left: "center",
+        textStyle: {
+          fontSize: window.innerWidth < 600 ? 12 : 14,
+          color: tc.text,
         },
       },
-      axisLine: { lineStyle: { color: tc.axisLine } },
-      splitLine: { show: true, lineStyle: { color: tc.gridLine } },
-    },
-    yAxis: {
-      type: "value",
-      name: "Speed (kt)",
-      max: yAxisMax,
-      axisLabel: { color: tc.mutedText },
-      nameTextStyle: { color: tc.text },
-      axisLine: { lineStyle: { color: tc.axisLine } },
-      splitLine: { lineStyle: { color: tc.gridLine } },
-    },
-    series: [
-      {
-        name: "Wind Speed",
-        type: "line",
-        data: windSpeedData.map((d) => [new Date(d.time).getTime(), d.value]),
-        smooth: true,
-        lineStyle: {
-          width: 2,
-          color: tc.series.secondary,
-        },
-        itemStyle: {
-          color: tc.series.secondary,
-        },
-        areaStyle: {
-          opacity: 0.1,
-        },
-      },
-      {
-        name: "Wind Gust",
-        type: "scatter",
-        data: windGustData.map((d) => [new Date(d.time).getTime(), d.value]),
-        symbol: "circle",
-        symbolSize: 6,
-        itemStyle: {
-          color: tc.negative,
-        },
-      },
-      {
-        name: "Wind Direction",
-        type: "scatter",
-        data: arrowData,
-        symbol: DIRECTION_ARROW_PATH,
-        symbolSize: 16,
-        symbolRotate: function (params) {
-          return arrowData[params.dataIndex]?.symbolRotate || 0;
-        },
-        itemStyle: {
-          color: function (params) {
-            return arrowData[params.dataIndex]?.itemStyle?.color || tc.marker;
-          },
-          opacity: function (params) {
-            return arrowData[params.dataIndex]?.itemStyle?.opacity || 0.7;
-          },
-        },
-        silent: true,
-        z: 2,
-      },
-    ],
-  };
+      tooltip: {
+        ...getMobileOptimizedTooltipConfig(),
+        formatter: (params) => {
+          if (!params || params.length === 0) return "";
+          const time = formatTimeAxis(new Date(params[0].value[0]).toISOString());
+          let res = `<b>${time}</b><br/>`;
 
-  windChart.setOption(option);
+          params.forEach((p) => {
+            if (p.seriesName === "Wind Direction") return;
+            if (p.value && p.value[1] != null) {
+              res += `${p.marker} ${p.seriesName}: ${Math.round(p.value[1])} kt<br/>`;
+            }
+          });
+
+          // Add wind direction to tooltip if available
+          const timestamp = new Date(params[0].value[0]).getTime();
+          const dirPoint = windDirData.find(
+            (d) => Math.abs(new Date(d.time).getTime() - timestamp) < 1800000,
+          );
+          if (dirPoint && dirPoint.value != null) {
+            const dir = Math.round(dirPoint.value);
+            const compass = degreesToCardinal(dir);
+            res += `🧭 Direction: ${dir}° (${compass})<br/>`;
+          }
+
+          return res;
+        },
+      },
+      legend: {
+        data: legendData,
+        bottom: getResponsiveLegendBottom(),
+        textStyle: { color: tc.text },
+      },
+      grid: getResponsiveGridConfig(false),
+      xAxis: {
+        type: "time",
+        axisLabel: {
+          fontSize: window.innerWidth < 600 ? 9 : 10,
+          rotate: window.innerWidth < 600 ? 30 : 0,
+          formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
+          hideOverlap: true,
+          margin: 10,
+          color: tc.mutedText,
+        },
+        axisTick: { show: true },
+        axisLine: { lineStyle: { color: tc.axisLine } },
+        splitLine: { show: true, lineStyle: { color: tc.gridLine } },
+      },
+      yAxis: {
+        type: "value",
+        name: "Speed (kt)",
+        max: yAxisMax,
+        axisLabel: { color: tc.mutedText },
+        nameTextStyle: { color: tc.text },
+        axisLine: { lineStyle: { color: tc.axisLine } },
+        splitLine: { lineStyle: { color: tc.gridLine } },
+      },
+      series: [
+        {
+          name: "Wind Speed",
+          type: "line",
+          data: sanitizeSeriesData(windSpeedData),
+          smooth: true,
+          connectNulls: false,
+          itemStyle: { color: tc.series.secondary },
+          areaStyle: tc.isDark ? { opacity: 0 } : { opacity: 0.1 },
+        },
+        {
+          name: "Wind Gust",
+          type: "scatter",
+          data: sanitizeSeriesData(windGustData),
+          symbol: "circle",
+          symbolSize: 6,
+          itemStyle: { color: tc.negative },
+        },
+        {
+          name: "Wind Direction",
+          type: "scatter",
+          data: arrowData,
+          symbol: DIRECTION_ARROW_PATH,
+          symbolSize: 16,
+          symbolRotate: function (params) {
+            return arrowData[params.dataIndex]?.symbolRotate || 0;
+          },
+          itemStyle: {
+            color: function (params) {
+              return arrowData[params.dataIndex]?.itemStyle?.color || tc.marker;
+            },
+            opacity: function (params) {
+              return arrowData[params.dataIndex]?.itemStyle?.opacity || 0.7;
+            },
+          },
+          silent: true,
+          z: 2,
+        },
+      ],
+    });
+  } catch (error) {
+    showChartError("wind-trend-chart", "Wind Chart", error);
+  }
 }
 
 /**

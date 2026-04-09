@@ -185,7 +185,7 @@ function renderSpectralCharts(waveChart, buoy, ts, theme) {
           );
           if (windDirPoint && windDirPoint.value != null) {
             const dir = Math.round(windDirPoint.value);
-            const compass = degreesToCompass(dir);
+            const compass = degreesToCardinal(dir);
             res += `🌊 Wind Wave Dir: ${dir}° (${compass})<br/>`;
           }
 
@@ -194,7 +194,7 @@ function renderSpectralCharts(waveChart, buoy, ts, theme) {
           );
           if (swellDirPoint && swellDirPoint.value != null) {
             const dir = Math.round(swellDirPoint.value);
-            const compass = degreesToCompass(dir);
+            const compass = degreesToCardinal(dir);
             res += `🌊 Swell Dir: ${dir}° (${compass})<br/>`;
           }
 
@@ -386,7 +386,7 @@ function renderSpectralCharts(waveChart, buoy, ts, theme) {
             );
             if (windDirPoint && windDirPoint.value != null) {
               const dir = Math.round(windDirPoint.value);
-              const compass = degreesToCompass(dir);
+              const compass = degreesToCardinal(dir);
               res += `🌊 Wind Wave Dir: ${dir}° (${compass})<br/>`;
             }
 
@@ -395,7 +395,7 @@ function renderSpectralCharts(waveChart, buoy, ts, theme) {
             );
             if (swellDirPoint && swellDirPoint.value != null) {
               const dir = Math.round(swellDirPoint.value);
-              const compass = degreesToCompass(dir);
+              const compass = degreesToCardinal(dir);
               res += `🌊 Swell Dir: ${dir}° (${compass})<br/>`;
             }
 
@@ -682,7 +682,7 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts, theme) {
             ); // Within 30 min
             if (dirPoint && dirPoint.value != null) {
               const dir = Math.round(dirPoint.value);
-              const compass = degreesToCompass(dir);
+              const compass = degreesToCardinal(dir);
               res += `🌊 Direction: ${dir}° (${compass})<br/>`;
             }
           }
@@ -739,30 +739,4 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts, theme) {
   );
 }
 
-/**
- * Convert degrees to compass direction
- * @param {number} degrees - Wave/wind direction in degrees
- * @returns {string} Compass direction (N, NE, E, etc.)
- */
-function degreesToCompass(degrees) {
-  const directions = [
-    "N",
-    "NNE",
-    "NE",
-    "ENE",
-    "E",
-    "ESE",
-    "SE",
-    "SSE",
-    "S",
-    "SSW",
-    "SW",
-    "WSW",
-    "W",
-    "WNW",
-    "NW",
-    "NNW",
-  ];
-  const index = Math.round(degrees / 22.5) % 16;
-  return directions[index];
-}
+// degreesToCompass removed — use degreesToCardinal from chart-utils-v4.js

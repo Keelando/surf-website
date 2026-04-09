@@ -1,27 +1,5 @@
-// Helper function to convert degrees to cardinal direction
-function degreesToCardinal(degrees) {
-  if (degrees == null) return null;
-  const directions = [
-    "N",
-    "NNE",
-    "NE",
-    "ENE",
-    "E",
-    "ESE",
-    "SE",
-    "SSE",
-    "S",
-    "SSW",
-    "SW",
-    "WSW",
-    "W",
-    "WNW",
-    "NW",
-    "NNW",
-  ];
-  const index = Math.round(degrees / 22.5) % 16;
-  return directions[index];
-}
+// degreesToCardinal, getDirectionalArrow, formatTimestamp, formatTimeOnly
+// provided by chart-utils-v4.js (loaded earlier)
 
 // Helper function to format data age in human-readable format
 function formatDataAge(ageMinutes) {
@@ -39,23 +17,6 @@ function formatDataAge(ageMinutes) {
     const days = Math.round(ageMinutes / 1440);
     return `${days} day${days !== 1 ? "s" : ""} ago`;
   }
-}
-
-// Helper function to create rotated directional arrow
-// SVG approach - bulletproof across ALL browsers/devices (fixes Firefox Android tablet bug)
-function getDirectionalArrow(degrees, arrowType = "wind") {
-  if (degrees == null || degrees === "—") return "";
-
-  // Meteorological convention: direction indicates WHERE wind/waves are COMING FROM
-  const rotation = arrowType === "wind" ? degrees : degrees + 90;
-
-  // SVG arrows: wind points down, wave points right
-  const svg =
-    arrowType === "wind"
-      ? `<svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2v12m0 0l-3-3m3 3l3-3" stroke="#004b7c" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`
-      : `<svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 8h12m0 0l-3-3m3 3l-3 3" stroke="#004b7c" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
-
-  return `<span style="display:inline-block;transform:rotate(${rotation}deg);margin-left:0.3rem;vertical-align:middle;">${svg}</span>`;
 }
 
 // Helper function to create angular spread vector visualization

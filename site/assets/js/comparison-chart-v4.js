@@ -211,7 +211,7 @@ function renderComparisonChart(waveComparisonChart, chartData) {
             );
             if (dirPoint && dirPoint.value != null) {
               const dir = Math.round(dirPoint.value);
-              const compass = degreesToCompass(dir);
+              const compass = degreesToCardinal(dir);
               res += `🌊 Halibut Dir: ${dir}° (${compass})<br/>`;
             }
           }

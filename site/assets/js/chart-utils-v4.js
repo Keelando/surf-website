@@ -39,6 +39,169 @@ function calculateArrowRotation(direction) {
   return -direction;
 }
 
+/* =============================================================================
+   SHARED UTILITY FUNCTIONS
+   Deduplicated helpers used across multiple page scripts
+   ============================================================================= */
+
+/**
+ * Convert degrees to 16-point cardinal direction
+ * @param {number} degrees - Direction in degrees (0-360)
+ * @returns {string|null} Cardinal direction (N, NNE, NE, ...) or null
+ */
+function degreesToCardinal(degrees) {
+  if (degrees == null) return null;
+  const directions = [
+    "N",
+    "NNE",
+    "NE",
+    "ENE",
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSW",
+    "SW",
+    "WSW",
+    "W",
+    "WNW",
+    "NW",
+    "NNW",
+  ];
+  const index = Math.round(degrees / 22.5) % 16;
+  return directions[index];
+}
+
+/**
+ * Create rotated directional arrow (inline SVG)
+ * Supports wind (↓ default) and wave (→ default) arrow types.
+ * Uses CSS variable for color so it works in both light and dark themes.
+ *
+ * @param {number} degrees - Meteorological direction (where wind/waves come FROM)
+ * @param {string} arrowType - "wind" or "wave"
+ * @returns {string} HTML string with rotated SVG arrow
+ */
+function getDirectionalArrow(degrees, arrowType = "wind") {
+  if (degrees == null || degrees === "—") return "";
+
+  const rotation = arrowType === "wind" ? degrees : degrees + 90;
+
+  const svg =
+    arrowType === "wind"
+      ? `<svg width="16" height="16" viewBox="0 0 16 16" style="color: var(--color-primary-dark, #004b7c);"><path d="M8 2v12m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`
+      : `<svg width="16" height="16" viewBox="0 0 16 16" style="color: var(--color-primary-dark, #004b7c);"><path d="M2 8h12m0 0l-3-3m3 3l-3 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
+
+  return `<span style="display:inline-block;transform:rotate(${rotation}deg);margin-left:0.3rem;vertical-align:middle;">${svg}</span>`;
+}
+
+/**
+ * Format ISO timestamp to "HH:MM M/D" in Pacific time
+ * @param {string} isoString - ISO 8601 timestamp
+ * @returns {string} Formatted time string
+ */
+function formatTimestamp(isoString) {
+  const date = new Date(isoString);
+  const time = date.toLocaleString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "America/Vancouver",
+  });
+  const day = date.toLocaleString("en-US", {
+    month: "numeric",
+    day: "numeric",
+    timeZone: "America/Vancouver",
+  });
+  return `${time} ${day}`;
+}
+
+/**
+ * Format ISO timestamp to "HH:MM" in Pacific time (for mobile)
+ * @param {string} isoString - ISO 8601 timestamp
+ * @returns {string} Formatted time string
+ */
+function formatTimeOnly(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "America/Vancouver",
+  });
+}
+
+/**
+ * Create wind direction arrow data for ECharts scatter series.
+ * Positions arrows at the top of the chart, sampled responsively.
+ * Handles sparse data gracefully (shows every point if fewer than maxArrows).
+ *
+ * @param {Array} windDirectionData - Array of {time, value} direction points
+ * @param {Array} windSpeedData - Array of {time, value} speed points (for y-axis max)
+ * @param {Array} windGustData - Array of {time, value} gust points (for y-axis max)
+ * @param {string} [colorOverride] - Optional color override (defaults to theme marker color)
+ * @returns {Object} { arrowData, maxValue } for ECharts series and y-axis scaling
+ */
+function createWindDirectionArrowData(
+  windDirectionData,
+  windSpeedData,
+  windGustData,
+  colorOverride,
+) {
+  if (!windDirectionData || windDirectionData.length === 0)
+    return { arrowData: [], maxValue: null };
+
+  // Find maximum wind speed/gust to position arrows at top
+  const allSpeeds = [...windSpeedData, ...windGustData]
+    .map((d) => (typeof d === "object" ? d.value : d))
+    .filter((v) => v != null && !isNaN(v));
+
+  const maxSpeed = allSpeeds.length > 0 ? Math.max(...allSpeeds) : 20;
+  const arrowYPosition = maxSpeed * 1.05;
+
+  const arrowData = [];
+  const arrowColor = colorOverride || getChartThemeColors().marker;
+
+  // Responsive sampling based on data density and screen size
+  const isMobile = window.innerWidth < 600;
+  const hoursInterval = isMobile ? 6 : 3;
+  const maxArrows = isMobile ? 4 : 8;
+
+  // Calculate sample interval from data density
+  const dataSpanHours =
+    windDirectionData.length > 1
+      ? (new Date(windDirectionData[windDirectionData.length - 1].time) -
+          new Date(windDirectionData[0].time)) /
+        (1000 * 60 * 60)
+      : 24;
+  const pointsPerHour = windDirectionData.length / dataSpanHours;
+
+  // For sparse data (fewer points than maxArrows), show every point
+  const sampleInterval =
+    windDirectionData.length <= maxArrows
+      ? 1
+      : Math.max(1, Math.round(hoursInterval * pointsPerHour));
+
+  for (let i = 0; i < windDirectionData.length; i += sampleInterval) {
+    const dirPoint = windDirectionData[i];
+    if (!dirPoint || dirPoint.value == null) continue;
+
+    const timestamp = new Date(dirPoint.time).getTime();
+    const direction = dirPoint.value;
+
+    arrowData.push({
+      value: [timestamp, arrowYPosition],
+      symbolRotate: -direction,
+      itemStyle: {
+        color: arrowColor,
+        opacity: 0.7,
+      },
+    });
+  }
+
+  return { arrowData, maxValue: arrowYPosition };
+}
+
 /**
  * Fetch with timeout and retry logic
  * @param {string} url - URL to fetch
