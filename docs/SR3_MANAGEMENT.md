@@ -7,7 +7,7 @@ SR3 subscriptions run as systemd services that auto-start on boot and auto-resta
 - `sr3-bc-buoys.service` — Environment Canada buoys
 - `sr3-bc-wind-stations.service` — Environment Canada wind stations
 - `sr3-marine-forecast.service` — Marine weather forecasts
-- `sr3-bc-lightstation-obs.service` — Lightstation FICN bulletins (pending deployment)
+- `sr3-bc-lightstation-obs.service` — Lightstation bulletins (SXCN23/25/26, SXCN50, FPCN61)
 
 ## Common Commands
 
@@ -55,12 +55,18 @@ sudo systemctl stop sr3-bc-buoys
 sudo systemctl start sr3-bc-buoys
 ```
 
+## Installation
+
+**sr3 is installed inside the project venv** at `.venv/bin/sr3` (metpx-sr3 pip package).
+All systemd services use the absolute path `/home/keelando/envcan_wave/.venv/bin/sr3`.
+If the venv is recreated, `pip install metpx-sr3` must be run or all four services will break.
+
 ## Config Files
 
 **Source of truth:** `config/sr3/*.conf` (in the repo — edit here first)
 **Deployed to:** `~/.config/sr3/subscribe/*.conf`
 **Systemd services:** `/etc/systemd/system/sr3-*.service`
-**Downloaded data:** `data/{buoy,wind,marine_forecast,lightstation_ficn}/`
+**Downloaded data:** `data/{buoy,wind,marine_forecast,lightstation_bulletins}/`
 
 ## Adding New Stations
 

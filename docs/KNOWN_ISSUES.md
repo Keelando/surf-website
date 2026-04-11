@@ -1,13 +1,5 @@
 # Known Issues
 
-## ⚠️ sr3 `logDir` deprecated option warning (Apr 11, 2026)
-
-All sr3 configs use `logDir` which triggers `undeclared option` errors in sr3 3.x logs. Non-breaking — systemd journal handles logging anyway — but noisy.
-
-**Fix:** Remove the `logDir` line from all `config/sr3/*.conf` files and redeploy.
-
----
-
 ## ⚠️ Lightstation health check blind spot (Apr 11, 2026)
 
 `check_lightstation_freshness()` in `scripts/monitoring/health_check.py` only checks stations already in the database. Stations configured in `config/stations.json` but with zero data (e.g. Cape Beale, Estevan Point, Lennard Island, Nootka) are invisible to the health check.
