@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-Parse BC Lightstation Reports (FPCN61 format) into SQLite.
+Parse BC Lightstation Reports (FPCN61 + SXCN) into SQLite.
 
 Extracts wind speed/direction, sea state, and swell information from
-text-based lightstation reports.
+text-based lightstation reports in two formats:
+  - FPCN61: verbose text format (every ~3 hours via HTTP polling)
+  - SXCN23/25/26: compact coded format (every 6 hours via sr3/AMQP)
 
 Usage:
     python3 parse_lightstation.py
@@ -22,9 +24,10 @@ logger = setup_logging("lightstation_parse", console=False)
 
 # Configuration
 DB_PATH = Path.home() / ".local" / "share" / "lightstation_data.sqlite"
-DATA_DIR = Path.home() / "envcan_wave" / "data" / "lightstation"
+FPCN61_DATA_DIR = Path.home() / "envcan_wave" / "data" / "lightstation"
+SXCN_DATA_DIR = Path.home() / "envcan_wave" / "data" / "lightstation_bulletins"
 
-# Regional sections in the report
+# Regional sections in the FPCN61 report
 REGIONS = [
     "STRAIT OF GEORGIA",
     "JUAN DE FUCA STRAIT",
@@ -32,6 +35,58 @@ REGIONS = [
     "CENTRAL COAST",
     "HECATE STRAIT",
 ]
+
+# SXCN abbreviated name → full name (matching FPCN61 conventions)
+SXCN_STATION_NAMES = {
+    # SXCN23 — North Coast / Hecate
+    "GREEN": "GREEN ISLAND",
+    "TRIPLE": "TRIPLE ISLAND",
+    "BONILLA": "BONILLA ISLAND",
+    "LANGARA": "LANGARA ISLAND",
+    "BOAT BLUFF": "BOAT BLUFF",
+    "MCINNES": "MCINNES ISLAND",
+    "IVORY": "IVORY ISLAND",
+    "DRYAD": "DRYAD POINT",
+    "ADDENBROKE": "ADDENBROKE ISLAND",
+    # SXCN25 — WCVI South / Tofino
+    "NOOTKA": "NOOTKA",
+    "ESTEVAN": "ESTEVAN POINT",
+    "LENNARD": "LENNARD ISLAND",
+    "CAPE BEALE": "CAPE BEALE",
+    # SXCN26 — Georgia Strait / S. Coast
+    "CHROME": "CHROME ISLAND",
+    "MERRY": "MERRY ISLAND",
+    "ENTRANCE": "ENTRANCE ISLAND",
+    "TRIAL IS": "TRIAL ISLAND",
+}
+
+# SXCN bulletin number → region
+SXCN_REGIONS = {
+    "23": "HECATE STRAIT",
+    "25": "WEST COAST VANCOUVER ISLAND",
+    "26": "STRAIT OF GEORGIA",
+}
+
+# SXCN sea condition abbreviations → full names (matching FPCN61)
+SXCN_SEA_CONDITIONS = {
+    "CHP": "CHOP",
+    "MOD": "MODERATE",
+    "MDT": "MODERATE",
+    "RGH": "ROUGH",
+    "RPLD": "RIPPLED",
+}
+
+# SXCN wind direction abbreviations
+SXCN_WIND_DIRS = {
+    "N": "NORTH", "NE": "NORTHEAST", "E": "EAST", "SE": "SOUTHEAST",
+    "S": "SOUTH", "SW": "SOUTHWEST", "W": "WEST", "NW": "NORTHWEST",
+}
+
+# SXCN swell direction abbreviations
+SXCN_SWELL_DIRS = {
+    "N": "NORTHERLY", "NE": "NORTHEASTERLY", "E": "EASTERLY", "SE": "SOUTHEASTERLY",
+    "S": "SOUTHERLY", "SW": "SOUTHWESTERLY", "W": "WESTERLY", "NW": "NORTHWESTERLY",
+}
 
 
 def extract_observation_day(report_time_line):
@@ -311,6 +366,178 @@ def parse_report_file(filepath):
         return []
 
 
+def parse_sxcn_time(header_line):
+    """
+    Parse observation time from SXCN header like "SXCN25 CWVR 112340".
+
+    Returns:
+        Unix timestamp (int) or None
+    """
+    match = re.search(r"SXCN\d+\s+CWVR\s+(\d{6})", header_line)
+    if not match:
+        return None
+
+    ddhhmm = match.group(1)
+    day = int(ddhhmm[0:2])
+    hour = int(ddhhmm[2:4])
+    minute = int(ddhhmm[4:6])
+
+    now_utc = datetime.now(timezone.utc)
+    year, month = now_utc.year, now_utc.month
+
+    try:
+        dt = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+    # If in the future, roll back to previous month
+    if dt > now_utc + timedelta(hours=1):
+        month -= 1
+        if month == 0:
+            month, year = 12, year - 1
+        try:
+            dt = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
+        except ValueError:
+            return None
+
+    return int(dt.timestamp())
+
+
+def parse_sxcn_station_line(line, region):
+    """
+    Parse a single SXCN compact observation line.
+
+    Examples:
+        "NOOTKA        CLDY 15 SW06E 1FT CHP LO SW"
+        "ESTEVAN       CLDY 15 SW05E 1FT CHP LO SW 1007.9R"
+        "LANGARA       PC 15 NW16 3FT MOD LO W"
+        "BOAT BLUFF    PC 15 CLM RPLD 2FT CHP IN FINLAYSON CHANNEL"
+        "TRIPLE        N/A"
+        "TRIAL IS      OVC 12R- SW18E3FT MDT FBNK DSTNT E-W"
+
+    Returns:
+        dict with parsed fields or None
+    """
+    line = line.strip()
+    if not line:
+        return None
+
+    # Split station name from observation data
+    # Station names are left-padded, data starts after whitespace gap
+    match = re.match(r"^([A-Z][A-Z\s]*?)\s{2,}(.+)$", line)
+    if not match:
+        return None
+
+    raw_name = match.group(1).strip()
+    obs_text = match.group(2).strip()
+
+    # Skip N/A stations
+    if obs_text == "N/A":
+        return None
+
+    # Map abbreviated name to full name
+    station_name = SXCN_STATION_NAMES.get(raw_name, raw_name)
+
+    data = {
+        "station_name": station_name,
+        "region": region,
+        "wind_speed_kt": None,
+        "wind_direction": None,
+        "wind_gusting": 0,
+        "wind_calm": 0,
+        "wind_estimated": 0,
+        "sea_height_ft": None,
+        "sea_condition": None,
+        "swell_intensity": None,
+        "swell_direction": None,
+    }
+
+    # Wind: "SW06E", "NW16", "CLM", "E14E"
+    # May be jammed against sea height: "SW18E3FT"
+    if " CLM " in f" {obs_text} ":
+        data["wind_calm"] = 1
+    else:
+        wind_match = re.search(r"([NESW]{1,2})(\d{2,3})(E)?", obs_text)
+        if wind_match:
+            direction_abbr = wind_match.group(1)
+            data["wind_direction"] = SXCN_WIND_DIRS.get(direction_abbr, direction_abbr)
+            data["wind_speed_kt"] = float(wind_match.group(2))
+            if wind_match.group(3):
+                data["wind_estimated"] = 1
+
+    # Seas: "1FT CHP", "3FT MOD", "RPLD", "3FT MDT"
+    if "RPLD" in obs_text:
+        data["sea_height_ft"] = 0
+        data["sea_condition"] = "RIPPLED"
+    else:
+        seas_match = re.search(r"(\d+)FT\s+(\w+)", obs_text)
+        if seas_match:
+            data["sea_height_ft"] = float(seas_match.group(1))
+            condition_abbr = seas_match.group(2)
+            data["sea_condition"] = SXCN_SEA_CONDITIONS.get(condition_abbr, condition_abbr)
+
+    # Swell: "LO SW", "LO S", "LO W", "MOD NW"
+    swell_match = re.search(r"\b(LO|MOD|HVY)\s+([NESW]{1,2})\b", obs_text)
+    if swell_match:
+        intensity_map = {"LO": "LOW", "MOD": "MODERATE", "HVY": "HEAVY"}
+        data["swell_intensity"] = intensity_map.get(swell_match.group(1))
+        data["swell_direction"] = SXCN_SWELL_DIRS.get(swell_match.group(2))
+
+    return data
+
+
+def parse_sxcn_file(filepath):
+    """
+    Parse a complete SXCN bulletin file (SXCN23/25/26).
+
+    Returns:
+        list of dicts with station observations
+    """
+    try:
+        text = filepath.read_text(encoding="utf-8", errors="ignore")
+        lines = text.split("\n")
+
+        header_line = lines[0] if lines else ""
+
+        # Extract bulletin number for region mapping
+        bulletin_match = re.search(r"SXCN(\d+)", header_line)
+        if not bulletin_match:
+            logger.warning(f"Could not parse SXCN header: {header_line}")
+            return []
+
+        bulletin_num = bulletin_match.group(1)
+        region = SXCN_REGIONS.get(bulletin_num)
+        if not region:
+            logger.info(f"Skipping unsupported bulletin SXCN{bulletin_num}")
+            return []
+
+        observation_time = parse_sxcn_time(header_line)
+        if not observation_time:
+            logger.warning(f"Could not parse time from {filepath.name}")
+            return []
+
+        observations = []
+        for line in lines[2:]:  # Skip header and VAE/VAJ/VAI line
+            # Stop at supplementary section
+            if "SUPPLEMENTARY" in line:
+                break
+
+            station_data = parse_sxcn_station_line(line, region)
+            if station_data:
+                station_data["observation_time"] = observation_time
+                station_data["report_time_str"] = header_line.strip()
+                station_data["source_file"] = filepath.name
+                observations.append(station_data)
+
+        if observations:
+            logger.info(f"Parsed {len(observations)} station observations from {filepath.name}")
+        return observations
+
+    except Exception as e:
+        logger.error(f"Error parsing {filepath}: {e}")
+        return []
+
+
 def insert_observations(observations):
     """Insert parsed observations into SQLite database."""
     if not observations:
@@ -380,40 +607,49 @@ def purge_old_data():
     if deleted:
         logger.info(f"Purged {deleted} observations older than {LIGHTSTATION_RETENTION_DAYS} days")
 
-    # Purge raw files older than retention window
-    if DATA_DIR.exists():
+    # Purge raw FPCN61 files
+    if FPCN61_DATA_DIR.exists():
         removed = 0
-        for filepath in DATA_DIR.glob("FPCN61_CWVR_*"):
-            # Use file modification time for age check
+        for filepath in FPCN61_DATA_DIR.glob("FPCN61_CWVR_*"):
             mtime = datetime.fromtimestamp(filepath.stat().st_mtime, tz=timezone.utc)
             if mtime < cutoff:
                 filepath.unlink()
                 removed += 1
         if removed:
-            logger.info(f"Removed {removed} raw report files older than {LIGHTSTATION_RETENTION_DAYS} days")
+            logger.info(f"Removed {removed} raw FPCN61 files older than {LIGHTSTATION_RETENTION_DAYS} days")
+
+    # Purge raw SXCN files
+    if SXCN_DATA_DIR.exists():
+        removed = 0
+        for filepath in SXCN_DATA_DIR.glob("SXCN*_CWVR_*"):
+            mtime = datetime.fromtimestamp(filepath.stat().st_mtime, tz=timezone.utc)
+            if mtime < cutoff:
+                filepath.unlink()
+                removed += 1
+        if removed:
+            logger.info(f"Removed {removed} raw SXCN files older than {LIGHTSTATION_RETENTION_DAYS} days")
 
 
 def main():
     logger.info("=== Parsing BC Lightstation Reports ===")
 
-    # Find all report files
-    if not DATA_DIR.exists():
-        logger.warning(f"Data directory does not exist: {DATA_DIR}")
-        return
-
-    report_files = sorted(DATA_DIR.glob("FPCN61_CWVR_*"))
-
-    if not report_files:
-        logger.warning(f"No report files found in {DATA_DIR}")
-        return
-
-    logger.info(f"Found {len(report_files)} report file(s)")
-
-    # Parse all reports
     all_observations = []
-    for filepath in report_files:
-        observations = parse_report_file(filepath)
-        all_observations.extend(observations)
+
+    # Parse FPCN61 reports
+    if FPCN61_DATA_DIR.exists():
+        fpcn_files = sorted(FPCN61_DATA_DIR.glob("FPCN61_CWVR_*"))
+        if fpcn_files:
+            logger.info(f"Found {len(fpcn_files)} FPCN61 file(s)")
+            for filepath in fpcn_files:
+                all_observations.extend(parse_report_file(filepath))
+
+    # Parse SXCN bulletins (23/25/26 — lightstation obs)
+    if SXCN_DATA_DIR.exists():
+        sxcn_files = sorted(SXCN_DATA_DIR.glob("SXCN2[3-6]_CWVR_*"))
+        if sxcn_files:
+            logger.info(f"Found {len(sxcn_files)} SXCN file(s)")
+            for filepath in sxcn_files:
+                all_observations.extend(parse_sxcn_file(filepath))
 
     # Insert into database
     if all_observations:
