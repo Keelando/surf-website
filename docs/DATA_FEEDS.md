@@ -3,13 +3,25 @@
 All external APIs and data sources consumed by this system. A good starting point
 for new developers getting oriented.
 
+## Delivery Methods
+
+Data arrives via two mechanisms:
+
+- **AMQP push (sr3/Sarracenia)** — Environment Canada data only. Files are
+  pushed to us as soon as EC publishes them. Configs live in `config/sr3/`
+  (source of truth); deployed to `~/.config/sr3/subscribe/` and run as systemd
+  services. See `docs/SR3_MANAGEMENT.md` for operational details.
+
+- **HTTP polling (cron)** — Everything else: NOAA, DFO tides, Surrey FlowWorks,
+  Jericho, White Rock, webcams, and (currently) lightstation FPCN61 bulletins.
+  Fetch scripts in `scripts/fetch/`, scheduled via crontab.
+
 ---
 
 ## MSC Datamart — dd.weather.gc.ca
 
-Delivered via **Sarracenia (sr3)** AMQP push subscription. No polling required —
-data is pushed to us as soon as EC publishes it. Configs live in `config/sr3/`
-(active copies at `~/.config/sr3/subscribe/`).
+Environment Canada data delivered via **sr3 AMQP push**. Configs in `config/sr3/`
+(source of truth — edit there, then deploy to `~/.config/sr3/subscribe/`).
 
 ### EC Wave Buoys — SWOB-ML XML
 
@@ -53,16 +65,31 @@ data is pushed to us as soon as EC publishes it. Configs live in `config/sr3/`
 **Parsed by:** `scripts/parse/parse_marine_forecast.py`
 **AMQP subtopic:** `*.WXO-DD.marine_weather.pacific.#`
 
-### Lightstation Bulletins — HTTP (Alphanumeric)
+### Lightstation Bulletins
 
-Marine lightstation observations issued every 3 hours as FPCN61 bulletins.
+Marine lightstation observations issued every 3 hours. Two bulletin families:
 
-**URL pattern:**
+**FPCN61 (current observations)** — HTTP polled (not yet on sr3)
 ```
 https://dd.weather.gc.ca/today/bulletins/alphanumeric/YYYYMMDD/FP/CWVR/HH/
 ```
-**Fetched by:** `scripts/fetch/fetch_lightstation.py`
-**Note:** Not via Sarracenia — script polls the directory listing directly.
+**Fetched by:** `scripts/fetch/fetch_lightstation.py` (cron, hourly)
+**Parsed by:** `scripts/parse/parse_lightstation.py`
+**Stored in:** `lightstation_data.sqlite`
+**Covers:** 19 stations (Strait of Georgia, Central Coast, Hecate Strait, north WCVI)
+
+**FICN31/32/33 (regional observations)** — sr3 AMQP (new, pending parser)
+| Bulletin | Region | Key Stations |
+|----------|--------|--------------|
+| FICN31 | North & Central Coast | Langara, Bonilla, McInnes, Cape Scott |
+| FICN32 | Georgia Strait / South Coast | Chrome Island, Merry Island, Trial Island |
+| FICN33 | WCVI South | Lennard Island, Estevan Point, Cape Beale |
+
+**Config:** `config/sr3/bc_lightstation_obs.conf`
+**AMQP subtopic:** `*.WXO-DD.bulletins.alphanumeric.*.FI.CWVR.#`
+**Data dir:** `data/lightstation_ficn/`
+**Status:** Subscription config created, awaiting deployment and parser integration.
+FICN33 is the key bulletin — it contains the west coast VI stations missing from FPCN61.
 
 ---
 

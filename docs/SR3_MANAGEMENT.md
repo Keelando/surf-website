@@ -4,9 +4,10 @@
 SR3 subscriptions run as systemd services that auto-start on boot and auto-restart on failure.
 
 ## Service Names
-- `sr3-bc-buoys.service` - Environment Canada buoys
-- `sr3-bc-wind-stations.service` - Environment Canada wind stations  
-- `sr3-marine-forecast.service` - Marine weather forecasts
+- `sr3-bc-buoys.service` — Environment Canada buoys
+- `sr3-bc-wind-stations.service` — Environment Canada wind stations
+- `sr3-marine-forecast.service` — Marine weather forecasts
+- `sr3-bc-lightstation-obs.service` — Lightstation FICN bulletins (pending deployment)
 
 ## Common Commands
 
@@ -56,9 +57,10 @@ sudo systemctl start sr3-bc-buoys
 
 ## Config Files
 
-**Systemd services:** `/etc/systemd/system/sr3-*.service`  
-**SR3 subscriptions:** `~/.config/sr3/subscribe/*.conf`  
-**Downloaded data:** `/home/keelando/envcan_wave/data/{buoy,wind,marine_forecast}/`
+**Source of truth:** `config/sr3/*.conf` (in the repo — edit here first)
+**Deployed to:** `~/.config/sr3/subscribe/*.conf`
+**Systemd services:** `/etc/systemd/system/sr3-*.service`
+**Downloaded data:** `data/{buoy,wind,marine_forecast,lightstation_ficn}/`
 
 ## Adding New Stations
 
@@ -70,26 +72,22 @@ sudo systemctl start sr3-bc-buoys
    # Add the buoy definition
    ```
 
-2. **Add to sr3 config:**
+2. **Edit sr3 config in the repo (source of truth):**
    ```bash
-   vim ~/.config/sr3/subscribe/bc_buoys.conf
+   vim config/sr3/bc_buoys.conf
    # Add: subtopic *.WXO-DD.observations.swob-ml.marine.moored-buoys.*.BUOY_ID.#
    ```
 
-3. **Restart the service:**
+3. **Deploy to backend and restart:**
    ```bash
+   cp config/sr3/bc_buoys.conf ~/.config/sr3/subscribe/
    sudo systemctl restart sr3-bc-buoys
    ```
 
 4. **Verify it's working:**
    ```bash
-   # Check service status
    sudo systemctl status sr3-bc-buoys
-   
-   # Watch for new files (wait ~1 hour for next observation)
    ls -lt ~/envcan_wave/data/buoy/ | head -20
-   
-   # Check logs for any errors
    sudo journalctl -u sr3-bc-buoys --since "5 minutes ago"
    ```
 
