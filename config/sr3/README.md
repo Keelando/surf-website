@@ -1,41 +1,21 @@
-# Sarracenia (sr3) Configuration Backups
+# sr3 Config (Source of Truth)
 
-**⚠️ IMPORTANT: These are BACKUP COPIES for reference only!**
+These are the **source configs** for sr3 (Sarracenia) AMQP subscriptions.
+Edit here, then deploy to the backend.
 
-## Active Configuration Location
+## Workflow
 
-The **actual running configs** are located at:
-```
-~/.config/sr3/subscribe/bc_buoys.conf
-~/.config/sr3/subscribe/marine_forecast.conf
-~/.config/sr3/credentials.conf
-```
+1. Edit the config file in this directory
+2. Copy to backend: `cp config/sr3/<file>.conf ~/.config/sr3/subscribe/`
+3. Restart sr3: `sr3 restart subscribe/<name>`
+4. Verify: `sr3 status`
 
-## What's in this directory
+## Files
 
-- `bc_buoys.conf` - Backup copy of buoy subscription config
-- `marine_forecast.conf` - Backup copy of marine forecast subscription config
-- `bc_wind_stations.conf` - Wind station subscription config (9 coastal weather stations)
+- `bc_buoys.conf` — Buoy SWOB-ML subscriptions
+- `bc_wind_stations.conf` — Coastal weather station subscriptions
+- `marine_forecast.conf` — Marine weather forecast subscriptions
 
 ## Credentials
 
-**Credentials are stored separately** and should **NEVER** be committed to the repo:
-- Location: `~/.config/sr3/credentials.conf`
-- Contains: AMQP username/password for dd.weather.gc.ca
-- **DO NOT** copy this file into the repo
-
-## Deployment Notes
-
-When setting up a new server:
-1. Install sr3: `pip install metpx-sr3`
-2. Create `~/.config/sr3/subscribe/` directory
-3. Copy these configs to `~/.config/sr3/subscribe/`
-4. Create `~/.config/sr3/credentials.conf` separately (not in repo)
-5. Start subscriptions: `sr3 start`
-
-## Updating Active Configs
-
-If you modify files here, remember to:
-1. Copy changes to `~/.config/sr3/subscribe/`
-2. Restart sr3: `sr3 restart`
-3. Verify: `sr3 status`
+Stored separately at `~/.config/sr3/credentials.conf` — **never** commit to repo.

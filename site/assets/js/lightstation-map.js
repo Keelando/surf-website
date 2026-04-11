@@ -209,9 +209,17 @@ async function loadLightstationsAndMarkers() {
 
 // Add lightstation marker to map
 function addLightstationMapMarker(lightstation) {
-  // Always use lighthouse icon for lightstations
+  // Check if this station has any current data
+  const lookupName = lightstation.id.replace(/_/g, " ");
+  const hasData = latestLightstationData && latestLightstationData[lookupName];
+
+  // Inactive stations (no data) get reduced opacity
+  const markerClass = hasData
+    ? "station-marker lightstation-marker"
+    : "station-marker lightstation-marker lightstation-inactive";
+
   const icon = L.divIcon({
-    className: "station-marker lightstation-marker",
+    className: markerClass,
     html: createLighthouseSVG(),
     iconSize: [28, 32],
     iconAnchor: [14, 32],
@@ -223,10 +231,7 @@ function addLightstationMapMarker(lightstation) {
   // Build popup
   let popupContent = `<div class="station-popup"><h3>${lightstation.name}</h3>`;
 
-  // Add latest observations if available
-  // Convert station ID (e.g., "ADDENBROKE_ISLAND") to match JSON format (e.g., "ADDENBROKE ISLAND")
-  const lookupName = lightstation.id.replace(/_/g, " ");
-  if (latestLightstationData && latestLightstationData[lookupName]) {
+  if (hasData) {
     const obs = latestLightstationData[lookupName];
     const isStale = obs.stale || false;
     const bgColor = isStale ? "var(--color-callout-danger-bg)" : "var(--color-callout-info-bg)";
@@ -306,6 +311,8 @@ function addLightstationMapMarker(lightstation) {
     }
 
     popupContent += `</div>`;
+  } else {
+    popupContent += `<div style="background: var(--color-surface-alt, #f5f5f5); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-text-muted, #999); color: var(--color-text-muted); font-size: 0.9em;">No current data — this station is not reporting in the FPCN61 bulletin.</div>`;
   }
 
   // Station details

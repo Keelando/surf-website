@@ -152,6 +152,12 @@
   filter: drop-shadow(0 2px 4px rgba(220, 53, 69, 0.4));
 }
 
+/* Lightstation markers with no current data — faded */
+.lightstation-inactive {
+  opacity: 0.35;
+  filter: grayscale(100%);
+}
+
 /* Enhanced buoy markers with data */
 .buoy-marker-enhanced {
   background: var(--map-marker-bg);
