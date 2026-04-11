@@ -3,6 +3,9 @@
  * Displays wind stations and buoys with wind data on an interactive Leaflet map
  */
 
+// --- Constants ---
+const MAP_FOCUS_DELAY_MS = 300; // Delay after map pan before opening popup
+
 let windsMap = null;
 let windMarkersLayer = null;
 let windMarkers = {}; // Store markers by ID for easy access
@@ -246,13 +249,14 @@ function focusStation(stationId) {
   // Open popup after a short delay to allow map animation
   setTimeout(() => {
     marker.openPopup();
-  }, 300);
+  }, MAP_FOCUS_DELAY_MS);
 }
 
-// Export map functions for external use
-window.windsMap = {
-  focusStation: focusStation,
-};
+// Listen for focus requests from wind-stations.js
+document.addEventListener("winds:focus-station", (e) => {
+  const stationId = e.detail?.stationId;
+  if (stationId) focusStation(stationId);
+});
 
 // Event delegation for popup "View Wind Chart" links (CSP-safe)
 document.addEventListener("click", (event) => {
@@ -263,8 +267,8 @@ document.addEventListener("click", (event) => {
 
   event.preventDefault();
   const stationId = target.getAttribute("data-wind-station-id");
-  if (stationId && typeof window.selectStationAndShowChart === "function") {
-    window.selectStationAndShowChart(stationId);
+  if (stationId) {
+    document.dispatchEvent(new CustomEvent("winds:select-station", { detail: { stationId } }));
   }
 });
 

@@ -53,28 +53,28 @@ Audit performed 2026-04-07, updated 2026-04-08. Covers `site/winds.html`, `site/
 - Replaced ~70 lines of hardcoded `sourceLinks` object, `shortNames` object, and flag if/else logic with `getStationMeta(id)` lookup
 - New stations only need config changes — no JS edits required
 
-### Step 6. Extract constants (TODO)
-- Stale/offline thresholds: `2` and `4` hours (used in 2 places each)
-- Popup animation delay: `300ms` and `500ms` in winds-map.js / wind-stations.js
-- Timestamp matching tolerance: `1800000` (30 min) in tooltip formatters
-- Default visible rows: `12`
+### Step 6. Extract constants (DONE 2026-04-11)
+- `STALE_THRESHOLD_HOURS` (2) and `OFFLINE_THRESHOLD_HOURS` (4) in wind-stations.js
+- `SCROLL_SETTLE_DELAY_MS` (500) in wind-stations.js, `MAP_FOCUS_DELAY_MS` (300) in winds-map.js
+- `TOOLTIP_TIME_TOLERANCE_MS` (1800000 / 30 min) in wind-stations.js tooltip formatter
+- `DEFAULT_VISIBLE_ROWS` (12) was already a local const — left as-is
 
-### Step 7. Break up oversized functions (TODO)
-- `loadWindTable()` — still ~200 lines, does: process stations, render table, init sorting, render offline list, update footer
-- `renderWind24HourTable()` — ~170 lines (includes 5 near-identical forEach loops for the dataByTime merge)
+### Step 7. Break up oversized functions (DONE 2026-04-11)
+- Extracted `classifyStations(latestAll)` — station classification + stale/offline split from `loadWindTable()`
+- Extracted `renderOfflineStationsList(offlineStations)` — offline callout box rendering from `loadWindTable()`
+- Extracted `mergeTimeseriesByTime(fields)` — replaced 5 near-identical forEach loops in `renderWind24HourTable()`
 
-### Step 8. Address `window.*` globals (TODO)
-- `viewStationChart`, `showStationOnMap`, `selectStationAndShowChart` manually attached to `window`
-- `windsMap.focusStation` exported via `window.windsMap`
-- Plan module boundaries and inter-file communication
+### Step 8. Address `window.*` globals (DONE 2026-04-11)
+- Removed `window.viewStationChart` and `window.showStationOnMap` — only called within `wind-stations.js`, no export needed
+- Replaced `window.selectStationAndShowChart` with `winds:select-station` CustomEvent (winds-map.js dispatches, wind-stations.js listens)
+- Replaced `window.windsMap.focusStation` with `winds:focus-station` CustomEvent (wind-stations.js dispatches, winds-map.js listens)
+- Zero `window.*` exports remain between the two wind page modules
 
-### Step 9. Review all Stage 2 changes (TODO)
-- Visual QA: take screenshots (light + dark) and compare against pre-refactor baseline
-- Run full test suite and lint
-- Verify no regressions on index page (buoy charts), winds page (table, map, chart, 24hr table), and other pages that share chart-utils
-- Check mobile rendering (table short names, responsive charts, arrow sampling)
-- Confirm source links, flags, and short names render correctly from config
-- Verify dark mode arrow colors fixed across all pages
+### Step 9. Review all Stage 2 changes (DONE 2026-04-11)
+- Screenshots (light + dark): winds page renders correctly — table, map, chart, 24hr table, offline callout all intact
+- Home page buoy charts verified — no regressions from chart-utils changes
+- ESLint: 0 errors (39 warnings, all pre-existing unused-var warnings from non-module script scope)
+- Playwright: 16/16 tests pass (Chromium + Firefox, all pages)
 
 ## Stage 3 — Polish (TODO)
 
@@ -92,18 +92,15 @@ Audit performed 2026-04-07, updated 2026-04-08. Covers `site/winds.html`, `site/
 ### 4. Hardcoded colors in HTML
 - `#e0e7ee` on map div border, `#ccc` on search input and dropdown
 
-### 5. Dead code
-- `arrowType` parameter in `getDirectionalArrow()` — resolved in Stage 2 Step 1 (moved to chart-utils with both wind+wave support)
-
-### 6. Event listener hygiene
+### 5. Event listener hygiene
 - Chart resize listener never cleaned up
 - cursor/userSelect set in JS despite already being in CSS
 
-### 7. Accessibility gaps
+### 6. Accessibility gaps
 - Sortable headers lack `aria-sort`
 - Time range buttons lack `aria-pressed`
 - Collapse toggle lacks `aria-expanded`
 - SVG arrows have no screen reader text
 
-### 8. No error UI for map failures
+### 7. No error UI for map failures
 - `loadWindStationsAndMarkers()` catches errors with only `console.error`

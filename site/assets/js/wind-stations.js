@@ -15,6 +15,12 @@ function setSafeHTML(element, html) {
 // degreesToCardinal, getDirectionalArrow, formatTimestamp, formatTimeOnly
 // provided by chart-utils-v4.js (loaded earlier)
 
+// --- Constants ---
+const STALE_THRESHOLD_HOURS = 2; // Data older than this is dimmed
+const OFFLINE_THRESHOLD_HOURS = 4; // Data older than this moves to offline list
+const SCROLL_SETTLE_DELAY_MS = 500; // Delay after smooth-scroll before focusing
+const TOOLTIP_TIME_TOLERANCE_MS = 1800000; // 30 min — snap tooltip to nearest direction point
+
 // Global chart instance
 let windChart = null;
 let windTimeseriesData = null;
@@ -149,6 +155,98 @@ function updateSortIndicators(activeHeader) {
 }
 
 /**
+ * Classify latest station data into active vs offline lists by data age
+ * @param {Object} latestAll - All latest station readings keyed by ID
+ * @returns {{ active: Array, offline: Array }} Station tuples [id, stationData]
+ */
+function classifyStations(latestAll) {
+  const active = [];
+  const offline = [];
+
+  Object.entries(latestAll)
+    .filter(([key]) => key !== "_meta")
+    .forEach(([id, station]) => {
+      const obsTime = station.observation_time ? new Date(station.observation_time) : null;
+      const ageHours = obsTime ? (Date.now() - obsTime.getTime()) / (1000 * 60 * 60) : Infinity;
+
+      const displayName = station._isWindType ? station.name : station.name + " \u{1F30A}";
+
+      const stationData = {
+        name: displayName,
+        wind_speed_kt: station.wind_speed_kt != null ? Math.round(station.wind_speed_kt) : null,
+        wind_gust_kt: station.wind_gust_kt != null ? Math.round(station.wind_gust_kt) : null,
+        wind_direction: station.wind_direction_deg,
+        wind_direction_cardinal: station.wind_direction_cardinal,
+        air_temp_c: station.air_temp_c,
+        pressure_hpa: station.pressure_hpa,
+        observation_time: station.observation_time,
+        ageHours: ageHours,
+        stale: ageHours >= STALE_THRESHOLD_HOURS && ageHours < OFFLINE_THRESHOLD_HOURS,
+        type: station._sourceType,
+      };
+
+      if (ageHours >= OFFLINE_THRESHOLD_HOURS) {
+        offline.push([id, stationData]);
+      } else {
+        active.push([id, stationData]);
+      }
+    });
+
+  active.sort((a, b) => a[1].name.localeCompare(b[1].name));
+  return { active, offline };
+}
+
+/**
+ * Render the offline stations callout box
+ * @param {Array} offlineStations - Station tuples [id, stationData] with ageHours
+ */
+function renderOfflineStationsList(offlineStations) {
+  const container = document.getElementById("offline-stations-list");
+  if (!container) return;
+
+  if (offlineStations.length === 0) {
+    container.innerHTML = "";
+    return;
+  }
+
+  offlineStations.sort((a, b) => a[1].name.localeCompare(b[1].name));
+
+  let html =
+    '<div style="margin-top: 1rem; padding: 1rem; background: var(--color-callout-warning-bg); border-left: 3px solid var(--color-status-warning); border-radius: 4px;">';
+  html +=
+    '<h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--color-warning-text);">Stations with Stale Data (>4 hours)</h3>';
+  html +=
+    '<p style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: var(--color-warning-text);">The following stations have not reported wind data in over 4 hours:</p>';
+
+  const isMobile = window.innerWidth < 768;
+  const columnStyle = isMobile ? "" : "columns: 2; column-gap: 2rem;";
+  html += `<ul style="margin: 0; padding-left: 1.5rem; ${columnStyle}">`;
+
+  offlineStations.forEach(([id, station]) => {
+    const hours = Math.floor(station.ageHours);
+    const minutes = Math.round((station.ageHours - hours) * 60);
+    let ageText = "";
+    if (hours > 0) {
+      ageText = `${hours}h`;
+      if (minutes > 0) ageText += ` ${minutes}m`;
+    } else {
+      ageText = `${minutes}m`;
+    }
+
+    const offlineMeta = getStationMeta(id);
+    let stationLink = station.name.replace(" 🌊", "");
+    if (offlineMeta.source_url) {
+      stationLink = `<a href="${offlineMeta.source_url}" target="_blank" rel="noopener" style="color: var(--color-accent-blue); text-decoration: none;">${stationLink}</a>`;
+    }
+
+    html += `<li style="margin-bottom: 0.25rem; break-inside: avoid;"><strong>${stationLink}</strong> (${ageText} ago)</li>`;
+  });
+
+  html += "</ul></div>";
+  setSafeHTML(container, html);
+}
+
+/**
  * Load and display current wind conditions table
  */
 async function loadWindTable() {
@@ -160,44 +258,7 @@ async function loadWindTable() {
     const table = document.getElementById("wind-conditions-table");
     if (!table) return;
 
-    // Classify stations into active vs offline by data age
-    const allStations = [];
-    const offlineStations = [];
-
-    Object.entries(latestAll)
-      .filter(([key]) => key !== "_meta")
-      .forEach(([id, station]) => {
-        const obsTime = station.observation_time ? new Date(station.observation_time) : null;
-        const ageHours = obsTime ? (Date.now() - obsTime.getTime()) / (1000 * 60 * 60) : Infinity;
-
-        const displayName = station._isWindType ? station.name : station.name + " \u{1F30A}";
-
-        const stationData = {
-          name: displayName,
-          wind_speed_kt: station.wind_speed_kt != null ? Math.round(station.wind_speed_kt) : null,
-          wind_gust_kt: station.wind_gust_kt != null ? Math.round(station.wind_gust_kt) : null,
-          wind_direction: station.wind_direction_deg,
-          wind_direction_cardinal: station.wind_direction_cardinal,
-          air_temp_c: station.air_temp_c,
-          pressure_hpa: station.pressure_hpa,
-          observation_time: station.observation_time,
-          ageHours: ageHours,
-          stale: ageHours >= 2 && ageHours < 4,
-          type: station._sourceType,
-        };
-
-        if (ageHours >= 4) {
-          offlineStations.push([id, stationData]);
-        } else {
-          allStations.push([id, stationData]);
-        }
-      });
-
-    // Sort all stations by name
-    const stations = allStations;
-    stations.sort((a, b) => a[1].name.localeCompare(b[1].name));
-
-    // Station metadata (source_url, short_name, flag) from stations.json via getStationMeta()
+    const { active: stations, offline: offlineStations } = classifyStations(latestAll);
 
     let tableHTML = `
       <thead>
@@ -285,50 +346,7 @@ async function loadWindTable() {
       updateSortIndicators(speedHeader);
     }
 
-    // Display offline stations list (data > 4 hours old)
-    const offlineListContainer = document.getElementById("offline-stations-list");
-    if (offlineListContainer && offlineStations.length > 0) {
-      // Sort offline stations by name
-      offlineStations.sort((a, b) => a[1].name.localeCompare(b[1].name));
-
-      let offlineHTML =
-        '<div style="margin-top: 1rem; padding: 1rem; background: var(--color-callout-warning-bg); border-left: 3px solid var(--color-status-warning); border-radius: 4px;">';
-      offlineHTML +=
-        '<h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--color-warning-text);">Stations with Stale Data (>4 hours)</h3>';
-      offlineHTML +=
-        '<p style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: var(--color-warning-text);">The following stations have not reported wind data in over 4 hours:</p>';
-
-      // Use single column on mobile, 2 columns on desktop
-      const isMobile = window.innerWidth < 768;
-      const columnStyle = isMobile ? "" : "columns: 2; column-gap: 2rem;";
-      offlineHTML += `<ul style="margin: 0; padding-left: 1.5rem; ${columnStyle}">`;
-
-      offlineStations.forEach(([id, station]) => {
-        const hours = Math.floor(station.ageHours);
-        const minutes = Math.round((station.ageHours - hours) * 60);
-        let ageText = "";
-        if (hours > 0) {
-          ageText = `${hours}h`;
-          if (minutes > 0) ageText += ` ${minutes}m`;
-        } else {
-          ageText = `${minutes}m`;
-        }
-
-        // Add source link if available (from stations.json)
-        const offlineMeta = getStationMeta(id);
-        let stationLink = station.name.replace(" 🌊", "");
-        if (offlineMeta.source_url) {
-          stationLink = `<a href="${offlineMeta.source_url}" target="_blank" rel="noopener" style="color: var(--color-accent-blue); text-decoration: none;">${stationLink}</a>`;
-        }
-
-        offlineHTML += `<li style="margin-bottom: 0.25rem; break-inside: avoid;"><strong>${stationLink}</strong> (${ageText} ago)</li>`;
-      });
-
-      offlineHTML += "</ul></div>";
-      setSafeHTML(offlineListContainer, offlineHTML);
-    } else if (offlineListContainer) {
-      offlineListContainer.innerHTML = "";
-    }
+    renderOfflineStationsList(offlineStations);
 
     // Update footer timestamp (use wind data timestamp)
     const timestamp = document.getElementById("timestamp");
@@ -461,18 +479,36 @@ function showStationOnMap(stationId) {
     mapSection.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  // Use the winds-map module to center on the station
-  // The map is initialized in winds-map.js
+  // Ask winds-map.js to center on the station (after scroll settles)
   setTimeout(() => {
-    if (window.windsMap && window.windsMap.focusStation) {
-      window.windsMap.focusStation(stationId);
-    }
-  }, 500); // Small delay to allow smooth scroll to complete
+    document.dispatchEvent(new CustomEvent("winds:focus-station", { detail: { stationId } }));
+  }, SCROLL_SETTLE_DELAY_MS);
 }
 
 // Make functions globally accessible
-window.viewStationChart = viewStationChart;
-window.showStationOnMap = showStationOnMap;
+// Listen for map popup requests to show a station chart (dispatched by winds-map.js)
+document.addEventListener("winds:select-station", (e) => {
+  const stationId = e.detail?.stationId;
+  if (stationId) selectStationAndShowChart(stationId);
+});
+
+/**
+ * Merge multiple timeseries arrays into a single Map keyed by timestamp
+ * @param {Array<[Array, string]>} fields - Pairs of [dataArray, fieldName]
+ * @returns {Map<string, Object>} Map from ISO time string to { fieldName: value, ... }
+ */
+function mergeTimeseriesByTime(fields) {
+  const byTime = new Map();
+  for (const [dataArray, fieldName] of fields) {
+    for (const point of dataArray) {
+      if (!byTime.has(point.time)) {
+        byTime.set(point.time, {});
+      }
+      byTime.get(point.time)[fieldName] = point.value;
+    }
+  }
+  return byTime;
+}
 
 /**
  * Render wind data table for selected station (24hr or 48hr based on currentWindTimeRange)
@@ -495,56 +531,15 @@ function renderWind24HourTable(stationId) {
     stationNameEl.style.display = "block";
   }
 
-  // Extract timeseries data (all normalized to flat arrays by wind-data.js)
-  const timeseries = station.timeseries;
-  const windSpeedArray = timeseries.wind_speed || [];
-  const windGustArray = timeseries.wind_gust || [];
-  const windDirArray = timeseries.wind_direction || [];
-  const airTempArray = timeseries.air_temp || [];
-  const pressureArray = timeseries.pressure || [];
-
-  // Create a merged dataset by time
-  const dataByTime = new Map();
-
-  // Add wind speeds
-  windSpeedArray.forEach((point) => {
-    if (!dataByTime.has(point.time)) {
-      dataByTime.set(point.time, {});
-    }
-    dataByTime.get(point.time).speed = point.value;
-  });
-
-  // Add wind gusts
-  windGustArray.forEach((point) => {
-    if (!dataByTime.has(point.time)) {
-      dataByTime.set(point.time, {});
-    }
-    dataByTime.get(point.time).gust = point.value;
-  });
-
-  // Add wind directions
-  windDirArray.forEach((point) => {
-    if (!dataByTime.has(point.time)) {
-      dataByTime.set(point.time, {});
-    }
-    dataByTime.get(point.time).direction = point.value;
-  });
-
-  // Add air temperature
-  airTempArray.forEach((point) => {
-    if (!dataByTime.has(point.time)) {
-      dataByTime.set(point.time, {});
-    }
-    dataByTime.get(point.time).temp = point.value;
-  });
-
-  // Add pressure
-  pressureArray.forEach((point) => {
-    if (!dataByTime.has(point.time)) {
-      dataByTime.set(point.time, {});
-    }
-    dataByTime.get(point.time).pressure = point.value;
-  });
+  // Extract and merge timeseries data (all normalized to flat arrays by wind-data.js)
+  const ts = station.timeseries;
+  const dataByTime = mergeTimeseriesByTime([
+    [ts.wind_speed || [], "speed"],
+    [ts.wind_gust || [], "gust"],
+    [ts.wind_direction || [], "direction"],
+    [ts.air_temp || [], "temp"],
+    [ts.pressure || [], "pressure"],
+  ]);
 
   // Sort by time (newest first)
   const sortedTimes = Array.from(dataByTime.keys()).sort((a, b) => new Date(b) - new Date(a));
@@ -761,7 +756,7 @@ function renderWindChart(stationId) {
           // Add wind direction to tooltip if available
           const timestamp = new Date(params[0].value[0]).getTime();
           const dirPoint = windDirData.find(
-            (d) => Math.abs(new Date(d.time).getTime() - timestamp) < 1800000,
+            (d) => Math.abs(new Date(d.time).getTime() - timestamp) < TOOLTIP_TIME_TOLERANCE_MS,
           );
           if (dirPoint && dirPoint.value != null) {
             const dir = Math.round(dirPoint.value);
@@ -875,9 +870,6 @@ async function selectStationAndShowChart(stationId) {
     chartSection.scrollIntoView({ behavior: "smooth", block: "start" });
   }, 100);
 }
-
-// Make function globally accessible
-window.selectStationAndShowChart = selectStationAndShowChart;
 
 /**
  * Check URL hash for station to display
