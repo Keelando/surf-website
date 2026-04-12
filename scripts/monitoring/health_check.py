@@ -27,7 +27,7 @@ from lib.config import EXPORT_DIR
 from lib.logging_config import setup_logging
 
 # Add lib to path for imports
-from lib.stations import get_all_buoys, get_all_tides, get_all_wind
+from lib.stations import get_all_buoys, get_all_lightstations, get_all_tides, get_all_wind
 
 # Setup logging (console disabled for cron, file only)
 logger = setup_logging("health_check", console=False)
@@ -99,7 +99,7 @@ def check_data_freshness() -> Dict:
     log("Checking lightstations...")
     lightstation_stale = check_lightstation_freshness()
     stale_stations.extend(lightstation_stale)
-    # We don't have a station registry for lightstations yet, so count from DB
+    total_checked += len(get_all_lightstations())
 
     # Check webcams
     log("Checking webcams...")
@@ -359,7 +359,7 @@ def check_tide_freshness() -> List[Dict]:
 
 
 def check_lightstation_freshness() -> List[Dict]:
-    """Check lightstation data freshness."""
+    """Check lightstation data freshness against the station registry."""
     stale = []
     now = datetime.now(timezone.utc)
 
@@ -371,17 +371,33 @@ def check_lightstation_freshness() -> List[Dict]:
         conn = sqlite3.connect(LIGHTSTATION_DB)
         cursor = conn.cursor()
 
-        # Get all unique station names and their latest observation time
+        # Build lookup of latest observation per station from DB
         cursor.execute("""
             SELECT station_name, MAX(observation_time) as last_obs
             FROM lightstation_observation
             GROUP BY station_name
         """)
+        db_stations = {row[0]: row[1] for row in cursor.fetchall()}
+        conn.close()
 
-        for row in cursor.fetchall():
-            station_name, last_obs_timestamp = row
+        # Check every station in the registry
+        for station_id, metadata in get_all_lightstations().items():
+            station_name = metadata["name"].upper()
+
+            last_obs_timestamp = db_stations.get(station_name)
 
             if not last_obs_timestamp:
+                log(f"  ❌ {metadata['name']}: No data found")
+                stale.append(
+                    {
+                        "id": station_id,
+                        "name": metadata["name"],
+                        "type": "lightstation",
+                        "age_hours": None,
+                        "severity": "error",
+                        "message": "No data",
+                    }
+                )
                 continue
 
             last_obs = datetime.fromtimestamp(last_obs_timestamp, tz=timezone.utc)
@@ -389,36 +405,32 @@ def check_lightstation_freshness() -> List[Dict]:
 
             if age > THRESHOLDS["lightstation"]["error"]:
                 severity = "error"
-                # Check if this is a known intermittent station
-                station_id = station_name.replace(" ", "_")
                 if station_id in INTERMITTENT_STATIONS:
                     severity = "info"
-                    log(f"  ℹ️  {station_name}: {age:.1f}h old (INTERMITTENT - expected)")
+                    log(f"  ℹ️  {metadata['name']}: {age:.1f}h old (INTERMITTENT - expected)")
                 else:
-                    log(f"  ❌ {station_name}: {age:.1f}h old (ERROR)")
+                    log(f"  ❌ {metadata['name']}: {age:.1f}h old (ERROR)")
             elif age > THRESHOLDS["lightstation"]["warning"]:
                 severity = "warning"
-                log(f"  ⚠️  {station_name}: {age:.1f}h old (WARNING)")
+                log(f"  ⚠️  {metadata['name']}: {age:.1f}h old (WARNING)")
             else:
-                log(f"  ✅ {station_name}: {age:.1f}h old (OK)")
+                log(f"  ✅ {metadata['name']}: {age:.1f}h old (OK)")
                 continue
 
             stale_entry = {
-                "id": station_name.replace(" ", "_"),  # Use name as ID
-                "name": station_name,
+                "id": station_id,
+                "name": metadata["name"],
                 "type": "lightstation",
                 "age_hours": round(age, 1),
                 "last_observation": last_obs.isoformat(),
                 "severity": severity,
             }
 
-            # Add note for intermittent stations
-            if stale_entry["id"] in INTERMITTENT_STATIONS:
-                stale_entry["note"] = INTERMITTENT_STATIONS[stale_entry["id"]]
+            if station_id in INTERMITTENT_STATIONS:
+                stale_entry["note"] = INTERMITTENT_STATIONS[station_id]
 
             stale.append(stale_entry)
 
-        conn.close()
     except Exception as e:
         log(f"  ❌ Error checking lightstations: {e}")
 

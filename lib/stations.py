@@ -62,6 +62,11 @@ class StationRegistry:
         return self._data.get("wind", {})
 
     @property
+    def lightstations(self) -> Dict:
+        """Get all lightstation stations."""
+        return self._data.get("lightstations", {})
+
+    @property
     def metadata(self) -> Dict:
         """Get file metadata."""
         return self._data.get("_metadata", {})
@@ -179,6 +184,11 @@ def get_tide_stations(has_observations: bool = None) -> Dict:
 def get_all_wind() -> Dict:
     """Get all wind stations."""
     return STATIONS.wind
+
+
+def get_all_lightstations() -> Dict:
+    """Get all lightstation stations."""
+    return STATIONS.lightstations
 
 
 def get_wind_station(station_id: str) -> Optional[Dict]:
