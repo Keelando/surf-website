@@ -76,31 +76,43 @@ Audit performed 2026-04-07, updated 2026-04-08. Covers `site/winds.html`, `site/
 - ESLint: 0 errors (39 warnings, all pre-existing unused-var warnings from non-module script scope)
 - Playwright: 16/16 tests pass (Chromium + Firefox, all pages)
 
-## Stage 3 — Polish (TODO)
+## Stage 3 — Polish (DONE 2026-04-13)
 
-### 1. ~165 lines of inline `<style>` in winds.html
-- Table styles, time range buttons, mobile overrides, collapsed rows — move to CSS
+### Step 1. Extract inline styles to CSS (DONE 2026-04-13)
+- Created `winds-v4.css` — all ~165 lines of inline `<style>` from `winds.html` moved to dedicated stylesheet
+- Hardcoded `#e0e7ee` map border replaced with `var(--color-border-light)`
+- Hardcoded `#ccc` input borders replaced with `var(--color-border)`
+- All 4 `<section style="max-width...">` wrappers replaced with `.winds-section` class
+- Inline styles on sort hint, station suggestion, map legend, station selector all replaced with CSS classes
 
-### 2. Inconsistent mobile breakpoints
-- `768px` in CSS, `600px` in JS arrow sampling, `600px`/`1000px` in chart-utils
+### Step 2. Move inline styles from JS to CSS classes (DONE 2026-04-13)
+- Map popup wind data card: replaced inline `style=` with `.popup-wind-card`, `.popup-wind-header`, `.popup-timestamp`, `.popup-station-details` classes
+- Stale/fresh and buoy/station variants: `.popup-wind-card--stale`, `.popup-wind-card--fresh`, `.popup-wind-card--buoy`, `.popup-wind-card--station`
+- Offline callout: replaced inline styles with `.offline-callout` class (responsive columns via CSS media query)
+- Table action links: replaced inline styles with `.wind-table-action-link`, `.wind-table-action-separator` classes
+- Toggle button cell: replaced 5 inline style assignments with `.wind-24hr-toggle-cell` class
+- Table message cells: replaced inline `style="text-align: center; padding: 2rem;"` with `.table-message-cell` class
+- Removed `view-data-btn` inline styles from `winds-map.js` — already styled via `stations-map-v4.css`
 
-### 3. Inline styles in JS
-- Popup HTML in `winds-map.js`
-- Offline stations list in `wind-stations.js`
-- Repeated section wrapper in `winds.html` (4 occurrences)
+### Step 3. Mobile breakpoints review (DONE 2026-04-13)
+- Reviewed: CSS `768px` (table column visibility) vs JS `600px` (chart font sizes, arrow density) vs `1000px` (chart grid spacing)
+- These serve fundamentally different purposes — not a real inconsistency, left as-is
 
-### 4. Hardcoded colors in HTML
-- `#e0e7ee` on map div border, `#ccc` on search input and dropdown
+### Step 4. Event listener hygiene (DONE 2026-04-13)
+- Removed `header.style.cursor = "pointer"` and `header.style.userSelect = "none"` from `initializeSortableTable()` — already handled by CSS `.sortable` rule
+- Chart resize listener: page-level (lives for page lifetime), no cleanup needed
 
-### 5. Event listener hygiene
-- Chart resize listener never cleaned up
-- cursor/userSelect set in JS despite already being in CSS
+### Step 5. Accessibility (DONE 2026-04-13)
+- `aria-sort="ascending|descending"` added to active sortable table headers, cleared on others
+- `aria-pressed="true|false"` added to time range toggle buttons, updated on toggle
+- `aria-expanded="true|false"` added to 24hr table collapse/expand button, updated on toggle
+- `aria-hidden="true"` added to decorative SVG arrows (direction text already conveys the information)
 
-### 6. Accessibility gaps
-- Sortable headers lack `aria-sort`
-- Time range buttons lack `aria-pressed`
-- Collapse toggle lacks `aria-expanded`
-- SVG arrows have no screen reader text
+### Step 6. Error UI for map failures (DONE 2026-04-13)
+- `loadWindStationsAndMarkers()` now shows `.winds-map-error` overlay in map container on failure
+- Message: "Unable to load station markers. Try refreshing the page."
 
-### 7. No error UI for map failures
-- `loadWindStationsAndMarkers()` catches errors with only `console.error`
+### Step 7. Verification (DONE 2026-04-13)
+- Screenshots (light + dark): winds page renders correctly — table, map, chart, 24hr table, offline callout all intact
+- ESLint: 0 errors (39 warnings, all pre-existing unused-var warnings)
+- Playwright: 16/16 tests pass (Chromium + Firefox, all pages)

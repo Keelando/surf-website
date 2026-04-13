@@ -81,9 +81,6 @@ function initializeSortableTable() {
   const headers = document.querySelectorAll("#wind-conditions-table th.sortable");
 
   headers.forEach((header) => {
-    header.style.cursor = "pointer";
-    header.style.userSelect = "none";
-
     header.addEventListener("click", () => {
       const column = header.dataset.column;
       const type = header.dataset.type;
@@ -144,12 +141,14 @@ function updateSortIndicators(activeHeader) {
   // Clear all indicators and remove sorting class
   document.querySelectorAll("#wind-conditions-table th.sortable").forEach((header) => {
     header.classList.remove("sorting");
+    header.removeAttribute("aria-sort");
     const indicator = header.querySelector(".sort-indicator");
     indicator.textContent = "";
   });
 
   // Set active indicator
   activeHeader.classList.add("sorting");
+  activeHeader.setAttribute("aria-sort", currentSort.ascending ? "ascending" : "descending");
   const indicator = activeHeader.querySelector(".sort-indicator");
   indicator.textContent = currentSort.ascending ? "▲" : "▼";
 }
@@ -211,16 +210,10 @@ function renderOfflineStationsList(offlineStations) {
 
   offlineStations.sort((a, b) => a[1].name.localeCompare(b[1].name));
 
-  let html =
-    '<div style="margin-top: 1rem; padding: 1rem; background: var(--color-callout-warning-bg); border-left: 3px solid var(--color-status-warning); border-radius: 4px;">';
-  html +=
-    '<h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--color-warning-text);">Stations with Stale Data (>4 hours)</h3>';
-  html +=
-    '<p style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: var(--color-warning-text);">The following stations have not reported wind data in over 4 hours:</p>';
-
-  const isMobile = window.innerWidth < 768;
-  const columnStyle = isMobile ? "" : "columns: 2; column-gap: 2rem;";
-  html += `<ul style="margin: 0; padding-left: 1.5rem; ${columnStyle}">`;
+  let html = '<div class="offline-callout">';
+  html += "<h3>Stations with Stale Data (>4 hours)</h3>";
+  html += "<p>The following stations have not reported wind data in over 4 hours:</p>";
+  html += "<ul>";
 
   offlineStations.forEach(([id, station]) => {
     const hours = Math.floor(station.ageHours);
@@ -236,10 +229,10 @@ function renderOfflineStationsList(offlineStations) {
     const offlineMeta = getStationMeta(id);
     let stationLink = station.name.replace(" 🌊", "");
     if (offlineMeta.source_url) {
-      stationLink = `<a href="${offlineMeta.source_url}" target="_blank" rel="noopener" style="color: var(--color-accent-blue); text-decoration: none;">${stationLink}</a>`;
+      stationLink = `<a href="${offlineMeta.source_url}" target="_blank" rel="noopener">${stationLink}</a>`;
     }
 
-    html += `<li style="margin-bottom: 0.25rem; break-inside: avoid;"><strong>${stationLink}</strong> (${ageText} ago)</li>`;
+    html += `<li><strong>${stationLink}</strong> (${ageText} ago)</li>`;
   });
 
   html += "</ul></div>";
@@ -314,16 +307,16 @@ async function loadWindTable() {
             data-pressure_hpa="${station.pressure_hpa || ""}"
             data-observation_time="${station.observation_time}">
           <td>${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;"><strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}</a>` : `<strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}`}</td>
-          <td style="white-space: nowrap;"><span class="hide-mobile">${updated}</span><span class="show-mobile">${formatTimeOnly(station.observation_time)}</span></td>
-          <td style="white-space: nowrap;">${direction}</td>
+          <td class="wind-table-actions"><span class="hide-mobile">${updated}</span><span class="show-mobile">${formatTimeOnly(station.observation_time)}</span></td>
+          <td class="wind-table-actions">${direction}</td>
           <td>${windSpeed}</td>
           <td>${windGust}</td>
           <td>${temp}</td>
           <td>${pressure}</td>
-          <td style="white-space: nowrap;">
-            <a href="#map-section" class="wind-table-action-link" data-action="map" data-station-id="${id}" style="color: var(--color-primary); text-decoration: none; cursor: pointer; margin-right: 0.5rem;">Map</a>
-            <span style="color: var(--color-border);">/</span>
-            <a href="#wind-chart-section" class="wind-table-action-link" data-action="chart" data-station-id="${id}" style="color: var(--color-primary); text-decoration: none; cursor: pointer; margin-left: 0.5rem;">Chart</a>
+          <td class="wind-table-actions">
+            <a href="#map-section" class="wind-table-action-link" data-action="map" data-station-id="${id}">Map</a>
+            <span class="wind-table-action-separator">/</span>
+            <a href="#wind-chart-section" class="wind-table-action-link" data-action="chart" data-station-id="${id}">Chart</a>
           </td>
         </tr>
       `;
@@ -358,7 +351,7 @@ async function loadWindTable() {
     const table = document.getElementById("wind-conditions-table");
     if (table) {
       table.innerHTML =
-        '<tbody><tr><td colspan="7" style="text-align: center; color: var(--color-error-text); padding: 2rem;">Error loading wind data</td></tr></tbody>';
+        '<tbody><tr><td colspan="7" class="table-message-cell">Error loading wind data</td></tr></tbody>';
     }
   }
 }
@@ -568,8 +561,7 @@ function renderWind24HourTable(stationId) {
   let shouldAddToggleRow = false;
 
   if (hourlyTimes.length === 0) {
-    tableHTML +=
-      '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No data available</td></tr>';
+    tableHTML += '<tr><td colspan="6" class="table-message-cell">No data available</td></tr>';
   } else {
     const DEFAULT_VISIBLE_ROWS = 12;
 
@@ -594,7 +586,7 @@ function renderWind24HourTable(stationId) {
 
       tableHTML += `
         <tr${rowClass}>
-          <td style="white-space: nowrap;"><span class="hide-mobile">${formattedTime}</span><span class="show-mobile">${mobileTime}</span></td>
+          <td class="wind-table-actions"><span class="hide-mobile">${formattedTime}</span><span class="show-mobile">${mobileTime}</span></td>
           <td>${direction}</td>
           <td>${speed}</td>
           <td>${gust}</td>
@@ -621,16 +613,13 @@ function renderWind24HourTable(stationId) {
 
       const toggleCell = document.createElement("td");
       toggleCell.colSpan = 6;
-      toggleCell.style.textAlign = "center";
-      toggleCell.style.padding = "1rem";
-      toggleCell.style.background = "var(--color-surface-light)";
-      toggleCell.style.cursor = "pointer";
-      toggleCell.style.borderBottom = "none";
+      toggleCell.className = "wind-24hr-toggle-cell";
 
       const toggleButton = document.createElement("button");
       toggleButton.type = "button";
       toggleButton.className = "wind-24hr-toggle-btn";
       toggleButton.textContent = "▼ Show More Rows";
+      toggleButton.setAttribute("aria-expanded", "false");
       toggleButton.addEventListener("click", toggleWind24hrRows);
 
       toggleCell.appendChild(toggleButton);
@@ -648,11 +637,9 @@ function setWindTimeRange(hours) {
 
   // Update ALL button states (sync all toggle buttons on page)
   document.querySelectorAll(".wind-time-range-btn").forEach((btn) => {
-    if (parseInt(btn.dataset.windHours) === hours) {
-      btn.classList.add("active");
-    } else {
-      btn.classList.remove("active");
-    }
+    const isActive = parseInt(btn.dataset.windHours) === hours;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-pressed", isActive);
   });
 
   // Update section headers to show current time range
@@ -896,8 +883,9 @@ function toggleWind24hrRows() {
     row.style.display = isCurrentlyHidden ? "table-row" : "none";
   });
 
-  // Update button text
+  // Update button text and aria state
   toggleButton.textContent = isCurrentlyHidden ? "▲ Show Less Rows" : "▼ Show More Rows";
+  toggleButton.setAttribute("aria-expanded", isCurrentlyHidden);
 }
 
 function checkHashForWindStation() {

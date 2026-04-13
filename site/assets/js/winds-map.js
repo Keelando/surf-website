@@ -48,7 +48,7 @@ function createDirectionalMarker(direction, speed, stale = false) {
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: ${opacity};">
       ${speedLabel}
       <div style="transform: rotate(${rotation}deg); transform-origin: center center;">
-        <svg width="26" height="30" viewBox="-6 -10 12 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); color: ${arrowColor};">
+        <svg aria-hidden="true" width="26" height="30" viewBox="-6 -10 12 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); color: ${arrowColor};">
           <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="currentColor" fill-opacity="0.98" stroke="currentColor" stroke-width="1.5"/>
         </svg>
       </div>
@@ -106,6 +106,11 @@ async function loadWindStationsAndMarkers() {
     }
   } catch (error) {
     console.error("Error loading wind stations for map:", error);
+    const mapEl = document.getElementById("winds-map");
+    if (mapEl) {
+      mapEl.innerHTML =
+        '<div class="winds-map-error">Unable to load station markers. Try refreshing the page.</div>';
+    }
   }
 }
 
@@ -155,19 +160,12 @@ function addWindMarker(station, currentData, isBuoy = false) {
   let popupContent = `<div class="station-popup"><h3>${station.name}</h3>`;
 
   if (currentData) {
-    const bgColor = currentData.stale
-      ? "var(--color-callout-danger-bg, #fff5f5)"
-      : "var(--color-callout-info-bg, #f0f8ff)";
-    const borderColor = currentData.stale
-      ? "var(--color-accent-red)"
-      : isBuoy
-        ? "var(--color-primary)"
-        : "var(--color-accent-orange)";
+    const staleClass = currentData.stale ? "popup-wind-card--stale" : "popup-wind-card--fresh";
+    const typeClass = isBuoy ? "popup-wind-card--buoy" : "popup-wind-card--station";
+    const headerClass = currentData.stale ? "popup-wind-header--stale" : "popup-wind-header--fresh";
     const headerText = currentData.stale ? "Last Wind (STALE - >3h old):" : "Current Wind:";
-    popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
-    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; color: ${
-      currentData.stale ? "var(--color-accent-red)" : "var(--color-primary-dark)"
-    };">${headerText}</div>`;
+    popupContent += `<div class="popup-wind-card ${staleClass} ${typeClass}">`;
+    popupContent += `<div class="popup-wind-header ${headerClass}">${headerText}</div>`;
 
     // Wind speed and gust
     if (currentData.wind_speed_kt != null) {
@@ -204,7 +202,7 @@ function addWindMarker(station, currentData, isBuoy = false) {
         timeZone: "America/Vancouver",
         timeZoneName: "short",
       });
-      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 4px;">Updated: ${timeStr}</div>`;
+      popupContent += `<div class="popup-timestamp">Updated: ${timeStr}</div>`;
     }
 
     popupContent += `</div>`;
@@ -213,13 +211,13 @@ function addWindMarker(station, currentData, isBuoy = false) {
   // Station details
   const typeLabel = getStationTypeLabel(station, isBuoy);
   popupContent += `
-    <div style="font-size: 0.9em; line-height: 1.4; margin-top: 8px;">
+    <div class="popup-station-details">
       <div><strong>ID:</strong> ${station.id}</div>
       <div><strong>Location:</strong> ${station.location}</div>
       <div><strong>Source:</strong> ${station.source}</div>
       <div><strong>Type:</strong> ${typeLabel}</div>
     </div>
-    <a href="#" class="view-data-btn" data-wind-station-id="${station.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Wind Chart →</a>
+    <a href="#" class="view-data-btn" data-wind-station-id="${station.id}">View Wind Chart →</a>
   </div>`;
 
   marker.bindPopup(popupContent);
