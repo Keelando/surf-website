@@ -10,11 +10,11 @@ SURREY_API_USERNAME=surreyrain
 SURREY_API_PASSWORD=surreyrain
 
 # ==================== SYSTEM MONITORING ====================
-# System stats to Home Assistant via MQTT (every 15 min)
-*/15 * * * * /home/keelando/.sys-venv/bin/python /home/keelando/sys_stats_mqtt.py
+# System stats to Home Assistant via MQTT (every 5 min due to recent thermal events)
+*/5 * * * * /home/keelando/.sys-venv/bin/python /home/keelando/sys_stats_mqtt.py
 
-# Storage metrics to MQTT (every 5 min)
-*/10 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/storage_metrics_to_mqtt.py >> /home/keelando/envcan_wave/logs/storage_metrics.log 2>&1
+# Storage metrics to MQTT (every 1hr)
+0 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/storage_metrics_to_mqtt.py >> /home/keelando/envcan_wave/logs/storage_metrics.log 2>&1
 
 # Health check - detect stale data (hourly)
 0 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/monitoring/health_check.py >> /home/keelando/envcan_wave/logs/health_check.log 2>&1
@@ -37,8 +37,11 @@ SURREY_API_PASSWORD=surreyrain
 # Export stations metadata (hourly)
 0 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_stations_json.py >> /home/keelando/envcan_wave/logs/stations_export.log 2>&1
 
-# Purge XMLs older than 2 days (hourly)
-0 * * * * find /home/keelando/envcan_wave/data/buoy -name "*.xml" -mtime +2 -delete
+# Purge SR3 XMLs older than 24 hours (hourly) — data is in SQLite
+0 * * * * find /home/keelando/envcan_wave/data/buoy -name "*.xml" -mtime +1 -delete
+0 * * * * find /home/keelando/envcan_wave/data/wind -name "*.xml" -mtime +1 -delete
+0 * * * * find /home/keelando/envcan_wave/data/marine_forecast -name "*.xml" -mtime +1 -delete
+0 * * * * find /home/keelando/envcan_wave/data/lightstation_bulletins -type f -mtime +1 -delete
 
 # ==================== NOAA DATA ====================
 # NOAA buoy data (every 20 min at :05, :25, :45)
