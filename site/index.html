@@ -21,7 +21,7 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20260407" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20260427" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=20260314" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=20260411" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css" />
@@ -72,6 +72,9 @@
 <body>
   <!-- Warning Banner Container -->
   <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
+
+  <!-- Site Notice -->
+  <div id="site-notice-container"></div>
 
   <!-- Navigation -->
   <div hx-get="/components/nav.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
@@ -290,6 +293,7 @@
   <!-- Load logger first for global availability -->
   <script src="/assets/js/logger.js?v=20251117"></script>
   <script src="/assets/js/warning-banner.js?v=20251117"></script>
+  <script src="/assets/js/site-notice.js?v=20260427"></script>
   <!-- Load chart utilities first to avoid race conditions -->
   <script src="/assets/js/chart-utils-v4.js?v=20260413"></script>
   <script src="/assets/js/main.js?v=20260308c"></script>

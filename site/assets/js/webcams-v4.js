@@ -65,8 +65,6 @@ const webcams = [
     slideshowPath: "/data/bbcam/",
     updateInterval: 10,
     streamDelay: 20,
-    downNotice:
-      "YouTube livestream temporarily unavailable. Images shown are from last successful capture.",
     conditions: [
       {
         label: "White Rock East Beach",

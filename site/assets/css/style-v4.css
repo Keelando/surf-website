@@ -1456,6 +1456,51 @@ header h2 {
   color: var(--color-warning-text);
 }
 
+/* -----------------------------
+   Site Notice
+----------------------------- */
+
+#site-notice-container:empty {
+  display: none;
+}
+
+.site-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.55rem var(--spacing-md);
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.site-notice-icon {
+  font-style: normal;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.site-notice-message {
+  flex: 1;
+}
+
+.site-notice-dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.site-notice-dismiss:hover {
+  opacity: 1;
+}
+
 .color-error {
   color: var(--color-error-text);
 }

@@ -61,8 +61,8 @@ WEBCAM_CONFIGS = {
     },
     "boundarybay": {
         "name": "White Rock East Beach",
-        "youtube_url": "https://www.youtube.com/watch?v=O8RsAq9RUlA",
-        "video_id": "O8RsAq9RUlA",
+        "youtube_url": "https://www.youtube.com/watch?v=V7sb6a2e0p8",
+        "video_id": "V7sb6a2e0p8",
         "archive_dir": Path("/mnt/storage/boundarybay_cam"),
         "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "bbcam",
         "prefix": "BB",
