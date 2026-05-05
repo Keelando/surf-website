@@ -65,6 +65,7 @@ const webcams = [
     slideshowPath: "/data/bbcam/",
     updateInterval: 10,
     streamDelay: 20,
+    downNotice: "Camera offline — screen grabs paused",
     conditions: [
       {
         label: "White Rock East Beach",
