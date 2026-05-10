@@ -11,7 +11,7 @@ SURREY_API_PASSWORD=surreyrain
 
 # ==================== SYSTEM MONITORING ====================
 # System stats to Home Assistant via MQTT (every 5 min due to recent thermal events)
-*/15 * * * * /home/keelando/.sys-venv/bin/python /home/keelando/sys_stats_mqtt.py
+*/5 * * * * /home/keelando/.sys-venv/bin/python /home/keelando/sys_stats_mqtt.py
 
 # Storage metrics to MQTT (every 1hr)
 0 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/storage_metrics_to_mqtt.py >> /home/keelando/envcan_wave/logs/storage_metrics.log 2>&1
