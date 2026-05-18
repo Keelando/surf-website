@@ -162,7 +162,7 @@ SURREY_API_PASSWORD=surreyrain
 
 
 # Generate minecraft codebase digests (daily at 07:00 UTC / 11pm PT)
-0 7 * * * /home/keelando/minecraft/digest_super.sh >> /home/keelando/minecraft/digest.log 2>&1
+#0 7 * * * /home/keelando/minecraft/digest_super.sh >> /home/keelando/minecraft/digest.log 2>&1
 
 # ==================== GEOIP DATABASE ====================
 # MaxMind releases GeoLite2 every Tuesday; update Wed + Sat at 03:30 UTC
