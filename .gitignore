@@ -76,6 +76,11 @@ storm_surge/
 !package.json
 !package-lock.json
 !.eslintrc.json
+!config/webcams.example.json
+
+# Local webcam config — endpoints, referers, permission-gated feeds.
+# Schema lives in config/webcams.example.json.
+config/webcams.json
 
 # =============================================================================
 # Frontend (site/)

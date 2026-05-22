@@ -48,9 +48,8 @@ The system captures images from 5 webcam sources (YouTube livestreams, direct UR
 - **Cron schedule:** `:06, :36` (every hour)
 
 ### 5. Ambleside - Hollyburn Sailing Club (`ambleside`)
-- **Source:** Yawcam server (onsite.hollyburnsailingclub.ca:8081)
+- **Source:** Hollyburn Sailing Club webcam. Endpoint details live in the gitignored local config — see permission note below before adding.
 - **Location:** Hollyburn Sailing Club, West Vancouver, BC (49.3266, -123.1529)
-- **Quality:** 50 (Yawcam quality setting)
 - **Capture interval:** Every 20 minutes (daylight only)
 - **Daylight margin:** ±60 minutes from sunrise/sunset
 - **Archive:** `/mnt/storage/ambleside_cam/`
@@ -258,7 +257,7 @@ python3 fetch_webcam.py mudbay
 python3 fetch_webcam.py ambleside
 ```
 
-**Configuration:** All webcam configs defined in `WEBCAM_CONFIGS` dict in the script
+**Configuration:** Webcam configs live in `config/webcams.json` (gitignored — keeps endpoints, referers, and permission-gated feeds out of the public repo). The script loads them at startup via `load_webcam_configs()`. See `config/webcams.example.json` for the schema and a sanitized template.
 
 **Logging:** Centralized via `lib/logging_config.py`
 - Log file: `~/envcan_wave/logs/webcam_<config_name>.log`
@@ -453,26 +452,27 @@ sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backu
 
 ## Adding a New Webcam
 
-1. **Add configuration** to `WEBCAM_CONFIGS` in `scripts/fetch/fetch_webcam.py`:
-```python
+1. **Add a config entry** to `config/webcams.json` (gitignored; see `config/webcams.example.json` for the schema). Paths in `archive_dir` are absolute; `website_dir` is resolved relative to the repo root.
+```json
 "newcam": {
-    "name": "New Camera Name",
-    "youtube_url": "https://www.youtube.com/watch?v=VIDEO_ID",  # or image_url or yawcam_url
-    "video_id": "VIDEO_ID",
-    "archive_dir": Path("/mnt/storage/newcam_cam"),
-    "website_dir": Path.home() / "site" / "data" / "newcam",
-    "prefix": "NC",
-    "crop": "in_w:in_h:0:0",  # Full frame
-    "source_text": "New Camera - Source Attribution",
-    "lat": 49.0000,
-    "lon": -123.0000,
-    "max_height": 720,
-    "check_daylight": True,
-    "daylight_margin_minutes": 75,
-    "interval_minutes": 15,
-    "cron_offset": 10  # Unique offset to avoid conflicts
+  "name": "New Camera Name",
+  "youtube_url": "https://www.youtube.com/watch?v=VIDEO_ID",
+  "video_id": "VIDEO_ID",
+  "archive_dir": "/mnt/storage/newcam_cam",
+  "website_dir": "site/data/newcam",
+  "prefix": "NC",
+  "crop": "in_w:in_h:0:0",
+  "source_text": "New Camera - Source Attribution",
+  "lat": 49.0000,
+  "lon": -123.0000,
+  "max_height": 720,
+  "check_daylight": true,
+  "daylight_margin_minutes": 75,
+  "interval_minutes": 15,
+  "cron_offset": 10
 }
 ```
+For a **direct-image** source instead of YouTube, swap `youtube_url`/`video_id` for `image_url`. Optional `image_referer` / `image_user_agent` keys are available if a host requires them — set those only with permission from the source.
 
 2. **Add cron job**:
 ```bash

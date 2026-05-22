@@ -768,7 +768,7 @@ webcams.html (latest image + slideshow carousel)
 - White Rock East Beach (YouTube, 10 min, DISABLED)
 - Cox Bay (YouTube, 15 min, daylight only)
 - Mud Bay HD (Direct URL, 30 min, daylight only)
-- Ambleside - Hollyburn Sailing Club (Yawcam, 20 min, daylight only)
+- Ambleside - Hollyburn Sailing Club (20 min, daylight only, permission-gated)
 
 **Storage:**
 - Archive: `/mnt/storage/` (external USB SATA, 223.6GB)

@@ -10,13 +10,15 @@ import time
 import requests
 
 
-def download_image(image_url, output_path, logger):
+def download_image(image_url, output_path, logger, referer=None, user_agent=None):
     """Download an image directly from a URL using curl.
 
     Args:
         image_url: URL of the image to download
         output_path: Path object where the image will be saved
         logger: Logger instance for output
+        referer: Optional Referer header (some hosts require one)
+        user_agent: Optional User-Agent override
 
     Returns:
         True if download successful, False otherwise
@@ -25,19 +27,26 @@ def download_image(image_url, output_path, logger):
         logger.info(f"Downloading image from: {image_url}")
         logger.info(f"Saving to: {output_path}")
 
+        cmd = [
+            "curl",
+            "-f",  # Fail on HTTP errors
+            "-sS",  # Quiet but show errors
+            "-L",  # Follow redirects
+            "-o",
+            str(output_path),
+            "--max-time",
+            "30",
+            "--connect-timeout",
+            "10",
+        ]
+        if referer:
+            cmd += ["-e", referer]
+        if user_agent:
+            cmd += ["-A", user_agent]
+        cmd.append(image_url)
+
         result = subprocess.run(
-            [
-                "curl",
-                "-f",  # Fail silently on HTTP errors
-                "-L",  # Follow redirects
-                "-o",
-                str(output_path),
-                "--max-time",
-                "30",
-                "--connect-timeout",
-                "10",
-                image_url,
-            ],
+            cmd,
             capture_output=True,
             text=True,
             timeout=40,

@@ -39,102 +39,40 @@ from lib.webcam import (
     manage_slideshow_images,
 )
 
-# Webcam configurations
-# YouTube streams support: max_height (resolution), interval_minutes, check_daylight, crop
-# Direct image URLs (like mudbay) just fetch the image as-is
-WEBCAM_CONFIGS = {
-    "whiterock": {
-        "name": "White Rock Pier Cam",
-        "youtube_url": "https://www.youtube.com/watch?v=4MK3E9EWDSY",
-        "video_id": "4MK3E9EWDSY",
-        "archive_dir": Path("/mnt/storage/whiterock_cam"),
-        "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "wrcam",
-        "prefix": "WR",
-        "crop": "in_w*0.75:in_h:in_w*0.25:0",  # Crop left 25% (street), keep right 75% (pier/sea)
-        "source_text": "White Rock Pier - YouTube Livestream",
-        "lat": 49.0253,
-        "lon": -122.8031,
-        "max_height": 720,  # 720p for detail
-        "check_daylight": False,  # Capture 24/7
-        "interval_minutes": 10,  # Snapshot every 10 minutes
-        "cron_offset": 0,  # Runs at :00, :10, :20, etc.
-    },
-    "boundarybay": {
-        "name": "White Rock East Beach",
-        "youtube_url": "https://www.youtube.com/watch?v=V7sb6a2e0p8",
-        "video_id": "V7sb6a2e0p8",
-        "archive_dir": Path("/mnt/storage/boundarybay_cam"),
-        "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "bbcam",
-        "prefix": "BB",
-        "crop": "in_w:in_h:0:0",  # Full frame
-        "source_text": "White Rock East Beach - YouTube Livestream",
-        "lat": 49.0042,
-        "lon": -123.0128,
-        "max_height": 480,  # 480p default
-        "check_daylight": False,  # Capture 24/7
-        "interval_minutes": 10,  # Snapshot every 10 minutes
-        "cron_offset": 2,  # Runs at :02, :12, :22, etc.
-    },
-    "coxbay": {
-        "name": "Cox Bay",
-        "youtube_url": "https://www.youtube.com/watch?v=LqaP8m2OIqM",
-        "video_id": "LqaP8m2OIqM",
-        "archive_dir": Path("/mnt/storage/coxbay_cam"),
-        "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "coxbay",
-        "prefix": "CB",
-        "crop": "in_w:in_h:0:0",  # Full frame
-        "source_text": "Cox Bay (Tofino) - Pacific Sands Beach Resort Livestream",
-        "lat": 49.1167,
-        "lon": -125.9000,
-        "max_height": 720,  # 720p for surf detail
-        "check_daylight": True,  # Only capture during daylight
-        "daylight_margin_minutes": 75,
-        "interval_minutes": 15,  # Snapshot every 15 minutes
-        "cron_offset": 4,  # Runs at :04, :19, :34, :49
-    },
-    "mudbay": {
-        "name": "Mud Bay HD",
-        "image_url": "https://oxblue.com/archive/c6713f391eef15e5c1dbfc6a003b83a0/1024x768.jpg",
-        "archive_dir": Path("/mnt/storage/mudbay_cam"),
-        "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "mudbay",
-        "prefix": "MB",
-        "crop": "in_w:in_h:0:0",  # Full frame
-        "source_text": "Mud Bay HD - OxBlue Construction Cam",
-        "lat": 49.07138649092664,
-        "lon": -122.95538135838513,
-        # No max_height - direct image URL, fetched as-is (1024x768)
-        "check_daylight": True,  # Only capture during daylight
-        "daylight_margin_minutes": 75,
-        "interval_minutes": 30,  # Snapshot every 30 minutes
-        "cron_offset": 6,  # Runs at :06, :36
-        "annotate_timestamp": True,  # Add timestamp overlay
-    },
-    # -------------------------------------------------------------------------
-    # HOLLYBURN SAILING CLUB WEBCAM - PERMISSION REQUIRED
-    # Approval granted to halibutbank.ca by Hollyburn Sailing Club (Jan 2026).
-    # If you fork this project, you MUST obtain your own permission from
-    # Hollyburn Sailing Club before fetching from their webcam feed.
-    # Contact: https://www.hollyburnsailingclub.ca/
-    # -------------------------------------------------------------------------
-    "ambleside": {
-        "name": "Ambleside (Hollyburn Sailing Club)",
-        "yawcam_url": "http://onsite.hollyburnsailingclub.ca:8081/",
-        "archive_dir": Path("/mnt/storage/ambleside_cam"),
-        "website_dir": Path(__file__).parent.parent.parent / "site" / "data" / "ambleside",
-        "prefix": "AB",
-        "crop": "in_w:in_h:0:0",  # Full frame
-        "source_text": "Hollyburn Sailing Club Webcam",
-        "source_url": "https://www.hollyburnsailingclub.ca/webcam",
-        "lat": 49.326635134999776,
-        "lon": -123.1529396759124,
-        # Yawcam quality setting (1-100)
-        "yawcam_quality": 50,
-        "check_daylight": True,  # Only capture during daylight
-        "daylight_margin_minutes": 60,
-        "interval_minutes": 20,  # Snapshot every 20 minutes (conservative rate)
-        "cron_offset": 8,  # Runs at :08, :28, :48
-    },
-}
+# Webcam configurations live in config/webcams.json (gitignored).
+# See config/webcams.example.json for the schema.
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+WEBCAM_CONFIG_PATH = REPO_ROOT / "config" / "webcams.json"
+
+
+def load_webcam_configs():
+    """Load webcam configs from JSON, resolving paths relative to repo root.
+
+    archive_dir is taken as-is (typically an absolute /mnt/storage path).
+    website_dir is resolved relative to the repo root if not already absolute.
+    Keys beginning with `_` (e.g. `_comment`, `_permission_note`) are dropped.
+    """
+    if not WEBCAM_CONFIG_PATH.exists():
+        raise FileNotFoundError(
+            f"Webcam config not found at {WEBCAM_CONFIG_PATH}. "
+            f"Copy config/webcams.example.json to config/webcams.json and edit."
+        )
+    with open(WEBCAM_CONFIG_PATH) as f:
+        raw = json.load(f)
+
+    configs = {}
+    for name, cfg in raw.items():
+        if name.startswith("_"):
+            continue
+        cfg = {k: v for k, v in cfg.items() if not k.startswith("_")}
+        cfg["archive_dir"] = Path(cfg["archive_dir"])
+        website_dir = Path(cfg["website_dir"])
+        cfg["website_dir"] = website_dir if website_dir.is_absolute() else REPO_ROOT / website_dir
+        configs[name] = cfg
+    return configs
+
+
+WEBCAM_CONFIGS = load_webcam_configs()
 
 
 STORAGE_MOUNT = Path("/mnt/storage")
@@ -226,7 +164,13 @@ def main():
     # Check if this is a direct image URL, YouTube stream, or Yawcam
     if "image_url" in config:
         # Direct image download
-        if not download_image(config["image_url"], archive_path, logger):
+        if not download_image(
+            config["image_url"],
+            archive_path,
+            logger,
+            referer=config.get("image_referer"),
+            user_agent=config.get("image_user_agent"),
+        ):
             logger.error("Failed to download image - aborting")
             sys.exit(1)
     elif "youtube_url" in config:

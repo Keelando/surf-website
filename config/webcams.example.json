@@ -1,0 +1,40 @@
+{
+  "_comment": "Copy this file to config/webcams.json and edit. webcams.json is gitignored — keep endpoints, referers, and any permission-restricted feeds out of the public repo.",
+
+  "examplecam_youtube": {
+    "name": "Example YouTube Livestream Cam",
+    "youtube_url": "https://www.youtube.com/watch?v=YOUR_VIDEO_ID",
+    "video_id": "YOUR_VIDEO_ID",
+    "archive_dir": "/mnt/storage/example_cam",
+    "website_dir": "site/data/example",
+    "prefix": "EX",
+    "crop": "in_w:in_h:0:0",
+    "source_text": "Example Cam - YouTube Livestream",
+    "lat": 0.0,
+    "lon": 0.0,
+    "max_height": 480,
+    "check_daylight": false,
+    "interval_minutes": 10,
+    "cron_offset": 0
+  },
+
+  "examplecam_image": {
+    "name": "Example Direct-Image Cam",
+    "image_url": "https://example.com/path/to/cam.jpg",
+    "image_referer": "https://example.com/",
+    "image_user_agent": "Mozilla/5.0",
+    "archive_dir": "/mnt/storage/example_cam",
+    "website_dir": "site/data/example",
+    "prefix": "EX",
+    "crop": "in_w:in_h:0:0",
+    "source_text": "Example Cam",
+    "source_url": "https://example.com/",
+    "lat": 0.0,
+    "lon": 0.0,
+    "check_daylight": true,
+    "daylight_margin_minutes": 60,
+    "interval_minutes": 20,
+    "cron_offset": 0,
+    "annotate_timestamp": false
+  }
+}
