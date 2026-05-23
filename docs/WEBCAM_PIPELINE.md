@@ -48,7 +48,7 @@ The system captures images from 5 webcam sources (YouTube livestreams, direct UR
 - **Cron schedule:** `:06, :36` (every hour)
 
 ### 5. Ambleside - Hollyburn Sailing Club (`ambleside`)
-- **Source:** Hollyburn Sailing Club webcam. Endpoint details live in the gitignored local config — see permission note below before adding.
+- **Source:** Direct image URL (Hollyburn Sailing Club webcam server). Endpoint and referer live in the gitignored `config/webcams.json` — see permission note below before using.
 - **Location:** Hollyburn Sailing Club, West Vancouver, BC (49.3266, -123.1529)
 - **Capture interval:** Every 20 minutes (daylight only)
 - **Daylight margin:** ±60 minutes from sunrise/sunset
@@ -57,6 +57,7 @@ The system captures images from 5 webcam sources (YouTube livestreams, direct UR
 - **Cron schedule:** `:08, :28, :48` (every hour)
 - **Permission:** Approval granted to halibutbank.ca by Hollyburn Sailing Club (Jan 2026)
   - **IMPORTANT:** If you fork this project, you MUST obtain your own permission from Hollyburn Sailing Club
+- **Known issue:** Server intermittently returns HTTP 404 even during daylight hours. This appears to be upstream flakiness (the file is sometimes absent on their server). Failed fetches are logged and the next scheduled run recovers automatically.
 
 ## Architecture
 
@@ -134,14 +135,19 @@ Website (webcams.html) displays latest + slideshow carousel
 - Others: `in_w:in_h:0:0` (full frame)
 
 ### Direct Image URL Capture
-**Tool:** HTTP GET with requests library
+**Tool:** curl
 
 **Process:**
 1. Download image from URL
 2. Optionally annotate with timestamp (ImageMagick)
 3. Save to archive directory
 
-**Example:** Mud Bay HD (OxBlue construction cam)
+**Optional request headers** (set in `config/webcams.json`):
+- `image_referer` — `Referer:` header; required by some hosts to serve the image (e.g. Ambleside/Hollyburn)
+- `image_user_agent` — `User-Agent:` override (e.g. `HalibutBank/1.0 (+https://halibutbank.ca)`)
+- `image_from` — `From:` header with operator contact email; good practice for polite bot identification
+
+**Examples:** Mud Bay HD (OxBlue), Ambleside (Hollyburn Sailing Club)
 
 ### Yawcam Server Capture
 **Protocol:** HTTP GET with Yawcam-specific parameters
@@ -152,7 +158,7 @@ Website (webcams.html) displays latest + slideshow carousel
 
 **Quality parameter:** 1-100 (50 = balanced quality/size)
 
-**Example:** Ambleside (Hollyburn Sailing Club)
+**Example:** Previously used for Ambleside (Hollyburn Sailing Club) — now uses direct image URL instead
 
 ## Daylight Detection
 
@@ -385,6 +391,12 @@ Error: HTTP 403 Forbidden
 ```
 **Solution:** Verify Yawcam server URL and permissions. Contact webcam owner if needed.
 
+**6. Ambleside intermittent 404s**
+```
+curl: (22) The requested URL returned error: 404
+```
+**Solution:** Upstream server flakiness — the Hollyburn Sailing Club server sometimes returns 404 even during daylight. No action needed; the next scheduled run will recover. If 404s persist for several hours during daylight, check manually whether the cam endpoint has changed.
+
 ## Storage Hardware
 
 **Primary storage:** `/mnt/storage/` on external USB SATA drive
@@ -472,7 +484,7 @@ sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backu
   "cron_offset": 10
 }
 ```
-For a **direct-image** source instead of YouTube, swap `youtube_url`/`video_id` for `image_url`. Optional `image_referer` / `image_user_agent` keys are available if a host requires them — set those only with permission from the source.
+For a **direct-image** source instead of YouTube, swap `youtube_url`/`video_id` for `image_url`. Optional keys `image_referer`, `image_user_agent`, and `image_from` are available — use them if the host requires a referer, and set UA/From as good bot-identification practice. Only fetch with permission from the source.
 
 2. **Add cron job**:
 ```bash
@@ -499,6 +511,6 @@ ls -lh site/data/newcam/
 
 ---
 
-**Last updated:** February 2026
+**Last updated:** May 2026
 **Maintainer:** Keelando
 **Live site:** [halibutbank.ca/webcams.html](https://halibutbank.ca/webcams.html)
