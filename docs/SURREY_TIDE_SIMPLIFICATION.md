@@ -20,7 +20,7 @@ Simplify Surrey tide handling by using FlowWorks' pre-calculated tidal residuals
    - Water level predicted (Channel 2620/2621)
    - Tidal residual (Channel 2414/3660) ← **Already fetched but not used!**
 
-2. **Current Exports** (`export_tide_json.py`, `export_observed_storm_surge.py`):
+2. **Current Exports** (`export_tide_json.py`, `scripts/export/water_level_export.py`):
    - Calculate residual ourselves: `observed - predicted`
    - Apply geodetic datum corrections
    - Complex timestamp matching logic
@@ -89,7 +89,7 @@ if station_id.startswith("surrey_"):
         }
 ```
 
-### 2. Modify `export_observed_storm_surge.py`
+### 2. Modify the observed-surge path in `scripts/export/water_level_export.py`
 
 **Current behavior:**
 - Calculates `observed_surge = tide_observation - tide_prediction`
@@ -159,7 +159,7 @@ if station_id.startswith("surrey_"):
 
 After validation, can safely remove:
 - Geodetic datum conversion logic in `export_tide_json.py` (lines ~180-210)
-- Complex Surrey timestamp matching in `export_observed_storm_surge.py`
+- Complex Surrey timestamp matching in the observed-surge path of `scripts/export/water_level_export.py`
 - Any CGVD28 ↔ Chart Datum offset calculations
 
 **Note:** Keep backup branch available for reference: `archive/geodetic-tide-corrections-2026-01-12`
@@ -182,7 +182,7 @@ After validation, can safely remove:
 
 ### Backend
 1. `scripts/export/export_tide_json.py` - Add Surrey residual export
-2. `scripts/export/export_observed_storm_surge.py` - Use Surrey residuals directly
+2. `scripts/export/water_level_export.py` (observed-surge path) - Use Surrey residuals directly
 3. `scripts/fetch/fetch_surrey_tides.py` - ✓ Already updated (channel 3660 added)
 
 ### Frontend

@@ -24,7 +24,7 @@ Storm surge hindcast page (`/storm_surge.html`) only shows predicted water level
 - ❌ Can't validate forecast accuracy for past dates
 
 ### Root Cause
-`export_combined_water_level.py` only exports:
+`scripts/export/water_level_export.py` (combined-water-level.json) only exports:
 - Astronomical tide predictions (from SQLite)
 - Storm surge forecasts (from GeoMet)
 - Combined total water level (prediction + forecast)
@@ -32,7 +32,7 @@ Storm surge hindcast page (`/storm_surge.html`) only shows predicted water level
 It does NOT load or export tide observations, even though they're available in the database.
 
 ### Solution
-Add tide observation loading to `export_combined_water_level.py`:
+Add tide observation loading to the combined-water-level path in `scripts/export/water_level_export.py`:
 1. Query `tide_observation` table for recent data
 2. Include observations in JSON output
 3. Update chart renderer to display as scatter points
@@ -306,7 +306,7 @@ Point_Atkinson forecast:
 
 **Files to investigate:**
 - `fetch_storm_surge.py` - fetching logic from ECCC API
-- `export_combined_water_level.py` - data processing and time ranges
+- `scripts/export/water_level_export.py` - data processing and time ranges
 
 ---
 
@@ -555,7 +555,7 @@ The hindcast plot currently shows 4 stations with DFO IWLS data:
 The Surrey stations have:
 - ✅ Tide observations in database (synced from Surrey FlowWorks buoy DB)
 - ✅ Tide predictions in database (synced from Surrey FlowWorks buoy DB)
-- ✅ Already calculating observed surge via `export_observed_storm_surge.py`
+- ✅ Already calculating observed surge via the observed-surge path in `scripts/export/water_level_export.py`
 - ❌ NOT included in hindcast export (no GDSPS forecast points for these locations)
 
 ### Implementation Options
@@ -567,7 +567,7 @@ Add Surrey stations to hindcast plot showing **only** the observed surge line (n
 - No forecast lines since GDSPS doesn't have these coordinates
 
 **Files to modify:**
-- `export_observed_storm_surge.py` - Add Surrey stations to TIDE_TO_SURGE_MAP
+- `lib/water_level_stations.py` - Add Surrey stations to WATER_LEVEL_STATIONS
 - `storm_surge_page.js` - Handle stations with observed surge but no hindcast data
 
 #### Option 2: Interpolate GDSPS Forecast
@@ -580,20 +580,18 @@ Interpolate GDSPS storm surge forecast from nearby station (Crescent Beach Chann
 **Option 1** - Show observed surge only for Surrey stations:
 
 ```python
-# export_observed_storm_surge.py - Update TIDE_TO_SURGE_MAP
-TIDE_TO_SURGE_MAP = {
-    "point_atkinson": "Point_Atkinson",
-    "campbell_river": "Campbell_River",
-    "crescent_pile": "Crescent_Beach_Channel",
-    "tofino": "Tofino",
-    "crescent_beach_ocean": "Crescent_Beach_Ocean",      # NEW
-    "crescent_channel_ocean": "Crescent_Channel_Ocean"   # NEW
-}
+# lib/water_level_stations.py - WATER_LEVEL_STATIONS entries
+WaterLevelStation("point_atkinson",         "Point_Atkinson",         "Point_Atkinson"),
+WaterLevelStation("campbell_river",         "Campbell_River",         "Campbell_River"),
+WaterLevelStation("crescent_pile",          "Crescent_Beach_Channel", "Crescent_Beach_Channel"),
+WaterLevelStation("tofino",                 "Tofino",                 "Tofino"),
+WaterLevelStation("crescent_beach_ocean",   "Crescent_Beach_Channel", "Crescent_Beach_Ocean",   is_surrey=True),
+WaterLevelStation("crescent_channel_ocean", "Crescent_Beach_Channel", "Crescent_Channel_Ocean", is_surrey=True),
 ```
 
 Frontend will need to handle stations that have `observedSurgeData` but no `hindcastData`.
 
 ### Files Affected
-- `export_observed_storm_surge.py` (line 29-34) - Add Surrey stations to mapping
+- `lib/water_level_stations.py` (WATER_LEVEL_STATIONS tuple) - Add Surrey stations to mapping
 - `storm_surge_page.js` (lines 544-573, 575-590) - Handle stations with obs but no hindcast
 - `export_hindcast_json.py` - No changes needed (GDSPS doesn't cover these locations)

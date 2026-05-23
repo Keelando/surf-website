@@ -2,7 +2,7 @@
 
 ## What This System Predicts
 
-The combined water level predictions provided by `export_combined_water_level.py` calculate:
+The combined water level predictions produced by `scripts/export/water_level_export.py` calculate:
 
 ```
 Total Water Level = Astronomical Tide + Storm Surge (GDSPS)

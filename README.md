@@ -83,7 +83,7 @@ envcan_wave/
 | `scripts/fetch/fetch_webcam.py` | Capture webcam snapshots |
 | `sqlite_to_json.py` | Export latest buoy snapshot |
 | `export_tide_json.py` | Export tide data (latest, timeseries, high/low) |
-| `export_combined_water_level.py` | Export tide + storm surge combined |
+| `scripts/export/water_level_export.py` | Export combined water level forecast + observed storm surge |
 | `export_wind_json.py` | Export latest wind readings |
 | `export_lightstation_json.py` | Export latest lightstation conditions |
 | `influx_to_mqtt.py` | Publish to Home Assistant via MQTT (optional) |

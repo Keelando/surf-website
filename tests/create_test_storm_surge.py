@@ -127,7 +127,7 @@ def main():
     print("✅ Test storm surge data ready!")
     print("\nNext steps:")
     print("  1. Generate test tide database: python3 tests/create_test_tide_database.py")
-    print("  2. Test combined water level: python3 export_combined_water_level.py --test-mode")
+    print("  2. Test water level export: python3 scripts/export/water_level_export.py --test-mode")
 
     return 0
 

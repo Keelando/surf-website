@@ -28,7 +28,9 @@
   function dismiss(id, container) {
     try {
       localStorage.setItem(STORAGE_KEY, id);
-    } catch {}
+    } catch {
+      /* localStorage unavailable (private mode, quota, disabled) — dismissal is best-effort */
+    }
     container.style.transition = "opacity 0.3s ease";
     container.style.opacity = "0";
     setTimeout(() => {
