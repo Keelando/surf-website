@@ -170,6 +170,7 @@ def main():
             logger,
             referer=config.get("image_referer"),
             user_agent=config.get("image_user_agent"),
+            from_email=config.get("image_from"),
         ):
             logger.error("Failed to download image - aborting")
             sys.exit(1)

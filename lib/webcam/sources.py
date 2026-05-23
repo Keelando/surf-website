@@ -10,7 +10,7 @@ import time
 import requests
 
 
-def download_image(image_url, output_path, logger, referer=None, user_agent=None):
+def download_image(image_url, output_path, logger, referer=None, user_agent=None, from_email=None):
     """Download an image directly from a URL using curl.
 
     Args:
@@ -43,6 +43,8 @@ def download_image(image_url, output_path, logger, referer=None, user_agent=None
             cmd += ["-e", referer]
         if user_agent:
             cmd += ["-A", user_agent]
+        if from_email:
+            cmd += ["-H", f"From: {from_email}"]
         cmd.append(image_url)
 
         result = subprocess.run(
