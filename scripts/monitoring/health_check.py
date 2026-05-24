@@ -105,7 +105,7 @@ def check_data_freshness() -> Dict:
     log("Checking webcams...")
     webcam_stale = check_webcam_freshness()
     stale_stations.extend(webcam_stale)
-    total_checked += 5  # 5 webcams total
+    total_checked += len(_load_webcam_config())
 
     # Determine overall status (ignore 'info' severity for intermittent stations)
     error_stations = [s for s in stale_stations if s["severity"] == "error"]
@@ -437,42 +437,39 @@ def check_lightstation_freshness() -> List[Dict]:
     return stale
 
 
+def _load_webcam_config() -> Dict[str, Dict]:
+    """Load webcam config from config/webcams.json (single source of truth).
+
+    Translates the on-disk schema (interval_minutes, check_daylight, website_dir)
+    into the fields this module uses. Returns {} if config is missing.
+    """
+    config_path = Path(__file__).resolve().parents[2] / "config" / "webcams.json"
+    if not config_path.exists():
+        log(f"  ⚠️  webcam config not found at {config_path}")
+        return {}
+
+    with open(config_path) as f:
+        raw = json.load(f)
+
+    project_root = Path(__file__).resolve().parents[2]
+    webcams = {}
+    for cam_id, cam in raw.items():
+        webcams[cam_id] = {
+            "name": cam["name"],
+            "path": project_root / cam["website_dir"] / "latest.json",
+            "interval": cam.get("interval_minutes", 10),
+            "daylight_only": cam.get("check_daylight", False),
+            "disabled": cam.get("disabled_in_cron", False),
+        }
+    return webcams
+
+
 def check_webcam_freshness() -> List[Dict]:
     """Check webcam image freshness."""
     stale = []
     now = datetime.now(timezone.utc)
 
-    webcams = {
-        "whiterock": {
-            "name": "White Rock Pier",
-            "path": SITE_DATA / "wrcam" / "latest.json",
-            "interval": 10,
-        },
-        "boundarybay": {
-            "name": "White Rock East Beach",
-            "path": SITE_DATA / "bbcam" / "latest.json",
-            "interval": 10,
-            "disabled": True,
-        },
-        "coxbay": {
-            "name": "Cox Bay",
-            "path": SITE_DATA / "coxbay" / "latest.json",
-            "interval": 15,
-            "daylight_only": True,
-        },
-        "mudbay": {
-            "name": "Mud Bay HD",
-            "path": SITE_DATA / "mudbay" / "latest.json",
-            "interval": 30,
-            "daylight_only": True,
-        },
-        "ambleside": {
-            "name": "Ambleside",
-            "path": SITE_DATA / "ambleside" / "latest.json",
-            "interval": 20,
-            "daylight_only": True,
-        },
-    }
+    webcams = _load_webcam_config()
 
     for webcam_id, webcam_meta in webcams.items():
         if webcam_meta.get("disabled"):
