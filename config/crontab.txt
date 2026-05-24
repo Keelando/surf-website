@@ -119,8 +119,8 @@ SURREY_API_PASSWORD=surreyrain
 # White Rock Pier (10 min interval, offset :00)
 0,10,20,30,40,50 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py whiterock >> /home/keelando/envcan_wave/logs/webcam_whiterock.log 2>&1
 
-# Boundary Bay - DISABLED: YouTube stream unstable
-#2,12,22,32,42,52 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py boundarybay >> /home/keelando/envcan_wave/logs/webcam_boundarybay.log 2>&1
+# White Rock East Beach (10 min interval, offset :02)
+2,12,22,32,42,52 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py boundarybay >> /home/keelando/envcan_wave/logs/webcam_boundarybay.log 2>&1
 
 # Cox Bay, Tofino (15 min interval, offset :04)
 4,19,34,49 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py coxbay >> /home/keelando/envcan_wave/logs/webcam_coxbay.log 2>&1
