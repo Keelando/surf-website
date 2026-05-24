@@ -52,9 +52,6 @@ ruff.err
 docs/BACKUP_STATUS.md
 docs/DEPLOYMENT.md
 
-# Crontab sanitized copy (API key now in config/.env)
-config/crontab_clean.txt
-
 # Archive backups (may contain sensitive info)
 archive/backups/
 

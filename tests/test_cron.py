@@ -2,8 +2,12 @@
 
 import re
 import subprocess
+from pathlib import Path
 
 import pytest
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+CRONTAB_FILE = REPO_ROOT / "config" / "crontab.txt"
 
 
 def get_crontab_lines():
@@ -14,6 +18,17 @@ def get_crontab_lines():
     return [
         line
         for line in result.stdout.splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
+
+def get_file_crontab_lines():
+    """Get non-comment, non-empty lines from config/crontab.txt."""
+    if not CRONTAB_FILE.exists():
+        pytest.skip(f"{CRONTAB_FILE} not present")
+    return [
+        line
+        for line in CRONTAB_FILE.read_text().splitlines()
         if line.strip() and not line.strip().startswith("#")
     ]
 
@@ -77,4 +92,35 @@ class TestCrontab:
         missing = [str(d) for d in log_dirs if not d.exists()]
         assert missing == [], "Crontab references missing log dirs:\n" + "\n".join(
             f"  {d}" for d in missing
+        )
+
+
+class TestCrontabFile:
+    """Verify config/crontab.txt (the canonical source) references valid files.
+
+    Catches breakage at commit time, before the next install. The TestCrontab
+    suite above only catches issues after install — by then the live system is
+    already running broken lines.
+    """
+
+    def test_all_scripts_exist(self):
+        lines = get_file_crontab_lines()
+        scripts = extract_script_paths(lines)
+        assert scripts, f"No scripts found in {CRONTAB_FILE}"
+
+        missing = [p for p in scripts if not Path(p).exists()]
+        assert missing == [], (
+            f"{CRONTAB_FILE} references missing scripts:\n"
+            + "\n".join(f"  {p}" for p in missing)
+        )
+
+    def test_all_interpreters_exist(self):
+        lines = get_file_crontab_lines()
+        interpreters = extract_interpreter_paths(lines)
+        assert interpreters, f"No interpreters found in {CRONTAB_FILE}"
+
+        missing = [p for p in interpreters if not Path(p).exists()]
+        assert missing == [], (
+            f"{CRONTAB_FILE} references missing interpreters:\n"
+            + "\n".join(f"  {p}" for p in missing)
         )
