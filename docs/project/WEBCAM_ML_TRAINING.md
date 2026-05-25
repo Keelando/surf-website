@@ -1,0 +1,134 @@
+# Webcam ML Training Dataset — Planning
+
+**Status:** Brainstorm / planning phase
+**Started:** 2026-05-25
+
+---
+
+## Concept
+
+Build a paired image + marine-conditions dataset suitable for training a model that can infer wave height (and possibly wind/tide regime) from webcam imagery alone. Primary signal is **image → wave height**; wind and tide are candidate auxiliary features that may improve learning or be useful as multi-task targets.
+
+The dataset is the prerequisite. The model is downstream — we don't need to commit to architecture or framing (regression vs. classification, single-cam vs. multi-cam, etc.) before we start capturing pairs.
+
+## Why this is coming up now
+
+Discovered during a retention review:
+
+- Tide DB is 105M; turns out `surrey_geodetic_data` has no retention (~290k rows, ~161 days). Separate issue, tracked elsewhere.
+- The retention conversation prompted the question: should we be *keeping* more data for ML purposes?
+
+Conclusion: operational DBs should stay lean (short retention serves the live site). ML training data belongs in a **separate, append-only archive** that grows linearly and isn't touched by purges.
+
+## Data Sources
+
+Webcams (image side — already archived to `/mnt/storage/<cam>_cam/` as originals, audited 2026-05-25):
+
+| Cam | Images | Size | Earliest |
+|---|---|---|---|
+| whiterock | 23,683 | 3.6 G | 2025-12-01 |
+| boundarybay | 7,180 | 962 M | 2025-12-03 |
+| coxbay | 10,258 | 771 M | 2025-12-10 |
+| mudbay | 3,710 | 692 M | 2026-01-13 |
+| ambleside | 4,969 | 95 M | 2026-01-18 |
+
+Total ~50k images, ~6 GB. `/mnt/storage` is 220 G with 198 G free — storage is not a constraint for years.
+
+Marine/met conditions (label side — candidates for pairing):
+
+- **Wave height** — primary target. Nearest buoys: Halibut Bank (`4600146`), English Bay (`4600304`) for the WR/BB cams; Tofino/Neah Bay buoys for Cox Bay.
+- **Wind** — speed, gust, direction. Nearest wind stations vary per cam.
+- **Tide** — water level at the closest tide station. Big visual effect on shoreline framing for WR/BB.
+- **Time-of-day / solar position** — derivable from timestamp + cam location. Useful for the model to disambiguate lighting from sea state.
+- **Optional later**: pressure tendency, marine forecast warnings active at the time, swell vs wind wave components (NOAA spectral cams only).
+
+## Proposed Storage Approach
+
+A new SQLite DB — `~/.local/share/webcam_training.sqlite` — with one row per webcam capture:
+
+```
+CREATE TABLE training_pair (
+    capture_time INTEGER NOT NULL,
+    webcam_id TEXT NOT NULL,
+    image_path TEXT NOT NULL,             -- relative path to archived image
+    -- Primary target
+    wave_height_m REAL,
+    wave_period_s REAL,
+    wave_direction_deg REAL,
+    wave_source_buoy TEXT,                -- which buoy was used
+    wave_age_seconds INTEGER,             -- staleness of the reading at capture
+    -- Wind
+    wind_speed_kmh REAL,
+    wind_gust_kmh REAL,
+    wind_direction_deg REAL,
+    wind_source_station TEXT,
+    wind_age_seconds INTEGER,
+    -- Tide
+    tide_height_m REAL,
+    tide_source_station TEXT,
+    tide_age_seconds INTEGER,
+    -- Solar
+    sun_elevation_deg REAL,
+    sun_azimuth_deg REAL,
+    PRIMARY KEY (webcam_id, capture_time)
+);
+```
+
+Append-only. No retention. Image archive lives in a parallel directory (not `site/data/`, which gets overwritten).
+
+### Cadence (decided 2026-05-25): row per image
+
+One row per webcam capture, not one row per buoy/wind/tide update. Even when consecutive images share the same buoy reading, each row records its own timestamp, tide level, solar position, and `*_age_seconds` per source — so rows are rarely true duplicates, and training-time queries are a simple `SELECT WHERE webcam_id=...` without window joins. ~50 MB/year of labels across all cams; storage is not a constraint.
+
+### Capture every tick vs. threshold-only
+
+Capture **every webcam tick**, not "only when waves exceed threshold." Reasons:
+
+1. A model needs calm/baseline frames as negative examples; thresholding biases the dataset.
+2. The whole point of inferring wave height from images is to handle the full range — training only on storms produces a model that can't tell calm from moderate.
+3. Storage cost is negligible: ~3 cams × 6/hr × 24h × 365 = ~158k rows/year. Even at ~200 bytes/row → ~30 MB/year for the SQLite side.
+
+Images are the bulk of the storage, not the labels.
+
+### Image storage
+
+Largely settled — originals are already being archived to `/mnt/storage/<cam>_cam/` by the live pipeline (`scripts/fetch/fetch_webcam.py` reads `archive_dir` from `config/webcams.json`). At current growth rates (~6 GB / 6 months across 5 cams) and 198 G free, originals can stay indefinitely. Downsampling for a model can happen at training time, not at archive time.
+
+## Open Questions
+
+- **Which buoy/wind station maps to which cam?** Needs to be picked deliberately, not "nearest by lat/lon" — Cox Bay's wave regime is Pacific-open, not Salish.
+- **What freshness window is acceptable?** The 2h operational freshness is too loose for training labels. A 30-min cap with `*_age_seconds` recorded so we can filter later is probably right.
+- **Backfill from existing buoy/wind/tide DBs against archived webcam images** — feasible: user confirms a sizeable archive of past webcam images already exists on disk (was being held for a third party). Worth auditing the date range and per-cam coverage before designing the pair-generation script, and tweaking the live pipeline if anything is currently being overwritten rather than archived.
+- **Is wave height alone the right target, or also period and direction?** Period is harder to infer from a still image; direction may be visible at some cams. Worth capturing all three and deciding at training time.
+- **Single-frame vs. short-clip input?** A 5-frame burst captures wave motion. Out of scope for now but would change capture cadence if pursued.
+
+## Recommended v1: Cox Bay only
+
+Start with a single cam rather than building the harness for all five at once. **Cox Bay** is the right one:
+
+- **Oceanic, west-facing, full Pacific exposure** — sees the widest dynamic range of wave heights of any of our cams (calm summer days through 4 m+ winter swells). Salish cams compress most of the year into a narrow 0.5–1.5 m band, which gives a less useful label distribution.
+- **Single regime** — one offshore buoy, one tide station, no Salish/Pacific cross-regime decisions to make. Cleanest possible starting point.
+- **Existing archive is solid** — ~10k images going back to 2025-12-10, covers a full winter storm season.
+
+If the Cox Bay pipeline produces a usable model, Salish cams become a straightforward extension. If it doesn't, we haven't built 5× the wiring.
+
+### Station mapping for Cox Bay (decided 2026-05-25)
+
+- **Wave buoy:** La Pérouse Bank (`4600206`, EC). Audit shows our DB only has it from 2026-05-06 onward — either recent ingest or extended outage; needs investigating before backfill. **Fallback** for backfill of the pre-2026-05-06 image window: Neah Bay (`46087`, NOAA), tagged in the `wave_source_buoy` field so mixed-source rows are filterable later.
+- **Wind:** Tofino Airport (`CYAZ`), 49.08210°N -125.77200°W, elev 24.4 m, ~7 km from Cox Bay. **Confirmed available via SWOB-ML** at `https://dd.weather.gc.ca/today/observations/swob-ml/latest/CYAZ-AUTO-swob.xml` and on the AMQP broker under the standard `WXO-DD.observations.swob-ml.*.CYAZ.#` topic. Provider is NAV CANADA, dataset `nav_canada/observation/atmospheric/surface_weather/awos-2.1-binary` — uses AWOS element names (`avg_wnd_spd_10m_pst10mts`, `max_wnd_gst_spd_10m_pst10mts`, etc.). **No parser work required**: our existing `scripts/parse/wind_to_sqlite.py` already handles this schema because CZBB (Boundary Bay Airport) uses the same format. Adding CYAZ is essentially: one `subtopic` line in `config/sr3/bc_wind_stations.conf`, one entry in `config/stations.json`, sr3 restart.
+- **Tide:** Tofino (`08615` / `5cebf1e23d0f4a073c4bc07c`). Already in our station registry; no work needed beyond pointing at it.
+- **Solar:** Compute from cam lat/lon + timestamp at row-write time. No external source.
+
+## Next Steps (when ready to start)
+
+1. Confirm Cox Bay station mappings (pick wave buoy, wind source, tide station; document).
+2. Stub `webcam_training.sqlite` + `populate_training_pair_coxbay.py` that scans `/mnt/storage/coxbay_cam/` and joins against the operational buoy/wind/tide DBs by timestamp (one-shot backfill).
+3. Wire a small post-fetch hook so new Cox Bay captures get a row automatically.
+4. Run for a month of new captures + the full backfill, audit data quality (null rates, age distributions, label coverage across wave-height bins).
+5. Generalize to Salish cams once the Cox Bay version is proven.
+
+## Related
+
+- Retention review that surfaced this (2026-05-25 conversation).
+- `lib/webcam/storage.py` — current image saving logic.
+- `config/webcams.json` — cam list and cadences.
