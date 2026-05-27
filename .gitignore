@@ -50,7 +50,6 @@ ruff.err
 
 # Private deployment docs (contain server-specific details)
 docs/BACKUP_STATUS.md
-docs/DEPLOYMENT.md
 
 # Archive backups (may contain sensitive info)
 archive/backups/
