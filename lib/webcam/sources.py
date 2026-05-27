@@ -10,6 +10,50 @@ import time
 import requests
 
 
+def head_image(image_url, logger, referer=None, user_agent=None, from_email=None):
+    """HEAD an image URL and return its Content-Length in bytes, or None on error.
+
+    Used by dedupe to cheaply detect duplicate frames before pulling the body.
+    """
+    try:
+        cmd = [
+            "curl",
+            "-fsSIL",
+            "--max-time",
+            "15",
+            "--connect-timeout",
+            "10",
+        ]
+        if referer:
+            cmd += ["-e", referer]
+        if user_agent:
+            cmd += ["-A", user_agent]
+        if from_email:
+            cmd += ["-H", f"From: {from_email}"]
+        cmd.append(image_url)
+
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+        if result.returncode != 0:
+            logger.warning(f"HEAD failed (code {result.returncode}): {result.stderr.strip()}")
+            return None
+
+        # With -L there may be multiple header blocks; take the last Content-Length.
+        size = None
+        for line in result.stdout.splitlines():
+            if line.lower().startswith("content-length:"):
+                try:
+                    size = int(line.split(":", 1)[1].strip())
+                except ValueError:
+                    pass
+        return size
+    except subprocess.TimeoutExpired:
+        logger.warning("HEAD timed out")
+        return None
+    except Exception as e:
+        logger.warning(f"HEAD failed: {e}")
+        return None
+
+
 def download_image(image_url, output_path, logger, referer=None, user_agent=None, from_email=None):
     """Download an image directly from a URL using curl.
 

@@ -17,6 +17,7 @@ Requirements:
 - ffmpeg
 """
 
+import hashlib
 import json
 import os
 import shutil
@@ -36,8 +37,42 @@ from lib.webcam import (
     capture_youtube_frame,
     cleanup_old_archives,
     download_image,
+    head_image,
     manage_slideshow_images,
 )
+
+DEDUPE_SIDECAR = ".last_fetch.json"
+
+
+def _read_dedupe_sidecar(website_dir):
+    """Load the {size, sha256, fetched_at} sidecar, or return {} if missing/corrupt."""
+    path = website_dir / DEDUPE_SIDECAR
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def _write_dedupe_sidecar(website_dir, size, sha256, fetched_at):
+    path = website_dir / DEDUPE_SIDECAR
+    try:
+        with open(path, "w") as f:
+            json.dump(
+                {"size": size, "sha256": sha256, "fetched_at": fetched_at},
+                f,
+                indent=2,
+            )
+    except OSError:
+        pass
+
+
+def _sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 # Webcam configurations live in config/webcams.json (gitignored).
 # See config/webcams.example.json for the schema.
@@ -161,8 +196,28 @@ def main():
         _tmpdir = tempfile.mkdtemp(prefix="webcam_")
         archive_path = Path(_tmpdir) / filename
 
+    # Dedupe is opt-in per cam (currently only meaningful for direct image_url sources).
+    dedupe_enabled = config.get("dedupe", False) and "image_url" in config
+    dedupe_state = _read_dedupe_sidecar(config["website_dir"]) if dedupe_enabled else {}
+
     # Check if this is a direct image URL, YouTube stream, or Yawcam
     if "image_url" in config:
+        # Stage 1 (dedupe): HEAD the URL and skip if Content-Length matches the last stored.
+        if dedupe_enabled and dedupe_state.get("size"):
+            remote_size = head_image(
+                config["image_url"],
+                logger,
+                referer=config.get("image_referer"),
+                user_agent=config.get("image_user_agent"),
+                from_email=config.get("image_from"),
+            )
+            if remote_size is not None and remote_size == dedupe_state["size"]:
+                logger.info(
+                    f"Dedupe skip (HEAD): Content-Length {remote_size} matches last fetch — no new frame"
+                )
+                sys.exit(0)
+            logger.info(f"HEAD size {remote_size} differs from last {dedupe_state['size']} — fetching")
+
         # Direct image download
         if not download_image(
             config["image_url"],
@@ -174,6 +229,23 @@ def main():
         ):
             logger.error("Failed to download image - aborting")
             sys.exit(1)
+
+        # Stage 2 (dedupe): hash the downloaded bytes; if identical to last, discard.
+        if dedupe_enabled:
+            new_size = archive_path.stat().st_size
+            new_sha = _sha256_file(archive_path)
+            if dedupe_state.get("sha256") == new_sha:
+                logger.info(
+                    f"Dedupe skip (hash): sha256 {new_sha[:12]}… matches last fetch — discarding"
+                )
+                try:
+                    archive_path.unlink(missing_ok=True)
+                except OSError:
+                    pass
+                sys.exit(0)
+            # Stash for the post-success sidecar write below.
+            config["_dedupe_new_size"] = new_size
+            config["_dedupe_new_sha"] = new_sha
     elif "youtube_url" in config:
         # YouTube livestream capture
         video_id = config.get("video_id")
@@ -227,6 +299,15 @@ def main():
         logger.info(f"Updated metadata: {metadata_path}")
     except Exception as e:
         logger.error(f"Failed to write metadata: {e}")
+
+    # Persist dedupe state for next run (pre-annotation size/hash captured above).
+    if dedupe_enabled and "_dedupe_new_sha" in config:
+        _write_dedupe_sidecar(
+            config["website_dir"],
+            config["_dedupe_new_size"],
+            config["_dedupe_new_sha"],
+            timestamp.isoformat(),
+        )
 
     # Cleanup old archives (only when storage is mounted)
     if storage_mounted:

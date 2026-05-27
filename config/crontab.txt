@@ -125,8 +125,11 @@ SURREY_API_PASSWORD=surreyrain
 # Cox Bay, Tofino (15 min interval, offset :04)
 4,19,34,49 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py coxbay >> /home/keelando/envcan_wave/logs/webcam_coxbay.log 2>&1
 
-# Mud Bay HD (30 min interval, offset :06, daylight-only)
-6,36 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py mudbay >> /home/keelando/envcan_wave/logs/webcam_mudbay.log 2>&1
+# Mud Bay HD SE (10 min interval, offset :06, daylight-only, HEAD+hash dedupe)
+6,16,26,36,46,56 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py mudbay >> /home/keelando/envcan_wave/logs/webcam_mudbay.log 2>&1
+
+# Mud Bay HD SW (10 min interval, offset :01, daylight-only, HEAD+hash dedupe)
+1,11,21,31,41,51 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py mudbay_sw >> /home/keelando/envcan_wave/logs/webcam_mudbay_sw.log 2>&1
 
 # Ambleside / Hollyburn Sailing Club (20 min interval, offset :08, daylight-only)
 8,28,48 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py ambleside >> /home/keelando/envcan_wave/logs/webcam_ambleside.log 2>&1
