@@ -927,6 +927,9 @@ function renderHistoryTable(buoyId, timeseries) {
   const wavePeriod = isNeahBay
     ? timeseries.swell_period?.data || []
     : timeseries.wave_period_avg?.data || [];
+  // Peak period used as a per-row fallback when average period is missing
+  // (e.g. Crescent stations running on the radar fallback sensor).
+  const wavePeriodPeak = isNeahBay ? [] : timeseries.wave_period_peak?.data || [];
 
   const airTemp = timeseries.air_temp?.data || [];
   const seaTemp = timeseries.sea_temp?.data || [];
@@ -936,8 +939,17 @@ function renderHistoryTable(buoyId, timeseries) {
     `${buoyId}: windSpeed=${windSpeed.length}, waveHeight=${waveHeight.length} points`,
   );
 
-  // Show all rows where wave data exists (wind may have gaps)
-  let allTimes = waveHeight.map((d) => d.time);
+  // Build the time axis from wave data when present, otherwise fall back to
+  // wind (and then temperature) so the table still renders when a buoy's wave
+  // sensor is offline.
+  const timeSource = waveHeight.length
+    ? waveHeight
+    : windSpeed.length
+      ? windSpeed
+      : seaTemp.length
+        ? seaTemp
+        : airTemp;
+  let allTimes = timeSource.map((d) => d.time);
 
   // For Crescent stations, filter to hourly intervals only (on the hour)
   const isCrescentStation = buoyId === "CRPILE" || buoyId === "CRCHAN";
@@ -998,7 +1010,9 @@ function renderHistoryTable(buoyId, timeseries) {
     const windDirVal = windDir.find((d) => d.time === time)?.value;
     const windGustVal = windGust.find((d) => d.time === time)?.value;
     const waveHeightVal = waveHeight.find((d) => d.time === time)?.value;
-    const wavePeriodVal = wavePeriod.find((d) => d.time === time)?.value;
+    const wavePeriodVal =
+      wavePeriod.find((d) => d.time === time)?.value ??
+      wavePeriodPeak.find((d) => d.time === time)?.value;
     const airTempVal = airTemp.find((d) => d.time === time)?.value;
     const seaTempVal = seaTemp.find((d) => d.time === time)?.value;
 

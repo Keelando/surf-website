@@ -93,6 +93,12 @@ STATIONS = {
             "sea_temp": 2007,  # Temperature_Anderra
             "air_temp": 1794,  # PTemp
         },
+        # Radar sensor used to backfill wave fields when the Anderaa sensor is
+        # offline. Only written where the primary (Anderaa) value is absent.
+        "fallback_channels": {
+            "wave_height_sig": 2158,  # Hm0_RADAR  (fallback for Hs_Anderra)
+            "wave_period_peak": 2157,  # Tp_RADAR   (fallback for Tpeak_Anderra)
+        },
     },
     "crescentchannel": {
         "site_id": 20183,
@@ -257,20 +263,28 @@ def parse_data_point(point):
         return None, None
 
 
-def upsert_data_buoy(cur, buoy_id, timestamp, field, value):
-    """Insert or update a data point in buoy database."""
+def upsert_data_buoy(cur, buoy_id, timestamp, field, value, only_if_null=False):
+    """Insert or update a data point in buoy database.
+
+    only_if_null: when True, never overwrite an existing non-null value (used for
+    fallback channels so the primary sensor always wins).
+    """
     ts_epoch = int(timestamp.timestamp())
 
-    # Check if record exists
+    # Check existing value for this field
     cur.execute(
-        """
-        SELECT COUNT(*) FROM buoy_observation
+        f"""
+        SELECT {field} FROM buoy_observation
         WHERE buoy_id = ? AND observation_time = ?
     """,
         (buoy_id, ts_epoch),
     )
 
-    exists = cur.fetchone()[0] > 0
+    row = cur.fetchone()
+    exists = row is not None
+
+    if only_if_null and exists and row[0] is not None:
+        return False
 
     if exists:
         # Update existing
@@ -365,7 +379,12 @@ def fetch_and_store(api, station_key, station_config, conn, is_wind_station=Fals
     cur = conn.cursor()
     total_inserted = 0
 
-    for field_name, channel_id in channels.items():
+    # Primary channels first, then fallback channels (only_if_null) so the primary
+    # sensor always wins and fallbacks only fill gaps.
+    channel_items = [(f, cid, False) for f, cid in channels.items()]
+    channel_items += [(f, cid, True) for f, cid in station_config.get("fallback_channels", {}).items()]
+
+    for field_name, channel_id, only_if_null in channel_items:
         data_points = api.get_channel_data(site_id, channel_id, hours)
 
         if not data_points:
@@ -387,7 +406,7 @@ def fetch_and_store(api, station_key, station_config, conn, is_wind_station=Fals
                 if upsert_data_wind(cur, station_id, station_name, timestamp, field_name, value):
                     inserted += 1
             else:
-                if upsert_data_buoy(cur, station_id, timestamp, field_name, value):
+                if upsert_data_buoy(cur, station_id, timestamp, field_name, value, only_if_null=only_if_null):
                     inserted += 1
 
         conn.commit()
