@@ -19,6 +19,7 @@ import requests
 
 from lib.config import BUOY_DATABASE, WIND_DATABASE
 from lib.logging_config import setup_logging
+from lib.stations import get_all_buoys, get_all_wind
 
 # Shared utilities
 from lib.units import ms_to_kmh
@@ -50,80 +51,43 @@ if not WINDY_API_KEY:
                 WINDY_API_KEY = _line.strip().split("=", 1)[1]
                 break
 
-# Windy station metadata
-# Station IDs match registered stations in Windy (0, 1, 2)
+# Windy push registration: account-specific Windy station IDs and elevation.
+# Station name/lat/lon are read from stations.json (the source of truth).
 WINDY_STATIONS = {
-    "crescentpile": {
-        "stationid": 0,
-        "name": "Crescent Beach Ocean",
-        "lat": 49.0121666,
-        "lon": -122.9402834,
-        "elevation": 5,  # meters
-    },
-    "crescentchannel": {
-        "stationid": 1,
-        "name": "Crescent Beach Channel",
-        "lat": 49.05392053,
-        "lon": -122.8970759,
-        "elevation": 5,  # meters
-    },
-    "colebrook": {
-        "stationid": 2,
-        "name": "Colebrook Pump House",
-        "lat": 49.08583,
-        "lon": -122.845,
-        "elevation": 2,  # meters
-    },
+    "CRPILE": {"stationid": 0, "elevation": 5},
+    "CRCHAN": {"stationid": 1, "elevation": 5},
+    "COLEB": {"stationid": 2, "elevation": 2},
 }
 
-# Station configuration (from v1)
-STATIONS = {
-    "crescentpile": {
-        "site_id": 20182,
-        "name": "Crescent Beach Ocean",
-        "buoy_id": "CRPILE",  # Short ID for database
-        "channels": {
-            "wind_speed": 1810,
-            "wind_direction": 1811,
-            "wind_gust": 1814,
-            "wave_height_sig": 2002,  # Hs_Anderra
-            "wave_height_peak": 2008,  # Hmax_Anderra
-            "wave_period_avg": 2009,  # Tmean_Anderra
-            "wave_period_peak": 2012,  # Tpeak_Anderra
-            "sea_temp": 2007,  # Temperature_Anderra
-            "air_temp": 1794,  # PTemp
-        },
-        # Radar sensor used to backfill wave fields when the Anderaa sensor is
-        # offline. Only written where the primary (Anderaa) value is absent.
-        "fallback_channels": {
-            "wave_height_sig": 2158,  # Hm0_RADAR  (fallback for Hs_Anderra)
-            "wave_period_peak": 2157,  # Tp_RADAR   (fallback for Tpeak_Anderra)
-        },
-    },
-    "crescentchannel": {
-        "site_id": 20183,
-        "name": "Crescent Channel",
-        "buoy_id": "CRCHAN",
-        "channels": {
-            "wind_speed": 1837,
-            "wind_direction": 1838,
-            "wind_gust": 1841,
-            "wave_height_sig": 2155,  # Hm0_Radar
-            "air_temp": 1821,
-        },
-    },
-    "colebrook": {
-        "site_id": 18507,
-        "name": "Colebrook",
-        "buoy_id": "COLEB",  # Station ID (NOT a buoy - land-based wind station, uses wind_observation table)
-        "channels": {
-            "wind_speed": 1425,
-            "wind_direction": 1426,
-            "wind_gust": 1427,
-            "air_temp": 1439,
-        },
-    },
+# Channel fields this fetcher pulls from each station's stations.json channel map.
+# Water-level and geodetic channels live in the same map but are owned by the
+# tide fetcher, so they are excluded here.
+BUOY_FIELDS = {
+    "wind_speed",
+    "wind_direction",
+    "wind_gust",
+    "wave_height_sig",
+    "wave_height_peak",
+    "wave_period_avg",
+    "wave_period_peak",
+    "sea_temp",
+    "air_temp",
 }
+WIND_FIELDS = {"wind_speed", "wind_direction", "wind_gust", "air_temp"}
+
+
+def get_surrey_stations():
+    """Surrey FlowWorks stations from the registry.
+
+    Yields (station_id, metadata, is_wind_station) tuples. Buoy-type stations
+    (wave data) route to the buoy database; wind-type stations to the wind database.
+    """
+    for sid, meta in get_all_buoys().items():
+        if meta.get("source") == "Surrey FlowWorks":
+            yield sid, meta, False
+    for sid, meta in get_all_wind().items():
+        if meta.get("source") == "Surrey FlowWorks":
+            yield sid, meta, True
 
 
 class FlowWorksAPI:
@@ -358,21 +322,22 @@ def upsert_data_wind(cur, station_id, station_name, timestamp, field, value):
     return cur.rowcount > 0
 
 
-def fetch_and_store(api, station_key, station_config, conn, is_wind_station=False, hours=2):
-    """Fetch all channels for a station and store to SQLite.
+def fetch_and_store(api, station_id, meta, conn, is_wind_station=False, hours=2):
+    """Fetch the relevant channels for a station and store to SQLite.
 
     Args:
         api: FlowWorks API instance
-        station_key: Station key (e.g., 'colebrook')
-        station_config: Station configuration dict
+        station_id: Registry station ID (e.g., 'CRPILE'), used as the DB key
+        meta: Station metadata dict from stations.json
         conn: Database connection (buoy or wind database)
         is_wind_station: True if wind-only station (uses wind_observation table)
         hours: Hours of data to fetch
     """
-    site_id = station_config["site_id"]
-    station_id = station_config["buoy_id"]  # Used as station_id for both
-    station_name = station_config["name"]
-    channels = station_config["channels"]
+    site_id = meta["flowworks_site_id"]
+    station_name = meta.get("short_name") or meta["name"]
+    allowed = WIND_FIELDS if is_wind_station else BUOY_FIELDS
+    channels = {f: cid for f, cid in meta.get("channels", {}).items() if f in allowed}
+    fallback = {f: cid for f, cid in meta.get("fallback_channels", {}).items() if f in allowed}
 
     logger.info(f"Fetching {station_name}...")
 
@@ -382,7 +347,7 @@ def fetch_and_store(api, station_key, station_config, conn, is_wind_station=Fals
     # Primary channels first, then fallback channels (only_if_null) so the primary
     # sensor always wins and fallbacks only fill gaps.
     channel_items = [(f, cid, False) for f, cid in channels.items()]
-    channel_items += [(f, cid, True) for f, cid in station_config.get("fallback_channels", {}).items()]
+    channel_items += [(f, cid, True) for f, cid in fallback.items()]
 
     for field_name, channel_id, only_if_null in channel_items:
         data_points = api.get_channel_data(site_id, channel_id, hours)
@@ -518,7 +483,7 @@ def get_latest_wind_station_data(conn, station_id):
     }
 
 
-def push_to_windy(station_key, data, windy_config):
+def push_to_windy(station_key, data, windy_config, meta):
     """Push station data to Windy API."""
     if not WINDY_API_KEY:
         logger.warning("WINDY_API_KEY not set - skipping Windy push")
@@ -537,12 +502,12 @@ def push_to_windy(station_key, data, windy_config):
         wind_ms = data["wind_speed"] / 3.6
         gust_ms = data["wind_gust"] / 3.6
 
-        # Build query parameters
+        # Build query parameters (station name/lat/lon from stations.json)
         params = {
             "station": windy_config["stationid"],
-            "name": windy_config["name"],
-            "latitude": windy_config["lat"],
-            "longitude": windy_config["lon"],
+            "name": meta["name"],
+            "latitude": meta["lat"],
+            "longitude": meta["lon"],
             "elevation": windy_config["elevation"],
             "dateutc": dt_utc_str,
             "wind": round(wind_ms, 2),
@@ -591,16 +556,13 @@ def main():
     ensure_columns(buoy_conn)
 
     # Fetch each station (use 24 hours to handle Surrey's reporting delays)
-    # COLEB is wind-only → wind database
-    # CRPILE, CRCHAN have wave data → buoy database
+    # Wind-only stations (COLEB) → wind database; wave stations → buoy database.
+    surrey_stations = list(get_surrey_stations())
     total = 0
-    for station_key, station_config in STATIONS.items():
+    for station_id, meta, is_wind_only in surrey_stations:
         try:
-            # Route to appropriate database
-            is_wind_only = station_key == "colebrook"
             conn = wind_conn if is_wind_only else buoy_conn
-
-            count = fetch_and_store(api, station_key, station_config, conn, is_wind_station=is_wind_only, hours=24)
+            count = fetch_and_store(api, station_id, meta, conn, is_wind_station=is_wind_only, hours=24)
             total += count
         except Exception as e:
             logger.error(f"  Error: {e}")
@@ -610,24 +572,21 @@ def main():
     # Push latest data to Windy for each station
     logger.info("Pushing data to Windy...")
     windy_success = 0
-    for station_key, station_config in STATIONS.items():
+    for station_id, meta, is_wind_only in surrey_stations:
         try:
-            if station_key not in WINDY_STATIONS:
+            if station_id not in WINDY_STATIONS:
                 continue
 
-            station_id = station_config["buoy_id"]
-
             # Route to appropriate database (wind-only stations use wind database)
-            is_wind_only = station_key == "colebrook"
             if is_wind_only:
                 data = get_latest_wind_station_data(wind_conn, station_id)
             else:
                 data = get_latest_station_data(buoy_conn, station_id)
 
-            if data and push_to_windy(station_key, data, WINDY_STATIONS[station_key]):
+            if data and push_to_windy(station_id, data, WINDY_STATIONS[station_id], meta):
                 windy_success += 1
         except Exception as e:
-            logger.error(f"  Windy push error for {station_key}: {e}")
+            logger.error(f"  Windy push error for {station_id}: {e}")
 
     logger.info(f"Windy: {windy_success}/{len(WINDY_STATIONS)} stations updated")
 

@@ -24,6 +24,7 @@ import requests
 
 from lib.config import TIDE_DATABASE
 from lib.logging_config import setup_logging
+from lib.stations import get_buoy
 
 logger = setup_logging("surrey_tide_sync")
 
@@ -43,35 +44,59 @@ def _require_env(var_name: str) -> str:
 USERNAME = _require_env("SURREY_API_USERNAME")
 PASSWORD = _require_env("SURREY_API_PASSWORD")
 
-# Surrey station mapping with channel IDs
-SURREY_STATIONS = {
-    "crescentpile": {
-        "site_id": 20182,
+# Tide-pipeline storage identifiers, keyed by stations.json buoy id. These are
+# the keys used in the tide_data.sqlite tables (kept here for data continuity).
+# Site IDs and channel IDs come from stations.json (the source of truth).
+SURREY_TIDE_META = {
+    "CRPILE": {
         "station_id": "surrey_crescent_ocean",
         "station_name": "crescent_beach_ocean",
         "display_name": "Crescent Beach Ocean (Surrey)",
-        "channels": {
-            "water_level_predicted": 2620,  # Tidal_Prediction_CGVD28_GVRD
-            "water_level_observed": 2296,  # Anderra - CGVD28 GVRD Stage_10min
-            "tidal_residual": 2414,  # Tidal Residual (observed - predicted, Surrey's calculation)
-            "geodiff_cb_vs_cc": 2129,  # Geodifference_CBvsCC_Radar
-            "geodiff_cbvscc_pt": 2126,  # Geodifference_CBvsCC_PT (THIS IS THE ONE!)
-            "geodiff_cb_pt_vs_radar": 2454,  # Geodifference_CB_PTvsRadar (PT vs Radar offset)
-        },
     },
-    "crescentchannel": {
-        "site_id": 20183,
+    "CRCHAN": {
         "station_id": "surrey_crescent_channel",
         "station_name": "crescent_channel_ocean",
         "display_name": "Crescent Channel Ocean (Surrey)",
-        "channels": {
-            "water_level_predicted": 2621,  # Tidal_Prediction_CGVD28_GVRD
-            "water_level_observed": 2279,  # PT - CGVD28 GVRD Stage
-            "tidal_residual": 3660,  # Tidal Residual (observed - predicted, Surrey's calculation)
-            "geodiff_pt_vs_radar": 2455,  # Geodifference_CC_PTvsRadar
-        },
     },
 }
+
+# Channel fields this fetcher pulls from each station's stations.json channel map.
+TIDE_FIELDS = {
+    "water_level_predicted",
+    "water_level_observed",
+    "tidal_residual",
+    "geodiff_cb_vs_cc",
+    "geodiff_cbvscc_pt",
+    "geodiff_pt_vs_radar",
+    "geodiff_cb_pt_vs_radar",
+}
+
+
+def get_surrey_tide_stations():
+    """Build tide station configs from stations.json + local storage identifiers.
+
+    Returns a dict keyed by buoy id, each value shaped like the legacy
+    SURREY_STATIONS entries (site_id, station_id, station_name, display_name,
+    channels) so the downstream fetch functions are unchanged.
+    """
+    stations = {}
+    for buoy_id, ident in SURREY_TIDE_META.items():
+        meta = get_buoy(buoy_id)
+        if not meta:
+            logger.warning(f"{buoy_id} not found in stations.json - skipping")
+            continue
+        channels = {f: cid for f, cid in meta.get("channels", {}).items() if f in TIDE_FIELDS}
+        stations[buoy_id] = {
+            "site_id": meta["flowworks_site_id"],
+            "station_id": ident["station_id"],
+            "station_name": ident["station_name"],
+            "display_name": ident["display_name"],
+            "channels": channels,
+        }
+    return stations
+
+
+SURREY_STATIONS = get_surrey_tide_stations()
 
 
 class FlowWorksAPI:

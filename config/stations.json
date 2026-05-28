@@ -223,9 +223,17 @@
         "sea_temp": 2007,
         "air_temp": 1794,
         "water_level_predicted": 2620,
-        "water_level_observed": 2296
+        "water_level_observed": 2296,
+        "tidal_residual": 2414,
+        "geodiff_cb_vs_cc": 2129,
+        "geodiff_cbvscc_pt": 2126,
+        "geodiff_cb_pt_vs_radar": 2454
       },
-      "note": "Water levels referenced to CGVD28 GVRD datum",
+      "fallback_channels": {
+        "wave_height_sig": 2158,
+        "wave_period_peak": 2157
+      },
+      "note": "Water levels referenced to CGVD28 GVRD datum. fallback_channels are radar sensors (Hm0_RADAR, Tp_RADAR) used only when the primary Anderaa sensor is offline.",
       "short_name": "Crescent Bch.",
       "flag": "🏛️"
     },
@@ -255,7 +263,9 @@
         "wave_height_sig": 2155,
         "air_temp": 1821,
         "water_level_predicted": 2621,
-        "water_level_observed": 2279
+        "water_level_observed": 2279,
+        "tidal_residual": 3660,
+        "geodiff_pt_vs_radar": 2455
       },
       "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum",
       "short_name": "Crescent Ch.",

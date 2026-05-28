@@ -133,34 +133,35 @@ Stations added to `stations.json`:
 
 ## Channel Reference
 
-### Site IDs
+**Source of truth:** All Surrey FlowWorks site IDs and channel IDs live in
+`config/stations.json` under the `buoys` (CRPILE, CRCHAN) and `wind` (COLEB)
+entries. Both fetchers (`fetch_surrey_wave_v2.py`, `fetch_surrey_tides.py`) read
+channel IDs from there via `lib/stations.py` — do **not** hardcode channel IDs
+in the scripts.
 
-- **Crescent Beach Ocean:** `8f8c62d5-5096-4b3c-bf56-5e6ba25e08ac`
-- **Crescent Channel Ocean:** `bb4f8b3d-7df2-4d37-b6dd-afc46ffb3097`
+Each station's `channels` is a flat `{field_name: channel_id}` map. Fields are
+partitioned by which fetcher owns them:
 
-### Wave Channels
+- **Wave fetcher** (`buoy_data.sqlite` / `wind_data.sqlite`): `wind_*`,
+  `wave_*`, `sea_temp`, `air_temp` (see `BUOY_FIELDS` / `WIND_FIELDS`).
+- **Tide fetcher** (`tide_data.sqlite`): `water_level_*`, `tidal_residual`,
+  `geodiff_*` (see `TIDE_FIELDS`).
 
-| Channel ID | Parameter | Unit | Update Frequency |
-|------------|-----------|------|------------------|
-| `a73636ac-...` | Significant Wave Height | m | 10 min |
-| `4f4a2e62-...` | Peak Wave Period | s | 10 min |
-| `8e9ddb87-...` | Average Wave Period | s | 10 min |
-| `7bc9ad14-...` | Wave Direction | degrees | 10 min |
+### Wave fallback channels
 
-### Wind Channels
+CRPILE's primary wave sensor is the Anderaa (`wave_height_sig` = Hs_Anderra,
+`wave_period_peak` = Tpeak_Anderra). When it goes offline, the `fallback_channels`
+block supplies the radar sensor (`Hm0_RADAR`, `Tp_RADAR`). Fallback values are
+written **only where the primary Anderaa value is absent**, so the calibrated
+sensor always wins. To discover available channel IDs at a site, use
+`scripts/query_surrey_channels.py <site_id>`.
 
-| Channel ID | Parameter | Unit | Update Frequency |
-|------------|-----------|------|------------------|
-| `f3a9b121-...` | Wind Speed | m/s | 10 min |
-| `2d8f4c91-...` | Wind Gust | m/s | 10 min |
-| `c5e7a832-...` | Wind Direction | degrees | 10 min |
+### Looking up current channel IDs
 
-### Tide Channels
-
-| Channel ID | Parameter | Unit | Update Frequency |
-|------------|-----------|------|------------------|
-| `d4b2f891-...` | Water Level (Observed) | m CGVD28 | 5 min |
-| `9a3c5e17-...` | Water Level (Predicted) | m CGVD28 | 5 min |
+```bash
+# All channels for a site, live from the API
+python3 scripts/query_surrey_channels.py 20182   # Crescent Beach Ocean
+```
 
 ### API Time Zone
 

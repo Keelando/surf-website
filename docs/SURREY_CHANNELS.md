@@ -4,6 +4,12 @@ Channels actively used by the system. For the full list of all available channel
 (88 for Crescent Beach, 79 for Crescent Channel), see
 `archive/docs/SURREY_CHANNELS_REFERENCE.md`.
 
+> **Canonical source:** Channel IDs are defined in `config/stations.json` and read
+> by the fetchers via `lib/stations.py`. This doc is a human-readable companion
+> that explains *why* each channel was chosen — keep it in sync with stations.json,
+> but stations.json wins. This page covers the tide/water-level channels; wave and
+> wind channels (incl. the radar `fallback_channels`) live in stations.json too.
+
 ---
 
 ## Crescent Beach Ocean — Site 20182 (CRPILE)
