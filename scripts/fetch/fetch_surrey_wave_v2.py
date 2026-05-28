@@ -51,6 +51,11 @@ if not WINDY_API_KEY:
                 WINDY_API_KEY = _line.strip().split("=", 1)[1]
                 break
 
+# Paused 2026-05-28: the Windy upload key returns HTTP 410 (station/key
+# deactivated on Windy's side). Re-enable once a new API key is issued
+# (and update WINDY_STATIONS if the stations are re-registered).
+WINDY_PUSH_ENABLED = False
+
 # Windy push registration: account-specific Windy station IDs and elevation.
 # Station name/lat/lon are read from stations.json (the source of truth).
 WINDY_STATIONS = {
@@ -537,6 +542,12 @@ def push_to_windy(station_key, data, windy_config, meta):
             logger.warning(f"{station_key}: Unexpected Windy response: {response_text}")
             return False
 
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None and e.response.status_code == 410:
+            logger.warning(f"{station_key}: Windy station/key deactivated (HTTP 410) - follow up for a new API key")
+        else:
+            logger.error(f"{station_key}: Windy push failed - {e}")
+        return False
     except Exception as e:
         logger.error(f"{station_key}: Windy push failed - {e}")
         return False
@@ -568,6 +579,14 @@ def main():
             logger.error(f"  Error: {e}")
 
     logger.info(f"Complete - inserted {total} data points")
+
+    if not WINDY_PUSH_ENABLED:
+        logger.info("Windy push paused (WINDY_PUSH_ENABLED is False) - skipping")
+        buoy_conn.close()
+        wind_conn.close()
+        logger.info(f"Buoy database: {BUOY_DATABASE}")
+        logger.info(f"Wind database: {WIND_DATABASE}")
+        return 0
 
     # Push latest data to Windy for each station
     logger.info("Pushing data to Windy...")
