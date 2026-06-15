@@ -454,6 +454,10 @@ def _load_webcam_config() -> Dict[str, Dict]:
     project_root = Path(__file__).resolve().parents[2]
     webcams = {}
     for cam_id, cam in raw.items():
+        # Skip `_`-prefixed meta keys (e.g. `_schedule_note`), matching the
+        # loaders in fetch_webcam.py and storage_metrics_to_mqtt.py.
+        if cam_id.startswith("_"):
+            continue
         webcams[cam_id] = {
             "name": cam["name"],
             "path": project_root / cam["website_dir"] / "latest.json",

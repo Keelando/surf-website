@@ -2,14 +2,44 @@
 Archive cleanup and slideshow management utilities.
 """
 
+import contextlib
 import json
 import os
 import shutil
+import signal
 from datetime import datetime, timezone
 
 # Default constants
 DEFAULT_DISK_USAGE_THRESHOLD_PERCENT = 80
 DEFAULT_SLIDESHOW_IMAGES_COUNT = 7
+
+
+class StorageTimeout(Exception):
+    """Raised when a storage operation exceeds its time budget (wedged USB-SATA bridge)."""
+
+
+@contextlib.contextmanager
+def time_limit(seconds, what):
+    """Abort the wrapped block with StorageTimeout if it runs past `seconds`.
+
+    Uses SIGALRM, so it only interrupts at points the kernel can deliver a
+    signal — a truly uninterruptible (D-state) syscall on a dead bridge may
+    still outlast this, but it bounds the common slow/flaky case. Main thread only.
+
+    Shared by the webcam fetch pipeline (probe/copy budgets) and the storage
+    metrics exporter (disk-read budget) so the SIGALRM logic lives in one place.
+    """
+
+    def _handler(signum, frame):
+        raise StorageTimeout(f"{what} exceeded {seconds}s")
+
+    old_handler = signal.signal(signal.SIGALRM, _handler)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old_handler)
 
 
 def cleanup_old_archives(archive_dir, prefix, logger, threshold_percent=DEFAULT_DISK_USAGE_THRESHOLD_PERCENT):

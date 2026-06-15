@@ -28,6 +28,7 @@ from pathlib import Path
 import paho.mqtt.client as mqtt
 
 from lib.logging_config import setup_logging
+from lib.webcam import time_limit
 
 logger = setup_logging("storage_metrics")
 
@@ -43,6 +44,11 @@ for line in env_path.read_text().splitlines():
 
 # Storage mount point
 STORAGE_PATH = Path("/mnt/storage")
+
+# Bound every read against the external SSD so a wedged USB-SATA bridge can't hang
+# this hourly cron job (and stack runs). On timeout the read degrades to None and
+# the sensor expires to "unavailable" in HA — the same failure signal as a dead run.
+STORAGE_READ_TIMEOUT = 20  # seconds
 
 # Mark a sensor unavailable in HA if no fresh value arrives within this window.
 # The publisher runs hourly, so 2.5 h tolerates one slow/missed run and flags two.
@@ -98,7 +104,8 @@ def load_webcam_archives():
 def get_disk_metrics():
     """Get disk usage metrics for the storage drive"""
     try:
-        usage = shutil.disk_usage(STORAGE_PATH)
+        with time_limit(STORAGE_READ_TIMEOUT, "disk usage"):
+            usage = shutil.disk_usage(STORAGE_PATH)
         return {
             "total_gb": round(usage.total / (1024**3), 2),
             "used_gb": round(usage.used / (1024**3), 2),
@@ -123,12 +130,14 @@ def get_webcam_metrics(cam_config):
             logger.warning(f"Webcam path does not exist: {cam_path}")
             return None
 
-        images = list(cam_path.glob(f"{prefix}_*.jpg"))
-        if not images:
-            return {"image_count": 0, "total_size_mb": 0, "newest_image_date": None}
+        # glob + per-file stat() all touch the external SSD; bound the whole scan.
+        with time_limit(STORAGE_READ_TIMEOUT, f"scan {cam_config['name']}"):
+            images = list(cam_path.glob(f"{prefix}_*.jpg"))
+            if not images:
+                return {"image_count": 0, "total_size_mb": 0, "newest_image_date": None}
 
-        total_size_mb = round(sum(img.stat().st_size for img in images) / (1024 * 1024), 2)
-        newest_time = max(img.stat().st_mtime for img in images)
+            total_size_mb = round(sum(img.stat().st_size for img in images) / (1024 * 1024), 2)
+            newest_time = max(img.stat().st_mtime for img in images)
         newest_date = datetime.fromtimestamp(newest_time, tz=timezone.utc).isoformat()
 
         return {

@@ -22,7 +22,6 @@ import hashlib
 import json
 import os
 import shutil
-import signal
 import subprocess
 import sys
 import tempfile
@@ -34,6 +33,7 @@ from lib.daylight import is_daylight
 # Setup path for imports
 from lib.logging_config import setup_logging
 from lib.webcam import (
+    StorageTimeout,
     annotate_image,
     capture_yawcam_image,
     capture_youtube_frame,
@@ -41,6 +41,7 @@ from lib.webcam import (
     download_image,
     head_image,
     manage_slideshow_images,
+    time_limit,
 )
 
 DEDUPE_SIDECAR = ".last_fetch.json"
@@ -120,29 +121,8 @@ STORAGE_MOUNT = Path("/mnt/storage")
 ARCHIVE_PROBE_TIMEOUT = 10  # seconds
 ARCHIVE_COPY_TIMEOUT = 30  # seconds
 
-
-class StorageTimeout(Exception):
-    """Raised when a storage operation exceeds its time budget (wedged bridge)."""
-
-
-@contextlib.contextmanager
-def _time_limit(seconds, what):
-    """Abort the wrapped block with StorageTimeout if it runs past `seconds`.
-
-    Uses SIGALRM, so it only interrupts at points the kernel can deliver a
-    signal — a truly uninterruptible (D-state) syscall on a dead bridge may
-    still outlast this, but it bounds the common "slow/flaky" case. Main thread only.
-    """
-    def _handler(signum, frame):
-        raise StorageTimeout(f"{what} exceeded {seconds}s")
-
-    old_handler = signal.signal(signal.SIGALRM, _handler)
-    signal.setitimer(signal.ITIMER_REAL, seconds)
-    try:
-        yield
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, old_handler)
+# StorageTimeout / time_limit are shared from lib.webcam.storage so the SIGALRM
+# watchdog lives in one place (also used by the storage-metrics exporter).
 
 
 def archive_is_writable(archive_dir, logger):
@@ -176,7 +156,7 @@ def archive_is_writable(archive_dir, logger):
 
     probe = archive_dir / f".write_probe.{os.getpid()}"
     try:
-        with _time_limit(ARCHIVE_PROBE_TIMEOUT, "storage write probe"):
+        with time_limit(ARCHIVE_PROBE_TIMEOUT, "storage write probe"):
             archive_dir.mkdir(parents=True, exist_ok=True)
             fd = os.open(probe, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
             try:
@@ -196,7 +176,7 @@ def archive_is_writable(archive_dir, logger):
             "likely remounted read-only or I/O error; skipping archive, website still updates"
         )
     # Best-effort probe cleanup, itself time-bounded in case the bridge is hung.
-    with contextlib.suppress(Exception), _time_limit(3, "probe cleanup"):
+    with contextlib.suppress(Exception), time_limit(3, "probe cleanup"):
         os.unlink(probe)
     return False
 
@@ -208,7 +188,7 @@ def archive_frame(capture_path, archive_dir, logger):
     """
     dest = archive_dir / capture_path.name
     try:
-        with _time_limit(ARCHIVE_COPY_TIMEOUT, "archive copy"):
+        with time_limit(ARCHIVE_COPY_TIMEOUT, "archive copy"):
             shutil.copy2(capture_path, dest)
         logger.info(f"Archived frame: {dest}")
         return dest

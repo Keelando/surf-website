@@ -12,7 +12,12 @@ It also provides image processing (annotation) and storage management
 
 from lib.webcam.processing import annotate_image
 from lib.webcam.sources import capture_yawcam_image, download_image, head_image
-from lib.webcam.storage import cleanup_old_archives, manage_slideshow_images
+from lib.webcam.storage import (
+    StorageTimeout,
+    cleanup_old_archives,
+    manage_slideshow_images,
+    time_limit,
+)
 from lib.webcam.youtube import capture_youtube_frame
 
 __all__ = [
@@ -23,4 +28,6 @@ __all__ = [
     "annotate_image",
     "cleanup_old_archives",
     "manage_slideshow_images",
+    "StorageTimeout",
+    "time_limit",
 ]
