@@ -544,6 +544,35 @@ git push  # Will prompt for credentials
 
 ---
 
+### 13. Webcam Archive Drive Acting Weird (`/mnt/storage`)
+
+**Symptoms:**
+- **The headless server's screen turns on by itself** — the flaky USB-SATA bridge
+  spews UAS abort/reset messages to the console, defeating `consoleblank`. This is
+  often the first thing a human notices.
+- Webcam archive stops growing; logs show `ARCHIVE DEGRADED`.
+- `touch`/writes to `/mnt/storage` fail with **`Input/output error`** *even though*
+  `mount` reports the filesystem as `rw`.
+
+**Diagnosis:**
+```bash
+findmnt /mnt/storage                 # is the bound node still alive? rw or ro?
+lsblk -o NAME,UUID,RO,MOUNTPOINT     # where is UUID 85af7264… now, is RO=1?
+ls -l /dev/sda* /dev/sdb*            # mount may be stranded on a dead /dev/sdX
+sudo dmesg | grep -iE 'uas|I/O error|EXT4|reset|152d|sd[a-z]' | tail -40
+```
+
+**Why it happens & how to fix:** the USB-SATA bridge (JMicron JMS583) has unreliable
+UAS firmware; on a drop it can leave `/mnt/storage` bound to a dead device node while
+the real drive re-enumerates as a new one. Full failure-mode explanation, recovery
+steps (`umount -l` → `e2fsck` the live node → `mount`), and the permanent UAS-disable
+fix are in **`docs/WEBCAM_PIPELINE.md` → Storage Hardware → Failure modes & recovery**.
+
+The webcam *website* is decoupled from this drive (hardened 2026-06-15), so the live
+site keeps updating through an archive outage — only the archive copy is lost.
+
+---
+
 ## Debugging Tools
 
 ### Enable Verbose Logging

@@ -397,26 +397,139 @@ curl: (22) The requested URL returned error: 404
 ```
 **Solution:** Upstream server flakiness — the Hollyburn Sailing Club server sometimes returns 404 even during daylight. No action needed; the next scheduled run will recover. If 404s persist for several hours during daylight, check manually whether the cam endpoint has changed.
 
+**7. Archive drive went read-only / "Input/output error" on write**
+```
+touch: cannot touch '/mnt/storage/...': Input/output error
+# ...even though `mount` reports the filesystem as rw
+```
+**Tell:** On the headless server, the *first human-noticeable sign* is often the
+**screen turning on by itself** — the flaky USB-SATA bridge throws UAS abort/reset
+messages that the kernel prints to the console, which defeats `consoleblank`. The
+archive **and** the website used to stop together; after the 2026-06 hardening the
+website keeps updating and the logs show loud `ARCHIVE DEGRADED` lines instead.
+**Solution:** See **Storage Hardware → Failure modes & recovery** below.
+
 ## Storage Hardware
 
-**Primary storage:** `/mnt/storage/` on external USB SATA drive
-- **Device:** `/dev/sda1`
-- **UUID:** `85af7264-6ebb-446c-81e0-94eec769b5d8`
+**Primary storage:** `/mnt/storage/` — Kingston A400 SSD in an external USB-SATA enclosure
+- **Enclosure bridge:** JMicron JMS583, USB VID:PID `152d:0583` (see `lsusb`)
+- **UUID:** `85af7264-6ebb-446c-81e0-94eec769b5d8` (mount by UUID — see warning below)
 - **Filesystem:** ext4
-- **Capacity:** 223.6GB
-- **Auto-mount:** Yes (via `/etc/fstab`)
+- **Capacity:** ~223.6 GB
+- **Auto-mount:** Yes (via `/etc/fstab`, with `nofail`)
 
 **Mount configuration:**
 ```bash
 # /etc/fstab entry:
-UUID=85af7264-6ebb-446c-81e0-94eec769b5d8  /mnt/storage  ext4  defaults  0  2
+UUID=85af7264-6ebb-446c-81e0-94eec769b5d8  /mnt/storage  ext4  defaults,nofail  0  2
 ```
 
-**Verify mount:**
+> ⚠️ **The device node is NOT stable.** It is usually `/dev/sda1`, but after a USB
+> drop the bridge re-enumerates and may come back as `/dev/sdb1`, `/dev/sdc1`, etc.
+> Always identify the drive by **UUID** (`lsblk -o NAME,UUID,RO,MOUNTPOINT`), never by
+> a hard-coded `/dev/sdX`.
+
+**Verify mount (and that it's actually writable, not just mounted):**
 ```bash
-df -h /mnt/storage
-mount | grep /mnt/storage
+findmnt /mnt/storage                 # shows source node + rw/ro
+lsblk -o NAME,SIZE,RO,UUID,MOUNTPOINT # RO=1 means the kernel set it read-only
+sudo -u keelando touch /mnt/storage/whiterock_cam/.probe && \
+  sudo -u keelando rm /mnt/storage/whiterock_cam/.probe && echo "WRITABLE"
 ```
+Note: `/mnt/storage` root is `root:root`; only the per-cam subdirs are `keelando`-owned,
+so always probe a cam subdir, not the mount root.
+
+### Unplugging / reconnecting the drive
+
+**Golden rule: always unmount before physically unplugging.** A hot-unplug while
+mounted is what causes the stranded-mount / aborted-journal mess in *Failure modes*
+below — unmounting first flushes writes and closes the journal cleanly, so there's
+nothing to recover. You do **not** need to stop cron: the pipeline treats a missing
+archive as degraded, keeps the website updating, and just logs `ARCHIVE DEGRADED`.
+
+**Before unplugging:**
+```bash
+sudo umount /mnt/storage             # if "target is busy": sudo umount -l /mnt/storage
+sync
+findmnt /mnt/storage || echo "unmounted — safe to unplug"
+```
+
+**After reconnecting:**
+```bash
+# plug in, wait a couple seconds, then:
+sudo mount /mnt/storage              # fstab mounts by UUID, so a new /dev/sdX is fine
+findmnt /mnt/storage
+sudo -u keelando touch /mnt/storage/whiterock_cam/.probe && \
+  sudo -u keelando rm /mnt/storage/whiterock_cam/.probe && echo "WRITABLE — archive live again"
+```
+`mount` is idempotent — if the system auto-mounted it on replug, you'll just get
+"already mounted." If you *forgot* to unmount (or the drive dropped on its own),
+skip to *Failure modes & recovery* below.
+
+> Note: the UAS quirk is configured on **this** host only. If you take the drive to
+> another machine to offload images, the enclosure may run in UAS mode there — fine
+> for a quick transfer; just unmount cleanly on that machine too before bringing it back.
+
+### Failure modes & recovery
+
+The USB-SATA bridge has unreliable UAS firmware. Two distinct failure shapes:
+
+1. **Remounted read-only.** ext4 hits I/O errors and flips the mount to `ro`.
+   `os.path.ismount()` still returns `True`, so naive checks pass and then every
+   write fails. `findmnt` shows `ro`.
+2. **Stranded mount after re-enumeration.** The bridge drops off the bus and comes
+   back as a *new* device node (e.g. `/dev/sda` → `/dev/sdb`), but `/mnt/storage`
+   stays bound to the now-dead old node. `mount` still reports `rw`, yet every write
+   returns **`Input/output error`** (`dmesg` shows `device offline error, dev sda`).
+   The healthy drive sits *unmounted* under the new node with the correct UUID.
+
+**Diagnose:**
+```bash
+mount | grep /mnt/storage            # what node is the mount bound to?
+ls -l /dev/sda* /dev/sdb*            # does that node still exist?
+lsblk -o NAME,UUID,RO,STATE          # where is UUID 85af7264… now, is it RO?
+sudo dmesg | grep -iE 'uas|usb|I/O error|EXT4|read-only|reset|152d|sd[a-z]' | tail -50
+fuser -vm /mnt/storage               # any userspace process wedged on it?
+```
+
+**Recover (case 2 — stranded mount; also works for case 1):**
+```bash
+sudo umount -l /mnt/storage          # lazy-detach the stale/dead mount
+sudo e2fsck -f -y /dev/sdXN          # fsck the LIVE node (from lsblk UUID); recovers journal
+sudo mount /mnt/storage              # fstab re-resolves UUID to the live node
+# then re-run the writable probe above to confirm
+```
+A clean `e2fsck` exit 1 ("FILE SYSTEM WAS MODIFIED") is normal — it just means the
+aborted journal was replayed and free counts corrected.
+
+### Hardware mitigation: disable UAS (applied 2026-06-15)
+
+The bridge is stable in plain bulk (BOT) transport; only UAS is flaky. We disable UAS
+for this VID:PID via the kernel cmdline:
+```bash
+# /etc/default/grub — appended to GRUB_CMDLINE_LINUX_DEFAULT:
+usb-storage.quirks=152d:0583:u       # :u = IGNORE_UAS → forces bulk transport
+sudo update-grub                     # then reboot to apply
+```
+**Verify after reboot:**
+```bash
+cat /sys/module/usb_storage/parameters/quirks   # → 152d:0583:u
+lsusb -t                             # the JMS583 shows Driver=usb-storage, NOT uas
+```
+To undo: remove the `usb-storage.quirks=…` token (backup at `/etc/default/grub.bak.*`)
+and `sudo update-grub`. **Longer-term option:** retire the enclosure entirely by moving
+the archive to network storage — if so, mount fail-fast (NFS `soft,nofail,timeo=…` or
+CIFS), never an NFS hard mount (D-state hangs survive even the script's write timeout).
+
+### Why the website survives this now
+
+`fetch_webcam.py` (hardened 2026-06-15) captures every frame to a **local temp file**,
+updates the website (`latest.jpg` / slideshow / `latest.json`) from it **unconditionally**,
+and only then copies to the archive as a **best-effort** step. It detects a non-writable
+archive with a real **write+fsync probe** (not `os.path.ismount()`) and bounds it with a
+SIGALRM **timeout** so a wedged bridge can't hang or stack cron jobs. A dead archive now
+costs you the archive copy only — the live site keeps updating, and degradation is logged
+loudly (`ARCHIVE DEGRADED`) and surfaced via the `newest_image_age` MQTT sensor.
 
 ## Frontend Integration
 
