@@ -7,11 +7,17 @@ and publishes them to Home Assistant via MQTT Discovery.
 
 Metrics collected:
 - Disk usage (total, used, free, percentage)
-- Webcam image counts (per camera)
-- Webcam storage size (per camera)
-- Oldest and newest image timestamps (per camera)
+- Per-camera: image count, archive size, latest-image timestamp
 
-Runs via cron every 5 minutes.
+The camera roster is read from `config/webcams.json` (single source of truth) so
+this never drifts from the fetch pipeline.
+
+Runs via cron hourly (crontab: `3 * * * *`).
+
+NOTE: discovery payloads are retained. After changing any sensor's discovery
+config (attributes, expire_after) or the sensor roster, set PUBLISH_DISCOVERY
+below to True for ONE run so Home Assistant picks up the changes, then set it
+back to False.
 """
 
 import json
@@ -25,6 +31,8 @@ from lib.logging_config import setup_logging
 
 logger = setup_logging("storage_metrics")
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 # MQTT configuration from .env file
 env_path = Path("~/.config/buoy_influx_1.env").expanduser()
 creds = {}
@@ -33,22 +41,58 @@ for line in env_path.read_text().splitlines():
         k, v = line.split("=", 1)
         creds[k.strip()] = v.strip()
 
-# Webcam archive directories
-WEBCAM_ARCHIVES = {
-    "whiterock": {"path": Path("/mnt/storage/whiterock_cam"), "prefix": "WR", "name": "White Rock East Beach"},
-    "boundarybay": {"path": Path("/mnt/storage/boundarybay_cam"), "prefix": "BB", "name": "Boundary Bay"},
-    "hollyburn": {"path": Path("/mnt/storage/ambleside_cam"), "prefix": "AB", "name": "Hollyburn/Ambleside"},
-    "coxbay": {"path": Path("/mnt/storage/coxbay_cam"), "prefix": "CB", "name": "Cox Bay"},
-    "mudbay": {"path": Path("/mnt/storage/mudbay_cam"), "prefix": "MB", "name": "Mud Bay"},
-}
-
 # Storage mount point
 STORAGE_PATH = Path("/mnt/storage")
 
-# Set to True to publish MQTT discovery messages (only needed once).
-# Comment out the line below after the first successful run.
+# Mark a sensor unavailable in HA if no fresh value arrives within this window.
+# The publisher runs hourly, so 2.5 h tolerates one slow/missed run and flags two.
+EXPIRE_AFTER_SECONDS = 9000
+
+# All sensors group under one HA device.
+DEVICE = {
+    "identifiers": ["webcam_storage"],
+    "name": "Surf Server Webcam Storage",
+    "model": "External SSD (USB-SATA)",
+    "manufacturer": "Custom",
+}
+
+# Set to True to (re)publish MQTT discovery for ONE run, then set back to False.
 PUBLISH_DISCOVERY = False
-# PUBLISH_DISCOVERY = True  # Comment out this line after first successful run
+
+# --- One-time discovery cleanup -------------------------------------------------
+# Retained discovery configs left on the broker by the previous (rushed) version:
+# the mis-keyed "hollyburn" camera (now read as "ambleside" from webcams.json) and
+# the redundant age/oldest-date sensors that were trimmed. Publishing an empty
+# retained payload to each topic removes the orphaned entity from Home Assistant.
+# Runs only when PUBLISH_DISCOVERY is True; safe to delete this list once cleared.
+_OLD_WEBCAM_SENSOR_TYPES = [
+    "image_count",
+    "storage_size",
+    "oldest_image_age",
+    "newest_image_age",
+    "oldest_image_date",
+    "newest_image_date",
+]
+_TRIMMED_SENSOR_TYPES = ["oldest_image_age", "newest_image_age", "oldest_image_date"]
+_PREVIOUSLY_PUBLISHED_CAM_IDS = ["whiterock", "boundarybay", "coxbay", "mudbay"]
+RETIRED_SENSOR_IDS = [f"webcam_hollyburn_{t}" for t in _OLD_WEBCAM_SENSOR_TYPES] + [
+    f"webcam_{cam}_{t}" for cam in _PREVIOUSLY_PUBLISHED_CAM_IDS for t in _TRIMMED_SENSOR_TYPES
+]
+
+
+def load_webcam_archives():
+    """Build {cam_id: {path, prefix, name}} from config/webcams.json (single source)."""
+    raw = json.loads((REPO_ROOT / "config" / "webcams.json").read_text())
+    archives = {}
+    for cam_id, cfg in raw.items():
+        if cam_id.startswith("_"):
+            continue
+        archives[cam_id] = {
+            "path": Path(cfg["archive_dir"]),
+            "prefix": cfg["prefix"],
+            "name": cfg["name"],
+        }
+    return archives
 
 
 def get_disk_metrics():
@@ -67,7 +111,10 @@ def get_disk_metrics():
 
 
 def get_webcam_metrics(cam_config):
-    """Get metrics for a specific webcam archive directory"""
+    """Get metrics for a specific webcam archive directory.
+
+    Returns {image_count, total_size_mb, newest_image_date} or None on error.
+    """
     try:
         cam_path = cam_config["path"]
         prefix = cam_config["prefix"]
@@ -76,43 +123,17 @@ def get_webcam_metrics(cam_config):
             logger.warning(f"Webcam path does not exist: {cam_path}")
             return None
 
-        # Get all image files
         images = list(cam_path.glob(f"{prefix}_*.jpg"))
-
         if not images:
-            return {
-                "image_count": 0,
-                "total_size_mb": 0,
-                "oldest_image_age_hours": None,
-                "newest_image_age_hours": None,
-                "oldest_image_date": None,
-                "newest_image_date": None,
-            }
+            return {"image_count": 0, "total_size_mb": 0, "newest_image_date": None}
 
-        # Calculate total size
-        total_size_bytes = sum(img.stat().st_size for img in images)
-        total_size_mb = round(total_size_bytes / (1024 * 1024), 2)
-
-        # Get oldest and newest images
-        images_with_time = [(img, img.stat().st_mtime) for img in images]
-        images_with_time.sort(key=lambda x: x[1])
-
-        oldest_img, oldest_time = images_with_time[0]
-        newest_img, newest_time = images_with_time[-1]
-
-        now = datetime.now().timestamp()
-        oldest_age_hours = round((now - oldest_time) / 3600, 1)
-        newest_age_hours = round((now - newest_time) / 3600, 1)
-
-        oldest_date = datetime.fromtimestamp(oldest_time, tz=timezone.utc).isoformat()
+        total_size_mb = round(sum(img.stat().st_size for img in images) / (1024 * 1024), 2)
+        newest_time = max(img.stat().st_mtime for img in images)
         newest_date = datetime.fromtimestamp(newest_time, tz=timezone.utc).isoformat()
 
         return {
             "image_count": len(images),
             "total_size_mb": total_size_mb,
-            "oldest_image_age_hours": oldest_age_hours,
-            "newest_image_age_hours": newest_age_hours,
-            "oldest_image_date": oldest_date,
             "newest_image_date": newest_date,
         }
 
@@ -121,98 +142,69 @@ def get_webcam_metrics(cam_config):
         return None
 
 
+def _publish_discovery(mqtt_client, sensor_id, state_topic, spec):
+    """Publish one HA MQTT-discovery config from a sensor spec dict."""
+    config = {
+        "name": spec["name"],
+        "unique_id": sensor_id,
+        "state_topic": state_topic,
+        "icon": spec["icon"],
+        "expire_after": EXPIRE_AFTER_SECONDS,
+        "device": DEVICE,
+    }
+    if spec.get("device_class"):
+        config["device_class"] = spec["device_class"]
+    if spec.get("state_class"):
+        config["state_class"] = spec["state_class"]
+    if spec.get("unit"):
+        config["unit_of_measurement"] = spec["unit"]
+    mqtt_client.publish(f"homeassistant/sensor/{sensor_id}/config", json.dumps(config), retain=True)
+
+
+def retire_orphaned_discovery(mqtt_client):
+    """Clear retained discovery configs for renamed/trimmed sensors (one-time)."""
+    for sensor_id in RETIRED_SENSOR_IDS:
+        mqtt_client.publish(f"homeassistant/sensor/{sensor_id}/config", "", retain=True)
+    logger.info(f"Retired {len(RETIRED_SENSOR_IDS)} orphaned discovery configs")
+
+
 def publish_disk_discovery(mqtt_client):
     """Publish Home Assistant MQTT Discovery for disk sensors"""
-
     sensors = {
-        "storage_total": {"name": "Storage Total", "unit": "GB", "icon": "mdi:harddisk", "device_class": None},
-        "storage_used": {"name": "Storage Used", "unit": "GB", "icon": "mdi:harddisk", "device_class": None},
-        "storage_free": {"name": "Storage Free", "unit": "GB", "icon": "mdi:harddisk", "device_class": None},
-        "storage_percent_used": {"name": "Storage Usage", "unit": "%", "icon": "mdi:chart-donut", "device_class": None},
+        "storage_total": {"name": "Storage Total", "unit": "GB", "icon": "mdi:harddisk",
+                          "device_class": "data_size", "state_class": "measurement"},
+        "storage_used": {"name": "Storage Used", "unit": "GB", "icon": "mdi:harddisk",
+                         "device_class": "data_size", "state_class": "measurement"},
+        "storage_free": {"name": "Storage Free", "unit": "GB", "icon": "mdi:harddisk",
+                         "device_class": "data_size", "state_class": "measurement"},
+        "storage_percent_used": {"name": "Storage Usage", "unit": "%", "icon": "mdi:chart-donut",
+                                 "device_class": None, "state_class": "measurement"},
     }
-
-    for sensor_key, sensor_info in sensors.items():
-        sensor_id = f"webcam_{sensor_key}"
-
-        config = {
-            "name": sensor_info["name"],
-            "unique_id": sensor_id,
-            "state_topic": f"storage/{sensor_key}",
-            "icon": sensor_info["icon"],
-            "state_class": "measurement",
-            "device": {
-                "identifiers": ["webcam_storage"],
-                "name": "Surf Server Webcam Storage",
-                "model": "External HDD",
-                "manufacturer": "Custom",
-            },
-        }
-
-        if sensor_info["unit"]:
-            config["unit_of_measurement"] = sensor_info["unit"]
-
-        if sensor_info["device_class"]:
-            config["device_class"] = sensor_info["device_class"]
-
-        discovery_topic = f"homeassistant/sensor/{sensor_id}/config"
-        mqtt_client.publish(discovery_topic, json.dumps(config), retain=True)
+    for sensor_key, spec in sensors.items():
+        _publish_discovery(mqtt_client, f"webcam_{sensor_key}", f"storage/{sensor_key}", spec)
 
 
 def publish_webcam_discovery(mqtt_client, cam_id, cam_name):
-    """Publish Home Assistant MQTT Discovery for webcam sensors"""
-
+    """Publish Home Assistant MQTT Discovery for a camera's sensors"""
     sensors = {
-        "image_count": {"name": f"{cam_name} Image Count", "unit": "images", "icon": "mdi:image-multiple"},
-        "storage_size": {"name": f"{cam_name} Storage Size", "unit": "MB", "icon": "mdi:database"},
-        "oldest_image_age": {"name": f"{cam_name} Oldest Image Age", "unit": "h", "icon": "mdi:clock-start"},
-        "newest_image_age": {"name": f"{cam_name} Newest Image Age", "unit": "h", "icon": "mdi:clock-end"},
-        "oldest_image_date": {
-            "name": f"{cam_name} Oldest Image",
-            "unit": None,
-            "icon": "mdi:calendar-start",
-            "device_class": "timestamp",
-        },
-        "newest_image_date": {
-            "name": f"{cam_name} Latest Image",
-            "unit": None,
-            "icon": "mdi:calendar-end",
-            "device_class": "timestamp",
-        },
+        "image_count": {"name": f"{cam_name} Image Count", "unit": "images",
+                        "icon": "mdi:image-multiple", "device_class": None, "state_class": "measurement"},
+        "storage_size": {"name": f"{cam_name} Storage Size", "unit": "MB", "icon": "mdi:database",
+                         "device_class": "data_size", "state_class": "measurement"},
+        "newest_image_date": {"name": f"{cam_name} Latest Image", "unit": None,
+                              "icon": "mdi:calendar-end", "device_class": "timestamp", "state_class": None},
     }
-
-    for sensor_key, sensor_info in sensors.items():
-        sensor_id = f"webcam_{cam_id}_{sensor_key}"
-
-        config = {
-            "name": sensor_info["name"],
-            "unique_id": sensor_id,
-            "state_topic": f"storage/webcam/{cam_id}/{sensor_key}",
-            "icon": sensor_info["icon"],
-            "device": {
-                "identifiers": ["webcam_storage"],
-                "name": "Surf Server Webcam Storage",
-                "model": "External HDD",
-                "manufacturer": "Custom",
-            },
-        }
-
-        # Only set state_class for numeric measurements (not timestamps)
-        if sensor_info.get("device_class") != "timestamp":
-            config["state_class"] = "measurement"
-
-        if sensor_info["unit"]:
-            config["unit_of_measurement"] = sensor_info["unit"]
-
-        if sensor_info.get("device_class"):
-            config["device_class"] = sensor_info["device_class"]
-
-        discovery_topic = f"homeassistant/sensor/{sensor_id}/config"
-        mqtt_client.publish(discovery_topic, json.dumps(config), retain=True)
+    for sensor_key, spec in sensors.items():
+        _publish_discovery(
+            mqtt_client, f"webcam_{cam_id}_{sensor_key}", f"storage/webcam/{cam_id}/{sensor_key}", spec
+        )
 
 
 def main():
     """Main execution"""
     logger.info("=== Storage Metrics Collection Started ===")
+
+    webcam_archives = load_webcam_archives()
 
     # Connect to MQTT
     mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
@@ -223,6 +215,9 @@ def main():
     except Exception as e:
         logger.error(f"Failed to connect to MQTT broker: {e}")
         return
+
+    if PUBLISH_DISCOVERY:
+        retire_orphaned_discovery(mqtt_client)
 
     # Publish disk metrics
     logger.info("Collecting disk metrics...")
@@ -242,7 +237,7 @@ def main():
         )
 
     # Publish webcam metrics
-    for cam_id, cam_config in WEBCAM_ARCHIVES.items():
+    for cam_id, cam_config in webcam_archives.items():
         logger.info(f"Collecting metrics for {cam_config['name']}...")
         cam_metrics = get_webcam_metrics(cam_config)
 
@@ -253,18 +248,9 @@ def main():
             mqtt_client.publish(f"storage/webcam/{cam_id}/image_count", cam_metrics["image_count"], retain=True)
             mqtt_client.publish(f"storage/webcam/{cam_id}/storage_size", cam_metrics["total_size_mb"], retain=True)
 
-            if cam_metrics["oldest_image_age_hours"] is not None:
-                mqtt_client.publish(
-                    f"storage/webcam/{cam_id}/oldest_image_age", cam_metrics["oldest_image_age_hours"], retain=True
-                )
-                mqtt_client.publish(
-                    f"storage/webcam/{cam_id}/oldest_image_date", cam_metrics["oldest_image_date"], retain=True
-                )
-
-            if cam_metrics["newest_image_age_hours"] is not None:
-                mqtt_client.publish(
-                    f"storage/webcam/{cam_id}/newest_image_age", cam_metrics["newest_image_age_hours"], retain=True
-                )
+            # Left unpublished (so the sensor expires to "unavailable") when the
+            # archive is empty — i.e. there is genuinely no latest image.
+            if cam_metrics["newest_image_date"] is not None:
                 mqtt_client.publish(
                     f"storage/webcam/{cam_id}/newest_image_date", cam_metrics["newest_image_date"], retain=True
                 )
