@@ -335,13 +335,18 @@ async function loadBuoyData() {
           }
           cardContent += `<p class="buoy-metric" style="margin: 0.5rem 0;"><b>💨 Wind:</b> ${windDisplay}</p>`;
 
-          // Compact Wave Line - Format: "W 0.4m @ 3.3s (270°)"
-          // For Neah Bay (46087), prioritize swell data as it measures continuous open swells
+          // Compact Wave Line - Format: "Sig Wave: WSW 0.9m @ 4.1s (251°)"
+          // Height is always significant; the period type is tagged when it isn't
+          // the significant value (e.g. NOAA dominant, or an avg/peak fallback).
           let waveDisplay = "No data";
-          let waveLabel = "🌊 Wave:";
+          let waveLabel = "🌊 Sig Wave:";
+
+          // Small muted tag noting which period type is shown
+          const periodTag = (label) =>
+            ` <span style="color: var(--color-text-muted); font-size: 0.85em;">${label}</span>`;
 
           if (id === "46087") {
-            // Neah Bay - show swell info
+            // Neah Bay (NOAA) - show swell info (continuous open-ocean swell)
             waveLabel = "🌊 Swell:";
             const swellHeight =
               b.swell_height != null ? b.swell_height.toFixed(heightPrecision) : "—";
@@ -358,33 +363,45 @@ async function loadBuoyData() {
               const periodDisplay = swellPeriod != null ? ` @ ${swellPeriod}s` : "";
               waveDisplay = `${dirDisplay}${swellHeight}m${periodDisplay}${swellDegrees}${arrowDisplay}`;
             }
-          } else if (id === "46088") {
-            // New Dungeness - show significant wave height and average period
+          } else if (id === "46088" || id === "46267") {
+            // NOAA (New Dungeness, Angeles Point) - sig height + dominant period (DPD).
+            // NOAA stores DPD in wave_period_sig; tag it "dominant" so it's explicit.
             const waveHeight =
               b.wave_height_sig != null ? b.wave_height_sig.toFixed(heightPrecision) : "—";
-            const wavePeriod = b.wave_period_avg != null ? b.wave_period_avg.toFixed(1) : null;
-            const waveDir = b.wave_direction_peak_cardinal ?? null;
+            const wavePeriod = b.wave_period_sig != null ? b.wave_period_sig.toFixed(1) : null;
+            const waveDir = b.wave_direction_peak_cardinal ?? b.wave_direction_avg_cardinal ?? null;
+            const waveDirectionValue = b.wave_direction_peak ?? b.wave_direction_avg;
             const waveDegrees =
-              b.wave_direction_peak != null ? ` (${Math.round(b.wave_direction_peak)}°)` : "";
+              waveDirectionValue != null ? ` (${Math.round(waveDirectionValue)}°)` : "";
             if (waveHeight !== "—") {
               const dirDisplay = waveDir ? `${waveDir} ` : "";
               const arrowDisplay =
-                b.wave_direction_peak != null
-                  ? ` ${getDirectionalArrow(b.wave_direction_peak, "wave")}`
+                waveDirectionValue != null
+                  ? ` ${getDirectionalArrow(waveDirectionValue, "wave")}`
                   : "";
-              const periodDisplay = wavePeriod != null ? ` @ ${wavePeriod}s` : "";
+              const periodDisplay =
+                wavePeriod != null ? ` @ ${wavePeriod}s${periodTag("dominant")}` : "";
               waveDisplay = `${dirDisplay}${waveHeight}m${periodDisplay}${waveDegrees}${arrowDisplay}`;
             }
           } else {
-            // Other buoys - show combined wave data
+            // EC buoys - significant height + significant period. The two buoy families
+            // publish sig period under different SWOB names (wave_period_sig /
+            // wave_period_sig_basic), so coalesce. Fall back to avg/peak only for
+            // non-EC stations, and tag any fallback explicitly.
             const waveHeight =
               b.wave_height_sig != null ? b.wave_height_sig.toFixed(heightPrecision) : "—";
-            const wavePeriod =
-              b.wave_period_avg != null
-                ? b.wave_period_avg.toFixed(1)
-                : b.wave_period_peak != null
-                  ? b.wave_period_peak.toFixed(1)
-                  : null;
+            let wavePeriodValue = b.wave_period_sig ?? b.wave_period_sig_basic;
+            let periodType = "sig";
+            if (wavePeriodValue == null) {
+              if (b.wave_period_avg != null) {
+                wavePeriodValue = b.wave_period_avg;
+                periodType = "avg";
+              } else if (b.wave_period_peak != null) {
+                wavePeriodValue = b.wave_period_peak;
+                periodType = "peak";
+              }
+            }
+            const wavePeriod = wavePeriodValue != null ? wavePeriodValue.toFixed(1) : null;
             const waveDir = b.wave_direction_peak_cardinal ?? b.swell_direction_cardinal ?? null;
             const waveDirectionValue = b.wave_direction_peak ?? b.swell_direction;
             const waveDegrees =
@@ -396,11 +413,19 @@ async function loadBuoyData() {
                 waveDirectionValue != null
                   ? ` ${getDirectionalArrow(waveDirectionValue, "wave")}`
                   : "";
-              const periodDisplay = wavePeriod != null ? ` @ ${wavePeriod}s` : "";
+              // Only tag the period when it isn't the significant value
+              const periodSuffix = periodType === "sig" ? "" : periodTag(periodType);
+              const periodDisplay = wavePeriod != null ? ` @ ${wavePeriod}s${periodSuffix}` : "";
               waveDisplay = `${dirDisplay}${waveHeight}m${periodDisplay}${waveDegrees}${arrowDisplay}`;
             }
           }
           cardContent += `<p class="buoy-metric" style="margin: 0.5rem 0;"><b>${waveLabel}</b> ${waveDisplay}</p>`;
+
+          // NOAA reports a "dominant" period rather than a significant one; readers
+          // won't know the term, so add a small footnote on these cards.
+          if (id === "46088" || id === "46267") {
+            cardContent += `<p style="margin: -0.25rem 0 0.5rem 0; font-size: 0.7em; color: var(--color-text-muted); line-height: 1.3;">Dominant = the wave period with the most energy (NOAA's term for peak period).</p>`;
+          }
         } // End of if (isDown) else block
 
         cardContent += `</div>`; // End compact view
@@ -474,7 +499,8 @@ async function loadBuoyData() {
           cardContent += `
           <p class="buoy-metric" style="font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">📊 Significant Wave (Combined)</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Sig Height:</b> ${b.wave_height_sig ?? "—"} m</p>
-          <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Avg Period:</b> ${b.wave_period_avg ?? "—"} s</p>
+          <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Dominant Period:</b> ${b.wave_period_sig ?? "—"} s</p>
+          <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Average Period:</b> ${b.wave_period_avg ?? "—"} s</p>
         `;
 
           // Spectral wave breakdown
@@ -490,35 +516,66 @@ async function loadBuoyData() {
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Direction:</b> ${b.swell_direction_cardinal ?? "—"} (${b.swell_direction ?? "—"}°) ${getDirectionalArrow(b.swell_direction, "wave")}</p>
 
           <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">📈 Peak Metrics</p>
-          <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Period:</b> ${b.wave_period_peak ?? "—"} s</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Direction:</b> ${b.wave_direction_peak_cardinal ?? "—"} (${b.wave_direction_peak ?? "—"}°) ${getDirectionalArrow(b.wave_direction_peak, "wave")}</p>
         `;
         } else {
           // EC Buoys and other stations - show only additional peak values not already displayed
-          const hasPeakData =
-            b.wave_period_peak != null || b.wave_height_peak != null || b.wave_height_max != null;
+          // Keep it simple: sig is the headline (compact card above); here we add
+          // average + one "high-end" reading. EC buoy families report the high end
+          // differently (average-max / peak / plain max), so pick whichever exists.
+          let highHeight = null;
+          let highHeightLabel = "";
+          if (b.wave_height_max_avg != null) {
+            highHeight = b.wave_height_max_avg;
+            highHeightLabel = "Avg Max Height";
+          } else if (b.wave_height_peak != null) {
+            highHeight = b.wave_height_peak;
+            highHeightLabel = "Peak Height";
+          } else if (b.wave_height_max != null) {
+            highHeight = b.wave_height_max;
+            highHeightLabel = "Max Height";
+          }
 
-          if (hasPeakData) {
+          let highPeriod = null;
+          let highPeriodLabel = "";
+          if (b.wave_period_peak != null) {
+            highPeriod = b.wave_period_peak;
+            highPeriodLabel = "Peak Period";
+          } else if (b.wave_period_max_wave != null) {
+            highPeriod = b.wave_period_max_wave;
+            highPeriodLabel = "Period of Largest Wave";
+          }
+
+          const hasDetailData =
+            b.wave_height_avg != null ||
+            highHeight != null ||
+            b.wave_period_avg != null ||
+            highPeriod != null;
+
+          if (hasDetailData) {
             cardContent += `<p class="buoy-metric" style="font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">📊 Additional Metrics</p>`;
 
-            // Show peak wave height (English Bay, Southern Strait)
-            if (b.wave_height_peak != null) {
-              cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Wave Height:</b> ${b.wave_height_peak.toFixed(heightPrecision)} m</p>`;
+            // --- Heights (sig is shown on the compact card above) ---
+            if (b.wave_height_avg != null) {
+              cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Average Height:</b> ${b.wave_height_avg.toFixed(heightPrecision)} m</p>`;
             }
 
-            // Show maximum wave height (Halibut Bank, Sentry Shoal)
-            if (b.wave_height_max != null) {
+            if (highHeight != null) {
               const sigHeight = b.wave_height_sig || 0;
-              const ratio = sigHeight > 0 ? (b.wave_height_max / sigHeight).toFixed(1) : "";
+              const ratio = sigHeight > 0 ? (highHeight / sigHeight).toFixed(1) : "";
               const ratioText = ratio
                 ? ` <span style="color: var(--color-text-muted); font-size: 0.9em;">(${ratio}× sig)</span>`
                 : "";
-              cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Max Wave Height:</b> ${b.wave_height_max.toFixed(heightPrecision)} m${ratioText}</p>`;
+              cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;${highHeightLabel}:</b> ${highHeight.toFixed(heightPrecision)} m${ratioText}</p>`;
             }
 
-            // Show peak period (right after peak/max wave height)
-            if (b.wave_period_peak != null) {
-              cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Period:</b> ${b.wave_period_peak.toFixed(1)} s</p>`;
+            // --- Periods (sig is shown on the compact card above) ---
+            if (b.wave_period_avg != null) {
+              cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Average Period:</b> ${b.wave_period_avg.toFixed(1)} s</p>`;
+            }
+
+            if (highPeriod != null) {
+              cardContent += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;${highPeriodLabel}:</b> ${highPeriod.toFixed(1)} s</p>`;
             }
 
             // Show wave direction angular spread
@@ -918,18 +975,31 @@ function renderHistoryTable(buoyId, timeseries) {
   const windDir = timeseries.wind_direction?.data || [];
   const windGust = timeseries.wind_gust?.data || [];
 
-  // For Neah Bay, use swell data (long-period ocean waves)
-  // For other buoys, use combined wave metrics
+  // Height is always significant (Neah Bay shows swell).
   const isNeahBay = buoyId === "46087";
+  const isNOAA = buoyId === "46088" || buoyId === "46267";
   const waveHeight = isNeahBay
     ? timeseries.swell_height?.data || []
     : timeseries.wave_height_sig?.data || [];
-  const wavePeriod = isNeahBay
-    ? timeseries.swell_period?.data || []
-    : timeseries.wave_period_avg?.data || [];
-  // Peak period used as a per-row fallback when average period is missing
-  // (e.g. Crescent stations running on the radar fallback sensor).
-  const wavePeriodPeak = isNeahBay ? [] : timeseries.wave_period_peak?.data || [];
+
+  // Period source, in priority order per buoy type:
+  //  - Neah Bay (NOAA): swell period
+  //  - NOAA (Dungeness, Angeles Pt): dominant period (DPD, stored in wave_period_sig)
+  //  - EC: significant period (two SWOB names), falling back to avg then peak
+  //    for non-EC stations (e.g. Crescent on the radar sensor)
+  let wavePeriodSources;
+  if (isNeahBay) {
+    wavePeriodSources = [timeseries.swell_period?.data || []];
+  } else if (isNOAA) {
+    wavePeriodSources = [timeseries.wave_period_sig?.data || []];
+  } else {
+    wavePeriodSources = [
+      timeseries.wave_period_sig?.data || [],
+      timeseries.wave_period_sig_basic?.data || [],
+      timeseries.wave_period_avg?.data || [],
+      timeseries.wave_period_peak?.data || [],
+    ];
+  }
 
   const airTemp = timeseries.air_temp?.data || [];
   const seaTemp = timeseries.sea_temp?.data || [];
@@ -1010,9 +1080,14 @@ function renderHistoryTable(buoyId, timeseries) {
     const windDirVal = windDir.find((d) => d.time === time)?.value;
     const windGustVal = windGust.find((d) => d.time === time)?.value;
     const waveHeightVal = waveHeight.find((d) => d.time === time)?.value;
-    const wavePeriodVal =
-      wavePeriod.find((d) => d.time === time)?.value ??
-      wavePeriodPeak.find((d) => d.time === time)?.value;
+    let wavePeriodVal;
+    for (const src of wavePeriodSources) {
+      const v = src.find((d) => d.time === time)?.value;
+      if (v != null) {
+        wavePeriodVal = v;
+        break;
+      }
+    }
     const airTempVal = airTemp.find((d) => d.time === time)?.value;
     const seaTempVal = seaTemp.find((d) => d.time === time)?.value;
 
@@ -1091,6 +1166,12 @@ function renderHistoryTable(buoyId, timeseries) {
     tableHTML += `
       <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--color-callout-info-bg); border-left: 3px solid var(--color-source-noaa-border); font-size: 0.75rem; color: var(--color-text-light); line-height: 1.4;">
         <strong>Note:</strong> Neah Bay displays <strong>swell data</strong> (long-period ocean waves from distant storms) rather than combined wave metrics. Wind waves are typically much smaller at this location.
+      </div>
+    `;
+  } else if (isNOAA) {
+    tableHTML += `
+      <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--color-callout-info-bg); border-left: 3px solid var(--color-source-noaa-border); font-size: 0.75rem; color: var(--color-text-light); line-height: 1.4;">
+        <strong>Note:</strong> Height is significant wave height; period is the <strong>dominant period</strong> — NOAA's term for the wave period carrying the most energy (equivalent to peak period).
       </div>
     `;
   }

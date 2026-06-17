@@ -552,14 +552,25 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts, theme) {
     chartTitle = `${buoy.name} - Swell Conditions`;
     heightLabel = "Swell Height";
     periodLabel = "Swell Period";
-  } else {
-    // Canadian buoys - use significant wave height and average period, with peak period as dots
+  } else if (buoyId === "46267") {
+    // Angeles Point (NOAA) - significant height + dominant period (DPD).
+    // Dominant == peak, so no separate peak overlay.
     waveHeightData = ts.wave_height_sig?.data || [];
-    wavePeriodData = ts.wave_period_avg?.data || [];
+    wavePeriodData = ts.wave_period_sig?.data || [];
+    wavePeriodPeakData = null;
+    chartTitle = `${buoy.name} - Wave Conditions`;
+    heightLabel = "Significant Wave Height";
+    periodLabel = "Dominant Period";
+  } else {
+    // EC buoys - significant wave height + significant period, with peak period as dots.
+    // Sig period uses two different SWOB names across buoy families; coalesce them.
+    waveHeightData = ts.wave_height_sig?.data || [];
+    const sigPeriodData = ts.wave_period_sig?.data || [];
+    wavePeriodData = sigPeriodData.length ? sigPeriodData : ts.wave_period_sig_basic?.data || [];
     wavePeriodPeakData = ts.wave_period_peak?.data || [];
     chartTitle = `${buoy.name} - Wave Conditions`;
     heightLabel = "Significant Wave Height";
-    periodLabel = "Average Period";
+    periodLabel = "Significant Period";
   }
 
   // Check if this buoy has wave direction data

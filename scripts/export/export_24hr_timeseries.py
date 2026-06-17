@@ -32,6 +32,9 @@ ALL_METRICS = {
     "wave_crest_height_max": {"name": "Max Crest Height Above Water", "unit": "m"},
     # Wave periods
     "wave_period_sig": {"name": "Significant Wave Period", "unit": "s"},
+    # Alternate SWOB name for significant period used by some EC buoy families
+    # (e.g. English Bay, S. Georgia Strait publish sig_wave_pd_pst20mts)
+    "wave_period_sig_basic": {"name": "Significant Wave Period", "unit": "s"},
     "wave_period_avg": {"name": "Average Wave Period", "unit": "s"},
     "wave_period_peak": {"name": "Peak Wave Period", "unit": "s"},
     "wave_period_max_wave": {"name": "Period of Max Wave", "unit": "s"},
