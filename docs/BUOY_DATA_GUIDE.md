@@ -102,7 +102,8 @@ Environment Canada uses different field names across buoy types. Our parser hand
 ### Wave Field Names
 
 **Wave Buoys (Full Suite):**
-- `avg_sig_wave_hgt_pst20mts` - Significant wave height
+- `avg_sig_wave_hgt_pst20mts` - Significant wave height → `wave_height_sig`
+- `avg_sig_wave_pd_pst20mts` - Significant wave period → `wave_period_sig`
 - `avg_pk_wave_dir_pst20mts` - Peak wave direction
 - `avg_wave_dir_sprd_pst20mts` - Direction spread (sea state quality)
 - `spetrl_sig_wave_hgt_pst20mts` - Spectral significant height
@@ -110,7 +111,8 @@ Environment Canada uses different field names across buoy types. Our parser hand
 - Plus 10 more wave fields...
 
 **Met Buoys (Limited Suite - hourly only):**
-- `sig_wave_hgt_pst20mts` - Significant wave height (simpler name)
+- `sig_wave_hgt_pst20mts` - Significant wave height (simpler name) → `wave_height_sig`
+- `sig_wave_pd_pst20mts` - Significant wave period → `wave_period_sig_basic`
 - `pk_wave_hgt_pst20mts` - Peak wave height
 - `avg_max_wave_hgt_pst20mts` - Average max wave height
 - `avg_wave_hgt_pst20mts` - Average wave height
@@ -118,6 +120,17 @@ Environment Canada uses different field names across buoy types. Our parser hand
 - 3 more basic wave fields...
 
 **Note:** Met buoys lack directional data and spectral analysis
+
+> ⚠️ **Significant *period* has two SWOB names — and they map to two different columns.**
+> Wave buoys publish `avg_sig_wave_pd_pst20mts` (→ `wave_period_sig`); met buoys publish
+> `sig_wave_pd_pst20mts` (→ `wave_period_sig_basic`). Both are the significant wave period —
+> the difference is purely which buoy family you're reading. Unlike significant *height*
+> (where both XML names collapse into `wave_height_sig`), the two period names were mapped
+> to **separate** columns historically, so any consumer wanting "the significant period"
+> must coalesce `wave_period_sig ?? wave_period_sig_basic`. The frontend does exactly this
+> (see *Frontend Display Conventions* below). This is why English Bay / Southern Georgia
+> Strait once appeared to "have no significant period" — it was there all along, just in
+> the other column.
 
 ---
 
@@ -134,7 +147,8 @@ wave_height_avg             - Average wave height (m)
 wave_height_spectral        - Spectral significant height (m)
 wave_crest_height_max       - Max crest above water level (m)
 
-wave_period_sig             - Significant wave period (s)
+wave_period_sig             - Significant wave period (s) - wave-buoy SWOB name
+wave_period_sig_basic       - Significant wave period (s) - met-buoy SWOB name (coalesce with wave_period_sig)
 wave_period_avg             - Average wave period (s)
 wave_period_peak            - Peak wave period (s)
 wave_period_max_wave        - Period of max wave (s)
@@ -257,6 +271,51 @@ NOAA buoys (Neah Bay, New Dungeness) have different capabilities:
 - Consistent field names across all NOAA stations
 - No "MSNG" pattern - fields either present or absent
 
+**NOAA wave metrics differ from EC — important for labelling:**
+- **Height:** significant only (`WVHT` → `wave_height_sig`). NOAA standard met data
+  has **no** average or maximum wave height.
+- **Period:** two values — `DPD` (**dominant** period) and `APD` (**average** period).
+  There is no "significant period" in NOAA data.
+- We store `DPD` in the `wave_period_sig` column (it's the headline period that pairs
+  with significant height), and `APD` in `wave_period_avg`.
+- **"Dominant period" *is* peak period** — both are the spectral peak (Tₚ, the band
+  carrying the most energy). NOAA calls it "dominant"; oceanography calls it "peak."
+  So for NOAA buoys `wave_period_sig` ≈ `wave_period_peak` (in fact our NOAA
+  `wave_period_peak` is mirrored from `swell_period`). The UI shows **one** of them,
+  tagged "dominant", and omits the redundant peak overlay.
+- Contrast with **EC**, where `wave_period_sig` is the *average-significant* period (mean
+  period of the highest ⅓ of waves) — a genuinely distinct quantity from peak period.
+
+---
+
+## Frontend Display Conventions (Wave Cards)
+
+How `site/assets/js/main.js` and `wave-chart-v4.js` choose which wave metrics to show.
+
+**Headline (always significant height):**
+- **EC buoys:** significant height @ significant period. Sig period coalesces
+  `wave_period_sig ?? wave_period_sig_basic` (see the field-name warning above), then
+  falls back to avg → peak only for non-EC stations (e.g. Crescent/FlowWorks), with the
+  fallback tagged explicitly (`avg`/`peak`).
+- **NOAA (New Dungeness 46088, Angeles Point 46267):** significant height @ **dominant**
+  period (`wave_period_sig` = DPD), tagged "dominant" with a one-line footnote (readers
+  won't know the term).
+- **Neah Bay (46087):** swell height @ swell period (open-ocean swell dominates here).
+
+**Details ("Additional Metrics", EC only):** keep it simple — average height/period plus
+one "high-end" reading. EC buoy families report the high end differently, so the UI picks
+whichever exists: `wave_height_max_avg` → `wave_height_peak` → `wave_height_max` for
+height, and `wave_period_peak` → `wave_period_max_wave` for period.
+
+**12h history table & period chart:** same period precedence as the headline — significant
+(EC) / dominant (NOAA) / swell (Neah Bay). The chart overlays peak period as dots for EC
+only (redundant for NOAA, since dominant == peak).
+
+> **Why do sig and peak period sometimes match?** In calm, narrow-spectrum conditions the
+> significant period and peak period physically converge, and at 0.1 s reporting resolution
+> they can land on the same value for an hour or two. They're still distinct measurements
+> from distinct SWOB fields — check the timeseries and they diverge again as the sea builds.
+
 ---
 
 ## Diagnostic Fields (Available but Not Captured)
@@ -294,7 +353,15 @@ wave_height_sig = 0.2   # ✓ Correct (hourly)
 
 ### "Why do Halibut and English Bay have different wind gust field names?"
 
-Different buoy hardware/firmware versions use different XML field names. Our parser handles all variants via the `FIELD_MAP` dictionary in `buoy_to_influx_sqlite.py`.
+Different buoy hardware/firmware versions use different XML field names. Our parser handles all variants via the `FIELD_MAP` dictionary in `scripts/parse/buoy_to_sqlite.py`.
+
+### "Why did a buoy's card show *average* period instead of significant?"
+
+Almost certainly the significant period landed in `wave_period_sig_basic` (met-buoy SWOB
+name) rather than `wave_period_sig` (wave-buoy name). Consumers must coalesce the two —
+see *Wave Field Names* and *Frontend Display Conventions*. Both the latest snapshot and the
+48h timeseries export `wave_period_sig_basic`; if a chart/table looks wrong, confirm the
+field is present in the relevant JSON export first.
 
 ### "Are wave direction spread values useful?"
 
@@ -308,7 +375,7 @@ Different buoy hardware/firmware versions use different XML field names. Our par
 
 - **EC SWOB-ML Format:** https://dd.weather.gc.ca/observations/doc/
 - **Buoy Metadata:** `config/stations.json`
-- **Parser Implementation:** `buoy_to_influx_sqlite.py`
+- **Parser Implementation:** `scripts/parse/buoy_to_sqlite.py`
 - **Export Logic:** `sqlite_to_json.py`, `export_24hr_timeseries.py`
 
 ---

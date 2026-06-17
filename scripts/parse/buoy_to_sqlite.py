@@ -134,6 +134,10 @@ FIELD_MAP = {
     "max_wave_crst_hgt_abv_avg_wtr_lvl_pst20mts": "wave_crest_height_max",
     # Wave period
     "avg_wave_pd_pst20mts": "wave_period_avg",
+    # Significant period, wave-buoy SWOB name. NOTE: met buoys publish the same
+    # quantity as `sig_wave_pd_pst20mts` -> wave_period_sig_basic (see below).
+    # The two go to *separate* columns, so consumers must coalesce
+    # wave_period_sig / wave_period_sig_basic to get "the significant period".
     "avg_sig_wave_pd_pst20mts": "wave_period_sig",
     "pk_wave_pd_pst20mts": "wave_period_peak",
     "pk_wave_pd_pst35mts_10mts_ago": "wave_period_peak",
@@ -177,6 +181,9 @@ FIELD_MAP = {
     # Solar current (cloudiness indicator)
     "avg_solr_panl_crnt_pst10mts": "solar_current",
     # Wave metrics (additional statistics) - Added 2025-12-06
+    # Significant period, met-buoy SWOB name (e.g. English Bay, S. Georgia Strait).
+    # Same quantity as avg_sig_wave_pd_pst20mts -> wave_period_sig above, but kept in
+    # its own column. Coalesce the two when you want "the significant period".
     "sig_wave_pd_pst20mts": "wave_period_sig_basic",
     "avg_max_wave_hgt_pst20mts": "wave_height_max_avg",
     "avg_max_wave_pd_pst20mts": "wave_period_max_avg",
