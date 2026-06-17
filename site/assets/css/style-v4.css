@@ -428,6 +428,11 @@ footer .github-link:hover {
   display: flex;
   flex-direction: column;
   max-width: 450px; /* Constrain card width */
+  /* Grid items default to min-width:auto, so a wide child (e.g. the open 12h
+     history table) would force the track wider, shrinking row-mates and
+     overflowing the viewport. min-width:0 lets the track stay equal and the
+     table's own overflow-x:auto wrapper handle horizontal scrolling. */
+  min-width: 0;
 }
 
 .buoy-card:hover {
@@ -521,6 +526,16 @@ footer .github-link:hover {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
+}
+
+/* Click-and-drag horizontal scrolling for the 12h history table (desktop).
+   The .draggable class is added by JS only when the table overflows. */
+.history-scroll.draggable {
+  cursor: grab;
+}
+.history-scroll.dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .buoy-metric {

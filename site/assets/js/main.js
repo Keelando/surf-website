@@ -97,6 +97,45 @@ function setSafeHTML(element, html) {
   }
 }
 
+// Enable click-and-drag horizontal panning on an overflow-x:auto container,
+// matching the touch-drag behaviour mobile already gets natively. Mouse only —
+// touch is left to the browser's native scrolling so we don't fight it.
+function enableDragScroll(el) {
+  if (!el || el.dataset.dragScroll === "on") return;
+  el.dataset.dragScroll = "on";
+
+  // Only advertise the grab cursor when the content actually overflows
+  if (el.scrollWidth > el.clientWidth) el.classList.add("draggable");
+
+  let isDown = false;
+  let startX = 0;
+  let startScroll = 0;
+
+  el.addEventListener("pointerdown", (e) => {
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    isDown = true;
+    startX = e.clientX;
+    startScroll = el.scrollLeft;
+    el.setPointerCapture(e.pointerId);
+    el.classList.add("dragging");
+  });
+
+  el.addEventListener("pointermove", (e) => {
+    if (!isDown) return;
+    e.preventDefault(); // suppress text selection while dragging
+    el.scrollLeft = startScroll - (e.clientX - startX);
+  });
+
+  const end = (e) => {
+    if (!isDown) return;
+    isDown = false;
+    if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    el.classList.remove("dragging");
+  };
+  el.addEventListener("pointerup", end);
+  el.addEventListener("pointercancel", end);
+}
+
 async function loadBuoyData() {
   const container = document.getElementById("buoy-container");
   const timestamp = document.getElementById("timestamp");
@@ -938,6 +977,7 @@ async function toggleCardHistory(buoyId) {
 
       if (buoyData && buoyData.timeseries) {
         setSafeHTML(historyDiv, renderHistoryTable(buoyId, buoyData.timeseries));
+        enableDragScroll(historyDiv.querySelector(".history-scroll"));
         const hideBtn = historyDiv.querySelector(".hide-history-btn");
         if (hideBtn) hideBtn.addEventListener("click", () => toggleCardHistory(buoyId));
         historyDiv.style.display = "block";
@@ -1053,7 +1093,7 @@ function renderHistoryTable(buoyId, timeseries) {
 
   let tableHTML = `
     ${scrollIndicator}
-    <div style="overflow-x: auto; margin-top: 0.5rem; width: 100%; max-width: 100%; -webkit-overflow-scrolling: touch; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box;">
+    <div class="history-scroll" style="overflow-x: auto; margin-top: 0.5rem; width: 100%; max-width: 100%; -webkit-overflow-scrolling: touch; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box;">
       <table style="border-collapse: collapse; font-size: 0.8rem; width: max-content; min-width: 100%; table-layout: auto;">
         <thead>
           <tr style="background: var(--color-surface-alt);">
