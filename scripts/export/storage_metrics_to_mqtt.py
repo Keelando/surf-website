@@ -85,6 +85,14 @@ RETIRED_SENSOR_IDS = [f"webcam_hollyburn_{t}" for t in _OLD_WEBCAM_SENSOR_TYPES]
     f"webcam_{cam}_{t}" for cam in _PREVIOUSLY_PUBLISHED_CAM_IDS for t in _TRIMMED_SENSOR_TYPES
 ]
 
+# Discovery retirement only removes the HA entity. The retained *state* topics that
+# fed those entities linger on the broker forever as orphaned messages (this is how
+# the old `storage/webcam/hollyburn/*` litter outlived the hollyburn→ambleside
+# rename). Clear them too so a future rename leaves nothing behind.
+RETIRED_STATE_TOPICS = [f"storage/webcam/hollyburn/{t}" for t in _OLD_WEBCAM_SENSOR_TYPES] + [
+    f"storage/webcam/{cam}/{t}" for cam in _PREVIOUSLY_PUBLISHED_CAM_IDS for t in _TRIMMED_SENSOR_TYPES
+]
+
 
 def load_webcam_archives():
     """Build {cam_id: {path, prefix, name}} from config/webcams.json (single source)."""
@@ -151,6 +159,23 @@ def get_webcam_metrics(cam_config):
         return None
 
 
+def publish_retained(mqtt_client, topic, payload):
+    """Publish a retained message and block until it is written to the socket.
+
+    The script connects, fires a burst of publishes, then disconnects. paho sends
+    queued packets from its network loop, not from publish() itself — so without
+    waiting, the final message of the session races the DISCONNECT and is silently
+    dropped (QoS 0 has no redelivery). That is exactly why ambleside — the last cam
+    in webcams.json — had a fresh image_count/storage_size but a newest_image_date
+    frozen days in the past: its newest_image_date is the very last publish before
+    disconnect. wait_for_publish() (with loop_start() running in main) guarantees
+    each packet is flushed before we move on.
+    """
+    info = mqtt_client.publish(topic, payload, retain=True)
+    info.wait_for_publish(timeout=10)
+    return info
+
+
 def _publish_discovery(mqtt_client, sensor_id, state_topic, spec):
     """Publish one HA MQTT-discovery config from a sensor spec dict."""
     config = {
@@ -167,14 +192,19 @@ def _publish_discovery(mqtt_client, sensor_id, state_topic, spec):
         config["state_class"] = spec["state_class"]
     if spec.get("unit"):
         config["unit_of_measurement"] = spec["unit"]
-    mqtt_client.publish(f"homeassistant/sensor/{sensor_id}/config", json.dumps(config), retain=True)
+    publish_retained(mqtt_client, f"homeassistant/sensor/{sensor_id}/config", json.dumps(config))
 
 
 def retire_orphaned_discovery(mqtt_client):
-    """Clear retained discovery configs for renamed/trimmed sensors (one-time)."""
+    """Clear retained discovery configs and state topics for renamed/trimmed sensors."""
     for sensor_id in RETIRED_SENSOR_IDS:
-        mqtt_client.publish(f"homeassistant/sensor/{sensor_id}/config", "", retain=True)
-    logger.info(f"Retired {len(RETIRED_SENSOR_IDS)} orphaned discovery configs")
+        publish_retained(mqtt_client, f"homeassistant/sensor/{sensor_id}/config", "")
+    for state_topic in RETIRED_STATE_TOPICS:
+        publish_retained(mqtt_client, state_topic, "")
+    logger.info(
+        f"Retired {len(RETIRED_SENSOR_IDS)} orphaned discovery configs "
+        f"and {len(RETIRED_STATE_TOPICS)} state topics"
+    )
 
 
 def publish_disk_discovery(mqtt_client):
@@ -225,6 +255,9 @@ def main():
         logger.error(f"Failed to connect to MQTT broker: {e}")
         return
 
+    # Drive the network loop so publish_retained()'s wait_for_publish() can flush.
+    mqtt_client.loop_start()
+
     if PUBLISH_DISCOVERY:
         retire_orphaned_discovery(mqtt_client)
 
@@ -236,10 +269,10 @@ def main():
         if PUBLISH_DISCOVERY:
             publish_disk_discovery(mqtt_client)
 
-        mqtt_client.publish("storage/storage_total", disk_metrics["total_gb"], retain=True)
-        mqtt_client.publish("storage/storage_used", disk_metrics["used_gb"], retain=True)
-        mqtt_client.publish("storage/storage_free", disk_metrics["free_gb"], retain=True)
-        mqtt_client.publish("storage/storage_percent_used", disk_metrics["percent_used"], retain=True)
+        publish_retained(mqtt_client, "storage/storage_total", disk_metrics["total_gb"])
+        publish_retained(mqtt_client, "storage/storage_used", disk_metrics["used_gb"])
+        publish_retained(mqtt_client, "storage/storage_free", disk_metrics["free_gb"])
+        publish_retained(mqtt_client, "storage/storage_percent_used", disk_metrics["percent_used"])
 
         logger.info(
             f"Disk: {disk_metrics['used_gb']} GB / {disk_metrics['total_gb']} GB " f"({disk_metrics['percent_used']}%)"
@@ -254,18 +287,19 @@ def main():
             if PUBLISH_DISCOVERY:
                 publish_webcam_discovery(mqtt_client, cam_id, cam_config["name"])
 
-            mqtt_client.publish(f"storage/webcam/{cam_id}/image_count", cam_metrics["image_count"], retain=True)
-            mqtt_client.publish(f"storage/webcam/{cam_id}/storage_size", cam_metrics["total_size_mb"], retain=True)
+            publish_retained(mqtt_client, f"storage/webcam/{cam_id}/image_count", cam_metrics["image_count"])
+            publish_retained(mqtt_client, f"storage/webcam/{cam_id}/storage_size", cam_metrics["total_size_mb"])
 
             # Left unpublished (so the sensor expires to "unavailable") when the
             # archive is empty — i.e. there is genuinely no latest image.
             if cam_metrics["newest_image_date"] is not None:
-                mqtt_client.publish(
-                    f"storage/webcam/{cam_id}/newest_image_date", cam_metrics["newest_image_date"], retain=True
+                publish_retained(
+                    mqtt_client, f"storage/webcam/{cam_id}/newest_image_date", cam_metrics["newest_image_date"]
                 )
 
             logger.info(f"{cam_config['name']}: {cam_metrics['image_count']} images, {cam_metrics['total_size_mb']} MB")
 
+    mqtt_client.loop_stop()
     mqtt_client.disconnect()
     logger.info("=== Storage Metrics Collection Completed ===")
 
