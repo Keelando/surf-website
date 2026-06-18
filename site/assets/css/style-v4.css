@@ -259,6 +259,14 @@ footer {
   line-height: 1.5;
 }
 
+.footer-privacy {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
 .land-acknowledgement {
   font-size: 1rem;
   font-style: italic;

@@ -206,14 +206,19 @@
     flex-wrap: nowrap;
   }
 
+  /* Drop the decorative warning emoji on mobile to save space */
   .warning-icon {
-    font-size: 1.1rem;
+    display: none;
   }
 
   .warning-text {
     font-size: 0.8rem;
     min-width: 0;
     line-height: 1.3;
+    /* Single line on mobile - truncate overflow */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .warning-text strong {
@@ -221,10 +226,16 @@
     margin-right: 0.25rem;
   }
 
+  /* Mobile: whole banner is the forecasts link (stretched overlay),
+     so we drop the visible "View Forecasts" button to save a row. */
   .warning-details-link {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-    white-space: nowrap;
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    background: none !important;
+    border: none !important;
+    font-size: 0; /* hide link text, keep accessible name + tap target */
+    z-index: 1;
   }
 
   .warning-dismiss-btn {
@@ -234,6 +245,7 @@
     font-size: 1.25rem;
     width: 1.5rem;
     height: 1.5rem;
+    z-index: 2; /* above the stretched link so dismiss still works */
   }
 }
 
@@ -244,29 +256,19 @@
 
   .warning-banner-content {
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 0.3rem;
   }
 
-  .warning-icon {
-    font-size: 1rem;
-  }
-
   .warning-text {
-    flex: 1 1 100%;
+    flex: 1;
     font-size: 0.75rem;
     line-height: 1.2;
   }
 
   .warning-text strong {
     font-size: 0.8rem;
-  }
-
-  .warning-details-link {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.4rem;
-    flex: 0 0 auto;
   }
 
   .warning-dismiss-btn {

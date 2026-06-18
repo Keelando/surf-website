@@ -372,6 +372,13 @@
   text-decoration: underline;
 }
 
+/* The attribution gradient stays light blue in dark mode, so the link needs a
+   dark, high-contrast colour rather than the light-blue accent (which vanishes
+   against the background). */
+[data-theme="dark"] .webcam-attribution a {
+  color: #0a2540;
+}
+
 .webcam-map-link {
   margin-top: 0.5rem;
 }

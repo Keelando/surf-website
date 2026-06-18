@@ -4,7 +4,7 @@
  *
  * Key Improvements:
  * - Variable dismiss durations based on warning severity
- * - Storm warnings have 12h auto-restore (safety critical)
+ * - Storm warnings have 24h auto-restore (safety critical)
  * - Better visual hierarchy by severity
  * - Dismissal feedback messages
  * - Accessibility improvements
@@ -43,8 +43,8 @@ async function fetchWithTimeout(url, timeout = 5000) {
 // Configuration
 const STORAGE_KEY = "dismissed_marine_warnings";
 
-// Dismiss duration - all warnings dismissed for 12 hours
-const DISMISS_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
+// Dismiss duration - all warnings dismissed for 24 hours
+const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // Maximum age before dismissal is always cleared (safety backstop)
 const MAX_DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -61,7 +61,7 @@ function getWarningId(warning) {
 }
 
 /**
- * Get dismiss duration - always 12 hours for all warnings
+ * Get dismiss duration - always 24 hours for all warnings
  * @returns {number} Duration in ms
  */
 function getDismissDuration() {
@@ -83,7 +83,7 @@ function isWarningDismissed(warningId) {
     const now = Date.now();
     const elapsed = now - dismissedTime;
 
-    // Check if dismissal has expired (12 hours)
+    // Check if dismissal has expired (24 hours)
     if (elapsed > DISMISS_DURATION_MS) {
       delete dismissed[warningId];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dismissed));
@@ -107,8 +107,8 @@ function dismissWarning(warningId) {
     dismissed[warningId] = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dismissed));
 
-    // Feedback message - always 12 hours
-    const feedbackMsg = "Warning hidden for 12 hours";
+    // Feedback message - always 24 hours
+    const feedbackMsg = "Warning hidden for 24 hours";
 
     // Remove warning banner from DOM
     const banner = document.querySelector(`[data-warning-id="${warningId}"]`);
@@ -224,7 +224,7 @@ async function displayWarningBanners(containerId = "warning-banner-container") {
         // Show feedback and remove banner
         showDismissalFeedback(
           container.querySelector(".warning-banner"),
-          "All warnings hidden for 12 hours",
+          "All warnings hidden for 24 hours",
         );
         const banner = container.querySelector(".warning-banner");
         if (banner) {
@@ -321,7 +321,7 @@ function createCombinedWarningBanner(warnings) {
           ${warningText}
         </div>
         <a href="/forecasts.html" class="warning-details-link">View Forecasts →</a>
-        <button class="warning-dismiss-btn" aria-label="Dismiss for 12h" title="Dismiss for 12h">×</button>
+        <button class="warning-dismiss-btn" aria-label="Dismiss for 24h" title="Dismiss for 24h">×</button>
       </div>
     </div>
   `;
