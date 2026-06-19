@@ -975,6 +975,13 @@ footer .github-link:hover {
 
 header {
   background-image:
+    /* Bottom-anchored dark scrim: keeps the photo visible up top while the
+       conditions panel sits on a darkened, legible base. */
+    linear-gradient(to bottom,
+      rgba(0, 0, 0, 0) 35%,
+      rgba(0, 0, 0, 0.45) 75%,
+      rgba(0, 0, 0, 0.72) 100%
+    ),
     linear-gradient(135deg,
       rgba(0, 75, 124, 0.5) 0%,
       rgba(0, 102, 161, 0.4) 100%
@@ -984,13 +991,14 @@ header {
   background-size: cover;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  padding: 3rem 1rem;
+  padding: 3rem 1rem 2rem;
   text-align: center;
-  min-height: 250px;
+  min-height: 320px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
+  gap: 1.25rem;
 }
 
 /* Disable parallax on mobile for better performance and compatibility */
@@ -1017,10 +1025,106 @@ header h2 {
   margin: 0.5rem 0 0 0;
 }
 
+/* -----------------------------
+   Hero live-conditions panel
+   Light text over the bottom scrim; text-shadow is a second layer of
+   insurance against bright wave crests in the photo.
+----------------------------- */
+.hero-conditions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem 2.25rem;
+  width: 100%;
+  max-width: 760px;
+}
+
+.hero-conditions:empty {
+  display: none;
+}
+
+.hero-station {
+  flex-basis: 100%;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Wind direction arrow: force light colour over the dark scrim
+   (overrides the dark inline colour from getDirectionalArrow). */
+.hero-conditions svg {
+  color: #ffffff !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85));
+}
+
+.hero-cond-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.4rem 1.5rem;
+}
+
+.hero-group-label {
+  flex-basis: 100%;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.hero-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.hero-stat-label {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.hero-stat-value {
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+
+.hero-updated {
+  flex-basis: 100%;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+}
+
+/* Stale data: warn the reader not to trust old numbers in a gale. */
+.hero-updated.stale {
+  color: #ffd27a;
+  font-weight: 700;
+}
+
+.hero-updated.stale::before {
+  content: "⚠ ";
+}
+
 @media (max-width: 600px) {
   header {
-    padding: 2rem 1rem;
-    min-height: 180px;
+    padding: 1.75rem 1rem 1.5rem;
+    min-height: 260px;
     background-attachment: scroll;
   }
 
@@ -1030,6 +1134,14 @@ header h2 {
 
   header h2 {
     font-size: 1rem;
+  }
+
+  .hero-conditions {
+    gap: 0.75rem 1.5rem;
+  }
+
+  .hero-stat-value {
+    font-size: 1.25rem;
   }
 }
 

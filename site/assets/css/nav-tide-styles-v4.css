@@ -191,21 +191,49 @@
   }
 }
 
-/* Mobile responsive - allow wrapping */
+/* Mobile - collapse to a single sticky, horizontally-scrolling row so the nav
+   only ever occupies one slim row and pushes the hero/data up. */
 @media (max-width: 600px) {
   .main-nav {
-    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
     gap: 0.3rem;
-    padding: 0.4rem;
-    justify-content: center;
+    padding: 0.35rem 0.4rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch; /* momentum scrolling on iOS */
+    scrollbar-width: none; /* Firefox - hide scrollbar */
+  }
+
+  .main-nav::-webkit-scrollbar {
+    display: none; /* Chrome/Safari - hide scrollbar */
   }
 
   .nav-links {
-    justify-content: center;
-    flex-wrap: wrap;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 0.3rem;
+  }
+
+  .nav-actions {
+    flex: 0 0 auto; /* Light/Dark toggle rides in the same scroll row */
+  }
+
+  .theme-toggle {
+    min-height: 44px; /* Accessible touch target */
+    white-space: nowrap;
   }
 
   .nav-link {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    /* Keep touch targets >= 44px tall for accessibility */
+    min-height: 44px;
     padding: 0.55rem 0.7rem;
     font-size: 0.85rem;
     border-radius: 4px;

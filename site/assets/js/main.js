@@ -19,6 +19,55 @@ function formatDataAge(ageMinutes) {
   }
 }
 
+// Latest buoy snapshot, cached so the hero panel can re-render if the hero
+// component swaps in (via HTMX) after the data has already been fetched.
+let heroBuoySnapshot = null;
+
+// Render the live conditions panel over the hero image. Reuses the snapshot
+// already loaded by loadBuoyData() — no second network request.
+function renderHeroConditions(buoy) {
+  const el = document.getElementById("hero-conditions");
+  if (!el || !buoy) return;
+
+  const dash = "—";
+  // Wind speed/gust are already in knots in the JSON — display as-is, rounded.
+  const fmtKt = (v) => (v == null ? dash : `${Math.round(v)} kt`);
+  // Period: average, falling back to peak — matches the buoy card convention.
+  const period = buoy.wave_period_avg ?? buoy.wave_period_peak;
+
+  const stat = (label, value) =>
+    `<div class="hero-stat"><span class="hero-stat-label">${label}</span>` +
+    `<span class="hero-stat-value">${value}</span></div>`;
+
+  const age = formatDataAge(buoy.age_minutes);
+  const updatedText = age ? `Updated ${age}` : "Update time unavailable";
+
+  // Wind direction: cardinal label plus an arrow rotated to the wind direction
+  // (reuses the same helper/convention as the buoy cards).
+  const windCardinal = buoy.wind_direction_cardinal ?? dash;
+  const windArrow =
+    buoy.wind_direction != null ? getDirectionalArrow(buoy.wind_direction, "wind") : "";
+  const windDirValue = `${windCardinal}${windArrow}`;
+
+  const stationName = buoy.name || "Halibut Bank";
+
+  el.innerHTML = `
+    <div class="hero-station">${stationName} · live conditions</div>
+    <div class="hero-cond-group">
+      <span class="hero-group-label">Waves</span>
+      ${stat("Sig. height", buoy.wave_height_sig != null ? `${buoy.wave_height_sig} m` : dash)}
+      ${stat("Period", period != null ? `${period} s` : dash)}
+    </div>
+    <div class="hero-cond-group">
+      <span class="hero-group-label">Wind</span>
+      ${stat("Direction", windDirValue)}
+      ${stat("Speed", fmtKt(buoy.wind_speed))}
+      ${stat("Gust", fmtKt(buoy.wind_gust))}
+    </div>
+    <div class="hero-updated${buoy.stale ? " stale" : ""}">${updatedText}</div>
+  `;
+}
+
 // Helper function to create angular spread vector visualization
 // Shows main direction arrow with smaller arrows indicating directional spread
 function createAngularSpreadVector(avgDirection, spread, size = 60) {
@@ -197,6 +246,10 @@ async function loadBuoyData() {
 
   try {
     const data = await fetchWithTimeout(`/data/latest_buoy_v2.json?t=${Date.now()}`);
+
+    // Cache + render the hero conditions panel (Halibut Bank) from this snapshot.
+    heroBuoySnapshot = data;
+    renderHeroConditions(data["4600146"]);
 
     container.textContent = "";
 
@@ -1259,6 +1312,14 @@ document.addEventListener(
   },
   { once: true },
 );
+
+// The hero header loads via HTMX independently of the data fetch; if it swaps
+// in after the snapshot has already arrived, render the cached conditions.
+document.addEventListener("htmx:load", function () {
+  if (heroBuoySnapshot && document.getElementById("hero-conditions")) {
+    renderHeroConditions(heroBuoySnapshot["4600146"]);
+  }
+});
 
 setInterval(loadBuoyData, 5 * 60 * 1000);
 
