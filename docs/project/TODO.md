@@ -2,6 +2,68 @@
 
 ## Upcoming Tasks
 
+### Back-to-Top Button (Mobile-first)
+
+Small floating "scroll to top" button. Additive only — **do not** restructure or
+rework the existing nav, and don't pull in any library. (NB: the original spec
+said "don't make the nav sticky / don't add a hamburger" — that's stale; we
+*did* go sticky + hamburger on 2026-06-21. Those constraints no longer apply;
+just don't touch the nav for THIS task.) Reuse existing theme variables and
+patterns. Self-contained markup + CSS + a small scroll listener, consistent with
+the rest of the site.
+
+**Behavior:**
+- Small circular button, fixed to viewport, smooth-scrolls page to top on tap —
+  back to the hero/conditions area. (Full nav is always reachable via the sticky
+  hamburger; this is about returning to the top of long pages, not nav access.)
+- Hidden by default; fades in after scrolling past ~1 viewport height (past the
+  hero/conditions area). Fades out again near the top.
+- Smooth scroll, not an instant jump (except reduced-motion, see below).
+- Hide when scrolled to the very bottom (the duplicate bottom nav is right there).
+
+**Placement / sizing:**
+- Bottom-right, in the thumb zone, with margin from edges so it clears the
+  phone's system gesture bar.
+- Touch target >= ~44px.
+- Must not overlap/obscure the gale/wind warning banner, bottom nav, or any
+  interactive content.
+
+**Visual:**
+- Match site palette + light/dark theme (use existing theme vars) — should read
+  as part of the site, not a bolted-on widget. Subtle shadow / semi-transparent
+  bg so it stays legible over both the dark hero photo and lighter content.
+- Upward arrow / clean "↑", no text label. Gentle fade/slide transition,
+  nothing flashy.
+
+**Accessibility:**
+- Accessible label (e.g. "Back to top"). Keyboard-focusable, activates on click
+  and keyboard. Respect `prefers-reduced-motion`: skip smooth scroll, just jump.
+- Honor the no-`onclick`-property ESLint rule — use `addEventListener`.
+
+**Priority:** Low-medium. Confirmed no global back-to-top exists today (only
+section-scroll helpers in main.js/stations-map.js). Mobile nav is sticky now but
+does NOT replace this (nav reach vs. return-to-top on long pages).
+
+---
+
+### Tighten Graph Margins (Buoys page + audit others)
+
+Real estate is at a premium — the graphs need all the space they can get to
+breathe.
+
+- Start with the **buoys page** (`site/index.html` / `site/assets/js/main.js`
+  charts): trim padding/margins around the ECharts plots (grid `left/right/top/
+  bottom`, container padding, surrounding card margins).
+- Then **inspect the other chart pages** (tides, winds, forecasts, storm surge,
+  lightstations) for the same margin-reduction opportunities — apply where the
+  layout allows without clipping axis labels / legends.
+- Keep it consistent: prefer a shared pattern (e.g. `chart-utils-v4.js`) over
+  per-page one-offs so the tightening doesn't drift between pages.
+
+**Priority:** Medium.
+
+---
+
 ### Dev Branch + Preview Subdomain
 
 **Goal:** Use a `dev` branch for work-in-progress and serve it at `dev.halibutbank.ca` for visual QA before merging to production.
