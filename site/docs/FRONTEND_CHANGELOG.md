@@ -4,6 +4,39 @@ UI/UX enhancements and feature history for halibutbank.ca. Entries are newest-fi
 
 ---
 
+## 2026-06-21: Mobile Hamburger Nav
+
+Replaced the mobile (`<=600px`) navigation. It had churned through two weak
+patterns — a horizontal scroller (hid off-screen links) and a wrapping grid
+(consumed ~half the viewport) — neither of which fit 7 links + the theme toggle
+in one slim row.
+
+**New design:** a slim sticky bar carrying the brand ("Halibut Bank", left), the
+theme toggle (one-tap, no menu needed), and a hamburger button (right). The 7
+links live in an overlay drawer that slides down from below the bar. Desktop nav
+is unchanged (brand + hamburger are `display:none` above 600px).
+
+**Details:**
+- Drawer is collapsed via `max-height`/`visibility`, revealed by toggling
+  `.main-nav.nav-open`. Translucent gradient background (`--nav-drawer-bg`,
+  ~0.9 alpha) + `backdrop-filter: blur(10px)` so content faintly shows through.
+- Hamburger bars morph to an X when open. Mobile nav `z-index: 1000` so the
+  drawer overlays the Leaflet map.
+- Closes on link tap / outside tap / Esc / second hamburger tap. Open/close
+  listeners re-query the nav so they survive HTMX fragment swaps; per-element
+  wiring guarded by `dataset.bound`.
+
+**Files modified:**
+- `components/nav.html` (markup: brand + hamburger; `.nav-actions` pulled out of
+  `.nav-scroll`)
+- `assets/css/nav-tide-styles-v4.css` (slim bar + drawer; `--nav-drawer-bg` vars)
+- `assets/js/nav.js` (`initHamburger()`)
+- Cache-bust to `?v=20260621d`
+
+**Follow-up parked in TODO:** a floating back-to-top button.
+
+---
+
 ## 2026-02-24: Bug Fixes & Housekeeping
 
 ### Storm Surge Model Run Timezone Fix
