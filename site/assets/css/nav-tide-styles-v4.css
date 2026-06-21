@@ -4,6 +4,14 @@
 
 :root {
   --nav-background: linear-gradient(135deg, #1a365d 0%, #2c5282 50%, #1e6b8c 100%);
+  /* Drawer reuses the nav gradient but slightly translucent (frosted with a
+     backdrop blur) so page content faintly shows through when it's open. */
+  --nav-drawer-bg: linear-gradient(
+    135deg,
+    rgba(26, 54, 93, 0.9) 0%,
+    rgba(44, 82, 130, 0.9) 50%,
+    rgba(30, 107, 140, 0.9) 100%
+  );
   --nav-border-color: #4299e1;
   --nav-link-color: #ffffff;
   --nav-link-hover-bg: rgba(255, 255, 255, 0.15);
@@ -27,6 +35,12 @@
 
 [data-theme="dark"] {
   --nav-background: linear-gradient(135deg, #0b1a2b 0%, #142c46 45%, #0f3a56 100%);
+  --nav-drawer-bg: linear-gradient(
+    135deg,
+    rgba(11, 26, 43, 0.9) 0%,
+    rgba(20, 44, 70, 0.9) 45%,
+    rgba(15, 58, 86, 0.9) 100%
+  );
   --nav-border-color: #4dbdff;
   --nav-link-hover-bg: rgba(255, 255, 255, 0.18);
   --nav-link-active-bg: rgba(77, 189, 255, 0.25);
@@ -94,6 +108,13 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+/* Brand + hamburger are mobile-only; hidden on desktop so the bar lays out
+   exactly as before (centered links + actions on the right). */
+.nav-brand,
+.nav-toggle {
+  display: none;
 }
 
 .nav-clock {
@@ -198,121 +219,140 @@
   }
 }
 
-/* Mobile - collapse to a single sticky slim row. The links AND the theme toggle
-   share one horizontal scroller (.nav-scroll), so the toggle sits at the far
-   right *end of the row* (scrolls into view) rather than pinned to the screen
-   edge. The scroll + fade live on .nav-scroll, not the sticky .main-nav, so the
-   fade mask can't lag behind the sticky bar during vertical scroll, and it fades
-   into .main-nav's opaque blue background rather than the page behind it. */
+/* Mobile - collapse the links into a hamburger drawer. The slim sticky bar
+   carries only the brand (left), the theme toggle (one-tap, no menu needed),
+   and the hamburger button (right). The 7 links live in .nav-scroll, which
+   becomes an overlay drawer anchored below the bar — collapsed by default,
+   revealed by toggling .nav-open on .main-nav (handled in nav.js). This keeps
+   the resting bar to a single slim row while every destination stays reachable.
+   The clock remains display:none on mobile. */
 @media (max-width: 600px) {
   .main-nav {
     position: sticky;
     top: 0;
-    z-index: 200;
+    z-index: 1000; /* drawer overlays the map/page when open */
     flex-wrap: nowrap;
     justify-content: flex-start;
-    gap: 0.3rem;
-    padding: 0.35rem 0.4rem;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.6rem; /* slim sticky bar */
   }
 
+  /* Brand sits at the far left; margin-right:auto pushes the toggle +
+     hamburger to the right edge as a group. */
+  .nav-brand {
+    display: inline-flex;
+    align-items: center;
+    margin-right: auto;
+    color: var(--nav-link-color);
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.2px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  /* Hamburger button (three bars that morph to an X when open). */
+  .nav-toggle {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: var(--theme-toggle-bg);
+    cursor: pointer;
+  }
+
+  .nav-toggle:hover {
+    background: var(--theme-toggle-hover-bg);
+  }
+
+  .nav-toggle:focus-visible {
+    outline: 2px solid var(--theme-toggle-focus);
+    outline-offset: 2px;
+  }
+
+  .nav-toggle-bar {
+    display: block;
+    width: 20px;
+    height: 2px;
+    margin: 0 auto;
+    background: var(--nav-link-color);
+    border-radius: 2px;
+    transition: transform 0.25s ease, opacity 0.2s ease;
+  }
+
+  .main-nav.nav-open .nav-toggle-bar:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+
+  .main-nav.nav-open .nav-toggle-bar:nth-child(2) {
+    opacity: 0;
+  }
+
+  .main-nav.nav-open .nav-toggle-bar:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  /* Drawer: overlays just below the slim bar, collapsed until .nav-open. */
   .nav-scroll {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--nav-drawer-bg);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom: 3px solid var(--nav-border-color);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+    padding: 0.4rem;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transition: max-height 0.28s ease, opacity 0.2s ease, visibility 0.28s;
+  }
+
+  .main-nav.nav-open .nav-scroll {
+    max-height: 80vh;
+    overflow-y: auto;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Links stack vertically inside the drawer, each a full-width tap target. */
+  .nav-links {
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    gap: 0.25rem;
+  }
+
+  .nav-link {
     display: flex;
     align-items: center;
-    flex: 1 1 auto;
-    min-width: 0; /* allow shrink below content width so it can scroll */
-    gap: 0.3rem;
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch; /* momentum scrolling on iOS */
-    scrollbar-width: none; /* Firefox - hide scrollbar */
+    min-height: 44px; /* Accessible touch target */
+    padding: 0.6rem 0.85rem;
+    font-size: 0.95rem;
+    border-radius: 6px;
   }
 
-  .nav-scroll::-webkit-scrollbar {
-    display: none; /* Chrome/Safari - hide scrollbar */
-  }
-
-  /* Fade the edge that has more scrollable content, so the off-screen items are
-     discoverable. Classes are toggled from nav.js based on scroll position. */
-  .nav-scroll.can-scroll-right {
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-  }
-
-  .nav-scroll.can-scroll-left {
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 28px);
-    mask-image: linear-gradient(to right, transparent, #000 28px);
-  }
-
-  .nav-scroll.can-scroll-left.can-scroll-right {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent,
-      #000 28px,
-      #000 calc(100% - 28px),
-      transparent
-    );
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      #000 28px,
-      #000 calc(100% - 28px),
-      transparent
-    );
-  }
-
-  .nav-links {
-    flex: 0 0 auto;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    gap: 0.3rem;
-  }
-
+  /* Theme toggle stays on the slim bar (one-tap), not in the drawer. */
   .nav-actions {
-    flex: 0 0 auto; /* Toggle rides at the end of the scroll row */
+    flex: 0 0 auto;
   }
 
   .theme-toggle {
-    min-height: 44px; /* Accessible touch target */
+    min-height: 36px;
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
     white-space: nowrap;
-  }
-
-  .nav-link {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    /* Keep touch targets >= 44px tall for accessibility */
-    min-height: 44px;
-    padding: 0.55rem 0.7rem;
-    font-size: 0.85rem;
-    border-radius: 4px;
-  }
-}
-
-/* Small mobile screens - even tighter */
-@media (max-width: 480px) {
-  .main-nav {
-    gap: 0.25rem;
-    padding: 0.35rem;
-  }
-
-  .nav-link {
-    padding: 0.5rem 0.6rem;
-    font-size: 0.85rem;
-    border-radius: 3px;
-  }
-}
-
-/* Extra small screens - minimal padding */
-@media (max-width: 380px) {
-  .main-nav {
-    gap: 0.2rem;
-    padding: 0.3rem;
-  }
-
-  .nav-link {
-    padding: 0.45rem 0.5rem;
-    font-size: 0.8rem;
-    border-radius: 3px;
   }
 }
 

@@ -1,5 +1,6 @@
 <nav class="main-nav">
-  <div class="nav-scroll">
+  <a href="/" class="nav-brand" aria-label="Halibut Bank home">Halibut Bank</a>
+  <div class="nav-scroll" id="nav-menu">
     <div class="nav-links">
       <a href="/" class="nav-link" data-page="buoys">Buoys</a>
       <a href="/tides.html" class="nav-link" data-page="tides">Tides</a>
@@ -9,14 +10,24 @@
       <a href="/webcams.html" class="nav-link" data-page="webcams">Webcams</a>
       <a href="/lightstations.html" class="nav-link" data-page="lightstations">Lightstations</a>
     </div>
-    <div class="nav-actions">
-      <button class="theme-toggle" aria-label="Toggle dark mode">
-        <span class="theme-toggle-icon">☀</span>
-        <span class="theme-toggle-text">Light</span>
-      </button>
-      <div class="nav-clock" id="nav-clock"></div>
-    </div>
   </div>
+  <div class="nav-actions">
+    <button class="theme-toggle" aria-label="Toggle dark mode">
+      <span class="theme-toggle-icon">☀</span>
+      <span class="theme-toggle-text">Light</span>
+    </button>
+    <div class="nav-clock" id="nav-clock"></div>
+  </div>
+  <button
+    class="nav-toggle"
+    aria-label="Open navigation menu"
+    aria-controls="nav-menu"
+    aria-expanded="false"
+  >
+    <span class="nav-toggle-bar"></span>
+    <span class="nav-toggle-bar"></span>
+    <span class="nav-toggle-bar"></span>
+  </button>
 </nav>
 
-<script src="/assets/js/nav.js?v=20260621"></script>
+<script src="/assets/js/nav.js?v=20260621d"></script>

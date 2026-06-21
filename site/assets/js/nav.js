@@ -30,43 +30,6 @@
     return activeLink;
   }
 
-  // On the mobile single-row nav, make the horizontal overflow discoverable:
-  // scroll the active tab into view (so the current page is never hidden off the
-  // right edge) and toggle a fade hint while more content sits past an edge. The
-  // scroller is .nav-links (not the sticky .main-nav) so the fade mask repaints
-  // in step with vertical scroll instead of lagging behind the sticky bar.
-  function initScrollHints(activeLink) {
-    const scroller = document.querySelector(".nav-scroll");
-    if (!scroller) return;
-
-    const updateHints = () => {
-      const scrollable = scroller.scrollWidth - scroller.clientWidth > 1;
-      scroller.classList.toggle("can-scroll-left", scrollable && scroller.scrollLeft > 1);
-      scroller.classList.toggle(
-        "can-scroll-right",
-        scrollable && scroller.scrollLeft < scroller.scrollWidth - scroller.clientWidth - 1,
-      );
-    };
-
-    // Centre the active tab without scrolling the page (no scrollIntoView).
-    if (activeLink && scroller.scrollWidth > scroller.clientWidth) {
-      const linkRect = activeLink.getBoundingClientRect();
-      const scrollerRect = scroller.getBoundingClientRect();
-      const target =
-        scroller.scrollLeft +
-        (linkRect.left - scrollerRect.left) -
-        (scroller.clientWidth - linkRect.width) / 2;
-      scroller.scrollLeft = Math.max(0, target);
-    }
-
-    if (!scroller.dataset.scrollHintsBound) {
-      scroller.dataset.scrollHintsBound = "true";
-      scroller.addEventListener("scroll", updateHints, { passive: true });
-      window.addEventListener("resize", updateHints);
-    }
-    updateHints();
-  }
-
   function initClock() {
     if (window._navClockStarted) return;
     window._navClockStarted = true;
@@ -154,11 +117,66 @@
     }
   }
 
+  function initHamburger() {
+    const nav = document.querySelector(".main-nav");
+    const button = document.querySelector(".nav-toggle");
+
+    // Per-element wiring (re-runs safely after each HTMX nav swap).
+    if (nav && button && !button.dataset.bound) {
+      button.dataset.bound = "true";
+
+      const setOpen = (open) => {
+        nav.classList.toggle("nav-open", open);
+        button.setAttribute("aria-expanded", open ? "true" : "false");
+      };
+
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setOpen(!nav.classList.contains("nav-open"));
+      });
+
+      // Tapping a destination closes the drawer.
+      nav.querySelectorAll(".nav-link").forEach((link) => {
+        link.addEventListener("click", () => setOpen(false));
+      });
+    }
+
+    // Document-level listeners bind once; they re-query the current nav so they
+    // keep working across HTMX fragment swaps.
+    if (!window._navHamburgerGlobal) {
+      window._navHamburgerGlobal = true;
+
+      const closeMenu = () => {
+        const currentNav = document.querySelector(".main-nav");
+        const currentButton = document.querySelector(".nav-toggle");
+        if (currentNav && currentNav.classList.contains("nav-open")) {
+          currentNav.classList.remove("nav-open");
+          if (currentButton) currentButton.setAttribute("aria-expanded", "false");
+        }
+      };
+
+      document.addEventListener("click", (event) => {
+        const currentNav = document.querySelector(".main-nav");
+        if (
+          currentNav &&
+          currentNav.classList.contains("nav-open") &&
+          !currentNav.contains(event.target)
+        ) {
+          closeMenu();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeMenu();
+      });
+    }
+  }
+
   function initNav() {
-    const activeLink = highlightActivePage();
-    initScrollHints(activeLink);
+    highlightActivePage();
     initClock();
     initThemeToggle();
+    initHamburger();
   }
 
   setTimeout(initNav, 0);
