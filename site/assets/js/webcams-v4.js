@@ -445,7 +445,7 @@ function createSimpleWaveDisplay(data) {
     <span class="wave-icon">🌊</span>
     <div class="wave-details">
       <span class="wave-height">${data.wave_height_sig.toFixed(2)}m</span>
-      ${data.wave_period_avg ? `<span class="wave-period">@ ${data.wave_period_avg.toFixed(1)}s</span>` : ""}
+      ${data.wave_period_sig ? `<span class="wave-period">@ ${data.wave_period_sig.toFixed(1)}s</span>` : ""}
     </div>
   `,
   );
