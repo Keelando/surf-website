@@ -76,6 +76,13 @@
   transition: all 0.3s ease;
 }
 
+/* Wrapper around the links + actions. On desktop it's transparent to layout
+   (display: contents) so the bar lays out exactly as before; on mobile it
+   becomes the horizontal scroller that carries the edge-fade affordance. */
+.nav-scroll {
+  display: contents;
+}
+
 .nav-links {
   display: flex;
   justify-content: center;
@@ -191,8 +198,12 @@
   }
 }
 
-/* Mobile - collapse to a single sticky, horizontally-scrolling row so the nav
-   only ever occupies one slim row and pushes the hero/data up. */
+/* Mobile - collapse to a single sticky slim row. The links AND the theme toggle
+   share one horizontal scroller (.nav-scroll), so the toggle sits at the far
+   right *end of the row* (scrolls into view) rather than pinned to the screen
+   edge. The scroll + fade live on .nav-scroll, not the sticky .main-nav, so the
+   fade mask can't lag behind the sticky bar during vertical scroll, and it fades
+   into .main-nav's opaque blue background rather than the page behind it. */
 @media (max-width: 600px) {
   .main-nav {
     position: sticky;
@@ -202,14 +213,51 @@
     justify-content: flex-start;
     gap: 0.3rem;
     padding: 0.35rem 0.4rem;
+  }
+
+  .nav-scroll {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0; /* allow shrink below content width so it can scroll */
+    gap: 0.3rem;
     overflow-x: auto;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch; /* momentum scrolling on iOS */
     scrollbar-width: none; /* Firefox - hide scrollbar */
   }
 
-  .main-nav::-webkit-scrollbar {
+  .nav-scroll::-webkit-scrollbar {
     display: none; /* Chrome/Safari - hide scrollbar */
+  }
+
+  /* Fade the edge that has more scrollable content, so the off-screen items are
+     discoverable. Classes are toggled from nav.js based on scroll position. */
+  .nav-scroll.can-scroll-right {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+
+  .nav-scroll.can-scroll-left {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 28px);
+    mask-image: linear-gradient(to right, transparent, #000 28px);
+  }
+
+  .nav-scroll.can-scroll-left.can-scroll-right {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 28px,
+      #000 calc(100% - 28px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 28px,
+      #000 calc(100% - 28px),
+      transparent
+    );
   }
 
   .nav-links {
@@ -220,7 +268,7 @@
   }
 
   .nav-actions {
-    flex: 0 0 auto; /* Light/Dark toggle rides in the same scroll row */
+    flex: 0 0 auto; /* Toggle rides at the end of the scroll row */
   }
 
   .theme-toggle {

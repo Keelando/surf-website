@@ -27,6 +27,13 @@
   --map-popup-shadow: 0 8px 26px rgba(0, 0, 0, 0.65);
 }
 
+/* Confine Leaflet's internal z-indexes (zoom control = 1000, panes, popups) to
+   the map's own stacking context so they can't render above the page nav, which
+   sits at z-index 100. Covers every map (stations, winds, lightstations). */
+.leaflet-container {
+  isolation: isolate;
+}
+
 /* Brighten the map tiles slightly */
 .leaflet-tile {
   filter: brightness(1.15) contrast(0.95);

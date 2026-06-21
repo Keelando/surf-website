@@ -18,13 +18,53 @@
     else if (path.includes("forecasts")) activePage = "forecasts";
     else if (path.includes("storm_surge")) activePage = "storm_surge";
 
+    let activeLink = null;
     document.querySelectorAll(".nav-link").forEach((link) => {
       if (link.dataset.page === activePage) {
         link.classList.add("active");
+        activeLink = link;
       } else {
         link.classList.remove("active");
       }
     });
+    return activeLink;
+  }
+
+  // On the mobile single-row nav, make the horizontal overflow discoverable:
+  // scroll the active tab into view (so the current page is never hidden off the
+  // right edge) and toggle a fade hint while more content sits past an edge. The
+  // scroller is .nav-links (not the sticky .main-nav) so the fade mask repaints
+  // in step with vertical scroll instead of lagging behind the sticky bar.
+  function initScrollHints(activeLink) {
+    const scroller = document.querySelector(".nav-scroll");
+    if (!scroller) return;
+
+    const updateHints = () => {
+      const scrollable = scroller.scrollWidth - scroller.clientWidth > 1;
+      scroller.classList.toggle("can-scroll-left", scrollable && scroller.scrollLeft > 1);
+      scroller.classList.toggle(
+        "can-scroll-right",
+        scrollable && scroller.scrollLeft < scroller.scrollWidth - scroller.clientWidth - 1,
+      );
+    };
+
+    // Centre the active tab without scrolling the page (no scrollIntoView).
+    if (activeLink && scroller.scrollWidth > scroller.clientWidth) {
+      const linkRect = activeLink.getBoundingClientRect();
+      const scrollerRect = scroller.getBoundingClientRect();
+      const target =
+        scroller.scrollLeft +
+        (linkRect.left - scrollerRect.left) -
+        (scroller.clientWidth - linkRect.width) / 2;
+      scroller.scrollLeft = Math.max(0, target);
+    }
+
+    if (!scroller.dataset.scrollHintsBound) {
+      scroller.dataset.scrollHintsBound = "true";
+      scroller.addEventListener("scroll", updateHints, { passive: true });
+      window.addEventListener("resize", updateHints);
+    }
+    updateHints();
   }
 
   function initClock() {
@@ -115,7 +155,8 @@
   }
 
   function initNav() {
-    highlightActivePage();
+    const activeLink = highlightActivePage();
+    initScrollHints(activeLink);
     initClock();
     initThemeToggle();
   }

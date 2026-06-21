@@ -32,8 +32,13 @@ function renderHeroConditions(buoy) {
   const dash = "—";
   // Wind speed/gust are already in knots in the JSON — display as-is, rounded.
   const fmtKt = (v) => (v == null ? dash : `${Math.round(v)} kt`);
-  // Period: average, falling back to peak — matches the buoy card convention.
-  const period = buoy.wave_period_avg ?? buoy.wave_period_peak;
+  // Period: significant period (EC publishes it under two SWOB names), falling
+  // back to avg then peak — matches the EC buoy card convention.
+  const period =
+    buoy.wave_period_sig ??
+    buoy.wave_period_sig_basic ??
+    buoy.wave_period_avg ??
+    buoy.wave_period_peak;
 
   const stat = (label, value) =>
     `<div class="hero-stat"><span class="hero-stat-label">${label}</span>` +
@@ -49,14 +54,23 @@ function renderHeroConditions(buoy) {
     buoy.wind_direction != null ? getDirectionalArrow(buoy.wind_direction, "wind") : "";
   const windDirValue = `${windCardinal}${windArrow}`;
 
+  // Wave direction: cardinal + arrow, peak falling back to avg — matches the EC
+  // buoy card convention.
+  const waveCardinal =
+    buoy.wave_direction_peak_cardinal ?? buoy.wave_direction_avg_cardinal ?? dash;
+  const waveDirDeg = buoy.wave_direction_peak ?? buoy.wave_direction_avg;
+  const waveArrow = waveDirDeg != null ? getDirectionalArrow(waveDirDeg, "wave") : "";
+  const waveDirValue = `${waveCardinal}${waveArrow}`;
+
   const stationName = buoy.name || "Halibut Bank";
 
   el.innerHTML = `
     <div class="hero-station">${stationName} · live conditions</div>
     <div class="hero-cond-group">
       <span class="hero-group-label">Waves</span>
+      ${stat("Direction", waveDirValue)}
       ${stat("Sig. height", buoy.wave_height_sig != null ? `${buoy.wave_height_sig} m` : dash)}
-      ${stat("Period", period != null ? `${period} s` : dash)}
+      ${stat("Sig. period", period != null ? `${period} s` : dash)}
     </div>
     <div class="hero-cond-group">
       <span class="hero-group-label">Wind</span>
