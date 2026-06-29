@@ -105,7 +105,7 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 0.4rem;
-      max-width: 500px;
+      max-width: 680px;
       margin: 1rem 0;
       font-size: 0.9rem;
     }
@@ -118,20 +118,117 @@
       display: flex;
       gap: 0.4rem;
       min-width: 0;
-      overflow: hidden;
+      align-items: baseline;
     }
 
     .compass-grid .compass-label {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: normal;
       min-width: 0;
     }
 
     @media (max-width: 600px) {
+      /* Give the content area more room so tables fit the screen */
+      .guide-wrap {
+        padding: 0 0.85rem 3rem;
+      }
+
+      /* Reflow data tables into stacked cards so descriptions get the
+         full screen width instead of being squished into narrow columns */
+      .table-scroll {
+        overflow-x: visible;
+      }
+
+      .conv-table,
+      .sea-table,
+      .label-table {
+        font-size: 0.92rem;
+        width: 100%;
+        border: none;
+      }
+
+      .conv-table thead,
+      .sea-table thead,
+      .label-table thead {
+        display: none;
+      }
+
+      .conv-table tr,
+      .sea-table tr,
+      .label-table tr {
+        display: block;
+        margin-bottom: 0.55rem;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--color-border-light);
+        border-radius: 6px;
+        background: var(--color-surface-alt);
+      }
+
+      .conv-table td,
+      .sea-table td,
+      .label-table td,
+      .conv-table tr:nth-child(even) td,
+      .sea-table tr:nth-child(even) td,
+      .label-table tr:nth-child(even) td {
+        display: block;
+        padding: 0;
+        border: none;
+        background: none;
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      /* conv-table: "5 kt · 9 km/h · 6 mph" header, then description */
+      .conv-table td:nth-child(1),
+      .conv-table td:nth-child(2),
+      .conv-table td:nth-child(3) {
+        display: inline;
+        font-weight: 600;
+        color: var(--color-primary-dark);
+      }
+
+      .conv-table td:nth-child(2)::before,
+      .conv-table td:nth-child(3)::before {
+        content: " = ";
+        font-weight: 400;
+        color: var(--color-text);
+      }
+
+      .conv-table td:nth-child(4) {
+        margin-top: 0.3rem;
+      }
+
+      /* sea-table: "0 – 0.1 m — Glassy / calm" header, then description */
+      .sea-table td:nth-child(1),
+      .sea-table td:nth-child(2) {
+        display: inline;
+        font-weight: 600;
+        color: var(--color-primary-dark);
+      }
+
+      .sea-table td:nth-child(2)::before {
+        content: " — ";
+        font-weight: 400;
+        color: var(--color-text);
+      }
+
+      .sea-table td:nth-child(3) {
+        margin-top: 0.3rem;
+      }
+
+      /* label-table: bold label, then description below */
+      .label-table td:first-child {
+        width: auto;
+        white-space: normal;
+        margin-bottom: 0.2rem;
+      }
+
       .compass-grid {
         grid-template-columns: repeat(2, 1fr);
         font-size: 0.85rem;
+      }
+
+      .compass-abbr {
+        width: 2.2rem;
       }
     }
 
@@ -259,7 +356,16 @@
       <div><span class="compass-abbr">NNW</span><span class="compass-label">North-northwest</span></div>
     </div>
 
-    <p>On the map, arrows point toward the direction the wind or waves are moving (away from their source).</p>
+    <h3>Reading the Direction Arrows on the Map</h3>
+
+    <p>Because wind and swell directions are reported as where they come <em>from</em>, the arrows on the map point the <strong>opposite</strong> way — in the direction the wind or waves are actually travelling (away from their source). The arrow shows you which way it's headed, not where it came from.</p>
+
+    <div class="callout">
+      <strong>Example 1 — WNW wind:</strong> a "WNW wind" comes <em>from</em> the west-northwest, so the arrow points toward the <strong>ESE</strong> (east-southeast): <span class="dir-arrow" data-dir="292.5" data-type="wind"></span><br />
+      <strong>Example 2 — SE swell:</strong> a "SE swell" arrives <em>from</em> the southeast, so the arrow points toward the <strong>NW</strong> (northwest): <span class="dir-arrow" data-dir="135" data-type="wave"></span>
+    </div>
+
+    <p>In short: read the label for where it's coming from, and follow the arrow for where it's going.</p>
     <!-- ── 3. Wave height / sea state ────────────────────────────── -->
     <h2>3. Wave Height and Sea State</h2>
 
@@ -277,7 +383,7 @@
         <tr><td>1.0 – 2.0 m</td><td>Moderate</td><td>Noticeable rolling motion; waves may break on sandy beaches</td></tr>
         <tr><td>2.0 – 4.0 m</td><td>Rough</td><td>Large waves, spray; small craft should use caution</td></tr>
         <tr><td>4.0 – 6.0 m</td><td>Very rough</td><td>Very large waves; challenging for all but large vessels</td></tr>
-        <tr><td>&gt; 6.0 m</td><td>High / phenomenal</td><td>Extreme open-ocean conditions; rarely seen in the Salish Sea</td></tr>
+        <tr><td>&gt; 6.0 m</td><td>High / phenomenal</td><td>Extreme open-ocean conditions; effectively never seen in the Salish Sea</td></tr>
       </tbody>
     </table>
     </div>
@@ -349,6 +455,8 @@
 
   <div hx-get="/components/footer.html?v=3" hx-trigger="load" hx-swap="outerHTML"></div>
 
+  <script src="/assets/js/chart-utils-v4.js?v=20260413"></script>
+  <script src="/assets/js/guide.js?v=20260629"></script>
   <script src="/assets/vendor/htmx.min.js"></script>
 </body>
 </html>
