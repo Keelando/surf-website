@@ -20,7 +20,7 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/tides.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20260703b" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20260703c" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=20260621d" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=20260618" />
   <script src="/assets/vendor/echarts.min.js"></script>
@@ -48,9 +48,11 @@
 
   <div hx-get="/components/header-tides.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 80px;"></div>
 
+  <main>
+
   <div hx-get="/components/tagline-tides.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
 
-  <main class="tide-main-content">
+  <div class="tide-main-content">
     
     <!-- Station Selector -->
     <section class="tide-selector-section">
@@ -156,10 +158,12 @@
       <a href="javascript:void(0)" class="show-tide-on-map-btn" style="margin-left: 1rem; padding: 0.5rem 1rem; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
     </section>
 
-  </main>
+  </div>
 
   <!-- About Section -->
   <div hx-get="/components/about-tides.html?v=1" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  </main>
 
   <!-- Navigation (Bottom) -->
   <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>

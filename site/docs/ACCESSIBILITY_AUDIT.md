@@ -49,6 +49,14 @@ All **serious/critical** axe violations cleared — 169 colour-contrast nodes an
 
 Dark-theme accents/muted text already passed and were left alone.
 
+**Also fixed 2026-07-03 (follow-up):** every public page's content is now
+wrapped in a `<main>` landmark (taglines and About included; header/nav/footer
+stay top-level landmarks). Pages that had a *styled* `<main class="...">` kept
+the styling on a demoted `<div>` so layout is unchanged. This cleared the
+"region" rule (980 flagged nodes → 0 — axe counts every top-level element
+outside a landmark, so the winds station table alone contributed ~350×2
+themes) and "landmark-one-main" for all pages except analytics.html.
+
 ---
 
 ## Remaining scope (medium priority)
@@ -56,36 +64,33 @@ Dark-theme accents/muted text already passed and were left alone.
 Axe still reports these as **moderate** (all best-practice tier, not WCAG
 failures), plus manual findings axe can't see:
 
-1. **Missing `<main>` landmark** — winds, lightstations, webcams, guide,
-   analytics. Related "region" rule counts ~980 nodes outside landmarks
-   (winds alone ~350). Wrapping page content in `<main>` clears both rules.
-2. **Duplicate identical `<nav>` landmarks** — `components/nav.html` is
+1. **Duplicate identical `<nav>` landmarks** — `components/nav.html` is
    injected at top and bottom of every page with no distinguishing label.
    Cheapest fix in `nav.js`: `aria-label="Footer navigation"` on the second
    instance.
-3. **No skip link** — keyboard users tab through brand + 7 links + toggles on
+2. **No skip link** — keyboard users tab through brand + 7 links + toggles on
    every page before content. Add a visually-hidden "Skip to main content"
-   link (pairs with fix 1).
-4. **ECharts charts have no text alternative** — bare canvas. ECharts ships
+   link (link it to each page's `<main>`).
+3. **ECharts charts have no text alternative** — bare canvas. ECharts ships
    `aria: { enabled: true }` which auto-generates a description from series
    data; enable it in the shared chart config.
-5. **Current page not announced** — `nav.js` adds `.active` class only; add
+4. **Current page not announced** — `nav.js` adds `.active` class only; add
    `aria-current="page"` alongside.
 
 ## Remaining scope (low priority)
 
-6. **Heading-order skips** — `<h4>` directly under `<h2>`: forecasts
+5. **Heading-order skips** — `<h4>` directly under `<h2>`: forecasts
    ("Sunday"), guide ("Data Sources").
-7. **`#tide-station-select:focus`** removes the outline, replacement
+6. **`#tide-station-select:focus`** removes the outline, replacement
    box-shadow is 10% alpha (`nav-tide-styles-v4.css` ~line 690) — effectively
    invisible focus. Only `outline: none` in the codebase.
-8. **analytics.html** — no `<h1>`/`<main>` (internal, noindex; optional).
-9. **No `prefers-reduced-motion` handling** — only the nav drawer slide
+7. **analytics.html** — no `<h1>`/`<main>` (internal, noindex; optional).
+8. **No `prefers-reduced-motion` handling** — only the nav drawer slide
    really moves; low stakes.
 
 ## Explicitly out of scope / accepted
 
 - Leaflet map tiles stay light in dark mode (existing accepted trade-off).
 - Chart series colours on canvas (axe doesn't evaluate; ECharts `aria` option
-  in item 4 is the mitigation).
+  in item 3 is the mitigation).
 - Decorative SVG fills in legend icons (not text).

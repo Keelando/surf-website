@@ -401,7 +401,7 @@ footer .github-link:hover {
 /* Subtle darken on hover; a filter keeps the on-primary text readable in
    both themes (a swapped darker gradient broke dark mode's navy text). */
 .region-header:hover {
-  filter: brightness(0.95);
+  filter: brightness(0.9);
 }
 
 .region-toggle-btn {
