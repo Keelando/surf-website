@@ -393,17 +393,15 @@ footer .github-link:hover {
   text-align: left;
   box-shadow: 0 2px 6px rgba(0,75,124,0.2);
   transition:
-    background 0.2s ease,
+    filter 0.2s ease,
     color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
+/* Subtle darken on hover; a filter keeps the on-primary text readable in
+   both themes (a swapped darker gradient broke dark mode's navy text). */
 .region-header:hover {
-  background: linear-gradient(
-    to right,
-    var(--color-primary-hover-start),
-    var(--color-primary-hover-end)
-  );
+  filter: brightness(0.95);
 }
 
 .region-toggle-btn {
