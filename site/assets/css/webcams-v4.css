@@ -7,11 +7,12 @@
   --webcam-primary: #2c5282;
   --webcam-primary-light: #2b6cb0;
   --webcam-primary-dark: #2a4a75;
-  --webcam-accent: #4299e1;
-  --webcam-accent-hover: #3182ce;
+  --webcam-accent: #2b6cb0;
+  --webcam-accent-hover: #2c5282;
+  --webcam-on-primary: #ffffff;
   --webcam-text: #4a5568;
-  --webcam-text-muted: #718096;
-  --webcam-text-light: #9ca3af;
+  --webcam-text-muted: #5a6b7f;
+  --webcam-text-light: #5f6d7e;
   --webcam-bg: #f7fafc;
   --webcam-bg-alt: #edf2f7;
   --webcam-border: #e2e8f0;
@@ -33,6 +34,8 @@
   --webcam-primary-dark: #3878c2;
   --webcam-accent: #6fc8ff;
   --webcam-accent-hover: #8ed8ff;
+  /* Dark navy on the light-blue dark-theme fills (WCAG AA) */
+  --webcam-on-primary: #0d1b2a;
   --webcam-text: #e3edf7;
   --webcam-text-muted: #9fb3c8;
   --webcam-text-light: #7f8ea3;
@@ -63,7 +66,7 @@
 
 .webcam-region-header {
   background: linear-gradient(to right, var(--webcam-primary), var(--webcam-primary-light));
-  color: white;
+  color: var(--webcam-on-primary);
   padding: 1rem 1.5rem;
   border-radius: 8px 8px 0 0;
   margin-bottom: 0;
@@ -147,7 +150,7 @@
     var(--webcam-primary-dark),
     var(--webcam-primary-light)
   );
-  color: white;
+  color: var(--webcam-on-primary);
   padding: 1rem 1.5rem;
 }
 
@@ -202,7 +205,7 @@
 
 .slideshow-nav {
   background: var(--webcam-accent);
-  color: white;
+  color: var(--webcam-on-primary);
   border: none;
   padding: 0.5rem 1rem;
   cursor: pointer;
@@ -359,7 +362,7 @@
 
 .webcam-attribution {
   background: linear-gradient(to right, var(--webcam-primary), var(--webcam-primary-light));
-  color: white;
+  color: var(--webcam-on-primary);
   padding: 0.75rem 1rem;
   margin-bottom: 0.75rem;
   border-radius: 4px;
@@ -631,7 +634,7 @@
   display: inline-block;
   padding: 0.5rem 1rem;
   background: var(--webcam-accent);
-  color: white;
+  color: var(--webcam-on-primary);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -746,7 +749,7 @@
   left: 50%;
   transform: translateX(-50%);
   background: var(--webcam-primary);
-  color: white;
+  color: var(--webcam-on-primary);
   padding: 1rem 2rem;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);

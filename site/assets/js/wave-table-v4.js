@@ -79,7 +79,7 @@ function generateWaveHeightTable(chartData) {
         <th>Southern Georgia Strait</th>
         <th>Sentry Shoal</th>
         <th>La Perouse Bank</th>
-        <th>Neah Bay<br><span style="font-size: 0.8em; font-weight: normal; color: var(--color-text-muted);">(Swell)</span></th>
+        <th>Neah Bay<br><span style="font-size: 0.8em; font-weight: normal;">(Swell)</span></th>
         <th>New Dungeness</th>
         <th>Angeles Point</th>
       </tr>

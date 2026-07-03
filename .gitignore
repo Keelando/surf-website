@@ -93,3 +93,4 @@ site/analytics-weekly.html
 site/*.log
 site/*.tmp
 site/*~
+a11y-results/

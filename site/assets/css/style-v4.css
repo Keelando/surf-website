@@ -7,7 +7,7 @@
 
   /* Primary Colors */
   --color-primary-dark: #004b7c;
-  --color-primary: #0077be;
+  --color-primary: #006daf;
   --color-primary-light: #0066a1;
   --color-primary-lighter: #005a8f;
 
@@ -26,12 +26,12 @@
   --color-text-muted: #666;
   --color-text-light: #555;
 
-  /* Accent Colors */
-  --color-accent-blue: #4299e1;
-  --color-accent-green: #43a047;
-  --color-accent-orange: #ff9800;
-  --color-accent-red: #e53935;
-  --color-accent-teal: #00897b;
+  /* Accent Colors (dark enough for 4.5:1 on light surfaces) */
+  --color-accent-blue: #2b6cb0;
+  --color-accent-green: #2e7d32;
+  --color-accent-orange: #b45309;
+  --color-accent-red: #c62828;
+  --color-accent-teal: #00796b;
   --color-accent-purple: #9c27b0;
 
   /* Spacing Scale */
@@ -70,7 +70,7 @@
   --color-tagline-border: rgba(66, 153, 225, 0.2);
   --color-tagline-shadow: rgba(0, 0, 0, 0.05);
   --color-site-intro-text: #4a5568;
-  --color-site-intro-link: #0077be;
+  --color-site-intro-link: #006daf;
   --color-site-intro-bg: rgba(224, 242, 255, 0.4);
   --color-site-intro-border: rgba(66, 153, 225, 0.15);
   --site-tagline-bg: linear-gradient(
@@ -83,8 +83,8 @@
   --color-lightstation-label-text: #2c3e50;
   --color-lightstation-label-bg: rgba(255, 255, 255, 0.9);
   --color-lightstation-label-border: rgba(0, 75, 124, 0.2);
-  --color-warning-text: #ff9800;
-  --color-error-text: #e53935;
+  --color-warning-text: #b45309;
+  --color-error-text: #c62828;
   --color-on-primary: #ffffff;
   --color-callout-info-bg: #f0f8ff;
   --color-callout-info-border: rgba(0, 75, 124, 0.2);
@@ -165,7 +165,8 @@
   --color-lightstation-label-border: rgba(0, 75, 124, 0.2);
   --color-warning-text: #fcd34d;
   --color-error-text: #ff8787;
-  --color-on-primary: #ffffff;
+  /* Dark navy on the light-blue dark-theme primary fills (WCAG AA) */
+  --color-on-primary: #0d1b2a;
   --color-callout-info-bg: rgba(21, 37, 59, 0.85);
   --color-callout-info-border: rgba(140, 190, 255, 0.32);
   --color-callout-info-divider: rgba(140, 190, 255, 0.28);
@@ -332,7 +333,7 @@ footer {
 }
 
 .status-down-list {
-  opacity: 0.7;
+  opacity: 0.85;
   font-size: 0.9em;
 }
 
@@ -385,7 +386,7 @@ footer .github-link:hover {
   margin: 0 0 1.5rem 0;
   padding: 0.75rem 1.5rem;
   background: linear-gradient(to right, var(--color-primary-dark), var(--color-primary));
-  color: white;
+  color: var(--color-on-primary);
   font-size: 1.3em;
   font-weight: bold;
   border-radius: 8px;
@@ -751,7 +752,7 @@ footer .github-link:hover {
 
 .data-table th {
   background: var(--color-primary-dark);
-  color: white;
+  color: var(--color-on-primary);
   padding: 0.75rem;
   text-align: left;
   font-weight: 600;
@@ -1404,21 +1405,22 @@ header h2 {
    Reusable Link & Button Styles
 ----------------------------- */
 
-/* GitHub link hover effect (replaces inline onmouseover/onmouseout) */
+/* GitHub link hover effect (replaces inline onmouseover/onmouseout).
+   Full opacity keeps the primary-blue text at AA contrast on light surfaces;
+   the footer variant overrides with its own opacity on a dark background. */
 .github-link {
-  opacity: 0.8;
-  transition: opacity 0.2s;
+  transition: text-decoration-color 0.2s;
 }
 
 .github-link:hover {
-  opacity: 1;
+  text-decoration: underline;
 }
 
 /* Button primary (replaces inline button styles) */
 .button-primary {
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-primary);
-  color: white;
+  color: var(--color-on-primary);
   text-decoration: none;
   border-radius: 4px;
   font-size: 0.9rem;

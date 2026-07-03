@@ -32,6 +32,12 @@
   font-size: 0.95rem;
 }
 
+/* Dark theme: the light-to-dark gradient can't satisfy contrast at both ends,
+   so use the solid primary fill that --color-on-primary is paired with. */
+[data-theme="dark"] .data-table th {
+  background: var(--color-primary-dark);
+}
+
 .data-table th.sortable {
   cursor: pointer;
   user-select: none;

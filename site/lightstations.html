@@ -20,7 +20,7 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/lightstations.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20260619" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20260703" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=20260621d" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=20260618" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=20260621" />
@@ -374,7 +374,7 @@
       <h2>Lightstation Locations</h2>
       <div class="map-legend" style="text-align: center; margin-bottom: 1rem;">
         <span class="legend-item">
-          <span class="legend-icon" aria-label="Lighthouse icon">
+          <span class="legend-icon" role="img" aria-label="Lighthouse icon">
             <svg width="16" height="18" viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
               <circle cx="14" cy="4" r="2.5" fill="#FFD700" stroke="#FFA500" stroke-width="1"/>
               <path d="M11 7 L10.5 13 L17.5 13 L17 7 Z" fill="#FFFFFF" stroke="#2c3e50" stroke-width="0.5"/>
@@ -390,7 +390,7 @@
     </section>
 
     <div id="lightstations-container">
-      <p style="text-align: center; padding: 2rem; color: #718096;">Loading lightstation data...</p>
+      <p style="text-align: center; padding: 2rem; color: var(--color-text-muted);">Loading lightstation data...</p>
     </div>
 
     <!-- Station Selector + 24-Hour Data Table -->
@@ -420,7 +420,7 @@
           </thead>
           <tbody id="lightstation-24hr-body">
             <tr>
-              <td colspan="5" style="text-align: center; padding: 2rem; color: #718096;">Select a station to view 24-hour data</td>
+              <td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">Select a station to view 24-hour data</td>
             </tr>
           </tbody>
         </table>
@@ -430,7 +430,7 @@
     <!-- Lightstation Charts Section (Optional - sparse data) -->
     <section id="lightstation-chart-section" style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem;">
       <h2>24-Hour Trend Charts</h2>
-      <p style="text-align: center; color: #718096; font-size: 0.9rem; margin-bottom: 1.5rem; font-style: italic;">
+      <p style="text-align: center; color: var(--color-text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; font-style: italic;">
         Note: Charts show limited data points due to 3-hour reporting intervals
       </p>
 
@@ -464,7 +464,7 @@
   <script src="/assets/js/sanitize-html.js?v=20260308"></script>
   <script src="/assets/js/warning-banner.js?v=20260618"></script>
   <script src="/assets/js/chart-utils-v4.js?v=20260413"></script>
-  <script src="/assets/js/lightstation-map.js?v=20260411"></script>
+  <script src="/assets/js/lightstation-map.js?v=20260703"></script>
   <script src="/assets/js/lightstation-charts.js?v=20260314"></script>
   <script src="/assets/js/lightstation-page.js?v=20260314"></script>
   <script src="/assets/vendor/htmx.min.js"></script>

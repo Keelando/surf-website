@@ -465,12 +465,13 @@ function getSpreadDescription(spread, type = "peak") {
       ? { veryGood: "very organized", good: "organized", moderate: "moderate", bad: "confused" }
       : { veryGood: "very clean", good: "clean", moderate: "mixed", bad: "messy" };
 
-  const root = getComputedStyle(document.documentElement);
+  // var() references keep the labels theme-reactive (resolved values would
+  // go stale when the user toggles dark mode after render).
   const colors = {
-    veryGood: root.getPropertyValue("--color-accent-green").trim() || "#38a169",
-    good: root.getPropertyValue("--color-accent-green").trim() || "#48bb78",
-    moderate: root.getPropertyValue("--color-accent-orange").trim() || "#d69e2e",
-    bad: root.getPropertyValue("--color-accent-red").trim() || "#e53e3e",
+    veryGood: "var(--color-accent-green, #38a169)",
+    good: "var(--color-accent-green, #48bb78)",
+    moderate: "var(--color-accent-orange, #d69e2e)",
+    bad: "var(--color-accent-red, #e53e3e)",
   };
 
   let level = "bad";

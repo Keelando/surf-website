@@ -226,7 +226,10 @@ function addLightstationMapMarker(lightstation) {
     popupAnchor: [0, -32],
   });
 
-  const marker = L.marker([lightstation.lat, lightstation.lon], { icon: icon });
+  const marker = L.marker([lightstation.lat, lightstation.lon], {
+    icon: icon,
+    title: `${lightstation.name} lightstation`,
+  });
 
   // Build popup
   let popupContent = `<div class="station-popup"><h3>${lightstation.name}</h3>`;

@@ -154,7 +154,10 @@ function addWindMarker(station, currentData, isBuoy = false) {
     popupAnchor: [0, -15],
   });
 
-  const marker = L.marker([station.lat, station.lon], { icon: icon });
+  const marker = L.marker([station.lat, station.lon], {
+    icon: icon,
+    title: `${station.name} wind station`,
+  });
 
   // Build popup with current wind data
   let popupContent = `<div class="station-popup"><h3>${station.name}</h3>`;

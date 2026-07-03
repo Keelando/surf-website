@@ -501,7 +501,10 @@ function addBuoyMarker(buoy) {
     popupAnchor: [0, -15],
   });
 
-  const marker = L.marker([buoy.lat, buoy.lon], { icon: icon });
+  const marker = L.marker([buoy.lat, buoy.lon], {
+    icon: icon,
+    title: `${buoy.name} buoy`,
+  });
 
   // Build popup with latest data at top
   let popupContent = `<div class="station-popup"><h3>${buoy.name}</h3>`;
@@ -763,7 +766,10 @@ function addTideMarker(tide, stationKey) {
     popupAnchor: [0, -12],
   });
 
-  const marker = L.marker([tide.lat, tide.lon], { icon: icon });
+  const marker = L.marker([tide.lat, tide.lon], {
+    icon: icon,
+    title: `${tide.name} tide station`,
+  });
 
   const hasObservations = tide.series && tide.series.includes("wlo");
   const stationType = hasObservations
@@ -831,7 +837,10 @@ function addLightstationMarker(lightstation) {
     popupAnchor: [0, -32],
   });
 
-  const marker = L.marker([lightstation.lat, lightstation.lon], { icon: icon });
+  const marker = L.marker([lightstation.lat, lightstation.lon], {
+    icon: icon,
+    title: `${lightstation.name} lightstation`,
+  });
 
   // Build popup
   let popupContent = `<div class="station-popup"><h3>${lightstation.name}</h3>`;
@@ -954,7 +963,10 @@ function addWebcamMarker(webcam) {
     popupAnchor: [0, -28],
   });
 
-  const marker = L.marker([webcam.lat, webcam.lon], { icon: icon });
+  const marker = L.marker([webcam.lat, webcam.lon], {
+    icon: icon,
+    title: `${webcam.name} webcam`,
+  });
 
   // Build popup
   let popupContent = `<div class="station-popup">`;

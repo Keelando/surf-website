@@ -4,6 +4,21 @@ UI/UX enhancements and feature history for halibutbank.ca. Entries are newest-fi
 
 ---
 
+## 2026-07-03: Accessibility — WCAG AA Contrast + Named Map Markers
+
+Full axe-core audit (9 pages × light/dark) — all serious/critical violations
+fixed. Light-theme accents darkened for 4.5:1 (primary `#006daf`, accent blue
+`#2b6cb0`, green `#2e7d32`, orange `#b45309`, red `#c62828`, teal `#00796b`);
+dark theme flips `--color-on-primary`/`--webcam-on-primary` to `#0d1b2a` so
+buttons/table headers are navy-on-light-blue; Leaflet markers get
+`title: "<name> <type>"` accessible names; legend icon spans get `role="img"`;
+inline hardcoded colours converted to `var(--color-*)`.
+
+Audit spec: `tests/playwright/a11y-audit.spec.js`. Findings + remaining scope:
+`site/docs/ACCESSIBILITY_AUDIT.md`. Cache-bust `?v=20260703`.
+
+---
+
 ## 2026-06-21: Mobile Hamburger Nav
 
 Replaced the mobile (`<=600px`) navigation. It had churned through two weak
