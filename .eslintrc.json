@@ -21,7 +21,9 @@
     {
       "files": [
         "site/assets/js/tides-refactored.js",
-        "site/assets/js/tides-modules/**/*.js"
+        "site/assets/js/tides-modules/**/*.js",
+        "site/assets/js/shared/**/*.js",
+        "tests/js/**/*.mjs"
       ],
       "parserOptions": {
         "sourceType": "module"
