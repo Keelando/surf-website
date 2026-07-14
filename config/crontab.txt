@@ -147,8 +147,10 @@ SURREY_API_PASSWORD=surreyrain
 
 # Git auto-backup - envcan_wave repo (07:17 UTC / 12:17am PT). Runs pre-commit
 # hooks (no --no-verify); if tests fail, commit aborts and the working tree
-# retains the staged changes for next run / manual review.
-17 7 * * * cd /home/keelando/envcan_wave && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
+# retains the staged changes for next run / manual review. Also mirrors main to
+# the local Forgejo backup (survivor.local) unconditionally — separated by ';'
+# so a down Forgejo never blocks the origin push, and vice versa.
+17 7 * * * cd /home/keelando/envcan_wave && { /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) ; /usr/bin/git push forgejo main --tags ; } >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
 
 # Sync venv with requirements.txt (07:04 UTC / 11:04pm PT, after git backup)
 18 7 * * * /home/keelando/envcan_wave/.venv/bin/pip install -q -r /home/keelando/envcan_wave/requirements.txt >> /home/keelando/envcan_wave/logs/pip_sync.log 2>&1
