@@ -1,7 +1,17 @@
 # Next Session Plan
 
-**Last updated:** 2026-02-08
+**Last updated:** 2026-07-14
 **Status:** Maintenance mode - major features complete
+
+---
+
+## 🎯 CURRENT: Maintainability Roadmap (2026-07-14)
+
+Full audit in `MAINTAINABILITY_AUDIT_2026-07-14.md`. Work through in decreasing
+priority: (1) ES-module migration + shared frontend utils, (2) oversized-function
+refactors incl. the planned buoy-card refactor, (3) unit tests for extracted helpers,
+(4) automated cache busting, (5) repo hygiene (delete `archive/`, root strays,
+naming drift, 5 Python files bypassing `lib/config.py`).
 
 ---
 
