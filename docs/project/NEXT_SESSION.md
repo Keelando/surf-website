@@ -1,6 +1,6 @@
 # Next Session Plan
 
-**Last updated:** 2026-07-14
+**Last updated:** 2026-07-15
 **Status:** Maintenance mode - major features complete
 
 ---
@@ -12,6 +12,27 @@ priority: (1) ES-module migration + shared frontend utils, (2) oversized-functio
 refactors incl. the planned buoy-card refactor, (3) unit tests for extracted helpers,
 (4) automated cache busting, (5) repo hygiene (delete `archive/`, root strays,
 naming drift, 5 Python files bypassing `lib/config.py`).
+
+### P1 progress — ES-module migration
+
+Migration status table: `site/assets/js/shared/README.md`.
+
+- ✅ Step 1 (2026-07-14, `a728deb`): `site/assets/js/shared/` created
+  (format-time, staleness, markers) + first JS unit tests —
+  `tests/js/*.test.mjs`, `npm run test:js` (node:test, no deps), 29 tests.
+- ✅ Step 2 (2026-07-15, `1a1216b`): guide, webcams, forecasts pages converted
+  to module entry points; legacy formatter + spread-vector copies deleted
+  (−117 lines). Forecasts "Issued" times now pinned to Pacific (was
+  browser-local). Note: webcams `createDirectionalArrow` is a distinct design,
+  NOT a dupe of chart-utils `getDirectionalArrow` — stays local.
+- ⏭️ Step 3: winds.html (winds-map.js + wind-stations.js) — deletes first
+  `createDirectionalMarker` copy, first real use of `stalePopupTheme`.
+- Then: Step 4 lightstations.html, Step 5 storm_surge.html, Step 6 index.html
+  (main.js — leads into P2 buoy-card refactor).
+- Convention: foundation scripts (theme-manager, logger, warning-banner, nav,
+  footer, sanitize-html, chart-utils-v4) stay classic until all pages are
+  modules; modules read their globals meanwhile. Bump `?v=` on converted
+  script tags; run format → lint → test:js → test:frontend before commit.
 
 ---
 
