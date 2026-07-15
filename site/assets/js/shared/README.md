@@ -22,17 +22,23 @@ node can import these files in tests; browsers ignore it.
 Legacy copies are deleted when their page converts to ES modules
 (page-by-page; each conversion independently shippable).
 
+Converted pages: tides (pre-existing), guide, webcams, forecasts
+(2026-07-15). Remaining: winds, lightstations, storm_surge, index.
+Foundation scripts (theme-manager, logger, warning-banner, nav, footer,
+sanitize-html, chart-utils-v4) stay classic until every consumer page is
+a module; modules may read their globals in the meantime.
+
 | Legacy copy | File | Replaced by | Status |
 |---|---|---|---|
 | `createDirectionalMarker` | `stations-map.js` | `markers.js` | pending (index.html) |
 | `createDirectionalMarker` | `winds-map.js` | `markers.js` | pending (winds.html) |
 | `createDirectionalMarker` | `lightstation-map.js` | `markers.js` | pending (lightstations.html) — converges to themed label style |
 | `createAngularSpreadVector` | `main.js` | `markers.js` | pending (index.html) |
-| `createAngularSpreadVector` | `webcams-v4.js` | `markers.js` (`...Element` variant) | pending (webcams.html) |
+| `createAngularSpreadVector` | `webcams-v4.js` | `markers.js` (`...Element` variant) | **done 2026-07-15** |
 | `DIRECTION_ARROW_PATH` | `chart-utils-v4.js` | `markers.js` | pending (all chart pages) |
 | `formatTimestamp`, `formatTimeOnly`, `formatTimeAxis` | `chart-utils-v4.js` | `format-time.js` | pending |
-| `formatTimestamp` | `forecasts.js` | `format-time.js` (`formatForecastTimestamp`) | pending — legacy used browser-local TZ; shared pins Pacific |
-| `formatTimestamp`, `formatShortTimestamp` | `webcams-v4.js` | `format-time.js` | pending |
+| `formatTimestamp` | `forecasts.js` | `format-time.js` (`formatForecastTimestamp`) | **done 2026-07-15** — legacy used browser-local TZ; shared pins Pacific |
+| `formatTimestamp`, `formatShortTimestamp` | `webcams-v4.js` | `format-time.js` | **done 2026-07-15** |
 | `formatTimestamp` | `lightstation-charts.js` | `format-time.js` (`formatNumericDayTime`) | pending |
 | `formatTime`, `getAgeString` | `tides-modules/utils.js` | `format-time.js` | pending (tides already ESM — trivial swap) |
 | stale popup colours/header (inline ×3) | `stations-map.js` ×2, `lightstation-map.js` | `staleness.js` | pending |

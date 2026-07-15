@@ -23,6 +23,9 @@
         "site/assets/js/tides-refactored.js",
         "site/assets/js/tides-modules/**/*.js",
         "site/assets/js/shared/**/*.js",
+        "site/assets/js/forecasts.js",
+        "site/assets/js/webcams-v4.js",
+        "site/assets/js/guide.js",
         "tests/js/**/*.mjs"
       ],
       "parserOptions": {

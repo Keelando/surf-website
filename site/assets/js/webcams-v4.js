@@ -1,6 +1,9 @@
 /* ==========================================================================
-   Webcams Page - Main JavaScript
+   Webcams Page - Main JavaScript (ES module)
    ========================================================================== */
+
+import { formatFullTimestamp, formatMonthDayTime } from "./shared/format-time.js";
+import { createAngularSpreadVectorElement } from "./shared/markers.js";
 
 // ==========================================================================
 // Configuration
@@ -154,30 +157,6 @@ function setSafeHTML(element, html) {
 // Utility Functions
 // ==========================================================================
 
-function formatTimestamp(isoString) {
-  return new Date(isoString).toLocaleString("en-US", {
-    timeZone: "America/Vancouver",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZoneName: "short",
-  });
-}
-
-function formatShortTimestamp(isoString) {
-  return new Date(isoString).toLocaleString("en-US", {
-    timeZone: "America/Vancouver",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
-
 function createElement(tag, className, content) {
   const el = document.createElement(tag);
   if (className) el.className = className;
@@ -252,7 +231,7 @@ async function loadWebcamMetadata(webcam, card) {
         const lastUpdate = new Date(metadata.timestamp).getTime();
         const ageMinutes = Math.round((now - lastUpdate) / (1000 * 60));
 
-        let timestampText = "Last updated: " + formatTimestamp(metadata.timestamp);
+        let timestampText = "Last updated: " + formatFullTimestamp(metadata.timestamp);
 
         if (stale) {
           const ageText = formatAge(ageMinutes);
@@ -299,97 +278,6 @@ function createDirectionalArrow(degrees, type = "wind") {
   path.setAttribute("stroke-width", "1.5");
 
   svg.appendChild(path);
-  return svg;
-}
-
-function createAngularSpreadVector(avgDirection, spread, size = 70) {
-  if (avgDirection == null || spread == null) return null;
-
-  const halfSpread = spread / 2;
-  const cx = size / 2;
-  const cy = size / 2;
-  const radius = size * 0.42;
-
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("width", size);
-  svg.setAttribute("height", size);
-  svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
-  svg.style.display = "inline-block";
-  svg.style.verticalAlign = "middle";
-  svg.style.marginLeft = "0.5rem";
-
-  // Background circle
-  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  circle.setAttribute("cx", cx);
-  circle.setAttribute("cy", cy);
-  circle.setAttribute("r", radius + 2);
-  circle.setAttribute("fill", "none");
-  circle.setAttribute("stroke", "#e0e7ee");
-  circle.setAttribute("stroke-width", "1");
-  svg.appendChild(circle);
-
-  // Spread sector arc
-  const startAngleSVG = avgDirection - halfSpread + 180 - 90;
-  const endAngleSVG = avgDirection + halfSpread + 180 - 90;
-  const startRad = (startAngleSVG * Math.PI) / 180;
-  const endRad = (endAngleSVG * Math.PI) / 180;
-  const arcRadius = radius + 2;
-
-  const x1 = cx + arcRadius * Math.cos(startRad);
-  const y1 = cy + arcRadius * Math.sin(startRad);
-  const x2 = cx + arcRadius * Math.cos(endRad);
-  const y2 = cy + arcRadius * Math.sin(endRad);
-
-  const arcPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  arcPath.setAttribute(
-    "d",
-    `M ${cx},${cy} L ${x1},${y1} A ${arcRadius},${arcRadius} 0 ${spread > 180 ? 1 : 0},1 ${x2},${y2} Z`,
-  );
-  arcPath.setAttribute("fill", "rgba(30, 136, 229, 0.15)");
-  arcPath.setAttribute("stroke", "rgba(30, 136, 229, 0.3)");
-  arcPath.setAttribute("stroke-width", "1");
-  svg.appendChild(arcPath);
-
-  // Main direction arrow
-  const arrowGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-  arrowGroup.setAttribute("transform", `rotate(${avgDirection} ${cx} ${cy})`);
-
-  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  line.setAttribute("x1", cx);
-  line.setAttribute("y1", cy - radius + 8);
-  line.setAttribute("x2", cx);
-  line.setAttribute("y2", cy + radius - 3);
-  line.setAttribute("stroke", "#1e88e5");
-  line.setAttribute("stroke-width", "2.5");
-  arrowGroup.appendChild(line);
-
-  const arrowHead = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  arrowHead.setAttribute(
-    "d",
-    `M${cx},${cy + radius + 2} L${cx - 5},${cy + radius - 8} L${cx + 5},${cy + radius - 8} Z`,
-  );
-  arrowHead.setAttribute("fill", "#1e88e5");
-  arrowGroup.appendChild(arrowHead);
-
-  svg.appendChild(arrowGroup);
-
-  // Cardinal directions
-  const addText = (x, y, text) => {
-    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    t.setAttribute("x", x);
-    t.setAttribute("y", y);
-    t.setAttribute("text-anchor", "middle");
-    t.setAttribute("font-size", "8");
-    t.setAttribute("fill", "#999");
-    t.textContent = text;
-    svg.appendChild(t);
-  };
-
-  addText(cx, 8, "N");
-  addText(size - 6, cy + 3, "E");
-  addText(cx, size - 2, "S");
-  addText(6, cy + 3, "W");
-
   return svg;
 }
 
@@ -558,7 +446,7 @@ function createDetailedWaveDisplay(data) {
 
       const peakVectorDiv = createElement("div", "wave-spread-vector");
       peakVectorDiv.appendChild(createElement("div", "wave-spread-vector-label", "Peak Spread"));
-      const peakSvg = createAngularSpreadVector(
+      const peakSvg = createAngularSpreadVectorElement(
         data.wave_direction_peak,
         data.wave_direction_spread_peak,
         70,
@@ -574,7 +462,7 @@ function createDetailedWaveDisplay(data) {
         avgVectorDiv.appendChild(
           createElement("div", "wave-spread-vector-label", "Average Spread"),
         );
-        const avgSvg = createAngularSpreadVector(
+        const avgSvg = createAngularSpreadVectorElement(
           data.wave_direction_peak,
           data.wave_direction_spread_avg,
           70,
@@ -622,7 +510,7 @@ function createConditionRow(label, data, fields) {
   // Timestamp
   if (data.observation_time) {
     dataDiv.appendChild(
-      createElement("div", "condition-timestamp", formatShortTimestamp(data.observation_time)),
+      createElement("div", "condition-timestamp", formatMonthDayTime(data.observation_time)),
     );
   }
 
@@ -778,7 +666,7 @@ async function createWebcamCard(webcam, metadata) {
     const lastUpdate = new Date(metadata.timestamp).getTime();
     const ageMinutes = Math.round((now - lastUpdate) / (1000 * 60));
 
-    let timestampText = "Last updated: " + formatTimestamp(metadata.timestamp);
+    let timestampText = "Last updated: " + formatFullTimestamp(metadata.timestamp);
 
     if (stale) {
       const ageText = formatAge(ageMinutes);
@@ -935,7 +823,7 @@ function updateSlideshowDisplay(webcamId) {
   // Update timestamp
   const timestamp = card.querySelector(".webcam-timestamp");
   if (timestamp) {
-    timestamp.textContent = "Captured: " + formatTimestamp(currentImage.timestamp);
+    timestamp.textContent = "Captured: " + formatFullTimestamp(currentImage.timestamp);
 
     // Age indicator
     let ageIndicator = card.querySelector(".slideshow-age-indicator");

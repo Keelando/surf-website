@@ -1,7 +1,12 @@
 /**
- * Marine Forecasts Page JavaScript
+ * Marine Forecasts Page JavaScript (ES module)
  * Loads and displays Environment Canada marine weather forecasts
+ *
+ * Still uses fetchWithTimeout and logger globals from the classic scripts
+ * loaded before this one (chart-utils-v4.js, logger.js).
  */
+
+import { formatForecastTimestamp } from "./shared/format-time.js";
 
 let forecastData = null;
 
@@ -203,7 +208,7 @@ function renderZoneForecast(zoneKey, zoneData) {
     const issuedDate = new Date(zoneData.issued_utc);
     html += `
       <div class="forecast-metadata">
-        <strong>Issued:</strong> ${formatTimestamp(issuedDate)}
+        <strong>Issued:</strong> ${formatForecastTimestamp(issuedDate)}
       </div>
     `;
   }
@@ -225,7 +230,7 @@ function renderWarningCard(warning) {
   let issuedText = "";
   if (warning.issued_utc) {
     const issuedDate = new Date(warning.issued_utc);
-    issuedText = ` <small>(Issued ${formatTimestamp(issuedDate)})</small>`;
+    issuedText = ` <small>(Issued ${formatForecastTimestamp(issuedDate)})</small>`;
   }
 
   return `
@@ -266,7 +271,7 @@ function renderExtendedForecast(extendedForecast) {
     const issuedDate = new Date(forecastData.generated_utc);
     html += `
       <div class="forecast-metadata">
-        <strong>Issued:</strong> ${formatTimestamp(issuedDate)}
+        <strong>Issued:</strong> ${formatForecastTimestamp(issuedDate)}
       </div>
     `;
   }
@@ -309,35 +314,16 @@ function getWarningIcon(type) {
 }
 
 /**
- * Format timestamp for display
- * @param {Date} date - Date object
- * @returns {string} Formatted timestamp
- */
-function formatTimestamp(date) {
-  const options = {
-    weekday: "short",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZoneName: "short",
-  };
-
-  return date.toLocaleString("en-US", options);
-}
-
-/**
  * Update the page timestamp
  */
 function updateTimestamp() {
   const timestampEl = document.getElementById("timestamp");
   if (timestampEl && forecastData && forecastData.generated_utc) {
     const generatedDate = new Date(forecastData.generated_utc);
-    timestampEl.textContent = `Last updated: ${formatTimestamp(generatedDate)}`;
+    timestampEl.textContent = `Last updated: ${formatForecastTimestamp(generatedDate)}`;
   } else if (timestampEl) {
     const now = new Date();
-    timestampEl.textContent = `Page loaded: ${formatTimestamp(now)}`;
+    timestampEl.textContent = `Page loaded: ${formatForecastTimestamp(now)}`;
   }
 }
 
