@@ -7,7 +7,9 @@ import {
   formatNumericDayTime,
   formatTimeHM,
   formatTimeWithDate,
+  formatWeekdayDayTime,
   getAgeString,
+  getShortAgeString,
 } from "../../site/assets/js/shared/format-time.js";
 
 // 2026-07-14T21:30:00Z = 14:30 PDT (summer); 2026-01-15T20:05:00Z = 12:05 PST (winter)
@@ -52,6 +54,22 @@ test("date rolls over at the Pacific midnight boundary, not UTC", () => {
   // 2026-07-15T06:59:00Z is still 23:59 July 14 in Vancouver
   assert.equal(formatTimeWithDate("2026-07-15T06:59:00Z"), "23:59 7/14");
   assert.equal(formatTimeWithDate("2026-07-15T07:00:00Z"), "00:00 7/15");
+});
+
+test("formatWeekdayDayTime renders long weekday, first comma stripped", () => {
+  assert.equal(formatWeekdayDayTime(SUMMER), "Tuesday Jul 14, 14:30");
+  assert.equal(formatWeekdayDayTime(WINTER), "Thursday Jan 15, 12:05");
+});
+
+test("getShortAgeString buckets ages compactly", () => {
+  const now = new Date("2026-07-14T12:00:00Z");
+  const ago = (mins) => new Date(now - mins * 60000);
+  assert.equal(getShortAgeString(ago(0), now), "just now");
+  assert.equal(getShortAgeString(ago(5), now), "5m ago");
+  assert.equal(getShortAgeString(ago(90), now), "1h ago");
+  assert.equal(getShortAgeString(ago(60 * 23), now), "23h ago");
+  assert.equal(getShortAgeString(ago(60 * 24), now), "1 day ago");
+  assert.equal(getShortAgeString(ago(60 * 24 * 3), now), "3 days ago");
 });
 
 test("getAgeString buckets ages", () => {

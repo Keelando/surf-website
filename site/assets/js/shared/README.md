@@ -13,7 +13,7 @@ node can import these files in tests; browsers ignore it.
 
 ## Modules
 
-- `format-time.js` — Pacific-time formatters + `getAgeString`
+- `format-time.js` — Pacific-time formatters + `getAgeString`/`getShortAgeString`
 - `staleness.js` — stale-data presentation (marker opacity, popup theme)
 - `markers.js` — directional map marker, angular spread vector, ECharts arrow path
 
@@ -23,7 +23,7 @@ Legacy copies are deleted when their page converts to ES modules
 (page-by-page; each conversion independently shippable).
 
 Converted pages: tides (pre-existing), guide, webcams, forecasts
-(2026-07-15), winds (2026-07-16). Remaining: lightstations, storm_surge,
+(2026-07-15), winds + lightstations (2026-07-16). Remaining: storm_surge,
 index.
 Foundation scripts (theme-manager, logger, warning-banner, nav, footer,
 sanitize-html, chart-utils-v4) stay classic until every consumer page is
@@ -33,7 +33,8 @@ a module; modules may read their globals in the meantime.
 |---|---|---|---|
 | `createDirectionalMarker` | `stations-map.js` | `markers.js` | pending (index.html) |
 | `createDirectionalMarker` | `winds-map.js` | `markers.js` | **done 2026-07-16** |
-| `createDirectionalMarker` | `lightstation-map.js` | `markers.js` | pending (lightstations.html) — converges to themed label style |
+| `createDirectionalMarker` | `lightstation-map.js` | `markers.js` | **obsolete** — legacy copy was dead code (never called), deleted 2026-07-16 |
+| report time + age (inline ×2) | `lightstation-map.js`, `lightstation-page.js` | `format-time.js` (`formatWeekdayDayTime`, `getShortAgeString`) | **done 2026-07-16** |
 | `createAngularSpreadVector` | `main.js` | `markers.js` | pending (index.html) |
 | `createAngularSpreadVector` | `webcams-v4.js` | `markers.js` (`...Element` variant) | **done 2026-07-15** |
 | `DIRECTION_ARROW_PATH` | `chart-utils-v4.js` | `markers.js` | pending (all chart pages) — winds page imports shared as of 2026-07-16 |
@@ -42,4 +43,4 @@ a module; modules may read their globals in the meantime.
 | `formatTimestamp`, `formatShortTimestamp` | `webcams-v4.js` | `format-time.js` | **done 2026-07-15** |
 | `formatTimestamp` | `lightstation-charts.js` | `format-time.js` (`formatNumericDayTime`) | **obsolete** — legacy copy was dead code (never called), deleted 2026-07-16 |
 | `formatTime`, `getAgeString` | `tides-modules/utils.js` | `format-time.js` | pending (tides already ESM — trivial swap) |
-| stale popup colours/header (inline ×3) | `stations-map.js` ×2, `lightstation-map.js` | `staleness.js` | pending |
+| stale popup colours/header (inline ×3) | `stations-map.js` ×2, `lightstation-map.js` | `staleness.js` | lightstation-map **done 2026-07-16**; stations-map ×2 pending (index.html) |

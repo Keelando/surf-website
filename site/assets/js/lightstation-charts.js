@@ -1,23 +1,13 @@
 /* -----------------------------
-   Lightstation Charts Module
+   Lightstation Charts Module (ES module)
    Displays 24hr wind speed and wave height trends
+
+   Chart helpers (fetchWithTimeout, getChartThemeColors,
+   getMobileOptimizedTooltipConfig, registerChartThemeListener, echarts)
+   still come from classic scripts loaded before this one.
    ----------------------------- */
 
-// Helper: Fetch with timeout
-async function fetchWithTimeout(url, timeout = 5000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(id);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
-  }
-}
+import { formatNumericDayTime } from "./shared/format-time.js";
 
 function setSafeHTML(element, html) {
   if (!element) return;
@@ -45,8 +35,6 @@ async function loadLightstationTimeseries() {
     // Load timeseries data (past 24hr only)
     const data = await fetchWithTimeout(`/data/lightstation_timeseries_24hr.json?t=${Date.now()}`);
     lightstationTimeseriesData = data;
-    // Make globally accessible for edge case handling
-    window.lightstationTimeseriesData = data;
 
     // Load ALL lightstations from stations.json (including those without recent data)
     const stationsData = await fetchWithTimeout("/data/stations.json");
@@ -172,7 +160,7 @@ function populateLightstationDropdown() {
 /**
  * Render both wind and wave charts for selected station
  */
-function renderLightstationCharts(stationName) {
+export function renderLightstationCharts(stationName) {
   if (!stationName) return;
 
   const station = lightstationTimeseriesData ? lightstationTimeseriesData[stationName] : null;
@@ -236,8 +224,42 @@ function showNoDataMessage(stationName) {
   }
 }
 
-// Make function globally accessible for card links
-window.renderLightstationCharts = renderLightstationCharts;
+/**
+ * Select a station in the dropdown, render its charts, and scroll to the
+ * data section. Called from page cards (by name) and map popups (by ID).
+ * Moved here from lightstation-page.js/lightstation-map.js, which each
+ * carried a near-identical copy.
+ */
+export function viewLightstationChart(stationName) {
+  const select = document.getElementById("lightstation-station-select");
+  if (!select) return;
+
+  // Check if station exists in timeseries data
+  if (!lightstationTimeseriesData || !lightstationTimeseriesData[stationName]) {
+    // Station doesn't have 24hr data - show alert instead of scrolling
+    alert(
+      `${stationName} does not have data from the past 24 hours.\n\nMost recent observation may be older than 24 hours.`,
+    );
+    return;
+  }
+
+  // Select the station in dropdown
+  select.value = stationName;
+  renderLightstationCharts(stationName);
+
+  // Scroll to data table section (top of the tables/charts area)
+  const tableSection = document.getElementById("lightstation-data-table-section");
+  if (tableSection) {
+    tableSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+/**
+ * ID-flavoured variant for map popups: "CHROME_ISLAND" → "CHROME ISLAND".
+ */
+export function viewLightstationDataById(lightstationId) {
+  viewLightstationChart(lightstationId.replace(/_/g, " "));
+}
 
 /**
  * Render 24-hour data table for selected station
@@ -279,17 +301,7 @@ function render24HourTable(stationName, station) {
     const directionData = timeseries.wind_direction?.find((p) => p.time === time);
 
     // Format timestamp
-    const date = new Date(time);
-    const formattedTime = date
-      .toLocaleString("en-US", {
-        month: "numeric",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-        timeZone: "America/Vancouver",
-      })
-      .replace(",", "");
+    const formattedTime = formatNumericDayTime(time);
 
     // Build wind text
     let windText = "—";
@@ -388,16 +400,7 @@ function renderWindSpeedChart(stationName, station) {
       ...getMobileOptimizedTooltipConfig(),
       formatter: (params) => {
         if (!params || params.length === 0) return "";
-        const time = new Date(params[0].value[0])
-          .toLocaleString("en-US", {
-            month: "numeric",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-            timeZone: "America/Vancouver",
-          })
-          .replace(",", "");
+        const time = formatNumericDayTime(new Date(params[0].value[0]));
 
         let tooltipText = `<strong>${time}</strong><br/>`;
         params.forEach((param) => {
@@ -434,19 +437,8 @@ function renderWindSpeedChart(stationName, station) {
         },
       },
       axisLabel: {
-        formatter: (value) => {
-          const date = new Date(value);
-          return date
-            .toLocaleString("en-US", {
-              month: "numeric",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-              timeZone: "America/Vancouver",
-            })
-            .replace(",", "\n");
-        },
+        // "7/16 11:05" → "7/16\n11:05" (two-line axis label)
+        formatter: (value) => formatNumericDayTime(new Date(value)).replace(" ", "\n"),
         fontSize: 12,
         color: mutedText,
       },
@@ -585,16 +577,7 @@ function renderWaveHeightChart(stationName, station) {
       ...getMobileOptimizedTooltipConfig(),
       formatter: (params) => {
         if (!params || params.length === 0) return "";
-        const time = new Date(params[0].value[0])
-          .toLocaleString("en-US", {
-            month: "numeric",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-            timeZone: "America/Vancouver",
-          })
-          .replace(",", "");
+        const time = formatNumericDayTime(new Date(params[0].value[0]));
 
         let tooltipText = `<strong>${time}</strong><br/>`;
         params.forEach((param) => {
@@ -631,19 +614,8 @@ function renderWaveHeightChart(stationName, station) {
         },
       },
       axisLabel: {
-        formatter: (value) => {
-          const date = new Date(value);
-          return date
-            .toLocaleString("en-US", {
-              month: "numeric",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-              timeZone: "America/Vancouver",
-            })
-            .replace(",", "\n");
-        },
+        // "7/16 11:05" → "7/16\n11:05" (two-line axis label)
+        formatter: (value) => formatNumericDayTime(new Date(value)).replace(" ", "\n"),
         fontSize: 12,
         color: mutedText,
       },
@@ -717,20 +689,14 @@ function renderWaveHeightChart(stationName, station) {
   waveHeightChart.setOption(option);
 }
 
-// Initialize on page load
-document.addEventListener("DOMContentLoaded", () => {
-  loadLightstationTimeseries();
+// Initialize on page load (module scripts are deferred, so the DOM is
+// parsed; the "show on map" button listener lives in lightstation-page.js)
+loadLightstationTimeseries();
 
-  // Handle window resize
-  window.addEventListener("resize", () => {
-    if (windSpeedChart) windSpeedChart.resize();
-    if (waveHeightChart) waveHeightChart.resize();
-  });
-
-  // Event listener replacing onclick= attribute (CSP compliance)
-  var lightstationMapBtn = document.getElementById("show-lightstation-on-map-btn");
-  if (lightstationMapBtn)
-    lightstationMapBtn.addEventListener("click", showSelectedLightstationOnMap);
+// Handle window resize
+window.addEventListener("resize", () => {
+  if (windSpeedChart) windSpeedChart.resize();
+  if (waveHeightChart) waveHeightChart.resize();
 });
 
 function ensureLightstationThemeListener() {

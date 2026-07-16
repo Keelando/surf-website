@@ -29,6 +29,9 @@
         "site/assets/js/wind-data.js",
         "site/assets/js/wind-stations.js",
         "site/assets/js/winds-map.js",
+        "site/assets/js/lightstation-charts.js",
+        "site/assets/js/lightstation-map.js",
+        "site/assets/js/lightstation-page.js",
         "tests/js/**/*.mjs"
       ],
       "parserOptions": {

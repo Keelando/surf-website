@@ -89,6 +89,41 @@ export function formatForecastTimestamp(input) {
 }
 
 /**
+ * "Wednesday Jul 16, 11:05" — replaces the report-time formatting
+ * duplicated between lightstation-map.js and lightstation-page.js.
+ * (Long weekday, 24-hour clock; first comma stripped, matching the
+ * legacy output.)
+ */
+export function formatWeekdayDayTime(input) {
+  return fmt(input, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).replace(",", "");
+}
+
+/**
+ * Compact age: "just now" / "5m ago" / "3h ago" / "1 day ago" /
+ * "4 days ago" — replaces the age arithmetic duplicated between
+ * lightstation-map.js and lightstation-page.js. Longer-form sibling of
+ * getAgeString(). `now` is injectable for tests.
+ */
+export function getShortAgeString(date, now = new Date()) {
+  const ageMs = now - toDate(date);
+  const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+  const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
+  const ageMinutes = Math.floor((ageMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (ageDays >= 1) return ageDays === 1 ? "1 day ago" : `${ageDays} days ago`;
+  if (ageHours > 0) return `${ageHours}h ago`;
+  if (ageMinutes > 0) return `${ageMinutes}m ago`;
+  return "just now";
+}
+
+/**
  * "5 minutes ago" / "2 hours ago" / "just now" — moved from
  * tides-modules/utils getAgeString(). `now` is injectable for tests.
  */

@@ -36,9 +36,27 @@ page; behavioral verification needs a driving script.
   48h toggle (`.wind-time-range-btn[data-wind-hours="48"]`) updates the
   section `h2`; deep link `#wind-<id>` selects that station on load
   (allow ~1.5s).
+- **lightstations.html**: `.lightstation-card` count grouped in
+  `.region-section`s; `.report-time` text matches
+  `Report: <Weekday> <Mon> <D>, <HH:MM> (<age> ago)`;
+  `#lightstation-station-select` has region optgroups, default
+  MERRY ISLAND; `#lightstation-wind-chart canvas` +
+  `#lightstation-24hr-body tr` rows; marker popup "View Data"
+  (`.view-data-btn[data-lightstation-id]`) sets the dropdown (ID
+  underscores → spaces); card "Show on Map" and the
+  `#show-lightstation-on-map-btn` button open a `.leaflet-popup`
+  (allow ~2.2s: 800ms scroll + 1000ms pan + 1100ms popup delay);
+  deep link `#lightstation-<ID>` expands that region section.
 - Chart pages render into ECharts: assert `<container> canvas` exists.
 
 ## Gotchas
+
+- **Module double-execution**: a module loaded both via
+  `<script type="module" src="...?v=X">` AND via a bare import
+  specifier runs TWICE (module cache is keyed by full URL, query
+  included). Symptom: "Map container is already initialized." Rule:
+  each module is either a script-tag entry point or an import target,
+  never both. Multi-module pages get ONE entry-point tag.
 
 - `#timestamp` does not exist in any page HTML — several legacy scripts
   still reference it (null-guarded, dead). Don't assert on it.

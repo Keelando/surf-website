@@ -1,7 +1,11 @@
 /**
- * BC Lightstation Map
+ * BC Lightstation Map (ES module)
  * Displays all BC lighthouse stations on an interactive Leaflet map
  */
+
+import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
+import { staleDataWarningHTML, stalePopupTheme } from "./shared/staleness.js";
+import { viewLightstationDataById } from "./lightstation-charts.js";
 
 let lightstationMap = null;
 let lightstationMarkersLayer = null;
@@ -156,13 +160,10 @@ function addLightstationMapMarker(lightstation) {
   if (hasData) {
     const obs = latestLightstationData[lookupName];
     const isStale = obs.stale || false;
-    const bgColor = isStale ? "var(--color-callout-danger-bg)" : "var(--color-callout-info-bg)";
-    const borderColor = isStale ? "var(--color-accent-red)" : "var(--color-primary)";
-    const headerText = isStale ? "Latest Conditions (STALE - >12h old):" : "Latest Conditions:";
-    const headerColor = isStale ? "var(--color-accent-red)" : "var(--map-popup-heading)";
+    const popupTheme = stalePopupTheme(isStale, { threshold: ">12h" });
 
-    popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
-    popupContent += `<div style="font-weight: 600; margin-bottom: 6px; color: ${headerColor}; font-size: 0.95em;">${headerText}</div>`;
+    popupContent += `<div style="background: ${popupTheme.bg}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${popupTheme.border};">`;
+    popupContent += `<div style="font-weight: 600; margin-bottom: 6px; color: ${popupTheme.headingColor}; font-size: 0.95em;">${popupTheme.headerText}</div>`;
 
     // Wave Height (prominent display)
     if (obs.sea_height_ft !== null) {
@@ -192,35 +193,8 @@ function addLightstationMapMarker(lightstation) {
 
     // Report time (with full date, day of week, and age in 24h format)
     if (obs.observation_time) {
-      const obsDate = new Date(obs.observation_time);
-      const dateOptions = {
-        timeZone: "America/Vancouver",
-        weekday: "long",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      };
-      const formattedDate = obsDate.toLocaleString("en-US", dateOptions).replace(",", "");
-
-      // Calculate age
-      const now = new Date();
-      const ageMs = now - obsDate;
-      const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
-      const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
-      const ageMinutes = Math.floor((ageMs % (1000 * 60 * 60)) / (1000 * 60));
-
-      let ageText = "";
-      if (ageDays >= 1) {
-        ageText = ageDays === 1 ? " (1 day ago)" : ` (${ageDays} days ago)`;
-      } else if (ageHours > 0) {
-        ageText = ` (${ageHours}h ago)`;
-      } else if (ageMinutes > 0) {
-        ageText = ` (${ageMinutes}m ago)`;
-      } else {
-        ageText = " (just now)";
-      }
+      const formattedDate = formatWeekdayDayTime(obs.observation_time);
+      const ageText = ` (${getShortAgeString(obs.observation_time)})`;
 
       popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-border);">📅 Report: ${formattedDate}${ageText}</div>`;
     } else if (obs.report_time_str) {
@@ -229,7 +203,7 @@ function addLightstationMapMarker(lightstation) {
 
     // Staleness warning (already shown in header, but keep for emphasis)
     if (obs.stale) {
-      popupContent += `<div style="color: var(--color-accent-red); font-size: 0.85em; margin-top: 4px; font-weight: 600;">⚠️ STALE DATA</div>`;
+      popupContent += staleDataWarningHTML();
     }
 
     popupContent += `</div>`;
@@ -268,7 +242,7 @@ function addLightstationMapMarker(lightstation) {
 }
 
 // Center map on specific lightstation and open popup
-function centerMapOnLightstation(lightstationId, retryCount = 0) {
+export function centerMapOnLightstation(lightstationId, retryCount = 0) {
   if (!lightstationMap || !lightstationMapMarkers[lightstationId]) {
     // Retry up to 5 times with 500ms delay
     if (retryCount < 5) {
@@ -294,46 +268,6 @@ function centerMapOnLightstation(lightstationId, retryCount = 0) {
   }, 1100);
 }
 
-// Make functions globally accessible
-window.centerMapOnLightstation = centerMapOnLightstation;
-
-// Function to view lightstation data (called from map popups)
-function viewLightstationData(lightstationId) {
-  // Find the lightstation name from the ID
-  const select = document.getElementById("lightstation-station-select");
-  if (!select) return;
-
-  // Convert ID to match dropdown value format (uppercase with spaces)
-  // e.g., "CHROME_ISLAND" → "CHROME ISLAND"
-  const stationName = lightstationId.replace(/_/g, " ");
-
-  // Check if station exists in timeseries data
-  if (!window.lightstationTimeseriesData || !window.lightstationTimeseriesData[stationName]) {
-    // Station doesn't have 24hr data - show alert instead of scrolling
-    alert(
-      `${stationName} does not have data from the past 24 hours.\n\nMost recent observation may be older than 24 hours.`,
-    );
-    return;
-  }
-
-  // Select the station in dropdown (value matches the uppercase format)
-  select.value = stationName;
-
-  // Trigger chart render if the function exists
-  if (typeof window.renderLightstationCharts === "function") {
-    window.renderLightstationCharts(stationName);
-  }
-
-  // Scroll to chart section
-  const chartSection = document.getElementById("lightstation-data-table-section");
-  if (chartSection) {
-    chartSection.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-}
-
-// Make function globally accessible
-window.viewLightstationData = viewLightstationData;
-
 // Event delegation for popup "View Data" buttons (CSP-safe)
 document.addEventListener("click", (event) => {
   const link = event.target.closest(".view-data-btn[data-lightstation-id]");
@@ -344,15 +278,9 @@ document.addEventListener("click", (event) => {
   event.preventDefault();
   const stationId = link.getAttribute("data-lightstation-id");
   if (stationId) {
-    viewLightstationData(stationId);
+    viewLightstationDataById(stationId);
   }
 });
 
-// Initialize map when DOM is ready
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => {
-    initLightstationMap();
-  });
-} else {
-  initLightstationMap();
-}
+// Module scripts are deferred, so the DOM is already parsed.
+initLightstationMap();

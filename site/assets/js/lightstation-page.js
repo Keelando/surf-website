@@ -1,3 +1,16 @@
+/**
+ * Lightstation Page (ES module)
+ * Region-grouped condition cards for all BC lightstations
+ */
+
+import { viewLightstationChart } from "./lightstation-charts.js";
+import { centerMapOnLightstation } from "./lightstation-map.js";
+import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
+
+// Lightstation metadata keyed by several name/ID formats (module-local;
+// was window.stationMetadata before the ES-module conversion)
+let stationMetadata = {};
+
 function setSafeHTML(element, html) {
   if (!element) return;
 
@@ -15,17 +28,15 @@ async function loadLightstationData() {
     try {
       const metaResponse = await fetch("/data/stations.json");
       const metaData = await metaResponse.json();
-      // Store lightstation metadata globally for card creation
-      window.stationMetadata = {};
       if (metaData.lightstations) {
         Object.values(metaData.lightstations).forEach((station) => {
           // Store with multiple key formats for easier lookup
           // Format 1: Title case name (e.g., "Addenbroke Island")
-          window.stationMetadata[station.name] = station;
+          stationMetadata[station.name] = station;
           // Format 2: Uppercase with spaces (e.g., "ADDENBROKE ISLAND") - matches latest_lightstation.json
-          window.stationMetadata[station.name.toUpperCase()] = station;
+          stationMetadata[station.name.toUpperCase()] = station;
           // Format 3: Uppercase with underscores (e.g., "ADDENBROKE_ISLAND") - matches ID
-          window.stationMetadata[station.id] = station;
+          stationMetadata[station.id] = station;
         });
       }
     } catch (err) {
@@ -161,8 +172,8 @@ function createStationCard(station) {
   const card = document.createElement("div");
   card.className = "lightstation-card";
   // Add data attribute for hash navigation
-  if (window.stationMetadata && window.stationMetadata[station.name]) {
-    card.setAttribute("data-station-id", window.stationMetadata[station.name].id);
+  if (stationMetadata[station.name]) {
+    card.setAttribute("data-station-id", stationMetadata[station.name].id);
   }
 
   const title = document.createElement("h3");
@@ -201,35 +212,8 @@ function createStationCard(station) {
     const reportTime = document.createElement("div");
     reportTime.className = "report-time";
 
-    const obsDate = new Date(station.observation_time);
-    const dateOptions = {
-      timeZone: "America/Vancouver",
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    };
-    const formattedDate = obsDate.toLocaleString("en-US", dateOptions).replace(",", "");
-
-    // Calculate age
-    const now = new Date();
-    const ageMs = now - obsDate;
-    const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
-    const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
-    const ageMinutes = Math.floor((ageMs % (1000 * 60 * 60)) / (1000 * 60));
-
-    let ageText = "";
-    if (ageDays >= 1) {
-      ageText = ageDays === 1 ? " (1 day ago)" : ` (${ageDays} days ago)`;
-    } else if (ageHours > 0) {
-      ageText = ` (${ageHours}h ago)`;
-    } else if (ageMinutes > 0) {
-      ageText = ` (${ageMinutes}m ago)`;
-    } else {
-      ageText = " (just now)";
-    }
+    const formattedDate = formatWeekdayDayTime(station.observation_time);
+    const ageText = ` (${getShortAgeString(station.observation_time)})`;
 
     reportTime.textContent = `Report: ${formattedDate}${ageText}`;
     card.appendChild(reportTime);
@@ -291,10 +275,7 @@ function createStationCard(station) {
   mapLink.style.fontSize = "0.85rem";
   mapLink.addEventListener("click", (e) => {
     e.preventDefault();
-    const stationId =
-      window.stationMetadata && window.stationMetadata[station.name]
-        ? window.stationMetadata[station.name].id
-        : null;
+    const stationId = stationMetadata[station.name] ? stationMetadata[station.name].id : null;
 
     if (stationId) {
       // Scroll to map section
@@ -305,9 +286,7 @@ function createStationCard(station) {
 
       // Center map on lightstation after scroll
       setTimeout(() => {
-        if (typeof window.centerMapOnLightstation === "function") {
-          window.centerMapOnLightstation(stationId);
-        }
+        centerMapOnLightstation(stationId);
       }, 800);
     }
   });
@@ -403,35 +382,6 @@ function createStationCard(station) {
   return card;
 }
 
-// Function to view station chart (called from cards)
-function viewLightstationChart(stationName) {
-  const select = document.getElementById("lightstation-station-select");
-  if (!select) return;
-
-  // Check if station exists in timeseries data
-  if (!window.lightstationTimeseriesData || !window.lightstationTimeseriesData[stationName]) {
-    // Station doesn't have 24hr data - show alert instead of scrolling
-    alert(
-      `${stationName} does not have data from the past 24 hours.\n\nMost recent observation may be older than 24 hours.`,
-    );
-    return;
-  }
-
-  // Select the station in dropdown
-  select.value = stationName;
-
-  // Trigger chart render if the function exists
-  if (typeof window.renderLightstationCharts === "function") {
-    window.renderLightstationCharts(stationName);
-  }
-
-  // Scroll to data table section (top of the tables/charts area)
-  const tableSection = document.getElementById("lightstation-data-table-section");
-  if (tableSection) {
-    tableSection.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-}
-
 function createConditionRow(label, value) {
   const row = document.createElement("div");
   row.className = "condition-row";
@@ -461,8 +411,8 @@ function showSelectedLightstationOnMap() {
   const stationName = select.value;
 
   // Get station ID from metadata
-  if (window.stationMetadata && window.stationMetadata[stationName]) {
-    const stationId = window.stationMetadata[stationName].id;
+  if (stationMetadata[stationName]) {
+    const stationId = stationMetadata[stationName].id;
 
     // Scroll to map section
     const mapSection = document.getElementById("lightstation-map-section");
@@ -472,15 +422,17 @@ function showSelectedLightstationOnMap() {
 
     // Center map on lightstation after scroll
     setTimeout(() => {
-      if (typeof window.centerMapOnLightstation === "function") {
-        window.centerMapOnLightstation(stationId);
-      }
+      centerMapOnLightstation(stationId);
     }, 800);
   }
 }
 
-// Make function globally accessible
-window.showSelectedLightstationOnMap = showSelectedLightstationOnMap;
+// "Show on Map" button next to the chart dropdown (listener moved here
+// from lightstation-charts.js — the handler is this module's function)
+const lightstationMapBtn = document.getElementById("show-lightstation-on-map-btn");
+if (lightstationMapBtn) {
+  lightstationMapBtn.addEventListener("click", showSelectedLightstationOnMap);
+}
 
 // Load data on page load
 loadLightstationData();
