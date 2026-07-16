@@ -1,7 +1,15 @@
 /* -----------------------------
-   Wind Stations Module
+   Wind Stations Module (ES module)
    Displays current wind conditions table and 24hr trends chart
+
+   Chart helpers (degreesToCardinal, getDirectionalArrow,
+   createWindDirectionArrowData, theme/grid/tooltip config, echarts) still
+   come from classic scripts loaded before this one.
    ----------------------------- */
+
+import { formatMonthDayTime, formatTimeHM, formatTimeWithDate } from "./shared/format-time.js";
+import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
+import { windData } from "./wind-data.js";
 
 function setSafeHTML(element, html) {
   if (!element) return;
@@ -11,9 +19,6 @@ function setSafeHTML(element, html) {
     element.innerHTML = html;
   }
 }
-
-// degreesToCardinal, getDirectionalArrow, formatTimestamp, formatTimeOnly
-// provided by chart-utils-v4.js (loaded earlier)
 
 // --- Constants ---
 const STALE_THRESHOLD_HOURS = 2; // Data older than this is dimmed
@@ -32,7 +37,7 @@ let currentWindTimeRange = 24; // Default to 24 hours
  * Look up station metadata (source_url, short_name, flag) from stations.json
  */
 function getStationMeta(id) {
-  const s = window.windData?.stations;
+  const s = windData.stations;
   return s?.wind?.[id] || s?.buoys?.[id] || {};
 }
 
@@ -245,8 +250,8 @@ function renderOfflineStationsList(offlineStations) {
 async function loadWindTable() {
   try {
     // Wait for shared data store (fetched once by wind-data.js)
-    await window.windData.ready;
-    const latestAll = window.windData.latestAll;
+    await windData.ready;
+    const latestAll = windData.latestAll;
 
     const table = document.getElementById("wind-conditions-table");
     if (!table) return;
@@ -285,7 +290,7 @@ async function loadWindTable() {
           : "—";
       const temp = station.air_temp_c != null ? station.air_temp_c.toFixed(1) : "—";
       const pressure = station.pressure_hpa != null ? station.pressure_hpa.toFixed(1) : "—";
-      const updated = formatTimestamp(station.observation_time);
+      const updated = formatTimeWithDate(station.observation_time);
 
       // Look up source link, flag, and short name from stations.json
       const meta = getStationMeta(id);
@@ -307,7 +312,7 @@ async function loadWindTable() {
             data-pressure_hpa="${station.pressure_hpa || ""}"
             data-observation_time="${station.observation_time}">
           <td>${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;"><strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}</a>` : `<strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}`}</td>
-          <td class="wind-table-actions"><span class="hide-mobile">${updated}</span><span class="show-mobile">${formatTimeOnly(station.observation_time)}</span></td>
+          <td class="wind-table-actions"><span class="hide-mobile">${updated}</span><span class="show-mobile">${formatTimeHM(station.observation_time)}</span></td>
           <td class="wind-table-actions">${direction}</td>
           <td>${windSpeed}</td>
           <td>${windGust}</td>
@@ -341,11 +346,9 @@ async function loadWindTable() {
 
     renderOfflineStationsList(offlineStations);
 
-    // Update footer timestamp (use wind data timestamp)
-    const timestamp = document.getElementById("timestamp");
-    if (timestamp && windData._meta) {
-      timestamp.textContent = `Updated: ${formatTimestamp(windData._meta.generated_utc)}`;
-    }
+    // (Dead footer-timestamp updater removed 2026-07-16: it targeted
+    // #timestamp, which no longer exists in any page, and checked
+    // windData._meta, which never existed on the store.)
   } catch (error) {
     console.error("Error loading wind table:", error);
     const table = document.getElementById("wind-conditions-table");
@@ -380,8 +383,8 @@ function populateStationDropdown() {
 async function loadWindTimeseries() {
   try {
     // Wait for shared data store (fetched and normalized by wind-data.js)
-    await window.windData.ready;
-    windTimeseriesData = window.windData.timeseries;
+    await windData.ready;
+    windTimeseriesData = windData.timeseries;
 
     const select = document.getElementById("wind-station-select");
     const searchInput = document.getElementById("wind-station-search");
@@ -567,8 +570,8 @@ function renderWind24HourTable(stationId) {
 
     hourlyTimes.forEach((time, index) => {
       const data = dataByTime.get(time);
-      const formattedTime = formatTimestamp(time);
-      const mobileTime = formatTimeOnly(time);
+      const formattedTime = formatTimeWithDate(time);
+      const mobileTime = formatTimeHM(time);
       const speed = data.speed != null ? Math.round(data.speed) : "—";
       const gust = data.gust != null ? Math.round(data.gust) : "—";
       const temp = data.temp != null ? data.temp.toFixed(1) : "—";
@@ -730,7 +733,7 @@ function renderWindChart(stationId) {
         ...getMobileOptimizedTooltipConfig(),
         formatter: (params) => {
           if (!params || params.length === 0) return "";
-          const time = formatTimeAxis(new Date(params[0].value[0]).toISOString());
+          const time = formatMonthDayTime(new Date(params[0].value[0]).toISOString());
           let res = `<b>${time}</b><br/>`;
 
           params.forEach((p) => {
@@ -842,7 +845,7 @@ async function selectStationAndShowChart(stationId) {
   }
 
   // Wait for shared data to be ready (no more retry polling)
-  await window.windData.ready;
+  await windData.ready;
 
   if (!windTimeseriesData || !windTimeseriesData[stationId]) {
     console.warn(`Station ${stationId} not found in timeseries data`);
@@ -922,29 +925,27 @@ document.addEventListener("click", function (e) {
   }
 });
 
-// Initialize on page load
-document.addEventListener("DOMContentLoaded", () => {
-  loadWindTable();
-  loadWindTimeseries();
-  updateWindTimeRangeLabels(); // Set initial labels to 24-Hour
+// Initialize on page load (module scripts are deferred, so the DOM is parsed)
+loadWindTable();
+loadWindTimeseries();
+updateWindTimeRangeLabels(); // Set initial labels to 24-Hour
 
-  // Check for wind station in URL hash
-  checkHashForWindStation();
+// Check for wind station in URL hash
+checkHashForWindStation();
 
-  // Handle window resize
-  window.addEventListener("resize", () => {
-    if (windChart) {
-      windChart.resize();
-    }
-  });
-
-  // Re-render chart on theme change
-  if (typeof registerChartThemeListener === "function") {
-    registerChartThemeListener(() => {
-      const selectedStation = document.getElementById("wind-station-select")?.value;
-      if (selectedStation && windChart) {
-        renderWindChart(selectedStation);
-      }
-    });
+// Handle window resize
+window.addEventListener("resize", () => {
+  if (windChart) {
+    windChart.resize();
   }
 });
+
+// Re-render chart on theme change
+if (typeof registerChartThemeListener === "function") {
+  registerChartThemeListener(() => {
+    const selectedStation = document.getElementById("wind-station-select")?.value;
+    if (selectedStation && windChart) {
+      renderWindChart(selectedStation);
+    }
+  });
+}

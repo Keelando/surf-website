@@ -26,6 +26,9 @@
         "site/assets/js/forecasts.js",
         "site/assets/js/webcams-v4.js",
         "site/assets/js/guide.js",
+        "site/assets/js/wind-data.js",
+        "site/assets/js/wind-stations.js",
+        "site/assets/js/winds-map.js",
         "tests/js/**/*.mjs"
       ],
       "parserOptions": {

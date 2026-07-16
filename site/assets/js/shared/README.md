@@ -23,7 +23,8 @@ Legacy copies are deleted when their page converts to ES modules
 (page-by-page; each conversion independently shippable).
 
 Converted pages: tides (pre-existing), guide, webcams, forecasts
-(2026-07-15). Remaining: winds, lightstations, storm_surge, index.
+(2026-07-15), winds (2026-07-16). Remaining: lightstations, storm_surge,
+index.
 Foundation scripts (theme-manager, logger, warning-banner, nav, footer,
 sanitize-html, chart-utils-v4) stay classic until every consumer page is
 a module; modules may read their globals in the meantime.
@@ -31,12 +32,12 @@ a module; modules may read their globals in the meantime.
 | Legacy copy | File | Replaced by | Status |
 |---|---|---|---|
 | `createDirectionalMarker` | `stations-map.js` | `markers.js` | pending (index.html) |
-| `createDirectionalMarker` | `winds-map.js` | `markers.js` | pending (winds.html) |
+| `createDirectionalMarker` | `winds-map.js` | `markers.js` | **done 2026-07-16** |
 | `createDirectionalMarker` | `lightstation-map.js` | `markers.js` | pending (lightstations.html) — converges to themed label style |
 | `createAngularSpreadVector` | `main.js` | `markers.js` | pending (index.html) |
 | `createAngularSpreadVector` | `webcams-v4.js` | `markers.js` (`...Element` variant) | **done 2026-07-15** |
-| `DIRECTION_ARROW_PATH` | `chart-utils-v4.js` | `markers.js` | pending (all chart pages) |
-| `formatTimestamp`, `formatTimeOnly`, `formatTimeAxis` | `chart-utils-v4.js` | `format-time.js` | pending |
+| `DIRECTION_ARROW_PATH` | `chart-utils-v4.js` | `markers.js` | pending (all chart pages) — winds page imports shared as of 2026-07-16 |
+| `formatTimestamp`, `formatTimeOnly`, `formatTimeAxis` | `chart-utils-v4.js` | `format-time.js` | pending — winds page imports shared as of 2026-07-16 |
 | `formatTimestamp` | `forecasts.js` | `format-time.js` (`formatForecastTimestamp`) | **done 2026-07-15** — legacy used browser-local TZ; shared pins Pacific |
 | `formatTimestamp`, `formatShortTimestamp` | `webcams-v4.js` | `format-time.js` | **done 2026-07-15** |
 | `formatTimestamp` | `lightstation-charts.js` | `format-time.js` (`formatNumericDayTime`) | pending |
