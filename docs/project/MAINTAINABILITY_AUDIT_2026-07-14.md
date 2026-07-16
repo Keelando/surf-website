@@ -1,7 +1,9 @@
 # Maintainability & Readability Audit — 2026-07-14
 
-**Status:** Findings documented; work not started
-**Plan:** Address in decreasing priority order, starting next session
+**Status:** In progress — P1 steps 1–4 done as of 2026-07-16 (shared utils +
+guide/webcams/forecasts/winds/lightstations converted; ESLint 0 warnings).
+Live progress: `NEXT_SESSION.md` + migration table in `site/assets/js/shared/README.md`.
+**Plan:** Address in decreasing priority order
 **Context:** Site is feature-complete apart from a few planned additions (pressure/fronts
 page, webcam ML dataset). Priority is shifting from features to maintainability.
 

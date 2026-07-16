@@ -1,6 +1,6 @@
 # Next Session Plan
 
-**Last updated:** 2026-07-15
+**Last updated:** 2026-07-16
 **Status:** Maintenance mode - major features complete
 
 ---
@@ -25,14 +25,33 @@ Migration status table: `site/assets/js/shared/README.md`.
   (−117 lines). Forecasts "Issued" times now pinned to Pacific (was
   browser-local). Note: webcams `createDirectionalArrow` is a distinct design,
   NOT a dupe of chart-utils `getDirectionalArrow` — stays local.
-- ⏭️ Step 3: winds.html (winds-map.js + wind-stations.js) — deletes first
-  `createDirectionalMarker` copy, first real use of `stalePopupTheme`.
-- Then: Step 4 lightstations.html, Step 5 storm_surge.html, Step 6 index.html
-  (main.js — leads into P2 buoy-card refactor).
+- ✅ Step 3 (2026-07-16, `13ebbe0`): winds.html converted — wind-data.js
+  exports the store (window.windData gone), winds-map `createDirectionalMarker`
+  copy deleted, wind-stations uses shared format-time + DIRECTION_ARROW_PATH.
+- ✅ ESLint zero-warning cleanup (2026-07-16, `e8332fd`): all 39 warnings
+  cleared — 16 dead-code deletions (−337 lines: every `#timestamp` updater,
+  warning-banner's orphaned per-warning dismiss trio, uncalled
+  `createDirectionalMarker`/`cardinalToDegrees`/`formatTimestamp` copies,
+  misc unused locals) + `/* exported */` directives on cross-file classic
+  globals. Lint is now 0 errors / 0 warnings — keep it there.
+- ✅ Step 4 (2026-07-16, `e1884d7`): lightstations.html converted — single
+  entry point `lightstation-page.js` imports charts+map; viewLightstationChart
+  deduped into charts; first `stalePopupTheme` consumer; report-time + age
+  dupes → shared `formatWeekdayDayTime`/`getShortAgeString` (31 unit tests);
+  logger.js added to the page (was the only one missing it).
+- ⚠️ **Module-loading gotcha** (hit in step 4): a module loaded both via
+  `<script type="module" src="...?v=X">` AND via a bare import specifier runs
+  TWICE — the module cache is keyed on the full URL, query string included.
+  Rule: one entry-point script tag per page; imported modules get NO tag.
+  (winds.html's two entries are safe — neither imports the other.)
+- ⏭️ Step 5: storm_surge.html. Then Step 6 index.html last — the big one
+  (main.js + charts-v4 + 5 chart modules + stations-map; leads into the P2
+  buoy-card refactor).
 - Convention: foundation scripts (theme-manager, logger, warning-banner, nav,
   footer, sanitize-html, chart-utils-v4) stay classic until all pages are
   modules; modules read their globals meanwhile. Bump `?v=` on converted
   script tags; run format → lint → test:js → test:frontend before commit.
+  Runtime verification recipe: `.claude/skills/verify/SKILL.md`.
 
 ---
 

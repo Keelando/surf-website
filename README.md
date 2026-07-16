@@ -30,6 +30,9 @@ sr3 start subscribe/bc_wind_stations
 sr3 start subscribe/marine_forecast
 ```
 
+sr3 configs are tracked in `config/sr3/` and deployed to
+`~/.config/sr3/subscribe/` — see `docs/SR3_MANAGEMENT.md`.
+
 See `docs/DEPLOYMENT.md` for full setup including cron jobs.
 
 ---
@@ -38,24 +41,29 @@ See `docs/DEPLOYMENT.md` for full setup including cron jobs.
 
 ```
 envcan_wave/
-├── site/                 # Static frontend (HTML/JS/CSS, served by Caddy)
-│   ├── assets/           # JS, CSS, vendor libs
+├── site/                 # Static frontend (HTML/JS/CSS, served by Caddy, no build step)
+│   ├── assets/js/        # Page scripts (migrating to ES modules)
+│   │   └── shared/       # Shared ES-module utils (formatting, staleness, markers)
 │   ├── data/             # JSON exports read by the frontend
 │   └── docs/             # Frontend documentation
 ├── scripts/
-│   ├── fetch/            # Data fetching scripts (NOAA, Surrey, DFO, webcams, etc.)
-│   └── parse/            # XML/text parsers → SQLite
+│   ├── fetch/            # HTTP-polled sources (NOAA, Surrey, DFO, webcams, etc.)
+│   ├── parse/            # XML/text parsers → SQLite
+│   ├── export/           # SQLite → JSON exporters
+│   ├── pipelines/        # Cron orchestrators (buoy, lightstation chains)
+│   └── monitoring/       # health_check.py, daily digest
 ├── lib/                  # Shared utilities (config, stations, logging)
 ├── config/
 │   ├── stations.json     # Master station registry
-│   └── tide_stations.json
+│   ├── tide_stations.json
+│   ├── webcams.json      # Webcam registry (read by fetch + monitoring)
+│   ├── crontab.txt       # Canonical crontab (install via scripts/install_crontab.sh)
+│   └── sr3/              # Sarracenia configs (source of truth, deployed to ~/.config/sr3/subscribe/)
 ├── docs/                 # Backend documentation
 ├── data/                 # Raw XML/text files from EC (auto-purged after 2 days)
-├── tests/
+├── tests/                # pytest + JS unit tests (tests/js) + Playwright (tests/playwright)
 └── archive/              # Deprecated scripts and old docs
 ```
-
-**Sarracenia configs** live in `~/.config/sr3/` (not in the repo).
 
 **Databases** live in `~/.local/share/` (not in the repo):
 - `buoy_data.sqlite` — wave buoy observations
@@ -70,23 +78,42 @@ envcan_wave/
 
 | Script | What it does |
 |--------|-------------|
-| `scripts/parse/buoy_to_influx_sqlite.py` | Parse EC SWOB-ML buoy XMLs → SQLite |
+| `scripts/parse/buoy_to_sqlite.py` | Parse EC SWOB-ML buoy XMLs → SQLite |
 | `scripts/fetch/fetch_noaa_buoy.py` | Fetch NOAA met + spectral feeds |
 | `scripts/fetch/fetch_surrey_wave_v2.py` | Fetch Surrey FlowWorks wave data |
 | `scripts/parse/wind_to_sqlite.py` | Parse EC wind station XMLs → SQLite |
 | `scripts/fetch/fetch_jericho_wind.py` | Fetch Jericho Sailing Centre wind |
-| `scripts/fetch/tide_to_sqlite.py` | Fetch DFO IWLS tide data |
+| `scripts/parse/tide_to_sqlite.py` | Fetch DFO IWLS tide data |
 | `scripts/fetch/fetch_storm_surge.py` | Fetch GeoMet GDSPS storm surge |
 | `scripts/fetch/fetch_lightstation.py` | Fetch DFO lightstation bulletins |
 | `scripts/parse/parse_lightstation.py` | Parse lightstation text → SQLite |
 | `scripts/parse/parse_marine_forecast.py` | Parse EC marine forecast XMLs → JSON |
 | `scripts/fetch/fetch_webcam.py` | Capture webcam snapshots |
-| `sqlite_to_json.py` | Export latest buoy snapshot |
-| `export_tide_json.py` | Export tide data (latest, timeseries, high/low) |
+| `scripts/pipelines/buoy_pipeline.py` | Orchestrate buoy parse → export chain (cron) |
+| `scripts/pipelines/lightstation_pipeline.py` | Orchestrate lightstation fetch → parse → export chain (cron) |
+| `scripts/export/sqlite_to_json.py` | Export latest buoy snapshot |
+| `scripts/export/export_tide_json.py` | Export tide data (latest, timeseries, high/low) |
 | `scripts/export/water_level_export.py` | Export combined water level forecast + observed storm surge |
-| `export_wind_json.py` | Export latest wind readings |
-| `export_lightstation_json.py` | Export latest lightstation conditions |
-| `influx_to_mqtt.py` | Publish to Home Assistant via MQTT (optional) |
+| `scripts/export/export_wind_json.py` | Export latest wind readings |
+| `scripts/export/export_lightstation_json.py` | Export latest lightstation conditions |
+| `scripts/monitoring/health_check.py` | Hourly system health → `site/data/system_health.json` |
+
+---
+
+## Development
+
+```bash
+.venv/bin/pytest tests/       # Backend tests (also run by the pre-commit hook)
+npm run test:js               # Frontend unit tests (node:test, no deps)
+npm run test:frontend         # Playwright — console health on all pages
+npm run lint:js               # ESLint (kept at 0 errors / 0 warnings)
+npm run format:js             # Biome formatter — run after editing JS
+npm run screenshots           # Capture all pages × light/dark for visual QA
+```
+
+Frontend has no build step; pages are migrating to ES modules
+(status table: `site/assets/js/shared/README.md`). Cron jobs are managed
+via `config/crontab.txt` + `scripts/install_crontab.sh`.
 
 ---
 
