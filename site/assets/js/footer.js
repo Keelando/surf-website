@@ -15,7 +15,6 @@
     .then((data) => {
       const badge = document.getElementById("system-status-badge");
       if (!badge) return;
-      const dot = badge.querySelector(".status-dot");
       const text = badge.querySelector(".status-text");
 
       const freshness = data.checks.data_freshness;

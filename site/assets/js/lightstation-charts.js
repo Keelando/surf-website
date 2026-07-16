@@ -19,21 +19,6 @@ async function fetchWithTimeout(url, timeout = 5000) {
   }
 }
 
-// Helper: Format timestamp to local time
-function formatTimestamp(isoString) {
-  const date = new Date(isoString);
-  return date
-    .toLocaleString("en-US", {
-      month: "numeric",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "America/Vancouver",
-    })
-    .replace(",", "");
-}
-
 function setSafeHTML(element, html) {
   if (!element) return;
 
@@ -377,9 +362,6 @@ function renderWindSpeedChart(stationName, station) {
   const mutedText = theme.mutedText;
   const axisColor = theme.axisLine;
   const gridColor = theme.gridLine;
-
-  // Prepare data for ECharts
-  const speedData = windSpeedData.map((p) => [new Date(p.time).getTime(), p.value]);
 
   // Separate gusting vs non-gusting for visual distinction
   const normalSpeedData = windSpeedData

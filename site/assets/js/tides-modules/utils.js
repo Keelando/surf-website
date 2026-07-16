@@ -45,27 +45,6 @@ export function getAgeString(date) {
 }
 
 /**
- * Update the page timestamp display
- *
- * @returns {void}
- */
-export function updateTimestamp() {
-  const timestampEl = document.getElementById("timestamp");
-  if (!timestampEl) return;
-
-  const now = new Date();
-  timestampEl.textContent = `Last updated: ${now.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-    timeZone: "America/Vancouver",
-  })}`;
-}
-
-/**
  * Show error state in the UI
  *
  * @returns {void}

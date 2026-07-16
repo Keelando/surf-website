@@ -201,7 +201,6 @@ function enableDragScroll(el) {
 
 async function loadBuoyData() {
   const container = document.getElementById("buoy-container");
-  const timestamp = document.getElementById("timestamp");
 
   // Grouped by geographic region
   const buoyGroups = [
@@ -903,18 +902,6 @@ async function loadBuoyData() {
       }
     }); // end buoyGroups forEach
 
-    const now = new Date();
-    if (timestamp) {
-      timestamp.textContent = `Page refreshed at ${now.toLocaleString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-        timeZone: "America/Vancouver",
-        timeZoneName: "short",
-      })}`;
-    }
-
     // Handle hash navigation after cards are loaded
     handleHashNavigation();
   } catch (err) {
@@ -1318,7 +1305,7 @@ function handleHashNavigation() {
   }
 }
 
-// Wait for HTMX to load footer (which contains timestamp element) before initializing
+// Wait for HTMX to load the shared components before initializing
 document.addEventListener(
   "htmx:load",
   function () {

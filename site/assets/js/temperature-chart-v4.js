@@ -2,6 +2,7 @@
    Temperature Chart Module
    Handles air and sea temperature visualization
    ----------------------------- */
+/* exported renderTemperatureChart */
 
 /**
  * Render temperature chart for the selected buoy

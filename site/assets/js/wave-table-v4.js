@@ -2,15 +2,7 @@
    Wave Table Module
    Generates 24-hour wave height summary table
    ----------------------------- */
-
-function setSafeHTML(element, html) {
-  if (!element) return;
-  if (typeof window.setSanitizedHTML === "function") {
-    window.setSanitizedHTML(element, html);
-  } else {
-    element.innerHTML = html;
-  }
-}
+/* exported generateWaveHeightTable */
 
 /**
  * Generate 24-hour wave height summary table

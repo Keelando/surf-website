@@ -3,6 +3,7 @@
    Handles wave height and period visualization
    Uses centralized arrow definitions from chart-utils-v4.js
    ----------------------------- */
+/* exported renderWaveChart */
 
 /**
  * Create wave direction arrow data for scatter series

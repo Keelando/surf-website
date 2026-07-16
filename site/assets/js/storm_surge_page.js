@@ -196,9 +196,7 @@ function updatePeakToday(stationId) {
     return;
   }
 
-  // Get current time in Pacific
   const now = new Date();
-  const pacificNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Vancouver" }));
 
   // Define time ranges (in hours from now)
   // 0-24hr, 24-72hrs, 72-156hrs
@@ -784,7 +782,6 @@ function updateHindcastChart(stationId) {
   }
 
   const theme = getChartThemeColors();
-  const colors = theme.series;
   const textColor = theme.text;
   const mutedText = theme.mutedText;
   const axisColor = theme.axisLine;
@@ -1141,20 +1138,6 @@ function updateHindcastMetadata(station) {
    ====================================== */
 
 function initPage() {
-  // Update timestamp in footer
-  const timestampEl = document.getElementById("timestamp");
-  if (timestampEl) {
-    timestampEl.textContent = new Date().toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "America/Vancouver",
-      timeZoneName: "short",
-    });
-  }
-
   // Load all datasets (observed surge first, then charts)
   loadObservedSurgeData().then(() => {
     loadForecastData();

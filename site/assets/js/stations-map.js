@@ -14,46 +14,6 @@ let latestLightstationData = null; // Cache for latest lightstation observations
 let webcamMarkers = {}; // Store webcam markers by ID for easy access
 let tideMarkers = {}; // Store tide station markers by ID for easy access
 
-// Helper function to convert cardinal direction to degrees
-function cardinalToDegrees(cardinal) {
-  if (!cardinal) return null;
-  const directions = {
-    N: 0,
-    NORTH: 0,
-    NNE: 22.5,
-    "NORTH-NORTHEAST": 22.5,
-    NE: 45,
-    NORTHEAST: 45,
-    ENE: 67.5,
-    "EAST-NORTHEAST": 67.5,
-    E: 90,
-    EAST: 90,
-    ESE: 112.5,
-    "EAST-SOUTHEAST": 112.5,
-    SE: 135,
-    SOUTHEAST: 135,
-    SSE: 157.5,
-    "SOUTH-SOUTHEAST": 157.5,
-    S: 180,
-    SOUTH: 180,
-    SSW: 202.5,
-    "SOUTH-SOUTHWEST": 202.5,
-    SW: 225,
-    SOUTHWEST: 225,
-    WSW: 247.5,
-    "WEST-SOUTHWEST": 247.5,
-    W: 270,
-    WEST: 270,
-    WNW: 292.5,
-    "WEST-NORTHWEST": 292.5,
-    NW: 315,
-    NORTHWEST: 315,
-    NNW: 337.5,
-    "NORTH-NORTHWEST": 337.5,
-  };
-  return directions[cardinal.toUpperCase()] ?? null;
-}
-
 // Helper function for directional arrows
 function getDirectionalArrow(degrees, arrowType = "wind") {
   if (degrees == null || degrees === "—") return "";

@@ -2,6 +2,7 @@
    Wind Chart Module
    Handles wind speed and gust visualization with direction arrows
    ----------------------------- */
+/* exported renderBuoyWindChart */
 
 // createWindDirectionArrowData provided by chart-utils-v4.js (loaded earlier)
 

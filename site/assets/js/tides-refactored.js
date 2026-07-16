@@ -25,13 +25,9 @@ import {
   hideStation,
 } from "./tides-modules/ui-controls.js";
 import { displayStation, displayHighLowTable } from "./tides-modules/display.js";
-import {
-  displayTideChart,
-  disposeChart,
-  getCurrentGeodeticResiduals,
-} from "./tides-modules/chart-renderer.js";
+import { displayTideChart, getCurrentGeodeticResiduals } from "./tides-modules/chart-renderer.js";
 import { displaySunlightTimes } from "./tides-modules/sunlight.js";
-import { updateTimestamp, showError, showSelectedTideOnMap } from "./tides-modules/utils.js";
+import { showError, showSelectedTideOnMap } from "./tides-modules/utils.js";
 
 /* =====================================================
    Global State
@@ -66,8 +62,6 @@ async function loadTideData() {
       (stationKey) => displayStationWrapper(stationKey),
       () => hideStation(),
     );
-
-    updateTimestamp();
   } catch (error) {
     if (window.logger) {
       window.logger.error("Tides", "Error loading tide data", error);

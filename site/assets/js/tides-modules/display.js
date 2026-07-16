@@ -47,7 +47,6 @@ export function displayStation(
   tideDataStore.setDayOffset(0);
 
   // Get station data
-  const currentStation = tideDataStore.getCurrentObservation(stationKey);
   const highlowStation = tideDataStore.getHighLow(stationKey);
 
   // Update station name in all locations

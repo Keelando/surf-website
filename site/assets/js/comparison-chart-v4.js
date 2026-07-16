@@ -2,6 +2,7 @@
    Comparison Chart Module
    Handles multi-buoy wave height comparison
    ----------------------------- */
+/* exported renderComparisonChart */
 
 /**
  * Downsample high-frequency data to hourly intervals

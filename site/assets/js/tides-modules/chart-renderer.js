@@ -92,7 +92,6 @@ function buildChartSeries(data, theme = getChartThemeColors()) {
     combinedData,
     dayOffset,
     sunlightTimes,
-    targetDateStr,
     dayStart,
     dayEnd,
     predictions,

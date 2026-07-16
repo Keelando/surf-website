@@ -40,6 +40,6 @@ a module; modules may read their globals in the meantime.
 | `formatTimestamp`, `formatTimeOnly`, `formatTimeAxis` | `chart-utils-v4.js` | `format-time.js` | pending — winds page imports shared as of 2026-07-16 |
 | `formatTimestamp` | `forecasts.js` | `format-time.js` (`formatForecastTimestamp`) | **done 2026-07-15** — legacy used browser-local TZ; shared pins Pacific |
 | `formatTimestamp`, `formatShortTimestamp` | `webcams-v4.js` | `format-time.js` | **done 2026-07-15** |
-| `formatTimestamp` | `lightstation-charts.js` | `format-time.js` (`formatNumericDayTime`) | pending |
+| `formatTimestamp` | `lightstation-charts.js` | `format-time.js` (`formatNumericDayTime`) | **obsolete** — legacy copy was dead code (never called), deleted 2026-07-16 |
 | `formatTime`, `getAgeString` | `tides-modules/utils.js` | `format-time.js` | pending (tides already ESM — trivial swap) |
 | stale popup colours/header (inline ×3) | `stations-map.js` ×2, `lightstation-map.js` | `staleness.js` | pending |

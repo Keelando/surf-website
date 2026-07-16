@@ -28,7 +28,6 @@ async function loadForecasts() {
   try {
     forecastData = await fetchWithTimeout("/data/marine_forecast.json");
     displayForecasts();
-    updateTimestamp();
   } catch (error) {
     logger.error("Forecasts", "Error loading forecasts", error);
     container.innerHTML = `
@@ -311,20 +310,6 @@ function getWarningIcon(type) {
   if (typeLower.includes("strong wind")) return "🌬️";
 
   return "⚠️";
-}
-
-/**
- * Update the page timestamp
- */
-function updateTimestamp() {
-  const timestampEl = document.getElementById("timestamp");
-  if (timestampEl && forecastData && forecastData.generated_utc) {
-    const generatedDate = new Date(forecastData.generated_utc);
-    timestampEl.textContent = `Last updated: ${formatForecastTimestamp(generatedDate)}`;
-  } else if (timestampEl) {
-    const now = new Date();
-    timestampEl.textContent = `Page loaded: ${formatForecastTimestamp(now)}`;
-  }
 }
 
 /**

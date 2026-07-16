@@ -46,9 +46,6 @@ const STORAGE_KEY = "dismissed_marine_warnings";
 // Dismiss duration - all warnings dismissed for 24 hours
 const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-// Maximum age before dismissal is always cleared (safety backstop)
-const MAX_DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
-
 /**
  * Generate unique ID for a warning
  * @param {Object} warning - Warning object
@@ -58,14 +55,6 @@ function getWarningId(warning) {
   // Use zone, type, and issued time to create unique ID
   const issued = warning.issued_utc || "unknown";
   return `${warning.zone_key}_${warning.type}_${issued}`;
-}
-
-/**
- * Get dismiss duration - always 24 hours for all warnings
- * @returns {number} Duration in ms
- */
-function getDismissDuration() {
-  return DISMISS_DURATION_MS;
 }
 
 /**
@@ -94,44 +83,6 @@ function isWarningDismissed(warningId) {
   } catch (error) {
     logger.error("WarningBanner", "Error checking dismissed warnings", error);
     return false;
-  }
-}
-
-/**
- * Dismiss a warning
- * @param {string} warningId - Warning ID to dismiss
- */
-function dismissWarning(warningId) {
-  try {
-    const dismissed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-    dismissed[warningId] = Date.now();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dismissed));
-
-    // Feedback message - always 24 hours
-    const feedbackMsg = "Warning hidden for 24 hours";
-
-    // Remove warning banner from DOM
-    const banner = document.querySelector(`[data-warning-id="${warningId}"]`);
-    if (banner) {
-      // Show feedback message
-      showDismissalFeedback(banner, feedbackMsg);
-
-      // Fade out and remove
-      banner.style.opacity = "0";
-      banner.style.transition = "opacity 0.3s ease";
-
-      setTimeout(() => {
-        banner.remove();
-
-        // Hide container if no warnings left
-        const container = document.getElementById("warning-banner-container");
-        if (container && container.querySelectorAll(".warning-banner").length === 0) {
-          container.style.display = "none";
-        }
-      }, 300);
-    }
-  } catch (error) {
-    logger.error("WarningBanner", "Error dismissing warning", error);
   }
 }
 

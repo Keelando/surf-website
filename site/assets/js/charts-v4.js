@@ -2,6 +2,7 @@
    Charts Orchestrator
    Main coordination for all chart modules
    ----------------------------- */
+/* exported setTimeRange, applyWaveThreshold, clearWaveThreshold */
 
 let chartData = null;
 let waveChart, windChart, tempChart, waveComparisonChart;
@@ -54,21 +55,6 @@ async function loadChartsData() {
   try {
     chartData = await fetchWithTimeout(`/data/buoy_timeseries_48h.json?t=${Date.now()}`);
 
-    if (chartData._meta?.generated_utc) {
-      const dataTime = new Date(chartData._meta.generated_utc);
-      const timestampEl = document.getElementById("timestamp");
-      if (timestampEl) {
-        timestampEl.textContent = `Chart data updated: ${dataTime.toLocaleString("en-US", {
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-          timeZone: "America/Vancouver",
-        })}`;
-      }
-    }
-
     initCharts();
     const selectedBuoy = document.getElementById("chart-buoy-select").value;
     updateCharts(selectedBuoy);
@@ -76,10 +62,6 @@ async function loadChartsData() {
     updateTimeRangeLabels(); // Set initial labels to 24-Hour
   } catch (err) {
     logger.error("Charts", "Error loading chart data", err);
-    const timestampEl = document.getElementById("timestamp");
-    if (timestampEl) {
-      timestampEl.textContent = "⚠️ Error loading chart data";
-    }
   }
 }
 

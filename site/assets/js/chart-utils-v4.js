@@ -1,7 +1,17 @@
 /* -----------------------------
    Chart Utilities
    Shared formatting and config functions
+
+   Classic script: these top-level declarations are globals consumed by the
+   other classic page scripts (and, until the ES-module migration finishes,
+   by module pages too). The directive below tells ESLint they're exported.
    ----------------------------- */
+/* exported DIRECTION_ARROW_PATH, calculateArrowRotation, degreesToCardinal,
+   getDirectionalArrow, formatTimestamp, formatTimeOnly,
+   createWindDirectionArrowData, fetchWithTimeout, sanitizeSeriesData,
+   registerChartThemeListener, formatCompactTimeLabel, formatTimeAxis,
+   getResponsiveGridConfig, getResponsiveLegendBottom, showChartError,
+   getMobileOptimizedTooltipConfig */
 
 /* =============================================================================
    DIRECTION ARROW DEFINITIONS (CENTRALIZED)
@@ -428,21 +438,6 @@ function showChartError(container, chartName, error) {
       </div>
     </div>
   `;
-}
-
-/**
- * Safely render chart with error handling
- * @param {Function} renderFn - Chart rendering function
- * @param {HTMLElement|string} container - DOM element or element ID
- * @param {string} chartName - Name of the chart for error messages
- * @param {...any} args - Arguments to pass to renderFn
- */
-function safeRenderChart(renderFn, container, chartName, ...args) {
-  try {
-    renderFn(...args);
-  } catch (error) {
-    showChartError(container, chartName, error);
-  }
 }
 
 /**
