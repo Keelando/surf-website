@@ -44,9 +44,18 @@ Migration status table: `site/assets/js/shared/README.md`.
   TWICE — the module cache is keyed on the full URL, query string included.
   Rule: one entry-point script tag per page; imported modules get NO tag.
   (winds.html's two entries are safe — neither imports the other.)
-- ⏭️ Step 5: storm_surge.html. Then Step 6 index.html last — the big one
-  (main.js + charts-v4 + 5 chart modules + stations-map; leads into the P2
-  buoy-card refactor).
+- ✅ Step 5 (2026-07-17, `5923361`): storm_surge.html converted — page script
+  becomes the module entry point; new shared `formatMonthDayTimeTZ` +
+  `formatModelRunTime` (33 unit tests; identical copies in
+  storm_surge_chart-v4.js swap over when index converts). Within-file dedupe:
+  Surrey-station mapping helpers, `buildMidnightMarkLines()`; dead
+  `window.showSelected*SurgeOnMap` exports deleted. CSP fix en route:
+  "Show on Map" anchors `javascript:void(0)` → `href="#"` + preventDefault
+  (same legacy pattern still on tides.html ×2 and analytics.html ×1 — fix
+  during their conversions).
+- ⏭️ Step 6 (final): index.html — the big one (main.js + charts-v4 +
+  storm_surge_chart-v4 + stations-map + 19-script load order; leads into the
+  P2 buoy-card refactor).
 - Convention: foundation scripts (theme-manager, logger, warning-banner, nav,
   footer, sanitize-html, chart-utils-v4) stay classic until all pages are
   modules; modules read their globals meanwhile. Bump `?v=` on converted
