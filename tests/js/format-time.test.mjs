@@ -3,7 +3,9 @@ import { test } from "node:test";
 import {
   formatForecastTimestamp,
   formatFullTimestamp,
+  formatModelRunTime,
   formatMonthDayTime,
+  formatMonthDayTimeTZ,
   formatNumericDayTime,
   formatTimeHM,
   formatTimeWithDate,
@@ -33,6 +35,20 @@ test("formatTimeWithDate appends numeric month/day", () => {
 test("formatMonthDayTime renders short month with time", () => {
   assert.equal(formatMonthDayTime(SUMMER), "Jul 14, 14:30");
   assert.equal(formatMonthDayTime(WINTER), "Jan 15, 12:05");
+});
+
+test("formatMonthDayTimeTZ appends the zone abbreviation", () => {
+  assert.equal(formatMonthDayTimeTZ(SUMMER), "Jul 14, 14:30 PDT");
+  assert.equal(formatMonthDayTimeTZ(WINTER), "Jan 15, 12:05 PST");
+});
+
+test("formatModelRunTime renders UTC Z-hours", () => {
+  assert.equal(formatModelRunTime("2026-07-14T12:00:00Z"), "Jul 14 12Z");
+  assert.equal(formatModelRunTime("2026-07-14T00:00:00+00:00"), "Jul 14 00Z");
+  // Bare timestamp (no zone info) is treated as UTC
+  assert.equal(formatModelRunTime("2026-07-14T12:00:00"), "Jul 14 12Z");
+  assert.equal(formatModelRunTime(""), "");
+  assert.equal(formatModelRunTime(undefined), "");
 });
 
 test("formatNumericDayTime strips the comma", () => {

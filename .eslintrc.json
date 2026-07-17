@@ -32,6 +32,7 @@
         "site/assets/js/lightstation-charts.js",
         "site/assets/js/lightstation-map.js",
         "site/assets/js/lightstation-page.js",
+        "site/assets/js/storm_surge_page.js",
         "tests/js/**/*.mjs"
       ],
       "parserOptions": {

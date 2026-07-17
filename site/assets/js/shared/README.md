@@ -23,8 +23,8 @@ Legacy copies are deleted when their page converts to ES modules
 (page-by-page; each conversion independently shippable).
 
 Converted pages: tides (pre-existing), guide, webcams, forecasts
-(2026-07-15), winds + lightstations (2026-07-16). Remaining: storm_surge,
-index.
+(2026-07-15), winds + lightstations (2026-07-16), storm_surge
+(2026-07-17). Remaining: index.
 Foundation scripts (theme-manager, logger, warning-banner, nav, footer,
 sanitize-html, chart-utils-v4) stay classic until every consumer page is
 a module; modules may read their globals in the meantime.
@@ -43,4 +43,6 @@ a module; modules may read their globals in the meantime.
 | `formatTimestamp`, `formatShortTimestamp` | `webcams-v4.js` | `format-time.js` | **done 2026-07-15** |
 | `formatTimestamp` | `lightstation-charts.js` | `format-time.js` (`formatNumericDayTime`) | **obsolete** — legacy copy was dead code (never called), deleted 2026-07-16 |
 | `formatTime`, `getAgeString` | `tides-modules/utils.js` | `format-time.js` | pending (tides already ESM — trivial swap) |
+| metadata `formatDate` + tooltip time (inline ×3) | `storm_surge_page.js` | `format-time.js` (`formatMonthDayTimeTZ`) | **done 2026-07-17**; identical copy in `storm_surge_chart-v4.js` pending (index.html) |
+| model-run "Jul 14 12Z" block (inline ×2) | `storm_surge_page.js` | `format-time.js` (`formatModelRunTime`) | **done 2026-07-17**; identical copy in `storm_surge_chart-v4.js` pending (index.html) |
 | stale popup colours/header (inline ×3) | `stations-map.js` ×2, `lightstation-map.js` | `staleness.js` | lightstation-map **done 2026-07-16**; stations-map ×2 pending (index.html) |

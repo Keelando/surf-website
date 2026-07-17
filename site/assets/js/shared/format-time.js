@@ -57,6 +57,40 @@ export function formatNumericDayTime(input) {
   }).replace(",", "");
 }
 
+/**
+ * "Jul 14, 14:30 PDT" — replaces the metadata formatDate closures and the
+ * forecast tooltip time in storm_surge_page.js (and, when the index page
+ * migrates, the identical formatDate in storm_surge_chart-v4.js).
+ */
+export function formatMonthDayTimeTZ(input) {
+  return fmt(input, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZoneName: "short",
+  });
+}
+
+/**
+ * "Jul 14 12Z" from a model-run timestamp string, or "" when absent —
+ * replaces the model-run blocks duplicated across storm_surge_page.js and
+ * storm_surge_chart-v4.js. Deliberately UTC (model runs are labelled in Z
+ * hours) — the one exception to the Pacific rule above. A bare timestamp
+ * without zone info is treated as UTC, matching the backend export.
+ */
+export function formatModelRunTime(runStr) {
+  if (!runStr) return "";
+  const runTime = new Date(runStr.endsWith("Z") || runStr.includes("+") ? runStr : `${runStr}Z`);
+  const dateStr = runTime.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  return `${dateStr} ${runTime.getUTCHours().toString().padStart(2, "0")}Z`;
+}
+
 /** "Jul 14, 2026, 14:30 PDT" — replaces webcams-v4 formatTimestamp(). */
 export function formatFullTimestamp(input) {
   return fmt(input, {
