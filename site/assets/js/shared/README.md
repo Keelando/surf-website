@@ -18,8 +18,14 @@ node can import these files in tests; browsers ignore it.
   `formatDataAge`)
 - `markers.js` — directional map marker, angular spread vector, ECharts arrow path
 - `station-meta.js` — predicates over stations.json entries (NOAA/Surrey/pile,
-  swell display, precision, sub-hourly) — replaces inline station-ID checks;
+  swell display, precision, sub-hourly) plus the displayed-field priorities
+  (`waveHeightField`/`wavePeriodFields`/`pickWavePeriod`, shared by the card's
+  compact line and the history table) — replaces inline station-ID checks;
   see `docs/project/BUOY_CARD_REFACTOR.md`
+
+Page-specific builders live beside their entry point rather than here:
+`buoy-card.js` and `buoy-history.js` are index-only, and both take
+`(data, meta)` so they stay pure and unit-testable.
 
 ## Migration status
 

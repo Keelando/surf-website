@@ -1,6 +1,6 @@
 # Buoy Card Refactor (P2 of the 2026-07-14 maintainability roadmap)
 
-**Status:** Steps 1–3 DONE (2026-07-18); next is step 4 (history table)
+**Status:** COMPLETE (2026-07-18) — all four steps shipped
 **Target:** `site/assets/js/main.js` (1,288 → 736 lines) — the index-page buoy cards
 **Origin:** agreed 2026-05-28 after the backend Surrey-channel config
 consolidation; same disease on the frontend: per-station behavior hardcoded
@@ -127,8 +127,39 @@ Notes:
      section needed two presses. Fixed by reading `getComputedStyle`.
      Neither the unit tests nor the console-error suite caught this —
      only driving the page did.
-4. **History table**: fold `renderHistoryTable`'s remaining structure into
-   the step-2 builders where it overlaps.
+4. **History table** ✅ 2026-07-18
+   - `renderHistoryTable()` (203 lines) → new `site/assets/js/buoy-history.js`:
+     pure builders over `(timeseries, meta)` — `selectHistorySeries`,
+     `buildHistoryTimes`, `formatHistoryTimeCell`, `formatHistoryWind`,
+     `buildHistoryRows`, `buildHistoryNote`, `buildHistoryTableHTML`.
+     22 new unit tests. main.js keeps only the fetch + toggle wiring and a
+     9-line `renderHistoryTable` passing the one viewport-dependent input
+     (the mobile scroll hint).
+   - **The overlap that mattered** was the field-priority rule: "which field
+     holds the height/period this station displays" was expressed twice —
+     over the snapshot object in `buildWaveLine`, over the timeseries arrays
+     in `renderHistoryTable`. Both now read `waveHeightField()` /
+     `wavePeriodFields()` from `shared/station-meta.js`, which returns the
+     ordered fields each with the tag the UI shows when it's the one used
+     (`dominant`/`avg`/`peak`, null = the expected significant/swell value).
+     `pickWavePeriod()` walks that list for the snapshot case.
+   - `buildWaveLine`'s three near-identical branches collapsed to one path.
+     The families now differ only in `waveDirection()` — which direction
+     pair represents the displayed wave — which is the one thing they
+     genuinely disagree on.
+   - Verified no-op with fixtures **and the clock** frozen: the 12h window is
+     relative to `now`, so two runs minutes apart differ by rows crossing the
+     boundary. DOM identical modulo template indentation (whitespace-stripped
+     bytes match), computed styles + boxes identical for all 1,739 elements
+     across chromium/light and firefox/dark.
+
+## Result
+
+main.js 1,288 → 533 lines. Per-station behaviour is read from
+`config/stations.json` via `shared/station-meta.js` rather than from
+station-ID checks; card and history HTML live in tested pure builders
+(`buoy-card.js`, `buoy-history.js`); no inline styles remain in either.
+Adding a station is now a config edit.
 
 Each step ships independently: format → lint → test:js → test:frontend →
 runtime verify (`.claude/skills/verify/SKILL.md`) → bump `?v=` → commit
