@@ -31,6 +31,32 @@ For a refactor that claims no behaviour change, tests passing isn't the
 claim — the rendered output being identical is. Capture the container's
 `innerHTML` on both sides and diff.
 
+**Pick the right comparison for the change:**
+
+| Change | Compare | Why |
+|---|---|---|
+| Pure JS restructure | `innerHTML` | Markup should be byte-identical |
+| Inline styles → CSS classes | **computed styles + bounding boxes** | The HTML changes by design (`style=` → `class=`); innerHTML is all noise |
+| Template re-indentation | whitespace-stripped `innerHTML`, then boxes | Proves the whitespace doesn't render |
+
+For the computed-style variant, walk every element under the container and
+dump ~40 resolved properties plus `getBoundingClientRect()` rounded to whole
+pixels. Boxes are what catch a layout shift hiding behind an identical
+property list. Run it per engine × theme — CSS changes need real rendering
+in both engines, unlike a byte-identical DOM.
+
+**Freeze the clock too, not just the data**, whenever the view has a
+time-relative window (the buoy history table shows a trailing 12h). Two runs
+minutes apart legitimately differ by rows crossing the boundary, which reads
+as a refactor regression. `page.addInitScript` with a `Date` subclass whose
+no-arg constructor and `now()` return a fixed instant.
+
+**A capture that comes back suspiciously small is a finding, not noise.**
+A step-3 run returned 624 elements where a later one returned 1,816 — the
+toggles had silently broken (see the `el.style.display` trap below), so the
+"expanded" page was still collapsed. Sanity-check element counts between
+runs before trusting a diff.
+
 1. **Freeze the data first.** Cron rewrites `site/data/` every minute, so
    two captures minutes apart differ by live readings, not by your code.
    Snapshot the directory (`cp -r site/data <scratch>/fixtures`) and
@@ -93,6 +119,25 @@ those need real rendering in both engines).
   included). Symptom: "Map container is already initialized." Rule:
   each module is either a script-tag entry point or an import target,
   never both. Multi-module pages get ONE entry-point tag.
+
+- **`el.style.display` only sees inline styles.** Moving an initial
+  `display: none` into a CSS class leaves the inline property empty, so any
+  handler testing `el.style.display === "none"` reads false on the first
+  click and does nothing visible — every toggle then needs two presses. Use
+  `getComputedStyle(el).display`. Neither `test:js` nor the console-error
+  suite catches this; only clicking does.
+
+- **Affordances gated on `window.innerWidth` are usually wrong.** Whether a
+  card's table overflows depends on the *card* width, which follows the grid
+  breakpoints — the buoy history table overflowed at 1600/1280/900px and
+  390px but not at 600px, where the grid drops to one full-width card.
+  Measure `scrollWidth > clientWidth` on the element and re-measure with a
+  ResizeObserver.
+
+- **Headless browsers use overlay scrollbars** (`offsetHeight - clientHeight`
+  is 0), so anything about reserved scrollbar gutters cannot be reproduced
+  there — desktop Firefox/Linux does reserve space. Verify the predicate
+  boundary and say plainly that the real case needs a human.
 
 - `#timestamp` does not exist in any page HTML — several legacy scripts
   still reference it (null-guarded, dead). Don't assert on it.

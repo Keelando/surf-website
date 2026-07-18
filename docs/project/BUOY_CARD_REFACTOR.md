@@ -153,6 +153,38 @@ Notes:
      bytes match), computed styles + boxes identical for all 1,739 elements
      across chromium/light and firefox/dark.
 
+## Post-refactor follow-ups (2026-07-18, same session)
+
+Found by using the page once the refactor landed — none were caught by the
+unit tests or the console-error suite:
+
+- **Toggles needed two presses** (`efd62f9`). Moving the initial
+  `display: none` into a CSS class left `el.style.display` empty until the
+  first toggle, so the handlers' `=== "none"` test read false and the first
+  click was an invisible no-op. Handlers now read `getComputedStyle`.
+- **History table scroll hint was viewport-gated** (`ba3e3ac`). The
+  "← Scroll table horizontally →" banner was gated on
+  `window.innerWidth < 768`, but whether the table overflows depends on the
+  *card* width, which follows the grid breakpoints — measured, the table
+  overflowed at 1600/1280/900px and 390px but **not** at 600px, where the
+  grid drops to one full-width card. The rule was wrong in both directions.
+  Now `trackScrollAffordance()` measures real overflow (ResizeObserver) and
+  drives both the hint and the grab cursor, so they can't disagree.
+- **Drag-scroll hijacked the scrollbar** (`ba3e3ac`). The scrollbar belongs
+  to the scroll container, so `pointerdown` on the thumb started a drag and
+  `setPointerCapture` stole the event from native thumb handling — content
+  panned 1:1 with the mouse. Presses past `clientHeight` inside the padding
+  box are now ignored. (Headless uses overlay scrollbars, so only the
+  predicate boundary could be verified there.)
+- **The table didn't fit its card** (`f91f82e`) — the root cause behind
+  wanting the hint at all. Four of six columns were sized by their header
+  text, not their data (`Wave Ht [m]` reserved 90px for 20px values), so the
+  table wanted 467px in a 359-399px card and Air fell off the edge. Units
+  stacked under their labels + `gust` → `G` in wind cells (matching the
+  compact line above) → **0px overflow at every desktop width**, all six
+  columns visible. The hint now stays silent on desktop and appears only at
+  390px, where it's true.
+
 ## Result
 
 main.js 1,288 → 533 lines. Per-station behaviour is read from
