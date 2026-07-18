@@ -60,6 +60,15 @@
   --color-stale-warning: #f57c00;
   --color-card-muted-bg: #f0f4f8;
   --color-card-muted-border: #d0d7de;
+
+  /* Card nav buttons ("View Location"/"View Charts") and the history table's
+     alternating row tint are intentionally fixed across themes — same
+     convention as the map markers in stations-map-v4.css. The solid blue
+     reads as a primary action against the muted toggle buttons above it in
+     both light and dark. Deliberately NOT overridden in [data-theme="dark"]. */
+  --color-nav-button-bg: #004b7c;
+  --color-nav-button-text: #ffffff;
+  --color-history-row-alt: rgba(0, 75, 124, 0.03);
   --color-card-muted-hover: #e1e8ed;
   --color-card-muted-active: #d0d7e0;
   --color-active-indicator-bg: #e3f2fd;
@@ -857,24 +866,34 @@ footer .github-link:hover {
   justify-content: center;
 }
 
+/* Values below are the styles that actually rendered before the step-3
+   inline-style extraction: buoy-card.js set background/color/border/padding/
+   font-weight/transition/flex inline, which beat this rule. Folded in as-is so
+   the extraction is a visual no-op. */
 .buoy-nav-link {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.4rem 0.8rem;
-  background: var(--color-card-muted-bg);
-  border: 1px solid var(--color-card-muted-border);
+  flex: 1;
+  padding: 0.5rem;
+  background: var(--color-nav-button-bg);
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.85em;
-  color: var(--color-primary-dark);
-  font-weight: 500;
+  color: var(--color-nav-button-text);
+  font-weight: 600;
   text-decoration: none;
-  transition: all 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
+  transition: background 0.2s;
+}
+
+.buoy-nav-link[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .buoy-nav-link:hover {
-  background: var(--color-primary-hover-start) !important;
+  background: var(--color-primary-hover-start);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
@@ -1638,4 +1657,379 @@ header h2 {
 
 .color-error {
   color: var(--color-error-text);
+}
+
+/* -----------------------------
+   Buoy Cards — extracted inline styles
+
+   Step 3 of docs/project/BUOY_CARD_REFACTOR.md: the ~80 style="..." blocks
+   that buoy-card.js and main.js used to emit. Values are carried over
+   verbatim; this section is meant to be a visual no-op.
+----------------------------- */
+
+/* --- Header --- */
+
+.buoy-source-badge {
+  font-size: 0.7em;
+  font-weight: normal;
+}
+
+.buoy-source-badge--noaa { color: var(--color-source-noaa-text); }
+.buoy-source-badge--surrey { color: var(--color-accent-green); }
+.buoy-source-badge--envcan { color: var(--color-source-envcan-text); }
+
+.buoy-last-update {
+  font-size: 0.9em;
+  color: var(--color-text-muted);
+  margin-top: -0.5rem;
+}
+
+.buoy-age-badge--down {
+  color: var(--color-accent-red);
+  font-weight: bold;
+  background: var(--color-callout-danger-bg);
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+}
+
+.buoy-age-badge--stale {
+  color: var(--color-error-text);
+  font-weight: bold;
+}
+
+.region-station-count {
+  font-size: 0.8em;
+  font-weight: normal;
+  opacity: 0.8;
+}
+
+/* --- Compact view --- */
+
+.buoy-metric--spaced {
+  margin: 0.5rem 0;
+}
+
+.buoy-period-tag {
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+}
+
+.buoy-footnote {
+  margin: -0.25rem 0 0.5rem 0;
+  font-size: 0.7em;
+  color: var(--color-text-muted);
+  line-height: 1.3;
+}
+
+.buoy-offline-notice {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--color-callout-danger-bg);
+  border-left: 4px solid var(--color-accent-red);
+  border-radius: 4px;
+  color: var(--color-error-text);
+  font-weight: 600;
+}
+
+.buoy-down-subtext {
+  font-size: 0.85em;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* --- Toggle buttons --- */
+
+.card-toggle-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.card-toggle-btn {
+  flex: 1;
+  padding: 0.5rem;
+  background: var(--color-card-muted-bg);
+  border: 1px solid var(--color-card-muted-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85em;
+  color: var(--color-primary-dark);
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+/* --- Collapsible sections (details, history) --- */
+
+.card-collapsible {
+  display: none;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+/* --- Details section --- */
+
+.buoy-callout-warning {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--color-callout-warning-bg);
+  border-left: 4px solid var(--color-accent-orange);
+  border-radius: 4px;
+}
+
+.buoy-callout-title {
+  margin: 0;
+  color: var(--color-warning-text);
+  font-weight: 600;
+}
+
+.buoy-callout-body {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.85em;
+  color: var(--color-warning-text);
+}
+
+.buoy-section-title {
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  margin-bottom: 0.5rem;
+}
+
+.buoy-section-title--spaced {
+  margin-top: 0.75rem;
+}
+
+/* The spread heading is the one section title with no bottom margin. */
+.buoy-section-title--bare {
+  margin-top: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+.buoy-metric--indent-top {
+  margin-top: 0.75rem;
+}
+
+.buoy-ratio {
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+}
+
+/* --- Angular spread --- */
+
+.spread-info-btn {
+  cursor: pointer;
+  font-size: 0.9em;
+  margin-left: 0.3rem;
+  color: var(--color-primary);
+  user-select: none;
+}
+
+.spread-desc {
+  font-weight: 600;
+}
+
+.spread-desc--good { color: var(--color-accent-green); }
+.spread-desc--moderate { color: var(--color-accent-orange); }
+.spread-desc--poor { color: var(--color-accent-red); }
+
+.spread-note {
+  font-size: 0.85em;
+  color: var(--color-text-muted);
+}
+
+.spread-visual {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: var(--color-surface-alt);
+  border-radius: 4px;
+  border: 1px solid var(--color-border-light);
+}
+
+.spread-row {
+  margin: 0.5rem 0;
+}
+
+.spread-row-label {
+  font-size: 0.85em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.spread-row-value {
+  font-size: 0.75em;
+  color: var(--color-text-muted);
+  margin-left: 0.5rem;
+}
+
+.spread-visual-note {
+  font-size: 0.75em;
+  color: var(--color-text-light);
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
+.spread-explainer {
+  display: none;
+  font-size: 0.85em;
+  color: var(--color-text-light);
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--color-callout-info-bg);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 4px;
+  line-height: 1.5;
+}
+
+.spread-explainer-title {
+  color: var(--color-tagline-text);
+}
+
+.spread-explainer-note {
+  font-size: 0.9em;
+  color: var(--color-text-muted);
+}
+
+/* --- Source link footer --- */
+
+.buoy-source-link-wrap {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.buoy-source-link {
+  font-size: 0.85em;
+  color: var(--color-primary-dark);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* -----------------------------
+   Buoy Card History Table
+----------------------------- */
+
+.history-empty,
+.history-error {
+  text-align: center;
+  padding: 1rem;
+}
+
+.history-empty { color: var(--color-text-light); }
+.history-error { color: var(--color-error-text); }
+
+.history-scroll-hint {
+  text-align: center;
+  margin-bottom: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--color-active-indicator-bg);
+  font-size: 0.65rem;
+  color: var(--color-primary-dark);
+  border-radius: 4px;
+}
+
+.history-scroll {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.history-table {
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+}
+
+.history-table thead tr {
+  background: var(--color-surface-alt);
+}
+
+/* Six fixed columns; the header row uses the stronger border colour and the
+   body rows the lighter one, matching the original inline styles. */
+.history-table th,
+.history-table td {
+  padding: 0.4rem 0.3rem;
+  text-align: center;
+}
+
+.history-table th {
+  border-bottom: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.history-table td {
+  border-bottom: 1px solid var(--color-border-light);
+  border-right: 1px solid var(--color-border-light);
+}
+
+.history-table th:last-child,
+.history-table td:last-child {
+  border-right: none;
+}
+
+/* `start` rather than `left`: the Time column previously carried no
+   text-align at all, so it resolved to the default. Keeps this extraction a
+   byte-for-byte no-op in the computed styles. */
+.history-table td:first-child {
+  text-align: start;
+}
+
+.history-table th:first-child {
+  text-align: left;
+}
+
+/* Time and Wind hold multi-token values; the numeric columns never wrap. */
+.history-table td:nth-child(1),
+.history-table td:nth-child(2) {
+  white-space: nowrap;
+}
+
+.history-table th:nth-child(1) { min-width: 55px; }
+.history-table th:nth-child(2) { min-width: 95px; }
+.history-table th:nth-child(3) { min-width: 50px; }
+.history-table th:nth-child(4) { min-width: 60px; }
+.history-table th:nth-child(5) { min-width: 55px; }
+.history-table th:nth-child(6) { min-width: 55px; }
+
+/* Replaces the per-row inline `rowBg` that main.js used to compute. The old
+   code striped rows with an even *array index*, i.e. the first rendered row. */
+.history-table tbody tr:nth-child(odd) {
+  background: var(--color-history-row-alt);
+}
+
+.history-hide-row {
+  text-align: center;
+  margin-top: 0.75rem;
+}
+
+.hide-history-btn {
+  padding: 0.5rem 1rem;
+  background: var(--color-primary-dark);
+  color: var(--color-on-primary);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.history-note {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: var(--color-callout-info-bg);
+  border-left: 3px solid var(--color-source-noaa-border);
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  line-height: 1.4;
 }

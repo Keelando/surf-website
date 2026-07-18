@@ -43,12 +43,12 @@ export function freshnessState(b) {
 /** Source badge shown next to the station name on each card. */
 export function sourceBadge(meta) {
   if (isNoaaStation(meta)) {
-    return ` <span style="font-size: 0.7em; color: var(--color-source-noaa-text); font-weight: normal;">🇺🇸 NOAA</span>`;
+    return ` <span class="buoy-source-badge buoy-source-badge--noaa">🇺🇸 NOAA</span>`;
   }
   if (isSurreyStation(meta)) {
-    return ` <span style="font-size: 0.7em; color: var(--color-accent-green); font-weight: normal;">🏛️ Surrey (FlowWorks)</span>`;
+    return ` <span class="buoy-source-badge buoy-source-badge--surrey">🏛️ Surrey (FlowWorks)</span>`;
   }
-  return ` <span style="font-size: 0.7em; color: var(--color-source-envcan-text); font-weight: normal;">🇨🇦 Env Canada</span>`;
+  return ` <span class="buoy-source-badge buoy-source-badge--envcan">🇨🇦 Env Canada</span>`;
 }
 
 /** Source-coloured left border, applied to the card element itself. */
@@ -65,13 +65,8 @@ export function buildSourceLink(meta) {
   const stationLink = sourceUrl(meta);
   if (!stationLink) return "";
   return `
-          <p style="margin-top: 0.75rem; margin-bottom: 0; padding-top: 0.5rem; border-top: 1px solid var(--color-border); text-align: center;">
-            <a href="${stationLink}" target="_blank" rel="noopener noreferrer" style="
-              font-size: 0.85em;
-              color: var(--color-primary-dark);
-              text-decoration: none;
-              font-weight: 500;
-            ">
+          <p class="buoy-source-link-wrap">
+            <a href="${stationLink}" target="_blank" rel="noopener noreferrer" class="buoy-source-link">
               🔗 View Source Data
             </a>
           </p>
@@ -87,12 +82,12 @@ export function buildNoDataCard(b, id, meta) {
   let html = `<div class="buoy-card-inner"><h2>${b.name || id}`;
   html += sourceBadge(meta);
   html += `</h2>
-            <p class="buoy-metric" style="margin: 1rem 0; padding: 1rem; background: var(--color-callout-danger-bg); border-left: 4px solid var(--color-accent-red); border-radius: 4px; color: var(--color-error-text); font-weight: 600;">
+            <p class="buoy-metric buoy-offline-notice">
               🔴 Station offline — no data available
             </p>`;
   if (stationLink) {
-    html += `<p style="margin-top: 0.75rem; margin-bottom: 0; padding-top: 0.5rem; border-top: 1px solid var(--color-border); text-align: center;">
-              <a href="${stationLink}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85em; color: var(--color-primary-dark); text-decoration: none; font-weight: 500;">🔗 View Source Data</a>
+    html += `<p class="buoy-source-link-wrap">
+              <a href="${stationLink}" target="_blank" rel="noopener noreferrer" class="buoy-source-link">🔗 View Source Data</a>
             </p>`;
   }
   html += `</div>`;
@@ -106,15 +101,15 @@ export function buildCardHeader(b, id, meta, freshness, formatTimestamp) {
 
   let ageWarning = "";
   if (isDown) {
-    ageWarning = ` <span style="color: var(--color-accent-red); font-weight: bold; background: var(--color-callout-danger-bg); padding: 0.2rem 0.5rem; border-radius: 3px;">🔴 STATION DOWN (${formatDataAge(ageMinutes)})</span>`;
+    ageWarning = ` <span class="buoy-age-badge--down">🔴 STATION DOWN (${formatDataAge(ageMinutes)})</span>`;
   } else if (isStale) {
-    ageWarning = ` <span style="color: var(--color-error-text); font-weight: bold;">⚠️ STALE (${formatDataAge(ageMinutes)})</span>`;
+    ageWarning = ` <span class="buoy-age-badge--stale">⚠️ STALE (${formatDataAge(ageMinutes)})</span>`;
   }
 
   let html = `<h2>${b.name || id}`;
   html += sourceBadge(meta);
   html += `</h2>`;
-  html += `<p style="font-size: 0.9em; color: var(--color-text-muted); margin-top: -0.5rem;">Last Update: ${updated}${ageWarning}</p>`;
+  html += `<p class="buoy-last-update">Last Update: ${updated}${ageWarning}</p>`;
   return html;
 }
 
@@ -131,12 +126,12 @@ export function buildWindLine(b) {
     const gustPart = windGust !== "—" ? ` G ${windGust}` : "";
     windDisplay = `${windCardinal} ${windSpeed}${gustPart} kn${windDegrees} ${getDirectionalArrow(windDir, "wind")}`;
   }
-  return `<p class="buoy-metric" style="margin: 0.5rem 0;"><b>💨 Wind:</b> ${windDisplay}</p>`;
+  return `<p class="buoy-metric buoy-metric--spaced"><b>💨 Wind:</b> ${windDisplay}</p>`;
 }
 
 /** Small muted tag noting which period type is shown. */
 function periodTag(label) {
-  return ` <span style="color: var(--color-text-muted); font-size: 0.85em;">${label}</span>`;
+  return ` <span class="buoy-period-tag">${label}</span>`;
 }
 
 /**
@@ -213,12 +208,12 @@ export function buildWaveLine(b, meta) {
     }
   }
 
-  let html = `<p class="buoy-metric" style="margin: 0.5rem 0;"><b>${waveLabel}</b> ${waveDisplay}</p>`;
+  let html = `<p class="buoy-metric buoy-metric--spaced"><b>${waveLabel}</b> ${waveDisplay}</p>`;
 
   // NOAA reports a "dominant" period rather than a significant one; readers
   // won't know the term, so add a small footnote on these cards.
   if (usesDominantPeriod(meta)) {
-    html += `<p style="margin: -0.25rem 0 0.5rem 0; font-size: 0.7em; color: var(--color-text-muted); line-height: 1.3;">Dominant = the wave period with the most energy (NOAA's term for peak period).</p>`;
+    html += `<p class="buoy-footnote">Dominant = the wave period with the most energy (NOAA's term for peak period).</p>`;
   }
   return html;
 }
@@ -229,10 +224,10 @@ export function buildCompactView(b, meta, freshness) {
 
   if (freshness.isDown) {
     html += `
-          <p class="buoy-metric" style="margin: 1rem 0; padding: 1rem; background: var(--color-callout-danger-bg); border-left: 4px solid var(--color-accent-red); border-radius: 4px; color: var(--color-error-text); font-weight: 600;">
+          <p class="buoy-metric buoy-offline-notice">
             🔴 Station Down - No recent data available
           </p>
-          <p style="font-size: 0.85em; color: var(--color-text-muted); text-align: center; margin-top: 0.5rem;">
+          <p class="buoy-down-subtext">
             Last data received ${formatDataAge(freshness.ageMinutes)}
           </p>
         `;
@@ -248,33 +243,11 @@ export function buildCompactView(b, meta, freshness) {
 /** The "Show Details" / "Show History" button pair. */
 export function buildToggleButtons() {
   return `
-        <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
-          <button class="toggle-details-btn" style="
-            flex: 1;
-            padding: 0.5rem;
-            background: var(--color-card-muted-bg);
-            border: 1px solid var(--color-card-muted-border);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85em;
-            color: var(--color-primary-dark);
-            font-weight: 600;
-            transition: background 0.2s;
-          ">
+        <div class="card-toggle-row">
+          <button class="toggle-details-btn card-toggle-btn">
             ▼ Show Details
           </button>
-          <button class="toggle-history-btn" style="
-            flex: 1;
-            padding: 0.5rem;
-            background: var(--color-card-muted-bg);
-            border: 1px solid var(--color-card-muted-border);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85em;
-            color: var(--color-primary-dark);
-            font-weight: 600;
-            transition: background 0.2s;
-          ">
+          <button class="toggle-history-btn card-toggle-btn">
             📈 Show History (12h)
           </button>
         </div>
@@ -286,9 +259,9 @@ export function buildStalenessCallout(freshness) {
   const { ageMinutes, isDown, isStale } = freshness;
   if (isDown) {
     return `
-          <div style="margin-bottom: 1rem; padding: 0.75rem; background: var(--color-callout-warning-bg); border-left: 4px solid var(--color-accent-orange); border-radius: 4px;">
-            <p style="margin: 0; color: var(--color-warning-text); font-weight: 600;">⚠️ Station Down - Showing Last Known Data</p>
-            <p style="margin: 0.25rem 0 0 0; font-size: 0.85em; color: var(--color-warning-text);">
+          <div class="buoy-callout-warning">
+            <p class="buoy-callout-title">⚠️ Station Down - Showing Last Known Data</p>
+            <p class="buoy-callout-body">
               This data is from ${formatDataAge(ageMinutes)} and does not reflect current conditions.
             </p>
           </div>
@@ -296,9 +269,9 @@ export function buildStalenessCallout(freshness) {
   }
   if (isStale) {
     return `
-          <div style="margin-bottom: 1rem; padding: 0.75rem; background: var(--color-callout-warning-bg); border-left: 4px solid var(--color-accent-orange); border-radius: 4px;">
-            <p style="margin: 0; color: var(--color-warning-text); font-weight: 600;">⚠️ Stale Data Warning</p>
-            <p style="margin: 0.25rem 0 0 0; font-size: 0.85em; color: var(--color-warning-text);">
+          <div class="buoy-callout-warning">
+            <p class="buoy-callout-title">⚠️ Stale Data Warning</p>
+            <p class="buoy-callout-body">
               This data is ${formatDataAge(ageMinutes)} old. Newer data may not be available.
             </p>
           </div>
@@ -309,46 +282,46 @@ export function buildStalenessCallout(freshness) {
 
 /** NOAA spectral wave breakdown: combined, wind waves, swell, peak. */
 export function buildNoaaWaveDetails(b) {
-  let html = `<p class="buoy-metric" style="font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">Detailed Wave Metrics</p>`;
+  let html = `<p class="buoy-metric buoy-section-title">Detailed Wave Metrics</p>`;
 
   html += `
-          <p class="buoy-metric" style="font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">📊 Significant Wave (Combined)</p>
+          <p class="buoy-metric buoy-section-title">📊 Significant Wave (Combined)</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Sig Height:</b> ${b.wave_height_sig ?? "—"} m</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Dominant Period:</b> ${b.wave_period_sig ?? "—"} s</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Average Period:</b> ${b.wave_period_avg ?? "—"} s</p>
         `;
 
   html += `
-          <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">💨 Wind Waves (Local Chop)</p>
+          <p class="buoy-metric buoy-section-title buoy-section-title--spaced">💨 Wind Waves (Local Chop)</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Height:</b> ${b.wind_wave_height ?? "—"} m</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Period:</b> ${b.wind_wave_period ?? "—"} s</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Direction:</b> ${b.wind_wave_direction_cardinal ?? "—"} (${b.wind_wave_direction ?? "—"}°) ${getDirectionalArrow(b.wind_wave_direction, "wave")}</p>
 
-          <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">🌊 Ocean Swell (Long Period)</p>
+          <p class="buoy-metric buoy-section-title buoy-section-title--spaced">🌊 Ocean Swell (Long Period)</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Height:</b> ${b.swell_height ?? "—"} m</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Period:</b> ${b.swell_period ?? "—"} s</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Direction:</b> ${b.swell_direction_cardinal ?? "—"} (${b.swell_direction ?? "—"}°) ${getDirectionalArrow(b.swell_direction, "wave")}</p>
 
-          <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">📈 Peak Metrics</p>
+          <p class="buoy-metric buoy-section-title buoy-section-title--spaced">📈 Peak Metrics</p>
           <p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Direction:</b> ${b.wave_direction_peak_cardinal ?? "—"} (${b.wave_direction_peak ?? "—"}°) ${getDirectionalArrow(b.wave_direction_peak, "wave")}</p>
         `;
   return html;
 }
 
-/** Descriptor + colour for the peak-frequency angular spread. */
+/** Descriptor + severity class for the peak-frequency angular spread. */
 function peakSpreadDescriptor(peakSpread) {
-  if (peakSpread < 25) return { desc: "very organized", color: "var(--color-accent-green)" };
-  if (peakSpread < 35) return { desc: "organized", color: "var(--color-accent-green)" };
-  if (peakSpread < 45) return { desc: "moderate", color: "var(--color-accent-orange)" };
-  return { desc: "confused", color: "var(--color-accent-red)" };
+  if (peakSpread < 25) return { desc: "very organized", severity: "spread-desc--good" };
+  if (peakSpread < 35) return { desc: "organized", severity: "spread-desc--good" };
+  if (peakSpread < 45) return { desc: "moderate", severity: "spread-desc--moderate" };
+  return { desc: "confused", severity: "spread-desc--poor" };
 }
 
-/** Descriptor + colour for the all-frequency angular spread. */
+/** Descriptor + severity class for the all-frequency angular spread. */
 function avgSpreadDescriptor(avgSpread) {
-  if (avgSpread < 30) return { desc: "very clean", color: "var(--color-accent-green)" };
-  if (avgSpread < 45) return { desc: "clean", color: "var(--color-accent-green)" };
-  if (avgSpread < 60) return { desc: "mixed", color: "var(--color-accent-orange)" };
-  return { desc: "messy", color: "var(--color-accent-red)" };
+  if (avgSpread < 30) return { desc: "very clean", severity: "spread-desc--good" };
+  if (avgSpread < 45) return { desc: "clean", severity: "spread-desc--good" };
+  if (avgSpread < 60) return { desc: "mixed", severity: "spread-desc--moderate" };
+  return { desc: "messy", severity: "spread-desc--poor" };
 }
 
 /**
@@ -365,24 +338,24 @@ export function buildSpreadSection(b, id) {
   // is never a no-op. In practice EC buoys always report the pair.
   const hasExplainer = peakSpread != null && avgSpread != null;
   const infoBtn = hasExplainer
-    ? `<span class="spread-info-btn" style="cursor: pointer; font-size: 0.9em; margin-left: 0.3rem; color: var(--color-primary); user-select: none;" title="Click for explanation">ℹ️</span>`
+    ? `<span class="spread-info-btn" title="Click for explanation">ℹ️</span>`
     : "";
 
   let html = `
-              <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: var(--color-primary-dark);">
+              <p class="buoy-metric buoy-section-title--bare">
                 🧭 Wave Direction Angular Spread
                 ${infoBtn}
               </p>
             `;
 
   if (peakSpread != null) {
-    const { desc, color } = peakSpreadDescriptor(peakSpread);
-    html += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Spread:</b> ${peakSpread}° <span style="color: ${color}; font-weight: 600;">(${desc})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— dominant swell</span></p>`;
+    const { desc, severity } = peakSpreadDescriptor(peakSpread);
+    html += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Spread:</b> ${peakSpread}° <span class="spread-desc ${severity}">(${desc})</span> <span class="spread-note">— dominant swell</span></p>`;
   }
 
   if (avgSpread != null) {
-    const { desc, color } = avgSpreadDescriptor(avgSpread);
-    html += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Average Spread:</b> ${avgSpread}° <span style="color: ${color}; font-weight: 600;">(${desc})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— all frequencies</span></p>`;
+    const { desc, severity } = avgSpreadDescriptor(avgSpread);
+    html += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Average Spread:</b> ${avgSpread}° <span class="spread-desc ${severity}">(${desc})</span> <span class="spread-note">— all frequencies</span></p>`;
   }
 
   // Visual angular spread vectors
@@ -390,38 +363,38 @@ export function buildSpreadSection(b, id) {
   const avgDir = b.wave_direction_avg;
 
   if ((peakDir != null && peakSpread != null) || (avgDir != null && avgSpread != null)) {
-    html += `<div style="margin-top: 0.75rem; padding: 0.75rem; background: var(--color-surface-alt); border-radius: 4px; border: 1px solid var(--color-border-light);">`;
-    html += `<p class="buoy-metric" style="font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">Visual Direction & Spread</p>`;
+    html += `<div class="spread-visual">`;
+    html += `<p class="buoy-metric buoy-section-title">Visual Direction & Spread</p>`;
 
     if (peakDir != null && peakSpread != null) {
       html += `
-                  <div style="margin: 0.5rem 0;">
-                    <span style="font-size: 0.85em; color: var(--color-text-muted); font-weight: 600;">Peak:</span>
+                  <div class="spread-row">
+                    <span class="spread-row-label">Peak:</span>
                     ${createAngularSpreadVector(peakDir, peakSpread, 70)}
-                    <span style="font-size: 0.75em; color: var(--color-text-muted); margin-left: 0.5rem;">${b.wave_direction_peak_cardinal ?? degreesToCardinal(peakDir)} ${Math.round(peakDir)}° ± ${Math.round(peakSpread / 2)}°</span>
+                    <span class="spread-row-value">${b.wave_direction_peak_cardinal ?? degreesToCardinal(peakDir)} ${Math.round(peakDir)}° ± ${Math.round(peakSpread / 2)}°</span>
                   </div>
                 `;
     }
 
     if (avgDir != null && avgSpread != null) {
       html += `
-                  <div style="margin: 0.5rem 0;">
-                    <span style="font-size: 0.85em; color: var(--color-text-muted); font-weight: 600;">Average:</span>
+                  <div class="spread-row">
+                    <span class="spread-row-label">Average:</span>
                     ${createAngularSpreadVector(avgDir, avgSpread, 70)}
-                    <span style="font-size: 0.75em; color: var(--color-text-muted); margin-left: 0.5rem;">${b.wave_direction_avg_cardinal ?? degreesToCardinal(avgDir)} ${Math.round(avgDir)}° ± ${Math.round(avgSpread / 2)}°</span>
+                    <span class="spread-row-value">${b.wave_direction_avg_cardinal ?? degreesToCardinal(avgDir)} ${Math.round(avgDir)}° ± ${Math.round(avgSpread / 2)}°</span>
                   </div>
                 `;
     }
 
-    html += `<p style="font-size: 0.75em; color: var(--color-text-light); margin-top: 0.5rem; margin-bottom: 0;">Arrows show wave travel direction. Sector shows angular spread.</p>`;
+    html += `<p class="spread-visual-note">Arrows show wave travel direction. Sector shows angular spread.</p>`;
     html += `</div>`;
   }
 
   // Collapsible explanatory footnote (hidden by default)
   if (hasExplainer) {
     html += `
-                <div id="spread-info-${id}" style="display: none; font-size: 0.85em; color: var(--color-text-light); margin-top: 0.5rem; padding: 0.75rem; background: var(--color-callout-info-bg); border-left: 3px solid var(--color-primary); border-radius: 4px; line-height: 1.5;">
-                  <strong style="color: var(--color-tagline-text);">Angular Spread</strong> measures how organized the waves are:<br>
+                <div id="spread-info-${id}" class="spread-explainer">
+                  <strong class="spread-explainer-title">Angular Spread</strong> measures how organized the waves are:<br>
                   <br>
                   <strong>Lower numbers</strong> = waves coming from one direction (clean swell)<br>
                   <strong>Higher numbers</strong> = waves from multiple directions (choppy/messy)<br>
@@ -429,7 +402,7 @@ export function buildSpreadSection(b, id) {
                   • <strong>Peak:</strong> The main swell direction<br>
                   • <strong>Average:</strong> Overall surface (includes wind chop)<br>
                   <br>
-                  <span style="font-size: 0.9em; color: var(--color-text-muted);">Beach conditions may differ from open-ocean buoy readings.</span>
+                  <span class="spread-explainer-note">Beach conditions may differ from open-ocean buoy readings.</span>
                 </div>
               `;
   }
@@ -477,7 +450,7 @@ export function buildEcWaveDetails(b, meta, id) {
 
   if (!hasDetailData) return "";
 
-  let html = `<p class="buoy-metric" style="font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">📊 Additional Metrics</p>`;
+  let html = `<p class="buoy-metric buoy-section-title">📊 Additional Metrics</p>`;
 
   // --- Heights (sig is shown on the compact card above) ---
   if (b.wave_height_avg != null) {
@@ -487,9 +460,7 @@ export function buildEcWaveDetails(b, meta, id) {
   if (highHeight != null) {
     const sigHeight = b.wave_height_sig || 0;
     const ratio = sigHeight > 0 ? (highHeight / sigHeight).toFixed(1) : "";
-    const ratioText = ratio
-      ? ` <span style="color: var(--color-text-muted); font-size: 0.9em;">(${ratio}× sig)</span>`
-      : "";
+    const ratioText = ratio ? ` <span class="buoy-ratio">(${ratio}× sig)</span>` : "";
     html += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;${highHeightLabel}:</b> ${highHeight.toFixed(heightPrecision)} m${ratioText}</p>`;
   }
 
@@ -516,14 +487,14 @@ export function buildTempPressure(b, meta) {
   const airTemp = b.air_temp != null ? (isPile ? b.air_temp.toFixed(1) : b.air_temp) : "—";
 
   return `
-        <p class="buoy-metric" style="margin-top: 0.75rem;"><b>🌡️ Sea:</b> ${seaTemp} °C | <b>Air:</b> ${airTemp} °C</p>
+        <p class="buoy-metric buoy-metric--indent-top"><b>🌡️ Sea:</b> ${seaTemp} °C | <b>Air:</b> ${airTemp} °C</p>
         <p class="buoy-metric"><b>⏱️ Pressure:</b> ${b.pressure ?? "—"} hPa</p>
       `;
 }
 
 /** The whole hidden-by-default details section. */
 export function buildDetailsSection(b, id, meta, freshness) {
-  let html = `<div id="card-details-${id}" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border);">`;
+  let html = `<div id="card-details-${id}" class="card-collapsible">`;
   html += buildStalenessCallout(freshness);
   html += isNoaaStation(meta) ? buildNoaaWaveDetails(b) : buildEcWaveDetails(b, meta, id);
   html += buildTempPressure(b, meta);
@@ -534,38 +505,15 @@ export function buildDetailsSection(b, id, meta, freshness) {
 /** "View Location" / "View Charts" buttons; charts is disabled with no data. */
 export function buildNavLinks(b) {
   const hasChartData = b.wave_height_sig != null || b.wind_speed != null;
-  const chartButtonDisabled = !hasChartData
-    ? 'disabled style="opacity: 0.5; cursor: not-allowed;"'
-    : "";
+  // The disabled look now comes from .buoy-nav-link[disabled] in CSS.
+  const chartButtonDisabled = !hasChartData ? "disabled" : "";
 
   return `
-        <div class="buoy-nav-links" style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
-          <button class="buoy-nav-link" data-action="map" style="
-            flex: 1;
-            padding: 0.5rem;
-            background: #004b7c;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85em;
-            font-weight: 600;
-            transition: background 0.2s;
-          ">
+        <div class="buoy-nav-links">
+          <button class="buoy-nav-link" data-action="map">
             📍 View Location
           </button>
-          <button class="buoy-nav-link" data-action="charts" ${chartButtonDisabled} style="
-            flex: 1;
-            padding: 0.5rem;
-            background: #004b7c;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85em;
-            font-weight: 600;
-            transition: background 0.2s;
-          ">
+          <button class="buoy-nav-link" data-action="charts" ${chartButtonDisabled}>
             📊 View Charts
           </button>
         </div>
@@ -592,7 +540,7 @@ export function buildBuoyCardHTML(b, id, meta, formatTimestamp) {
   html += buildToggleButtons();
   html += buildDetailsSection(b, id, meta, freshness);
   // History section is filled in lazily by toggleCardHistory()
-  html += `<div id="card-history-${id}" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border);"></div>`;
+  html += `<div id="card-history-${id}" class="card-collapsible"></div>`;
   html += buildNavLinks(b);
   html += buildSourceLink(meta);
   return html;

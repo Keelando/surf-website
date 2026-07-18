@@ -225,7 +225,7 @@ async function loadBuoyData() {
       regionHeader.style.userSelect = "none";
       setSafeHTML(
         regionHeader,
-        `<span class="region-toggle-btn">▼</span> ${group.region} <span style="font-size: 0.8em; font-weight: normal; opacity: 0.8;">(${group.stations.length} stations)</span>`,
+        `<span class="region-toggle-btn">▼</span> ${group.region} <span class="region-station-count">(${group.stations.length} stations)</span>`,
       );
       regionHeader.addEventListener("click", () => toggleRegion(group.region));
       regionGroup.appendChild(regionHeader);
@@ -350,13 +350,22 @@ function toggleRegion(regionName) {
   }
 }
 
+// Is the element currently hidden? Reads the *computed* display, not the
+// inline one: these sections get their initial `display: none` from the
+// .card-collapsible / .spread-explainer CSS classes, so the inline property is
+// empty until the first toggle. (Checking el.style.display made the first
+// click a no-op — every toggle needed two presses.)
+function isElementHidden(el) {
+  return getComputedStyle(el).display === "none";
+}
+
 // Toggle card details (full metrics)
 function toggleCardDetails(buoyId) {
   const detailsDiv = document.getElementById(`card-details-${buoyId}`);
   const button = document.querySelector(`#buoy-${buoyId} .toggle-details-btn`);
 
   if (detailsDiv && button) {
-    const isHidden = detailsDiv.style.display === "none";
+    const isHidden = isElementHidden(detailsDiv);
     detailsDiv.style.display = isHidden ? "block" : "none";
     button.textContent = isHidden ? "▲ Hide Details" : "▼ Show Details";
   }
@@ -366,7 +375,7 @@ function toggleCardDetails(buoyId) {
 function toggleSpreadInfo(buoyId) {
   const infoDiv = document.getElementById(`spread-info-${buoyId}`);
   if (infoDiv) {
-    const isHidden = infoDiv.style.display === "none";
+    const isHidden = isElementHidden(infoDiv);
     infoDiv.style.display = isHidden ? "block" : "none";
   }
 }
@@ -378,13 +387,13 @@ async function toggleCardHistory(buoyId) {
 
   if (!historyDiv || !button) return;
 
-  const isHidden = historyDiv.style.display === "none";
+  const isHidden = isElementHidden(historyDiv);
 
   if (isHidden) {
     // Auto-collapse Details section when opening History
     const detailsDiv = document.getElementById(`card-details-${buoyId}`);
     const detailsButton = document.querySelector(`#buoy-${buoyId} .toggle-details-btn`);
-    if (detailsDiv && detailsDiv.style.display !== "none") {
+    if (detailsDiv && !isElementHidden(detailsDiv)) {
       detailsDiv.style.display = "none";
       if (detailsButton) detailsButton.textContent = "▼ Show Details";
     }
@@ -408,20 +417,14 @@ async function toggleCardHistory(buoyId) {
         button.textContent = "▲ Hide History";
         button.disabled = false;
       } else {
-        setSafeHTML(
-          historyDiv,
-          '<p style="color: var(--color-text-light); text-align: center; padding: 1rem;">No historical data available</p>',
-        );
+        setSafeHTML(historyDiv, '<p class="history-empty">No historical data available</p>');
         historyDiv.style.display = "block";
         button.textContent = "▲ Hide History";
         button.disabled = false;
       }
     } catch (error) {
       logger.error("BuoyData", "Error loading history", error);
-      setSafeHTML(
-        historyDiv,
-        '<p style="color: var(--color-error-text); text-align: center; padding: 1rem;">Error loading historical data</p>',
-      );
+      setSafeHTML(historyDiv, '<p class="history-error">Error loading historical data</p>');
       historyDiv.style.display = "block";
       button.textContent = "▲ Hide History";
       button.disabled = false;
@@ -511,21 +514,21 @@ function renderHistoryTable(buoyId, timeseries) {
   // Responsive scroll indicator - only show on mobile, positioned OUTSIDE table
   const scrollIndicator =
     window.innerWidth < 768
-      ? `<div style="text-align: center; margin-bottom: 0.25rem; padding: 0.25rem 0.5rem; background: var(--color-active-indicator-bg); font-size: 0.65rem; color: var(--color-primary-dark); border-radius: 4px;">← Scroll table horizontally →</div>`
+      ? `<div class="history-scroll-hint">← Scroll table horizontally →</div>`
       : "";
 
   let tableHTML = `
     ${scrollIndicator}
-    <div class="history-scroll" style="overflow-x: auto; margin-top: 0.5rem; width: 100%; max-width: 100%; -webkit-overflow-scrolling: touch; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box;">
-      <table style="border-collapse: collapse; font-size: 0.8rem; width: max-content; min-width: 100%; table-layout: auto;">
+    <div class="history-scroll">
+      <table class="history-table">
         <thead>
-          <tr style="background: var(--color-surface-alt);">
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); border-right: 1px solid var(--color-border); text-align: left; white-space: nowrap; min-width: 55px;">Time</th>
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); border-right: 1px solid var(--color-border); text-align: center; white-space: nowrap; min-width: 95px;">Wind [kn]</th>
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); border-right: 1px solid var(--color-border); text-align: center; white-space: nowrap; min-width: 50px;">Wave Ht [m]</th>
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); border-right: 1px solid var(--color-border); text-align: center; white-space: nowrap; min-width: 60px;">Period [s]</th>
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); border-right: 1px solid var(--color-border); text-align: center; white-space: nowrap; min-width: 55px;">Sea [°C]</th>
-            <th style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border); text-align: center; white-space: nowrap; min-width: 55px;">Air [°C]</th>
+          <tr>
+            <th>Time</th>
+            <th>Wind [kn]</th>
+            <th>Wave Ht [m]</th>
+            <th>Period [s]</th>
+            <th>Sea [°C]</th>
+            <th>Air [°C]</th>
           </tr>
         </thead>
         <tbody>
@@ -536,7 +539,7 @@ function renderHistoryTable(buoyId, timeseries) {
   // Track previous date for conditional date display
   let previousDate = null;
 
-  times.forEach((time, index) => {
+  times.forEach((time) => {
     const windSpeedVal = windSpeed.find((d) => d.time === time)?.value;
     const windDirVal = windDir.find((d) => d.time === time)?.value;
     const windGustVal = windGust.find((d) => d.time === time)?.value;
@@ -590,17 +593,14 @@ function renderHistoryTable(buoyId, timeseries) {
       windDisplay = `${cardinalStr}${Math.round(windSpeedVal)}${gustStr}`;
     }
 
-    // Alternating row background color
-    const rowBg = index % 2 === 0 ? "background: rgba(0, 75, 124, 0.03);" : "";
-
     tableHTML += `
-      <tr style="${rowBg}">
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); border-right: 1px solid var(--color-border-light); white-space: nowrap;">${timeStr}</td>
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); border-right: 1px solid var(--color-border-light); text-align: center; white-space: nowrap;">${windDisplay}</td>
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); border-right: 1px solid var(--color-border-light); text-align: center;">${waveHeightVal != null ? waveHeightVal.toFixed(waveHeightDecimals) : "—"}</td>
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); border-right: 1px solid var(--color-border-light); text-align: center;">${wavePeriodVal != null ? wavePeriodVal.toFixed(1) : "—"}</td>
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); border-right: 1px solid var(--color-border-light); text-align: center;">${seaTempVal != null ? seaTempVal.toFixed(1) : "—"}</td>
-        <td style="padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--color-border-light); text-align: center;">${airTempVal != null ? airTempVal.toFixed(1) : "—"}</td>
+      <tr>
+        <td>${timeStr}</td>
+        <td>${windDisplay}</td>
+        <td>${waveHeightVal != null ? waveHeightVal.toFixed(waveHeightDecimals) : "—"}</td>
+        <td>${wavePeriodVal != null ? wavePeriodVal.toFixed(1) : "—"}</td>
+        <td>${seaTempVal != null ? seaTempVal.toFixed(1) : "—"}</td>
+        <td>${airTempVal != null ? airTempVal.toFixed(1) : "—"}</td>
       </tr>
     `;
   });
@@ -613,8 +613,8 @@ function renderHistoryTable(buoyId, timeseries) {
 
   // Add duplicate Hide button at bottom of history table
   tableHTML += `
-    <div style="text-align: center; margin-top: 0.75rem;">
-      <button class="hide-history-btn" style="padding: 0.5rem 1rem; background: var(--color-primary-dark); color: var(--color-on-primary); border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;">
+    <div class="history-hide-row">
+      <button class="hide-history-btn">
         ▲ Hide History
       </button>
     </div>
@@ -623,13 +623,13 @@ function renderHistoryTable(buoyId, timeseries) {
   // Add note for swell-display stations explaining swell data
   if (usesSwellDisplay(meta)) {
     tableHTML += `
-      <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--color-callout-info-bg); border-left: 3px solid var(--color-source-noaa-border); font-size: 0.75rem; color: var(--color-text-light); line-height: 1.4;">
+      <div class="history-note">
         <strong>Note:</strong> Neah Bay displays <strong>swell data</strong> (long-period ocean waves from distant storms) rather than combined wave metrics. Wind waves are typically much smaller at this location.
       </div>
     `;
   } else if (usesDominantPeriod(meta)) {
     tableHTML += `
-      <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--color-callout-info-bg); border-left: 3px solid var(--color-source-noaa-border); font-size: 0.75rem; color: var(--color-text-light); line-height: 1.4;">
+      <div class="history-note">
         <strong>Note:</strong> Height is significant wave height; period is the <strong>dominant period</strong> — NOAA's term for the wave period carrying the most energy (equivalent to peak period).
       </div>
     `;
