@@ -1,6 +1,6 @@
 # Buoy Card Refactor (P2 of the 2026-07-14 maintainability roadmap)
 
-**Status:** Steps 1–2 DONE (2026-07-18); next is step 3 (inline styles → CSS)
+**Status:** Steps 1–3 DONE (2026-07-18); next is step 4 (history table)
 **Target:** `site/assets/js/main.js` (1,288 → 736 lines) — the index-page buoy cards
 **Origin:** agreed 2026-05-28 after the backend Surrey-channel config
 consolidation; same disease on the frontend: per-station behavior hardcoded
@@ -101,9 +101,32 @@ Notes:
        *either* spread existed but the explainer needed *both*, so a
        peak-only station would have shown a dead button. Defensive only —
        across 2,043 stored observations the pair always arrives together.
-3. **Inline styles → CSS classes**: ~83 repeated `style="..."` blocks
-   (table cells, buttons, callouts) onto the existing CSS-variable /
-   dark-mode system.
+3. **Inline styles → CSS classes** ✅ 2026-07-18
+   - All 80 `style="..."` blocks in main.js + buoy-card.js moved to a
+     "Buoy Cards — extracted inline styles" section in `style-v4.css`.
+     Values carried over verbatim.
+   - Verified no-op by **computed-style diff**, not DOM diff: swapping
+     `style=` for `class=` changes the HTML by design, so innerHTML is
+     all noise here. Dumped ~40 resolved properties + bounding box for
+     all 1,816 elements of the fully-expanded `#buoy-container`, across
+     chromium/firefox × light/dark, `/data/**` frozen to a fixture.
+     Result: 0 differing properties, 0 box changes.
+   - `.buoy-nav-link` **already had a full rule** in style-v4.css that the
+     inline style silently overrode. The rendered navy treatment is
+     deliberate (primary action vs. the muted toggles), so the *rendered*
+     values were folded into the rule; `#004b7c`/`white` became
+     `--color-nav-button-bg`/`-text`, fixed across themes like the map
+     markers. Lesson: inline styles beat every selector, so extracting
+     them can silently hand rendering to a rule nobody knew was there.
+   - History-table row striping moved from a per-row JS `rowBg` to
+     `tbody tr:nth-child(odd)` + `--color-history-row-alt`.
+   - **Regression caught in review, not by tests**: the details/history/
+     spread sections take their initial `display: none` from a class now,
+     so `el.style.display` is `""` until the first toggle. The handlers
+     tested that inline property, so the first click was a no-op and every
+     section needed two presses. Fixed by reading `getComputedStyle`.
+     Neither the unit tests nor the console-error suite caught this —
+     only driving the page did.
 4. **History table**: fold `renderHistoryTable`'s remaining structure into
    the step-2 builders where it overlaps.
 
