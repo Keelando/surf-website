@@ -8,7 +8,7 @@
    ----------------------------- */
 
 import { applyWaveThreshold, clearWaveThreshold, setTimeRange } from "./charts-v4.js";
-import { formatNumericDayTime } from "./shared/format-time.js";
+import { formatNumericDayTime, formatTimeHM } from "./shared/format-time.js";
 import { createAngularSpreadVector } from "./shared/markers.js";
 import {
   isNoaaStation,
@@ -1103,21 +1103,19 @@ function renderHistoryTable(buoyId, timeseries) {
 
     const dateObj = new Date(time);
 
-    // Format: "Mo-11 08h10" (2-letter weekday, day, hour, minutes if not :00)
-    const dayOfWeek = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][dateObj.getDay()];
+    // Format: "Mo-11 08h10" (2-letter weekday, day, hour, minutes if not :00).
+    // Weekday must be Vancouver-pinned like the rest — getDay() would use the
+    // viewer's timezone and mislabel evening rows for non-Pacific visitors.
+    const dayOfWeek = dateObj
+      .toLocaleString("en-US", { weekday: "short", timeZone: "America/Vancouver" })
+      .slice(0, 2);
     const dayOfMonth = dateObj.toLocaleString("en-US", {
       day: "numeric",
       timeZone: "America/Vancouver",
     });
-    const hour = dateObj.toLocaleString("en-US", {
-      hour: "2-digit",
-      hour12: false,
-      timeZone: "America/Vancouver",
-    });
-    const minute = dateObj.toLocaleString("en-US", {
-      minute: "2-digit",
-      timeZone: "America/Vancouver",
-    });
+    // Hour and minute in ONE call: engines only zero-pad reliably when both
+    // fields are requested together (Chromium returns "0"/"5" for minute alone)
+    const [hour, minute] = formatTimeHM(dateObj).split(":");
 
     // Only show date prefix if it changed from previous row
     const currentDate = `${dayOfWeek}-${dayOfMonth}`;

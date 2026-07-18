@@ -85,9 +85,15 @@ Plan: `BUOY_CARD_REFACTOR.md` (4 steps, regression checklist inside).
   step 2). Verified with 21-check runtime script.
 - ⏭️ Step 2: break up the 693-line `loadBuoyData()` into card-section
   builders; consider config-driven `region` field for the grouping.
-- Noticed en route (pre-existing, cosmetic): history-table times render
-  "16h0" for on-the-hour rows (`minute: "2-digit"` doesn't pad alone) —
-  fix in step 2/3 when the time formatting moves to a builder.
+- ✅ Two viewer-dependent history-table bugs fixed same day (found while
+  verifying step 1 in Chromium — user tests in Firefox only): (a) minute
+  padding — `minute: "2-digit"` alone doesn't pad in Chromium ("16h0",
+  "17h5"); now uses shared `formatTimeHM` split on ":" (single call pads
+  in every engine). (b) weekday labels came from `getDay()` = viewer's
+  timezone while day-of-month was Vancouver-pinned — non-Pacific visitors
+  saw "Sa-17" on Friday-evening rows; weekday now Vancouver-pinned too.
+  Lesson: run visual checks in BOTH engines; Playwright verify scripts
+  default to Chromium which is exactly what the user doesn't use.
 - Convention: bump `?v=` on converted script tags; run format → lint →
   test:js → test:frontend before commit.
   Runtime verification recipe: `.claude/skills/verify/SKILL.md`.
