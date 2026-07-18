@@ -187,13 +187,14 @@ test("buildHistoryTableHTML emits six columns and the hide button", () => {
   assert.equal((html.match(/<th>/g) || []).length, 6);
   assert.match(html, /class="history-table"/);
   assert.match(html, /hide-history-btn/);
-  assert.equal(html.includes("history-scroll-hint"), false);
 });
 
-test("buildHistoryTableHTML adds the scroll hint only when asked", () => {
+test("buildHistoryTableHTML emits the scroll hint hidden", () => {
+  // Always present but hidden; only trackScrollAffordance() can know whether
+  // the table overflows, which needs a laid-out DOM.
   const ts = { wave_height_sig: chan([[T(10), 1.1]]) };
-  const html = buildHistoryTableHTML(ts, EC, { now: NOW, showScrollHint: true });
-  assert.match(html, /history-scroll-hint/);
+  const html = buildHistoryTableHTML(ts, EC, { now: NOW });
+  assert.match(html, /class="history-scroll-hint" hidden/);
 });
 
 test("buildHistoryTableHTML renders with no data at all", () => {

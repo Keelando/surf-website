@@ -198,19 +198,18 @@ export function buildHistoryNote(meta) {
  * @param {Object} timeseries - Station entry from buoy_timeseries_48h.json
  * @param {Object} meta - stations.json entry (undefined → EC-style defaults)
  * @param {Object} [options]
- * @param {boolean} [options.showScrollHint] - Mobile-only horizontal-scroll cue
  * @param {Date} [options.now] - Injectable clock for tests
  * @returns {string}
  */
 export function buildHistoryTableHTML(timeseries, meta, options = {}) {
-  const { showScrollHint = false, now = new Date() } = options;
+  const { now = new Date() } = options;
 
   const selected = selectHistorySeries(timeseries, meta);
   const times = buildHistoryTimes(selected, meta, now);
 
-  const scrollHint = showScrollHint
-    ? `<div class="history-scroll-hint">← Scroll table horizontally →</div>`
-    : "";
+  // Emitted hidden and revealed by trackScrollAffordance() once the table is
+  // in the DOM — whether it overflows can only be measured after layout.
+  const scrollHint = `<div class="history-scroll-hint" hidden>← Scroll table horizontally →</div>`;
 
   return `
     ${scrollHint}

@@ -93,22 +93,60 @@ function setSafeHTML(element, html) {
   }
 }
 
+// Show the scroll affordances only while the content actually overflows: the
+// "← Scroll table horizontally →" banner above the table, and the grab cursor
+// on the scroller itself.
+//
+// Overflow is what matters, not viewport width — a wide phone or a narrow
+// desktop card can go either way, and the history table's width depends on its
+// column contents. Re-measured on resize (card width changes with the grid's
+// breakpoints, not just the window).
+function trackScrollAffordance(el) {
+  const hint = el.parentElement?.querySelector(".history-scroll-hint");
+
+  const update = () => {
+    // 1px tolerance: sub-pixel layout rounding can report a phantom overflow.
+    const overflows = el.scrollWidth - el.clientWidth > 1;
+    el.classList.toggle("draggable", overflows);
+    if (hint) hint.hidden = !overflows;
+  };
+
+  update();
+  if (typeof ResizeObserver === "function") {
+    new ResizeObserver(update).observe(el);
+  }
+}
+
 // Enable click-and-drag horizontal panning on an overflow-x:auto container,
 // matching the touch-drag behaviour mobile already gets natively. Mouse only —
 // touch is left to the browser's native scrolling so we don't fight it.
 function enableDragScroll(el) {
   if (!el || el.dataset.dragScroll === "on") return;
   el.dataset.dragScroll = "on";
-
-  // Only advertise the grab cursor when the content actually overflows
-  if (el.scrollWidth > el.clientWidth) el.classList.add("draggable");
+  trackScrollAffordance(el);
 
   let isDown = false;
   let startX = 0;
   let startScroll = 0;
 
+  // Is the pointer over the horizontal scrollbar gutter rather than content?
+  // The scrollbar belongs to this element, so without this check pointerdown on
+  // the thumb starts a drag and setPointerCapture steals the event from the
+  // browser's native thumb handling — the content then pans 1:1 with the mouse
+  // instead of tracking the thumb.
+  //
+  // clientHeight excludes the scrollbar, so anything past it inside the padding
+  // box is gutter. Overlay scrollbars (macOS, mobile) reserve no space, making
+  // this always false — correct, since there is no gutter to protect.
+  function isOnScrollbar(e) {
+    const borderTop = parseFloat(getComputedStyle(el).borderTopWidth) || 0;
+    const y = e.clientY - el.getBoundingClientRect().top - borderTop;
+    return y > el.clientHeight;
+  }
+
   el.addEventListener("pointerdown", (e) => {
     if (e.pointerType !== "mouse" || e.button !== 0) return;
+    if (isOnScrollbar(e)) return; // let the native scrollbar do its job
     isDown = true;
     startX = e.clientX;
     startScroll = el.scrollLeft;
@@ -433,11 +471,7 @@ async function toggleCardHistory(buoyId) {
 // Render history table. Structure and per-station field selection live in
 // buoy-history.js; main.js only supplies the viewport-dependent bits.
 function renderHistoryTable(buoyId, timeseries) {
-  return buildHistoryTableHTML(timeseries, stationMeta[buoyId], {
-    // Mobile-only cue; depends on the live viewport, so it can't be decided
-    // inside a pure builder.
-    showScrollHint: window.innerWidth < 768,
-  });
+  return buildHistoryTableHTML(timeseries, stationMeta[buoyId]);
 }
 
 // Handle hash navigation from map (e.g., /#buoy-46087)
