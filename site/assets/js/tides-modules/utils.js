@@ -1,48 +1,8 @@
 /**
  * Utility Functions Module
- * Common helper functions for time formatting, age calculation, etc.
+ * Page-specific helpers (error state, map navigation). Time formatting
+ * lives in ../shared/format-time.js.
  */
-
-/**
- * Format a date for display in Pacific timezone
- *
- * @param {Date} date - Date to format
- * @returns {string} Formatted date string (e.g., "Jan 6, 14:30")
- */
-export function formatTime(date) {
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "America/Vancouver",
-  });
-}
-
-/**
- * Get a human-readable string describing how long ago a date was
- *
- * @param {Date} date - Date to calculate age from
- * @returns {string} Age string (e.g., "5 minutes ago", "2 hours ago")
- */
-export function getAgeString(date) {
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMins = Math.floor(diffMs / 60000);
-
-  if (diffMins < 1) return "just now";
-  if (diffMins === 1) return "1 minute ago";
-  if (diffMins < 60) return `${diffMins} minutes ago`;
-
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours === 1) return "1 hour ago";
-  if (diffHours < 24) return `${diffHours} hours ago`;
-
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return "1 day ago";
-  return `${diffDays} days ago`;
-}
 
 /**
  * Show error state in the UI

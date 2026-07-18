@@ -65,10 +65,12 @@ Migration status table: `site/assets/js/shared/README.md`.
   stations-map `showSelectedForecastSurgeOnMap`/`showSelectedHindcastSurgeOnMap`/
   `getIndexPathWithHash`, main.js `window.*` guards. Verified: 34-check
   runtime script, 16/16 Playwright, 33/33 unit, ESLint 0/0.
-- P1 leftovers (small): swap `tides-modules/utils.js` formatters to shared
-  (tides is already ESM); foundation scripts (theme-manager, logger,
-  warning-banner, nav, footer, sanitize-html, chart-utils-v4) stay classic —
-  converting them is optional polish, not blocking.
+- ✅ P1 leftover cleared (2026-07-18): `tides-modules/utils.js` formatters
+  swapped to shared (`formatTime` → `formatMonthDayTime`; `getAgeString`
+  deleted, shared copy was already the canonical move). Foundation scripts
+  (theme-manager, logger, warning-banner, nav, footer, sanitize-html,
+  chart-utils-v4) stay classic — converting them is optional polish, not
+  blocking. **No legacy dupes remain.**
 - ⏭️ NEXT: P2 oversized-function refactors, starting with the planned
   buoy-card refactor (make main.js buoy cards metadata-driven).
 - Convention: bump `?v=` on converted script tags; run format → lint →

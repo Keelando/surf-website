@@ -5,7 +5,7 @@
 
 import { STATION_DISPLAY_NAMES } from "./constants.js";
 import { isGeodeticStation, getGeodeticMethodology, getCurrentGeodeticOffset } from "./geodetic.js";
-import { formatTime, getAgeString } from "./utils.js";
+import { formatMonthDayTime, getAgeString } from "../shared/format-time.js";
 
 function setSafeHTML(element, html) {
   if (!element) return;
@@ -169,7 +169,7 @@ export function displayCurrentObservation(station, stationKey, tideDataStore) {
   const obs = station.observation;
   let observedLevel = obs.value;
   const obsTime = new Date(obs.time);
-  const timeStr = formatTime(obsTime);
+  const timeStr = formatMonthDayTime(obsTime);
   const ageStr = getAgeString(obsTime);
   const isStale = obs.stale || false;
 
@@ -228,7 +228,7 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
   const pred = station.prediction_now;
   let tideLevel = pred.value;
   const predTime = new Date(pred.time);
-  const timeStr = formatTime(predTime);
+  const timeStr = formatMonthDayTime(predTime);
 
   // For geodetic stations that calibrate predictions, show calibrated value
   const methodology = getGeodeticMethodology(stationKey);
@@ -455,7 +455,7 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
           : Math.abs(residualValue) > 0.15
             ? "var(--color-accent-orange)"
             : "var(--color-accent-green)";
-      const residualTimeStr = formatTime(residualTime);
+      const residualTimeStr = formatMonthDayTime(residualTime);
 
       // Get ECCC forecast for comparison (optional)
       const forecastSurge = station?.prediction_now?.surge;
@@ -523,7 +523,7 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
 
     // Format the calculation time
     const calcTime = new Date(station.tide_offset.observation_time);
-    const calcTimeStr = formatTime(calcTime);
+    const calcTimeStr = formatMonthDayTime(calcTime);
 
     // Check if we also have ECCC forecast surge for comparison
     const forecastSurge = station.observation?.surge || station.prediction_now?.surge;
@@ -612,7 +612,7 @@ export function displayStormSurge(station, stationKey, tideDataStore) {
     return;
   }
 
-  const timeStr = formatTime(surgeTime);
+  const timeStr = formatMonthDayTime(surgeTime);
 
   // Get peak forecast if available
   const peakHtml = generatePeakForecastHtml(tideDataStore, stationKey);
