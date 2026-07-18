@@ -25,6 +25,42 @@ page; behavioral verification needs a driving script.
    fixtures live in `site/data/` (real production data, kept current by
    cron on this host).
 
+## Proving a refactor changed nothing (DOM diff)
+
+For a refactor that claims no behaviour change, tests passing isn't the
+claim — the rendered output being identical is. Capture the container's
+`innerHTML` on both sides and diff.
+
+1. **Freeze the data first.** Cron rewrites `site/data/` every minute, so
+   two captures minutes apart differ by live readings, not by your code.
+   Snapshot the directory (`cp -r site/data <scratch>/fixtures`) and
+   serve it from the page:
+
+   ```js
+   await page.route("**/data/**", (route) => {
+     const path = new URL(route.request().url()).pathname.replace(/^\/data\//, "");
+     const file = `${fixtures}/${path}`;
+     if (!existsSync(file)) return route.fulfill({ status: 404, body: "" });
+     route.fulfill({ contentType: "application/json", body: readFileSync(file) });
+   });
+   ```
+
+2. **Expand everything first** — collapsed content isn't in the diff.
+   On index.html: click `.region-header`s whose `.buoy-cards-grid` is
+   `display: none`, then `.toggle-details-btn` / `.toggle-history-btn` /
+   `.spread-info-btn`. Use `dispatchEvent("click")` rather than `click()`
+   so hidden-but-present controls still fire.
+3. Dump `#buoy-container` innerHTML, `.replace(/></g, ">\n<")` so `diff`
+   is line-oriented and readable.
+4. Capture the "before" by `git stash push -u` (`-u` matters — new
+   modules are untracked and must disappear), re-running, then
+   `git stash pop`. Compare against the *pre-refactor commit*, not an
+   older capture.
+
+A byte-identical DOM is engine-independent, so this substitutes for a
+separate Firefox pass on pure-refactor changes (not on CSS changes —
+those need real rendering in both engines).
+
 ## Flows worth driving per page
 
 - **winds.html**: `#wind-conditions-table tbody tr` count + default
