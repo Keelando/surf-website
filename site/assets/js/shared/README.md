@@ -16,6 +16,9 @@ node can import these files in tests; browsers ignore it.
 - `format-time.js` — Pacific-time formatters + `getAgeString`/`getShortAgeString`
 - `staleness.js` — stale-data presentation (marker opacity, popup theme)
 - `markers.js` — directional map marker, angular spread vector, ECharts arrow path
+- `station-meta.js` — predicates over stations.json entries (NOAA/Surrey/pile,
+  swell display, precision, sub-hourly) — replaces inline station-ID checks;
+  see `docs/project/BUOY_CARD_REFACTOR.md`
 
 ## Migration status
 

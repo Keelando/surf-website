@@ -139,6 +139,8 @@
         "pressure"
       ],
       "source_url": "https://www.ndbc.noaa.gov/station_page.php?station=46087",
+      "wave_display": "swell",
+      "wave_display_note": "Open-ocean site: cards/history show swell (the representative metric here), not combined sig wave",
       "flag": "🇺🇸"
     },
     "46088": {
@@ -234,6 +236,7 @@
         "wave_period_peak": 2157
       },
       "note": "Water levels referenced to CGVD28 GVRD datum. fallback_channels are radar sensors (Hm0_RADAR, Tp_RADAR) used only when the primary Anderaa sensor is offline.",
+      "source_url": "https://developers.flowworks.com/",
       "short_name": "Crescent Bch.",
       "flag": "🏛️"
     },
@@ -268,6 +271,7 @@
         "geodiff_pt_vs_radar": 2455
       },
       "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum",
+      "source_url": "https://developers.flowworks.com/",
       "short_name": "Crescent Ch.",
       "flag": "🏛️"
     }

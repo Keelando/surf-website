@@ -71,8 +71,23 @@ Migration status table: `site/assets/js/shared/README.md`.
   (theme-manager, logger, warning-banner, nav, footer, sanitize-html,
   chart-utils-v4) stay classic — converting them is optional polish, not
   blocking. **No legacy dupes remain.**
-- ⏭️ NEXT: P2 oversized-function refactors, starting with the planned
-  buoy-card refactor (make main.js buoy cards metadata-driven).
+### P2 progress — buoy-card refactor
+
+Plan: `BUOY_CARD_REFACTOR.md` (4 steps, regression checklist inside).
+
+- ✅ Step 1 (2026-07-18): metadata-driven station helpers — new
+  `shared/station-meta.js` (8 predicates, unit tested) driven by
+  stations.json; all scattered station-ID checks in main.js +
+  stations-map.js replaced (isBoundaryBay/isSurrey/isCrescentStation/
+  isNeahBay/isNOAA/sourceLinks all gone). Config additions:
+  `wave_display: "swell"` on 46087, `source_url` on CRPILE/CRCHAN.
+  Adding a station to cards is now config-only (except region grouping —
+  step 2). Verified with 21-check runtime script.
+- ⏭️ Step 2: break up the 693-line `loadBuoyData()` into card-section
+  builders; consider config-driven `region` field for the grouping.
+- Noticed en route (pre-existing, cosmetic): history-table times render
+  "16h0" for on-the-hour rows (`minute: "2-digit"` doesn't pad alone) —
+  fix in step 2/3 when the time formatting moves to a builder.
 - Convention: bump `?v=` on converted script tags; run format → lint →
   test:js → test:frontend before commit.
   Runtime verification recipe: `.claude/skills/verify/SKILL.md`.

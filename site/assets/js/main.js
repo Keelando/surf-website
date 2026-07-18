@@ -10,7 +10,34 @@
 import { applyWaveThreshold, clearWaveThreshold, setTimeRange } from "./charts-v4.js";
 import { formatNumericDayTime } from "./shared/format-time.js";
 import { createAngularSpreadVector } from "./shared/markers.js";
+import {
+  isNoaaStation,
+  isPileStation,
+  isSurreyStation,
+  reportsSubHourly,
+  sourceUrl,
+  usesDominantPeriod,
+  usesSwellDisplay,
+  waveHeightPrecision,
+} from "./shared/station-meta.js";
 import { centerMapOnBuoy, showSelectedBuoyOnMap, showSelectedSurgeOnMap } from "./stations-map.js";
+
+// Station metadata from stations.json (single source of truth for
+// per-station behavior — see docs/project/BUOY_CARD_REFACTOR.md).
+// Populated by loadBuoyData(); missing entries fall back to EC-style
+// defaults inside the shared predicates.
+let stationMeta = {};
+
+// Source badge shown next to the station name on each card
+function sourceBadge(meta) {
+  if (isNoaaStation(meta)) {
+    return ` <span style="font-size: 0.7em; color: var(--color-source-noaa-text); font-weight: normal;">🇺🇸 NOAA</span>`;
+  }
+  if (isSurreyStation(meta)) {
+    return ` <span style="font-size: 0.7em; color: var(--color-accent-green); font-weight: normal;">🏛️ Surrey (FlowWorks)</span>`;
+  }
+  return ` <span style="font-size: 0.7em; color: var(--color-source-envcan-text); font-weight: normal;">🇨🇦 Env Canada</span>`;
+}
 
 // Helper function to format data age in human-readable format
 function formatDataAge(ageMinutes) {
@@ -180,28 +207,17 @@ async function loadBuoyData() {
   ];
   // COLEB excluded - wind-only station, available in charts only
 
-  // Source links for each buoy
-  const sourceLinks = {
-    4600146:
-      "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=02&siteID=14305&stationID=46146",
-    4600304:
-      "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46304",
-    4600303:
-      "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=02&siteID=14305&stationID=46303",
-    4600131:
-      "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46131",
-    4600206:
-      "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06400&stationID=46206",
-    46087: "https://www.ndbc.noaa.gov/station_page.php?station=46087",
-    46088: "https://www.ndbc.noaa.gov/station_page.php?station=46088",
-    46267: "https://www.ndbc.noaa.gov/station_page.php?station=46267",
-    CRPILE: "https://developers.flowworks.com/",
-    CRCHAN: "https://developers.flowworks.com/",
-    COLEB: "https://developers.flowworks.com/",
-  };
-
   try {
-    const data = await fetchWithTimeout(`/data/latest_buoy_v2.json?t=${Date.now()}`);
+    // Metadata is optional: if stations.json fails, cards render with
+    // EC-style defaults rather than not at all.
+    const [data, stationsData] = await Promise.all([
+      fetchWithTimeout(`/data/latest_buoy_v2.json?t=${Date.now()}`),
+      fetchWithTimeout("/data/stations.json").catch((err) => {
+        logger.warn("BuoyData", "stations.json unavailable, using defaults", err);
+        return null;
+      }),
+    ]);
+    if (stationsData?.buoys) stationMeta = stationsData.buoys;
 
     // Cache + render the hero conditions panel (Halibut Bank) from this snapshot.
     heroBuoySnapshot = data;
@@ -256,37 +272,31 @@ async function loadBuoyData() {
         const b = data[id];
         if (!b) return;
 
+        const meta = stationMeta[id];
+        const stationLink = sourceUrl(meta);
+
         const card = document.createElement("div");
         card.className = "buoy-card";
         card.id = `buoy-${id}`; // Add ID for anchor linking from map
 
-        // Special styling for NOAA buoys
-        if (id === "46087" || id === "46088" || id === "46267") {
+        // Source-coloured card border
+        if (isNoaaStation(meta)) {
           card.style.borderLeft = "4px solid var(--color-source-noaa-border)";
-        }
-
-        // Special styling for Surrey FlowWorks stations
-        if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
+        } else if (isSurreyStation(meta)) {
           card.style.borderLeft = "4px solid var(--color-accent-green)";
         }
 
         // No data in DB at all (e.g. buoy offline and records purged) — render minimal card
         if (b.no_data) {
           let noDataContent = `<div class="buoy-card-inner"><h2>${b.name || id}`;
-          if (id === "46087" || id === "46088" || id === "46267") {
-            noDataContent += ` <span style="font-size: 0.7em; color: var(--color-source-noaa-text); font-weight: normal;">🇺🇸 NOAA</span>`;
-          } else if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
-            noDataContent += ` <span style="font-size: 0.7em; color: var(--color-accent-green); font-weight: normal;">🏛️ Surrey (FlowWorks)</span>`;
-          } else {
-            noDataContent += ` <span style="font-size: 0.7em; color: var(--color-source-envcan-text); font-weight: normal;">🇨🇦 Env Canada</span>`;
-          }
+          noDataContent += sourceBadge(meta);
           noDataContent += `</h2>
             <p class="buoy-metric" style="margin: 1rem 0; padding: 1rem; background: var(--color-callout-danger-bg); border-left: 4px solid var(--color-accent-red); border-radius: 4px; color: var(--color-error-text); font-weight: 600;">
               🔴 Station offline — no data available
             </p>`;
-          if (sourceLinks[id]) {
+          if (stationLink) {
             noDataContent += `<p style="margin-top: 0.75rem; margin-bottom: 0; padding-top: 0.5rem; border-top: 1px solid var(--color-border); text-align: center;">
-              <a href="${sourceLinks[id]}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85em; color: var(--color-primary-dark); text-decoration: none; font-weight: 500;">🔗 View Source Data</a>
+              <a href="${stationLink}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85em; color: var(--color-primary-dark); text-decoration: none; font-weight: 500;">🔗 View Source Data</a>
             </p>`;
           }
           noDataContent += `</div>`;
@@ -320,26 +330,16 @@ async function loadBuoyData() {
 
         // Build the card content based on buoy type
         let cardContent = `<h2>${b.name || id}`;
-
-        // Add source badge
-        if (id === "46087" || id === "46088" || id === "46267") {
-          cardContent += ` <span style="font-size: 0.7em; color: var(--color-source-noaa-text); font-weight: normal;">🇺🇸 NOAA</span>`;
-        } else if (id === "CRPILE" || id === "CRCHAN" || id === "COLEB") {
-          cardContent += ` <span style="font-size: 0.7em; color: var(--color-accent-green); font-weight: normal;">🏛️ Surrey (FlowWorks)</span>`;
-        } else {
-          cardContent += ` <span style="font-size: 0.7em; color: var(--color-source-envcan-text); font-weight: normal;">🇨🇦 Env Canada</span>`;
-        }
-
+        cardContent += sourceBadge(meta);
         cardContent += `</h2>`;
         cardContent += `<p style="font-size: 0.9em; color: var(--color-text-muted); margin-top: -0.5rem;">Last Update: ${updated}${ageWarning}</p>`;
 
         // === CONDENSED VIEW (Always visible) ===
         cardContent += `<div class="card-compact-view">`;
 
-        // Determine decimal precision for wave height (Boundary Bay stations use 2 decimals)
+        // Decimal precision for wave height (pile stations use 2 decimals)
         // Declared here so it's available in both compact view and details section
-        const isBoundaryBay = id === "CRPILE" || id === "CRCHAN";
-        const heightPrecision = isBoundaryBay ? 2 : 1;
+        const heightPrecision = waveHeightPrecision(meta);
 
         // If station is down (>12 hours), show station down message instead of data
         if (isDown) {
@@ -373,7 +373,7 @@ async function loadBuoyData() {
           const periodTag = (label) =>
             ` <span style="color: var(--color-text-muted); font-size: 0.85em;">${label}</span>`;
 
-          if (id === "46087") {
+          if (usesSwellDisplay(meta)) {
             // Neah Bay (NOAA) - show swell info (continuous open-ocean swell)
             waveLabel = "🌊 Swell:";
             const swellHeight =
@@ -391,7 +391,7 @@ async function loadBuoyData() {
               const periodDisplay = swellPeriod != null ? ` @ ${swellPeriod}s` : "";
               waveDisplay = `${dirDisplay}${swellHeight}m${periodDisplay}${swellDegrees}${arrowDisplay}`;
             }
-          } else if (id === "46088" || id === "46267") {
+          } else if (usesDominantPeriod(meta)) {
             // NOAA (New Dungeness, Angeles Point) - sig height + dominant period (DPD).
             // NOAA stores DPD in wave_period_sig; tag it "dominant" so it's explicit.
             const waveHeight =
@@ -451,7 +451,7 @@ async function loadBuoyData() {
 
           // NOAA reports a "dominant" period rather than a significant one; readers
           // won't know the term, so add a small footnote on these cards.
-          if (id === "46088" || id === "46267") {
+          if (usesDominantPeriod(meta)) {
             cardContent += `<p style="margin: -0.25rem 0 0.5rem 0; font-size: 0.7em; color: var(--color-text-muted); line-height: 1.3;">Dominant = the wave period with the most energy (NOAA's term for peak period).</p>`;
           }
         } // End of if (isDown) else block
@@ -516,10 +516,7 @@ async function loadBuoyData() {
         `;
         }
 
-        // Check if NOAA buoy with spectral data
-        const isNOAA = id === "46087" || id === "46088" || id === "46267";
-
-        if (isNOAA) {
+        if (isNoaaStation(meta)) {
           // NOAA Spectral Wave Breakdown
           cardContent += `<p class="buoy-metric" style="font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.5rem;">Detailed Wave Metrics</p>`;
 
@@ -719,10 +716,11 @@ async function loadBuoyData() {
           }
         }
 
-        // Temperatures and pressure (all stations)
-        const isSurrey = id === "CRPILE" || id === "CRCHAN";
-        const seaTemp = b.sea_temp != null ? (isSurrey ? b.sea_temp.toFixed(1) : b.sea_temp) : "—";
-        const airTemp = b.air_temp != null ? (isSurrey ? b.air_temp.toFixed(1) : b.air_temp) : "—";
+        // Temperatures and pressure (all stations); pile-station sensors
+        // report excess precision, so round their temps to one decimal
+        const isPile = isPileStation(meta);
+        const seaTemp = b.sea_temp != null ? (isPile ? b.sea_temp.toFixed(1) : b.sea_temp) : "—";
+        const airTemp = b.air_temp != null ? (isPile ? b.air_temp.toFixed(1) : b.air_temp) : "—";
 
         cardContent += `
         <p class="buoy-metric" style="margin-top: 0.75rem;"><b>🌡️ Sea:</b> ${seaTemp} °C | <b>Air:</b> ${airTemp} °C</p>
@@ -774,10 +772,10 @@ async function loadBuoyData() {
       `;
 
         // Add source link at the bottom of the card
-        if (sourceLinks[id]) {
+        if (stationLink) {
           cardContent += `
           <p style="margin-top: 0.75rem; margin-bottom: 0; padding-top: 0.5rem; border-top: 1px solid var(--color-border); text-align: center;">
-            <a href="${sourceLinks[id]}" target="_blank" rel="noopener noreferrer" style="
+            <a href="${stationLink}" target="_blank" rel="noopener noreferrer" style="
               font-size: 0.85em;
               color: var(--color-primary-dark);
               text-decoration: none;
@@ -985,27 +983,27 @@ async function toggleCardHistory(buoyId) {
 
 // Render history table
 function renderHistoryTable(buoyId, timeseries) {
+  const meta = stationMeta[buoyId];
+
   // Get the most recent 12 hourly observations
   const windSpeed = timeseries.wind_speed?.data || [];
   const windDir = timeseries.wind_direction?.data || [];
   const windGust = timeseries.wind_gust?.data || [];
 
-  // Height is always significant (Neah Bay shows swell).
-  const isNeahBay = buoyId === "46087";
-  const isNOAA = buoyId === "46088" || buoyId === "46267";
-  const waveHeight = isNeahBay
+  // Height is always significant (swell-display stations show swell).
+  const waveHeight = usesSwellDisplay(meta)
     ? timeseries.swell_height?.data || []
     : timeseries.wave_height_sig?.data || [];
 
   // Period source, in priority order per buoy type:
-  //  - Neah Bay (NOAA): swell period
-  //  - NOAA (Dungeness, Angeles Pt): dominant period (DPD, stored in wave_period_sig)
+  //  - swell display (Neah Bay): swell period
+  //  - NOAA: dominant period (DPD, stored in wave_period_sig)
   //  - EC: significant period (two SWOB names), falling back to avg then peak
   //    for non-EC stations (e.g. Crescent on the radar sensor)
   let wavePeriodSources;
-  if (isNeahBay) {
+  if (usesSwellDisplay(meta)) {
     wavePeriodSources = [timeseries.swell_period?.data || []];
-  } else if (isNOAA) {
+  } else if (usesDominantPeriod(meta)) {
     wavePeriodSources = [timeseries.wave_period_sig?.data || []];
   } else {
     wavePeriodSources = [
@@ -1036,9 +1034,8 @@ function renderHistoryTable(buoyId, timeseries) {
         : airTemp;
   let allTimes = timeSource.map((d) => d.time);
 
-  // For Crescent stations, filter to hourly intervals only (on the hour)
-  const isCrescentStation = buoyId === "CRPILE" || buoyId === "CRCHAN";
-  if (isCrescentStation) {
+  // Sub-hourly reporters (Crescent stations): filter to on-the-hour rows
+  if (reportsSubHourly(meta)) {
     allTimes = allTimes.filter((time) => {
       const date = new Date(time);
       return date.getMinutes() === 0; // Only include times on the hour
@@ -1083,9 +1080,7 @@ function renderHistoryTable(buoyId, timeseries) {
         <tbody>
   `;
 
-  // Determine wave height precision based on buoy type
-  const isBoundaryBay = buoyId === "CRPILE" || buoyId === "CRCHAN";
-  const waveHeightDecimals = isBoundaryBay ? 2 : 1;
+  const waveHeightDecimals = waveHeightPrecision(meta);
 
   // Track previous date for conditional date display
   let previousDate = null;
@@ -1176,14 +1171,14 @@ function renderHistoryTable(buoyId, timeseries) {
     </div>
   `;
 
-  // Add note for Neah Bay explaining swell data
-  if (isNeahBay) {
+  // Add note for swell-display stations explaining swell data
+  if (usesSwellDisplay(meta)) {
     tableHTML += `
       <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--color-callout-info-bg); border-left: 3px solid var(--color-source-noaa-border); font-size: 0.75rem; color: var(--color-text-light); line-height: 1.4;">
         <strong>Note:</strong> Neah Bay displays <strong>swell data</strong> (long-period ocean waves from distant storms) rather than combined wave metrics. Wind waves are typically much smaller at this location.
       </div>
     `;
-  } else if (isNOAA) {
+  } else if (usesDominantPeriod(meta)) {
     tableHTML += `
       <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--color-callout-info-bg); border-left: 3px solid var(--color-source-noaa-border); font-size: 0.75rem; color: var(--color-text-light); line-height: 1.4;">
         <strong>Note:</strong> Height is significant wave height; period is the <strong>dominant period</strong> — NOAA's term for the wave period carrying the most energy (equivalent to peak period).

@@ -8,6 +8,7 @@
 
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
 import { createDirectionalMarker } from "./shared/markers.js";
+import { isNoaaStation } from "./shared/station-meta.js";
 import { staleDataWarningHTML, stalePopupTheme } from "./shared/staleness.js";
 
 let stationsMap = null;
@@ -457,8 +458,7 @@ function addBuoyMarker(buoy) {
 
       // Check if this is a NOAA buoy with spectral wave data
       const hasSpectralData =
-        (buoy.id === "46087" || buoy.id === "46088" || buoy.id === "46267") &&
-        (data.swell_height !== null || data.wind_wave_height !== null);
+        isNoaaStation(buoy) && (data.swell_height !== null || data.wind_wave_height !== null);
 
       if (hasSpectralData) {
         // Show detailed wave breakdown for NOAA buoys
