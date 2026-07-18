@@ -125,13 +125,29 @@ export function formatHistoryTimeCell(dateObj, previousDate) {
   return { html: date !== previousDate ? `${date}<br/>${clock}` : clock, date };
 }
 
-/** Wind cell — "WNW 10 gust 15", or "—" with no reading. */
+/**
+ * Wind cell — "WNW 10 G 15", or "—" with no reading.
+ *
+ * "G" rather than "gust": this column was the widest data in the table, and
+ * the compact wind line on the card above already abbreviates it the same way.
+ */
 export function formatHistoryWind(speed, direction, gust) {
   if (speed == null) return "—";
   const cardinal = degreesToCardinal(direction);
   const cardinalStr = cardinal ? `${cardinal} ` : "";
-  const gustStr = gust != null ? ` gust ${Math.round(gust)}` : "";
+  const gustStr = gust != null ? ` G ${Math.round(gust)}` : "";
   return `${cardinalStr}${Math.round(speed)}${gustStr}`;
+}
+
+/**
+ * Header cell with the unit stacked underneath.
+ *
+ * Single-line headers were what forced the table wider than the card: four of
+ * six columns were sized by their label rather than their data ("Wave Ht [m]"
+ * needed 90px to show 20px-wide values), pushing Air off the right edge.
+ */
+function headerCell(label, unit) {
+  return `<th>${label}<span class="history-unit">[${unit}]</span></th>`;
 }
 
 /** One decimal, or the em-dash placeholder. */
@@ -218,11 +234,11 @@ export function buildHistoryTableHTML(timeseries, meta, options = {}) {
         <thead>
           <tr>
             <th>Time</th>
-            <th>Wind [kn]</th>
-            <th>Wave Ht [m]</th>
-            <th>Period [s]</th>
-            <th>Sea [°C]</th>
-            <th>Air [°C]</th>
+            ${headerCell("Wind", "kn")}
+            ${headerCell("Wave Ht", "m")}
+            ${headerCell("Period", "s")}
+            ${headerCell("Sea", "°C")}
+            ${headerCell("Air", "°C")}
           </tr>
         </thead>
         <tbody>

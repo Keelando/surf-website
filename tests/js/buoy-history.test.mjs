@@ -134,7 +134,7 @@ test("formatHistoryTimeCell pins the weekday to Vancouver, not the viewer", () =
 });
 
 test("formatHistoryWind renders cardinal, speed and gust", () => {
-  assert.equal(formatHistoryWind(12.4, 270, 18.6), "D270 12 gust 19");
+  assert.equal(formatHistoryWind(12.4, 270, 18.6), "D270 12 G 19");
   assert.equal(formatHistoryWind(12.4, 270, null), "D270 12");
   assert.equal(formatHistoryWind(null, 270, 18), "—");
 });

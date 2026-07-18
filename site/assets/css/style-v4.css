@@ -1995,12 +1995,26 @@ header h2 {
   white-space: nowrap;
 }
 
-.history-table th:nth-child(1) { min-width: 55px; }
-.history-table th:nth-child(2) { min-width: 95px; }
-.history-table th:nth-child(3) { min-width: 50px; }
-.history-table th:nth-child(4) { min-width: 60px; }
-.history-table th:nth-child(5) { min-width: 55px; }
-.history-table th:nth-child(6) { min-width: 55px; }
+/* Unit stacked under the header label. Keeping units on the same line was
+   what made the table overflow its card — four of six columns were sized by
+   their header text rather than their data, pushing Air off the right edge. */
+.history-unit {
+  display: block;
+  font-size: 0.9em;
+  /* Lighter than the label so it reads as secondary, but not the full drop to
+     400 from the th's bold — that rendered too thin at this size. */
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* Floors only — the columns size to their content, which is now narrower than
+   these in every case except Time and Wind. */
+.history-table th:nth-child(1) { min-width: 46px; }
+.history-table th:nth-child(2) { min-width: 62px; }
+.history-table th:nth-child(3) { min-width: 46px; }
+.history-table th:nth-child(4) { min-width: 46px; }
+.history-table th:nth-child(5) { min-width: 42px; }
+.history-table th:nth-child(6) { min-width: 42px; }
 
 /* Replaces the per-row inline `rowBg` that main.js used to compute. The old
    code striped rows with an even *array index*, i.e. the first rendered row. */
