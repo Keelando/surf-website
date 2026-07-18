@@ -1,8 +1,16 @@
 /* -----------------------------
-   Charts Orchestrator
+   Charts Orchestrator (ES module)
    Main coordination for all chart modules
+
+   Chart helpers (fetchWithTimeout, registerChartThemeListener, echarts)
+   still come from classic scripts loaded before the entry point.
    ----------------------------- */
-/* exported setTimeRange, applyWaveThreshold, clearWaveThreshold */
+
+import { renderComparisonChart } from "./comparison-chart-v4.js";
+import { renderTemperatureChart } from "./temperature-chart-v4.js";
+import { renderWaveChart } from "./wave-chart-v4.js";
+import { generateWaveHeightTable } from "./wave-table-v4.js";
+import { renderBuoyWindChart } from "./wind-chart-v4.js";
 
 let chartData = null;
 let waveChart, windChart, tempChart, waveComparisonChart;
@@ -133,7 +141,7 @@ function ensureChartThemeListener() {
 /**
  * Set time range and update all charts
  */
-function setTimeRange(hours) {
+export function setTimeRange(hours) {
   currentTimeRange = hours;
 
   // Update ALL button states (sync all toggle buttons on page)
@@ -180,7 +188,7 @@ function updateTimeRangeLabels() {
 /**
  * Apply a user-defined wave threshold line to the comparison chart
  */
-function applyWaveThreshold() {
+export function applyWaveThreshold() {
   const input = document.getElementById("wave-threshold-input");
   const val = parseFloat(input.value);
   if (isNaN(val) || val <= 0 || val > 10) return;
@@ -196,7 +204,7 @@ function applyWaveThreshold() {
 /**
  * Clear the user-defined wave threshold
  */
-function clearWaveThreshold() {
+export function clearWaveThreshold() {
   localStorage.removeItem("waveThreshold");
   const input = document.getElementById("wave-threshold-input");
   if (input) input.value = "";

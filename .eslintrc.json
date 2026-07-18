@@ -33,6 +33,15 @@
         "site/assets/js/lightstation-map.js",
         "site/assets/js/lightstation-page.js",
         "site/assets/js/storm_surge_page.js",
+        "site/assets/js/main.js",
+        "site/assets/js/stations-map.js",
+        "site/assets/js/charts-v4.js",
+        "site/assets/js/wave-chart-v4.js",
+        "site/assets/js/wind-chart-v4.js",
+        "site/assets/js/temperature-chart-v4.js",
+        "site/assets/js/comparison-chart-v4.js",
+        "site/assets/js/wave-table-v4.js",
+        "site/assets/js/storm_surge_chart-v4.js",
         "tests/js/**/*.mjs"
       ],
       "parserOptions": {

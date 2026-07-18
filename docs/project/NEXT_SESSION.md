@@ -1,6 +1,6 @@
 # Next Session Plan
 
-**Last updated:** 2026-07-16
+**Last updated:** 2026-07-18
 **Status:** Maintenance mode - major features complete
 
 ---
@@ -53,13 +53,26 @@ Migration status table: `site/assets/js/shared/README.md`.
   "Show on Map" anchors `javascript:void(0)` → `href="#"` + preventDefault
   (same legacy pattern still on tides.html ×2 and analytics.html ×1 — fix
   during their conversions).
-- ⏭️ Step 6 (final): index.html — the big one (main.js + charts-v4 +
-  storm_surge_chart-v4 + stations-map + 19-script load order; leads into the
-  P2 buoy-card refactor).
-- Convention: foundation scripts (theme-manager, logger, warning-banner, nav,
-  footer, sanitize-html, chart-utils-v4) stay classic until all pages are
-  modules; modules read their globals meanwhile. Bump `?v=` on converted
-  script tags; run format → lint → test:js → test:frontend before commit.
+- ✅ Step 6 (2026-07-18, final): index.html converted — **P1 migration
+  COMPLETE, every page is now ES modules.** Two entry points: main.js
+  (imports charts-v4 → 5 chart renderers, and stations-map) and
+  storm_surge_chart-v4.js (standalone); the 9 classic page-script tags
+  collapsed to 2 module tags. Dedupe: stations-map `createDirectionalMarker`
+  + stale-popup blocks ×2 → shared; main.js `createAngularSpreadVector` +
+  timestamp blocks ×2 → shared; storm_surge_chart formatDate/model-run/
+  tooltip → shared; chart-utils dead copies deleted (`DIRECTION_ARROW_PATH`,
+  `formatTimestamp`, `formatTimeOnly`, `formatTimeAxis`). Dead code deleted:
+  stations-map `showSelectedForecastSurgeOnMap`/`showSelectedHindcastSurgeOnMap`/
+  `getIndexPathWithHash`, main.js `window.*` guards. Verified: 34-check
+  runtime script, 16/16 Playwright, 33/33 unit, ESLint 0/0.
+- P1 leftovers (small): swap `tides-modules/utils.js` formatters to shared
+  (tides is already ESM); foundation scripts (theme-manager, logger,
+  warning-banner, nav, footer, sanitize-html, chart-utils-v4) stay classic —
+  converting them is optional polish, not blocking.
+- ⏭️ NEXT: P2 oversized-function refactors, starting with the planned
+  buoy-card refactor (make main.js buoy cards metadata-driven).
+- Convention: bump `?v=` on converted script tags; run format → lint →
+  test:js → test:frontend before commit.
   Runtime verification recipe: `.claude/skills/verify/SKILL.md`.
 
 ---

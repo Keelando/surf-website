@@ -1,14 +1,13 @@
 /* -----------------------------
-   Wave Table Module
+   Wave Table Module (ES module)
    Generates 24-hour wave height summary table
    ----------------------------- */
-/* exported generateWaveHeightTable */
 
 /**
  * Generate 24-hour wave height summary table
  * @param {Object} chartData - Full chart data object with all buoys
  */
-function generateWaveHeightTable(chartData) {
+export function generateWaveHeightTable(chartData) {
   try {
     if (!chartData) return;
 

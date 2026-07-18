@@ -1,10 +1,14 @@
 /* -----------------------------
-   Wind Chart Module
+   Wind Chart Module (ES module)
    Handles wind speed and gust visualization with direction arrows
-   ----------------------------- */
-/* exported renderBuoyWindChart */
 
-// createWindDirectionArrowData provided by chart-utils-v4.js (loaded earlier)
+   Chart helpers (createWindDirectionArrowData, degreesToCardinal,
+   theme/grid/tooltip config, sanitizeSeriesData, showChartError) still
+   come from classic scripts loaded before the entry point.
+   ----------------------------- */
+
+import { formatMonthDayTime } from "./shared/format-time.js";
+import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
 
 /**
  * Render wind chart for the selected buoy (index/buoy page).
@@ -13,7 +17,7 @@
  * @param {Object} windChart - ECharts instance for wind chart
  * @param {Object} buoy - Buoy data including name and timeseries
  */
-function renderBuoyWindChart(windChart, buoy) {
+export function renderBuoyWindChart(windChart, buoy) {
   try {
     const ts = buoy.timeseries;
     const theme = getChartThemeColors();
@@ -55,7 +59,7 @@ function renderBuoyWindChart(windChart, buoy) {
         ...getMobileOptimizedTooltipConfig(),
         formatter: (params) => {
           if (!params || params.length === 0) return "";
-          const time = formatTimeAxis(new Date(params[0].value[0]).toISOString());
+          const time = formatMonthDayTime(params[0].value[0]);
           let res = `<b>${time}</b><br/>`;
           params.forEach((p) => {
             if (p.seriesName === "Wind Direction") return; // Skip arrow series in tooltip

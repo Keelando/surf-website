@@ -1,8 +1,14 @@
 /* -----------------------------
-   Comparison Chart Module
+   Comparison Chart Module (ES module)
    Handles multi-buoy wave height comparison
+
+   Chart helpers (calculateArrowRotation, degreesToCardinal, theme/grid/
+   tooltip config, sanitizeSeriesData, showChartError) still come from
+   classic scripts loaded before the entry point.
    ----------------------------- */
-/* exported renderComparisonChart */
+
+import { formatMonthDayTime } from "./shared/format-time.js";
+import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
 
 /**
  * Downsample high-frequency data to hourly intervals
@@ -52,7 +58,7 @@ function downsampleToHourly(data) {
  * @param {Object} waveComparisonChart - ECharts instance for comparison chart
  * @param {Object} chartData - Full chart data object with all buoys
  */
-function renderComparisonChart(waveComparisonChart, chartData) {
+export function renderComparisonChart(waveComparisonChart, chartData) {
   try {
     if (!chartData) {
       logger.warn("ComparisonChart", "No chart data available");
@@ -196,7 +202,7 @@ function renderComparisonChart(waveComparisonChart, chartData) {
         ...getMobileOptimizedTooltipConfig(),
         formatter: (params) => {
           if (!params?.length) return "";
-          const time = formatTimeAxis(new Date(params[0].value[0]).toISOString());
+          const time = formatMonthDayTime(params[0].value[0]);
           let res = `<b>${time}</b><br/>`;
           for (const p of params) {
             if (p.seriesName === "Wave Dir (Halibut)") continue;

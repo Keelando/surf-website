@@ -6,33 +6,17 @@
    other classic page scripts (and, until the ES-module migration finishes,
    by module pages too). The directive below tells ESLint they're exported.
    ----------------------------- */
-/* exported DIRECTION_ARROW_PATH, calculateArrowRotation, degreesToCardinal,
-   getDirectionalArrow, formatTimestamp, formatTimeOnly,
-   createWindDirectionArrowData, fetchWithTimeout, sanitizeSeriesData,
-   registerChartThemeListener, formatCompactTimeLabel, formatTimeAxis,
+/* exported calculateArrowRotation, degreesToCardinal,
+   getDirectionalArrow, createWindDirectionArrowData, fetchWithTimeout,
+   sanitizeSeriesData, registerChartThemeListener, formatCompactTimeLabel,
    getResponsiveGridConfig, getResponsiveLegendBottom, showChartError,
    getMobileOptimizedTooltipConfig */
 
 /* =============================================================================
    DIRECTION ARROW DEFINITIONS (CENTRALIZED)
-   All direction markers across the frontend use these definitions
+   The arrow symbol path lives in shared/markers.js (DIRECTION_ARROW_PATH);
+   rotation convention below applies to it everywhere.
    ============================================================================= */
-
-/**
- * ECharts arrow symbol path - points DOWNWARD at 0° rotation
- * Skinny notched arrow design
- *
- * CRITICAL: Arrow shows where wind/waves are TRAVELING TO, not coming from
- * Meteorological convention: direction value = where wind/waves COME FROM
- * Therefore: arrow must point OPPOSITE to the bearing (hence negative rotation)
- *
- * Philosophy: Arrow defaults pointing DOWN, rotates COUNTER-CLOCKWISE (negated degrees)
- *   0° = FROM NORTH → arrow points down (traveling south) → rotation: -0° = 0°
- *   90° = FROM EAST → arrow points left (traveling west) → rotation: -90°
- *   180° = FROM SOUTH → arrow points up (traveling north) → rotation: -180°
- *   270° = FROM WEST → arrow points right (traveling east) → rotation: -270°
- */
-const DIRECTION_ARROW_PATH = "path://M0,15 L-3,-5 L0,0 L3,-5 Z";
 
 /**
  * Calculate arrow rotation for direction display
@@ -103,42 +87,6 @@ function getDirectionalArrow(degrees, arrowType = "wind") {
       : `<svg width="16" height="16" viewBox="0 0 16 16" style="color: var(--color-primary-dark, #004b7c);"><path d="M2 8h12m0 0l-3-3m3 3l-3 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
 
   return `<span aria-hidden="true" style="display:inline-block;transform:rotate(${rotation}deg);margin-left:0.3rem;vertical-align:middle;">${svg}</span>`;
-}
-
-/**
- * Format ISO timestamp to "HH:MM M/D" in Pacific time
- * @param {string} isoString - ISO 8601 timestamp
- * @returns {string} Formatted time string
- */
-function formatTimestamp(isoString) {
-  const date = new Date(isoString);
-  const time = date.toLocaleString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "America/Vancouver",
-  });
-  const day = date.toLocaleString("en-US", {
-    month: "numeric",
-    day: "numeric",
-    timeZone: "America/Vancouver",
-  });
-  return `${time} ${day}`;
-}
-
-/**
- * Format ISO timestamp to "HH:MM" in Pacific time (for mobile)
- * @param {string} isoString - ISO 8601 timestamp
- * @returns {string} Formatted time string
- */
-function formatTimeOnly(isoString) {
-  const date = new Date(isoString);
-  return date.toLocaleString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "America/Vancouver",
-  });
 }
 
 /**
@@ -345,22 +293,6 @@ function formatCompactTimeLabel(isoString) {
     timeZone: "America/Vancouver",
   });
   return `${dayOfWeek} ${hour}h`;
-}
-
-/**
- * Format time for tooltips and detailed displays
- * Example: "Oct 25 14:30"
- */
-function formatTimeAxis(isoString) {
-  const date = new Date(isoString);
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "America/Vancouver",
-  });
 }
 
 /**

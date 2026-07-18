@@ -299,16 +299,11 @@
   <script src="/assets/js/warning-banner.js?v=20260716"></script>
   <script src="/assets/js/site-notice.js?v=20260427"></script>
   <!-- Load chart utilities first to avoid race conditions -->
-  <script src="/assets/js/chart-utils-v4.js?v=20260716"></script>
-  <script src="/assets/js/main.js?v=20260716"></script>
-  <script src="/assets/js/stations-map.js?v=20260716"></script>
-  <script src="/assets/js/wave-chart-v4.js?v=20260716"></script>
-  <script src="/assets/js/wind-chart-v4.js?v=20260716"></script>
-  <script src="/assets/js/temperature-chart-v4.js?v=20260716"></script>
-  <script src="/assets/js/comparison-chart-v4.js?v=20260716"></script>
-  <script src="/assets/js/wave-table-v4.js?v=20260716"></script>
-  <script src="/assets/js/charts-v4.js?v=20260716"></script>
-  <script src="/assets/js/storm_surge_chart-v4.js?v=20260314"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=20260718"></script>
+  <!-- Module entry points: each pulls in its imports (chart renderers,
+       stations-map, shared/) — imported modules must NOT get their own tags -->
+  <script type="module" src="/assets/js/main.js?v=20260718"></script>
+  <script type="module" src="/assets/js/storm_surge_chart-v4.js?v=20260718"></script>
   <script src="/assets/vendor/htmx.min.js"></script>
 </body>
 </html>

@@ -1,6 +1,16 @@
 /* -----------------------------
-   Storm Surge Chart - Multi-Station Selector
+   Storm Surge Chart - Multi-Station Selector (ES module entry point)
+
+   Standalone entry: no cross-references with the main.js module graph.
+   Chart helpers (fetchWithTimeout, getChartThemeColors, echarts, logger)
+   still come from classic scripts loaded before the entry point.
    ----------------------------- */
+
+import {
+  formatModelRunTime,
+  formatMonthDayTime,
+  formatMonthDayTimeTZ,
+} from "./shared/format-time.js";
 
 function setSafeHTML(element, html) {
   if (!element) return;
@@ -192,14 +202,7 @@ function updateSurgeChart(stationId) {
       ...getMobileOptimizedTooltipConfig(),
       formatter: (params) => {
         const idx = params[0].dataIndex;
-        const time = new Date(times[idx]).toLocaleString("en-US", {
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-          timeZone: "America/Vancouver",
-        });
+        const time = formatMonthDayTime(times[idx]);
         const value = params[0].value;
         const sign = value >= 0 ? "+" : "";
         return `<b>${time}</b><br/>Storm Surge: ${sign}${value.toFixed(2)} m`;
@@ -344,32 +347,8 @@ function updateMetadata(station, times, values, displayName = null) {
   const firstForecast = new Date(times[0]);
   const lastForecast = new Date(times[times.length - 1]);
 
-  const formatDate = (date) =>
-    date.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "America/Vancouver",
-      timeZoneName: "short",
-    });
-
-  // Extract model run time (00Z or 12Z format)
-  let modelRunDisplay = "";
-  if (surgeData.model_run_time) {
-    const runStr = surgeData.model_run_time;
-    const modelRunTime = new Date(
-      runStr.endsWith("Z") || runStr.includes("+") ? runStr : runStr + "Z",
-    );
-    const hourUTC = modelRunTime.getUTCHours();
-    const dateStr = modelRunTime.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      timeZone: "UTC",
-    });
-    modelRunDisplay = `${dateStr} ${hourUTC.toString().padStart(2, "0")}Z`;
-  }
+  // Model run time (00Z or 12Z format), "" when absent
+  const modelRunDisplay = formatModelRunTime(surgeData.model_run_time);
 
   // Use displayName if provided, otherwise use station.station_name
   const stationName = displayName || station.station_name;
@@ -381,8 +360,8 @@ function updateMetadata(station, times, values, displayName = null) {
     <strong>Location:</strong> ${station.location.lat.toFixed(4)}°N, ${Math.abs(station.location.lon).toFixed(4)}°W<br/>
     <strong>Model:</strong> GDSPS (Global Deterministic Storm Surge Prediction System)<br/>
     ${modelRunDisplay ? `<strong>Model Run:</strong> ${modelRunDisplay}<br/>` : ""}
-    <strong>Data Retrieved:</strong> ${formatDate(generatedTime)}<br/>
-    <strong>Forecast Period:</strong> ${formatDate(firstForecast)} to ${formatDate(lastForecast)}<br/>
+    <strong>Data Retrieved:</strong> ${formatMonthDayTimeTZ(generatedTime)}<br/>
+    <strong>Forecast Period:</strong> ${formatMonthDayTimeTZ(firstForecast)} to ${formatMonthDayTimeTZ(lastForecast)}<br/>
     <strong>Resolution:</strong> ${values.length} hours (1-hour intervals)
   `,
   );

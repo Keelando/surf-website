@@ -1,9 +1,17 @@
 /* -----------------------------
-   Wave Chart Module
+   Wave Chart Module (ES module)
    Handles wave height and period visualization
-   Uses centralized arrow definitions from chart-utils-v4.js
+
+   Chart helpers (calculateArrowRotation, degreesToCardinal, theme/grid/
+   tooltip config, sanitizeSeriesData, showChartError, echarts) still come
+   from classic scripts loaded before the entry point.
    ----------------------------- */
-/* exported renderWaveChart */
+
+import { formatMonthDayTime } from "./shared/format-time.js";
+import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
+
+// ECharts instance for the NOAA spectral period chart (created on demand)
+let wavePeriodChart = null;
 
 /**
  * Create wave direction arrow data for scatter series
@@ -58,7 +66,7 @@ function createWaveDirectionArrowData(waveDirectionData, waveHeightData, colorOv
  * @param {Object} buoy - Buoy data including name and timeseries
  * @param {string} buoyId - Buoy identifier
  */
-function renderWaveChart(waveChart, buoy, buoyId) {
+export function renderWaveChart(waveChart, buoy, buoyId) {
   try {
     const ts = buoy.timeseries;
     const theme = getChartThemeColors();
@@ -168,7 +176,7 @@ function renderSpectralCharts(waveChart, buoy, ts, theme) {
         ...getMobileOptimizedTooltipConfig(),
         formatter: (params) => {
           if (!params || params.length === 0) return "";
-          const time = formatTimeAxis(new Date(params[0].value[0]).toISOString());
+          const time = formatMonthDayTime(params[0].value[0]);
           const timestamp = new Date(params[0].value[0]).getTime();
           let res = `<b>${time}</b><br/>`;
 
@@ -350,12 +358,12 @@ function renderSpectralCharts(waveChart, buoy, ts, theme) {
   if (periodChartContainer) {
     periodChartContainer.style.display = "block";
 
-    if (!window.wavePeriodChart) {
-      window.wavePeriodChart = echarts.init(periodChartContainer);
-      window.addEventListener("resize", () => window.wavePeriodChart.resize());
+    if (!wavePeriodChart) {
+      wavePeriodChart = echarts.init(periodChartContainer);
+      window.addEventListener("resize", () => wavePeriodChart.resize());
     }
 
-    window.wavePeriodChart.setOption(
+    wavePeriodChart.setOption(
       {
         backgroundColor: theme.background,
         textStyle: { color: textColor },
@@ -369,7 +377,7 @@ function renderSpectralCharts(waveChart, buoy, ts, theme) {
           axisPointer: { type: "cross" },
           formatter: (params) => {
             if (!params || params.length === 0) return "";
-            const time = formatTimeAxis(new Date(params[0].value[0]).toISOString());
+            const time = formatMonthDayTime(params[0].value[0]);
             const timestamp = new Date(params[0].value[0]).getTime();
             let res = `<b>${time}</b><br/>`;
 
@@ -521,8 +529,8 @@ function renderSpectralCharts(waveChart, buoy, ts, theme) {
     );
 
     setTimeout(() => {
-      if (window.wavePeriodChart) {
-        window.wavePeriodChart.resize();
+      if (wavePeriodChart) {
+        wavePeriodChart.resize();
       }
     }, 100);
   }
@@ -643,7 +651,7 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts, theme) {
       name: "Wave Direction",
       type: "scatter",
       data: arrowData,
-      symbol: "path://M0,15 L-3,-5 L0,0 L3,-5 Z", // Skinny notched arrow pointing DOWN
+      symbol: DIRECTION_ARROW_PATH,
       symbolSize: 16,
       symbolRotate: function (dataIndex) {
         return arrowData[dataIndex]?.symbolRotate || 0;
@@ -675,7 +683,7 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts, theme) {
         ...getMobileOptimizedTooltipConfig(),
         formatter: (params) => {
           if (!params || params.length === 0) return "";
-          const time = formatTimeAxis(new Date(params[0].value[0]).toISOString());
+          const time = formatMonthDayTime(params[0].value[0]);
           let res = `<b>${time}</b><br/>`;
           params.forEach((p) => {
             if (p.seriesName === "Wave Direction") return; // Skip arrow series in tooltip

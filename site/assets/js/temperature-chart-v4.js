@@ -1,15 +1,20 @@
 /* -----------------------------
-   Temperature Chart Module
+   Temperature Chart Module (ES module)
    Handles air and sea temperature visualization
+
+   Chart helpers (theme/grid/tooltip config, sanitizeSeriesData,
+   showChartError) still come from classic scripts loaded before the
+   entry point.
    ----------------------------- */
-/* exported renderTemperatureChart */
+
+import { formatMonthDayTime } from "./shared/format-time.js";
 
 /**
  * Render temperature chart for the selected buoy
  * @param {Object} tempChart - ECharts instance for temperature chart
  * @param {Object} buoy - Buoy data including name and timeseries
  */
-function renderTemperatureChart(tempChart, buoy) {
+export function renderTemperatureChart(tempChart, buoy) {
   try {
     const ts = buoy.timeseries;
     const theme = getChartThemeColors();
@@ -47,7 +52,7 @@ function renderTemperatureChart(tempChart, buoy) {
         ...getMobileOptimizedTooltipConfig(),
         formatter: (params) => {
           if (!params || params.length === 0) return "";
-          const time = formatTimeAxis(new Date(params[0].value[0]).toISOString());
+          const time = formatMonthDayTime(params[0].value[0]);
           let res = `<b>${time}</b><br/>`;
           params.forEach((p) => {
             if (p.value[1] != null) {

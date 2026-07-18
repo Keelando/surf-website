@@ -1,5 +1,16 @@
-// degreesToCardinal, getDirectionalArrow, formatTimestamp, formatTimeOnly
-// provided by chart-utils-v4.js (loaded earlier)
+/* -----------------------------
+   Index Page - Buoy Cards (ES module entry point)
+
+   Importing charts-v4.js and stations-map.js is what pulls the whole
+   module graph onto the page. degreesToCardinal, getDirectionalArrow,
+   fetchWithTimeout, and logger still come from classic scripts loaded
+   before this one (chart-utils-v4.js, logger.js).
+   ----------------------------- */
+
+import { applyWaveThreshold, clearWaveThreshold, setTimeRange } from "./charts-v4.js";
+import { formatNumericDayTime } from "./shared/format-time.js";
+import { createAngularSpreadVector } from "./shared/markers.js";
+import { centerMapOnBuoy, showSelectedBuoyOnMap, showSelectedSurgeOnMap } from "./stations-map.js";
 
 // Helper function to format data age in human-readable format
 function formatDataAge(ageMinutes) {
@@ -79,74 +90,6 @@ function renderHeroConditions(buoy) {
       ${stat("Gust", fmtKt(buoy.wind_gust))}
     </div>
     <div class="hero-updated${buoy.stale ? " stale" : ""}">${updatedText}</div>
-  `;
-}
-
-// Helper function to create angular spread vector visualization
-// Shows main direction arrow with smaller arrows indicating directional spread
-function createAngularSpreadVector(avgDirection, spread, size = 60) {
-  if (avgDirection == null || spread == null) return "";
-
-  const halfSpread = spread / 2;
-  const minDir = avgDirection - halfSpread;
-  const maxDir = avgDirection + halfSpread;
-
-  // Center point
-  const cx = size / 2;
-  const cy = size / 2;
-  const radius = size * 0.42; // Arrow radius from center
-
-  // Match the existing getDirectionalArrow rotation convention:
-  // Base arrow points DOWN (towards south), then rotate by degrees
-  const mainRot = avgDirection;
-  const minRot = minDir;
-  const maxRot = maxDir;
-
-  // Calculate arc path for the spread sector
-  // The sector should show TRAVEL directions (where waves go TO), not source directions
-  // So add 180° to convert from source to travel direction, matching the arrow
-  // SVG arc angles: 0° = right (3 o'clock), 90° = down (6 o'clock), measured clockwise
-  // Subtract 90° to convert from compass to SVG angles
-  const startAngleSVG = minRot + 180 - 90;
-  const endAngleSVG = maxRot + 180 - 90;
-  const startAngleRad = (startAngleSVG * Math.PI) / 180;
-  const endAngleRad = (endAngleSVG * Math.PI) / 180;
-  const arcRadius = radius + 2; // Extend to circle edge
-
-  const x1 = cx + arcRadius * Math.cos(startAngleRad);
-  const y1 = cy + arcRadius * Math.sin(startAngleRad);
-  const x2 = cx + arcRadius * Math.cos(endAngleRad);
-  const y2 = cy + arcRadius * Math.sin(endAngleRad);
-
-  const largeArc = spread > 180 ? 1 : 0;
-
-  return `
-    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display: inline-block; vertical-align: middle; margin-left: 0.5rem;">
-      <!-- Background circle -->
-      <circle cx="${cx}" cy="${cy}" r="${radius + 2}" fill="none" stroke="#e0e7ee" stroke-width="1"/>
-
-      <!-- Spread sector -->
-      <path d="M ${cx},${cy} L ${x1},${y1} A ${arcRadius},${arcRadius} 0 ${largeArc},1 ${x2},${y2} Z"
-            fill="rgba(30, 136, 229, 0.15)"
-            stroke="rgba(30, 136, 229, 0.3)"
-            stroke-width="1"/>
-
-      <!-- Main direction arrow (single arrow within sector) -->
-      <g transform="rotate(${mainRot} ${cx} ${cy})">
-        <!-- Arrow shaft -->
-        <line x1="${cx}" y1="${cy - radius + 8}" x2="${cx}" y2="${cy + radius - 3}"
-              stroke="#1e88e5" stroke-width="2.5"/>
-        <!-- Triangular arrowhead -->
-        <path d="M${cx},${cy + radius + 2} L${cx - 5},${cy + radius - 8} L${cx + 5},${cy + radius - 8} Z"
-              fill="#1e88e5"/>
-      </g>
-
-      <!-- Cardinal directions -->
-      <text x="${cx}" y="8" text-anchor="middle" font-size="8" fill="#999">N</text>
-      <text x="${size - 6}" y="${cy + 3}" text-anchor="middle" font-size="8" fill="#999">E</text>
-      <text x="${cx}" y="${size - 2}" text-anchor="middle" font-size="8" fill="#999">S</text>
-      <text x="6" y="${cy + 3}" text-anchor="middle" font-size="8" fill="#999">W</text>
-    </svg>
   `;
 }
 
@@ -281,16 +224,7 @@ async function loadBuoyData() {
     if (mostRecentTime) {
       const updateHeader = document.createElement("div");
       updateHeader.className = "last-updated-header";
-      updateHeader.textContent = `Last Updated: ${mostRecentTime
-        .toLocaleString("en-US", {
-          month: "numeric",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-          timeZone: "America/Vancouver",
-        })
-        .replace(",", "")}`;
+      updateHeader.textContent = `Last Updated: ${formatNumericDayTime(mostRecentTime)}`;
       container.appendChild(updateHeader);
     }
 
@@ -362,18 +296,7 @@ async function loadBuoyData() {
         }
 
         // Format timestamp in Pacific Time (24-hour, shorter format: "11/11 19:58")
-        const updated = b.observation_time
-          ? new Date(b.observation_time)
-              .toLocaleString("en-US", {
-                month: "numeric",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-                timeZone: "America/Vancouver",
-              })
-              .replace(",", "")
-          : "—";
+        const updated = b.observation_time ? formatNumericDayTime(b.observation_time) : "—";
 
         // Data freshness handling:
         // - Up to 3 hours: No warning
@@ -951,13 +874,11 @@ function scrollToMap(buoyId) {
 
   // Wait for scroll to complete, then center map on buoy
   setTimeout(() => {
-    if (typeof window.centerMapOnBuoy === "function") {
-      window.centerMapOnBuoy(buoyId);
+    centerMapOnBuoy(buoyId);
 
-      // Add highlight pulse effect
-      mapSection.classList.add("highlight-pulse");
-      setTimeout(() => mapSection.classList.remove("highlight-pulse"), 2000);
-    }
+    // Add highlight pulse effect
+    mapSection.classList.add("highlight-pulse");
+    setTimeout(() => mapSection.classList.remove("highlight-pulse"), 2000);
   }, 800);
 }
 
@@ -1329,38 +1250,38 @@ window.addEventListener("hashchange", handleHashNavigation);
 
 // Auto-open site intro on desktop (replaces inline script removed for CSP compliance)
 (function () {
-  var d = document.querySelector(".site-intro-details");
+  const d = document.querySelector(".site-intro-details");
   if (d && window.innerWidth > 600) d.open = true;
 })();
 
 // Event listeners replacing onclick= attributes (CSP compliance)
 document.addEventListener("click", function (e) {
-  var btn = e.target.closest(".time-range-btn");
+  const btn = e.target.closest(".time-range-btn");
   if (btn) {
-    var hours = parseInt(btn.dataset.hours, 10);
-    if (hours && typeof setTimeRange === "function") setTimeRange(hours);
+    const hours = parseInt(btn.dataset.hours, 10);
+    if (hours) setTimeRange(hours);
   }
 });
 
-var applyBtn = document.getElementById("apply-wave-threshold-btn");
+const applyBtn = document.getElementById("apply-wave-threshold-btn");
 if (applyBtn)
   applyBtn.addEventListener("click", function () {
     applyWaveThreshold();
   });
 
-var clearBtn = document.getElementById("clear-wave-threshold-btn");
+const clearBtn = document.getElementById("clear-wave-threshold-btn");
 if (clearBtn)
   clearBtn.addEventListener("click", function () {
     clearWaveThreshold();
   });
 
-var buoyMapBtn = document.getElementById("show-buoy-on-map-btn");
+const buoyMapBtn = document.getElementById("show-buoy-on-map-btn");
 if (buoyMapBtn)
   buoyMapBtn.addEventListener("click", function (e) {
     showSelectedBuoyOnMap(e);
   });
 
-var surgeMapBtn = document.getElementById("show-surge-on-map-btn");
+const surgeMapBtn = document.getElementById("show-surge-on-map-btn");
 if (surgeMapBtn)
   surgeMapBtn.addEventListener("click", function (e) {
     showSelectedSurgeOnMap(e);

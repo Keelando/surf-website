@@ -1,7 +1,14 @@
 /**
- * Salish Sea Stations Map
+ * Salish Sea Stations Map (ES module)
  * Displays all buoy and tide stations on an interactive Leaflet map
+ *
+ * fetchWithTimeout, logger, and L (Leaflet) still come from classic
+ * scripts loaded before the entry point.
  */
+
+import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
+import { createDirectionalMarker } from "./shared/markers.js";
+import { staleDataWarningHTML, stalePopupTheme } from "./shared/staleness.js";
 
 let stationsMap = null;
 let markersLayer = null;
@@ -281,82 +288,6 @@ function createTideGaugeSVG() {
   `;
 }
 
-/**
- * Create directional marker with triangular arrow (exact ECharts style match)
- * @param {number} direction - Direction in degrees (meteorological: coming FROM)
- * @param {number} height - Wave height in meters (optional)
- * @param {string} type - 'wave', 'wind-on-wave', or 'wind'
- * @param {boolean} stale - Whether the data is stale (>3 hours old)
- * @returns {string} HTML for marker
- */
-function createDirectionalMarker(direction, height, type, stale = false) {
-  const isWave = type === "wave";
-  const isWind = type === "wind";
-  const arrowColor = isWave
-    ? "var(--map-arrow-wave, #0077be)"
-    : isWind
-      ? "var(--map-arrow-wind, #dc2626)"
-      : "var(--map-arrow-nodir, #555555)";
-  const opacity = stale ? 0.35 : 1.0; // Transparent if stale
-
-  // Meteorological convention: direction value = where wave/wind is COMING FROM
-  // Arrow shows propagation direction (where waves/wind are TRAVELING TO)
-  // Arrow SVG points DOWN at rotation=0 (South/180° compass)
-  // Direction 0° (from North) → traveling South → arrow down → rotation 0
-  // Direction 90° (from East) → traveling West → arrow left → rotation 90
-  const rotation = direction;
-
-  // Build label if height/speed is available
-  // For waves: show height in meters
-  // For wind: show speed in knots
-  let valueLabel = "";
-  if (height !== null && height !== undefined) {
-    if (isWind) {
-      // Wind speed in knots (rounded to nearest integer)
-      valueLabel = `<div style="
-        background: transparent;
-        color: var(--map-marker-text, #004b7c);
-        padding: 2px 5px;
-        border-radius: 3px;
-        font-size: 13px;
-        font-weight: bold;
-        white-space: nowrap;
-        text-shadow: 1px 1px 2px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9), 1px -1px 2px rgba(255,255,255,0.9), -1px 1px 2px rgba(255,255,255,0.9);
-        margin-bottom: -3px;
-      ">${Math.round(height)}kt</div>`;
-    } else {
-      // Wave height in meters
-      valueLabel = `<div style="
-        background: transparent;
-        color: var(--map-marker-text, #004b7c);
-        padding: 2px 5px;
-        border-radius: 3px;
-        font-size: 13px;
-        font-weight: bold;
-        white-space: nowrap;
-        text-shadow: 1px 1px 2px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9), 1px -1px 2px rgba(255,255,255,0.9), -1px 1px 2px rgba(255,255,255,0.9);
-        margin-bottom: -3px;
-      ">${height.toFixed(1)}m</div>`;
-    }
-  }
-
-  // Use ECharts-style arrow path, fattened for better map visibility
-  // Original: 'M0,12 L-4,-8 L0,-6 L4,-8 Z' (width 8)
-  // Fattened: 'M0,12 L-5,-8 L0,-5 L5,-8 Z' (width 10)
-  // This creates a filled triangular arrow with notch, pointing down by default
-  // Scaled up from ECharts symbolSize 16 for better visibility on map
-  return `
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: ${opacity};">
-      ${valueLabel}
-      <div style="transform: rotate(${rotation}deg); transform-origin: center center;">
-        <svg width="26" height="30" viewBox="-6 -10 12 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); color: ${arrowColor};">
-          <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="currentColor" fill-opacity="0.98" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-      </div>
-    </div>
-  `;
-}
-
 // Add buoy marker to map
 function addBuoyMarker(buoy) {
   // Determine marker icon and type label based on station type
@@ -416,7 +347,10 @@ function addBuoyMarker(buoy) {
       // For wave stations with wave direction data
       if (isWaveStation && waveDirection !== null && waveDirection !== undefined) {
         // Create directional arrow marker with wave height (BLUE)
-        iconHtml = createDirectionalMarker(waveDirection, waveHeight, "wave", isStale);
+        iconHtml = createDirectionalMarker(waveDirection, waveHeight, {
+          type: "wave",
+          stale: isStale,
+        });
         // Arrow size: 26x30px (fattened), label adds ~18px height
         iconSize = [26, waveHeight ? 48 : 30];
         // Anchor at center of rotation
@@ -431,7 +365,10 @@ function addBuoyMarker(buoy) {
         windDirection !== undefined
       ) {
         // Show wind direction with wave height (GRAY)
-        iconHtml = createDirectionalMarker(windDirection, waveHeight, "wind-on-wave", isStale);
+        iconHtml = createDirectionalMarker(windDirection, waveHeight, {
+          type: "wind-on-wave",
+          stale: isStale,
+        });
         iconSize = [26, 48];
         iconAnchor = [13, 38];
       }
@@ -440,13 +377,16 @@ function addBuoyMarker(buoy) {
         // Show red wind direction marker
         // Wind stations use wind_speed_kt, buoys use wind_speed
         const windSpeed = data.wind_speed_kt !== undefined ? data.wind_speed_kt : data.wind_speed;
-        iconHtml = createDirectionalMarker(windDirection, windSpeed, "wind", isStale);
+        iconHtml = createDirectionalMarker(windDirection, windSpeed, {
+          type: "wind",
+          stale: isStale,
+        });
         iconSize = [26, windSpeed ? 48 : 30];
         iconAnchor = [13, windSpeed ? 38 : 15];
       }
     }
   } catch (error) {
-    console.error("Error creating directional marker for", buoy.id, error);
+    logger.error("StationsMap", `Error creating directional marker for ${buoy.id}`, error);
     // Fall back to emoji on error
     iconHtml = `<div class="marker-icon">${markerEmoji}</div>`;
     iconSize = [30, 30];
@@ -484,16 +424,10 @@ function addBuoyMarker(buoy) {
     const data = popupData;
     const obsTime = data.observation_time ? new Date(data.observation_time) : null;
     const isStale = data.stale || false;
-    const bgColor = isStale
-      ? "var(--color-callout-danger-bg, #fff5f5)"
-      : "var(--color-callout-info-bg, #f0f8ff)";
-    const borderColor = isStale ? "var(--color-accent-red)" : "var(--color-primary)";
-    const headerText = isStale ? "Latest Conditions (STALE - >3h old):" : "Latest Conditions:";
+    const popupTheme = stalePopupTheme(isStale);
 
-    popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
-    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; color: ${
-      isStale ? "var(--color-accent-red)" : "var(--color-primary-dark)"
-    };">${headerText}</div>`;
+    popupContent += `<div style="background: ${popupTheme.bg}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${popupTheme.border};">`;
+    popupContent += `<div style="font-weight: 600; margin-bottom: 4px; color: ${popupTheme.headingColor};">${popupTheme.headerText}</div>`;
 
     // Show wind data (handle both buoy and wind station formats)
     const windSpeed = data.wind_speed_kt !== undefined ? data.wind_speed_kt : data.wind_speed;
@@ -808,15 +742,10 @@ function addLightstationMarker(lightstation) {
   if (hasData) {
     const obs = latestLightstationData[lookupName];
     const isStale = obs.stale || false;
-    const bgColor = isStale
-      ? "var(--color-callout-danger-bg, #fff5f5)"
-      : "var(--color-callout-info-bg, #f0f8ff)";
-    const borderColor = isStale ? "var(--color-accent-red)" : "var(--color-primary)";
-    const headerText = isStale ? "Latest Conditions (STALE - >12h old):" : "Latest Conditions:";
-    const headerColor = isStale ? "var(--color-accent-red)" : "var(--color-primary-dark)";
+    const popupTheme = stalePopupTheme(isStale, { threshold: ">12h" });
 
-    popupContent += `<div style="background: ${bgColor}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${borderColor};">`;
-    popupContent += `<div style="font-weight: 600; margin-bottom: 6px; color: ${headerColor}; font-size: 0.95em;">${headerText}</div>`;
+    popupContent += `<div style="background: ${popupTheme.bg}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${popupTheme.border};">`;
+    popupContent += `<div style="font-weight: 600; margin-bottom: 6px; color: ${popupTheme.headingColor}; font-size: 0.95em;">${popupTheme.headerText}</div>`;
 
     // Wave Height (prominent display)
     if (obs.sea_height_ft !== null) {
@@ -846,35 +775,8 @@ function addLightstationMarker(lightstation) {
 
     // Report time (with full date, day of week, and age in 24h format)
     if (obs.observation_time) {
-      const obsDate = new Date(obs.observation_time);
-      const dateOptions = {
-        timeZone: "America/Vancouver",
-        weekday: "long",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      };
-      const formattedDate = obsDate.toLocaleString("en-US", dateOptions).replace(",", "");
-
-      // Calculate age
-      const now = new Date();
-      const ageMs = now - obsDate;
-      const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
-      const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
-      const ageMinutes = Math.floor((ageMs % (1000 * 60 * 60)) / (1000 * 60));
-
-      let ageText = "";
-      if (ageDays >= 1) {
-        ageText = ageDays === 1 ? " (1 day ago)" : ` (${ageDays} days ago)`;
-      } else if (ageHours > 0) {
-        ageText = ` (${ageHours}h ago)`;
-      } else if (ageMinutes > 0) {
-        ageText = ` (${ageMinutes}m ago)`;
-      } else {
-        ageText = " (just now)";
-      }
+      const formattedDate = formatWeekdayDayTime(obs.observation_time);
+      const ageText = ` (${getShortAgeString(new Date(obs.observation_time))})`;
 
       popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-divider, rgba(0,75,124,0.2));">📅 Report: ${formattedDate}${ageText}</div>`;
     } else if (obs.report_time_str) {
@@ -883,7 +785,7 @@ function addLightstationMarker(lightstation) {
 
     // Staleness warning (already shown in header, but keep for emphasis)
     if (obs.stale) {
-      popupContent += `<div style="color: var(--color-accent-red); font-size: 0.85em; margin-top: 4px; font-weight: 600;">⚠️ STALE DATA</div>`;
+      popupContent += staleDataWarningHTML();
     }
 
     popupContent += `</div>`;
@@ -1084,7 +986,7 @@ function loadFallbackStations() {
 }
 
 // Center map on specific buoy and open popup
-function centerMapOnBuoy(buoyId, retryCount = 0) {
+export function centerMapOnBuoy(buoyId, retryCount = 0) {
   if (!stationsMap || !buoyMarkers[buoyId]) {
     // Retry up to 5 times with 500ms delay
     if (retryCount < 5) {
@@ -1145,12 +1047,8 @@ function centerMapOnTide(stationKey, retryCount = 0) {
   }, 1100);
 }
 
-// Make functions globally accessible
-window.centerMapOnBuoy = centerMapOnBuoy;
-window.centerMapOnTide = centerMapOnTide;
-
 // Show selected buoy on map from dropdown
-function showSelectedBuoyOnMap(event) {
+export function showSelectedBuoyOnMap(event) {
   event.preventDefault();
 
   const select = document.getElementById("chart-buoy-select");
@@ -1168,9 +1066,6 @@ function showSelectedBuoyOnMap(event) {
     mapSection.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 }
-
-// Make function globally accessible
-window.showSelectedBuoyOnMap = showSelectedBuoyOnMap;
 
 // Show selected surge station on map from any dropdown
 function showSurgeStationOnMap(surgeStationName, scrollToMap = true) {
@@ -1197,7 +1092,7 @@ function showSurgeStationOnMap(surgeStationName, scrollToMap = true) {
 }
 
 // Show selected surge station on map from index.html surge selector
-function showSelectedSurgeOnMap(event) {
+export function showSelectedSurgeOnMap(event) {
   if (event) event.preventDefault();
 
   const select = document.getElementById("surge-station-select");
@@ -1205,33 +1100,6 @@ function showSelectedSurgeOnMap(event) {
 
   showSurgeStationOnMap(select.value, true);
 }
-
-function getIndexPathWithHash(hash) {
-  const basePath = window.location.pathname.replace(/[^/]*$/, "");
-  const normalizedBase = basePath.endsWith("/") ? basePath : `${basePath}/`;
-  return `${normalizedBase}index.html${hash}`;
-}
-
-// Show selected surge station on map from storm_surge.html forecast selector
-function showSelectedForecastSurgeOnMap() {
-  const select = document.getElementById("forecast-station-select");
-  if (!select || !select.value) return;
-
-  window.location.href = getIndexPathWithHash(`#surge-${select.value}`);
-}
-
-// Show selected surge station on map from storm_surge.html hindcast selector
-function showSelectedHindcastSurgeOnMap() {
-  const select = document.getElementById("hindcast-station-select");
-  if (!select || !select.value) return;
-
-  window.location.href = getIndexPathWithHash(`#surge-${select.value}`);
-}
-
-// Make functions globally accessible
-window.showSelectedSurgeOnMap = showSelectedSurgeOnMap;
-window.showSelectedForecastSurgeOnMap = showSelectedForecastSurgeOnMap;
-window.showSelectedHindcastSurgeOnMap = showSelectedHindcastSurgeOnMap;
 
 // Check URL hash for station to show on map
 function checkHashForStation() {
