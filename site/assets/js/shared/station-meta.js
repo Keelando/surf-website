@@ -65,3 +65,51 @@ export function reportsSubHourly(meta) {
 export function sourceUrl(meta) {
   return meta?.source_url ?? null;
 }
+
+/**
+ * Field holding the wave height this station displays. Swell-display sites
+ * headline swell; everyone else headlines significant height.
+ */
+export function waveHeightField(meta) {
+  return usesSwellDisplay(meta) ? "swell_height" : "wave_height_sig";
+}
+
+/**
+ * Wave-period fields in priority order, each with the tag the UI shows when
+ * that field is the one used ("dominant"/"avg"/"peak"; null = no tag, i.e.
+ * the value is the expected significant/swell period).
+ *
+ * One list drives both readers: the card's compact line reads it against a
+ * snapshot object, the history table against timeseries arrays. Previously
+ * each re-derived the same priority separately.
+ *
+ * EC buoys publish significant period under two SWOB names, hence the pair;
+ * avg/peak are fallbacks for non-EC stations (e.g. Crescent's radar sensor).
+ */
+export function wavePeriodFields(meta) {
+  if (usesSwellDisplay(meta)) {
+    return [{ field: "swell_period", tag: null }];
+  }
+  if (usesDominantPeriod(meta)) {
+    // NOAA stores DPD in wave_period_sig.
+    return [{ field: "wave_period_sig", tag: "dominant" }];
+  }
+  return [
+    { field: "wave_period_sig", tag: null },
+    { field: "wave_period_sig_basic", tag: null },
+    { field: "wave_period_avg", tag: "avg" },
+    { field: "wave_period_peak", tag: "peak" },
+  ];
+}
+
+/**
+ * First non-null wave period on a snapshot object, with its tag.
+ * Returns {value: null, tag: null} when the station reports none.
+ */
+export function pickWavePeriod(b, meta) {
+  for (const { field, tag } of wavePeriodFields(meta)) {
+    const value = b?.[field];
+    if (value != null) return { value, tag };
+  }
+  return { value: null, tag: null };
+}

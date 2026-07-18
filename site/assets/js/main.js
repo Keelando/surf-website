@@ -8,15 +8,10 @@
    ----------------------------- */
 
 import { applyCardBorder, buildBuoyCardHTML, wireBuoyCardEvents } from "./buoy-card.js";
+import { buildHistoryTableHTML } from "./buoy-history.js";
 import { applyWaveThreshold, clearWaveThreshold, setTimeRange } from "./charts-v4.js";
-import { formatNumericDayTime, formatTimeHM } from "./shared/format-time.js";
+import { formatNumericDayTime } from "./shared/format-time.js";
 import { formatDataAge } from "./shared/staleness.js";
-import {
-  reportsSubHourly,
-  usesDominantPeriod,
-  usesSwellDisplay,
-  waveHeightPrecision,
-} from "./shared/station-meta.js";
 import { centerMapOnBuoy, showSelectedBuoyOnMap, showSelectedSurgeOnMap } from "./stations-map.js";
 
 // Station metadata from stations.json (single source of truth for
@@ -435,208 +430,14 @@ async function toggleCardHistory(buoyId) {
   }
 }
 
-// Render history table
+// Render history table. Structure and per-station field selection live in
+// buoy-history.js; main.js only supplies the viewport-dependent bits.
 function renderHistoryTable(buoyId, timeseries) {
-  const meta = stationMeta[buoyId];
-
-  // Get the most recent 12 hourly observations
-  const windSpeed = timeseries.wind_speed?.data || [];
-  const windDir = timeseries.wind_direction?.data || [];
-  const windGust = timeseries.wind_gust?.data || [];
-
-  // Height is always significant (swell-display stations show swell).
-  const waveHeight = usesSwellDisplay(meta)
-    ? timeseries.swell_height?.data || []
-    : timeseries.wave_height_sig?.data || [];
-
-  // Period source, in priority order per buoy type:
-  //  - swell display (Neah Bay): swell period
-  //  - NOAA: dominant period (DPD, stored in wave_period_sig)
-  //  - EC: significant period (two SWOB names), falling back to avg then peak
-  //    for non-EC stations (e.g. Crescent on the radar sensor)
-  let wavePeriodSources;
-  if (usesSwellDisplay(meta)) {
-    wavePeriodSources = [timeseries.swell_period?.data || []];
-  } else if (usesDominantPeriod(meta)) {
-    wavePeriodSources = [timeseries.wave_period_sig?.data || []];
-  } else {
-    wavePeriodSources = [
-      timeseries.wave_period_sig?.data || [],
-      timeseries.wave_period_sig_basic?.data || [],
-      timeseries.wave_period_avg?.data || [],
-      timeseries.wave_period_peak?.data || [],
-    ];
-  }
-
-  const airTemp = timeseries.air_temp?.data || [];
-  const seaTemp = timeseries.sea_temp?.data || [];
-
-  logger.debug(
-    "History",
-    `${buoyId}: windSpeed=${windSpeed.length}, waveHeight=${waveHeight.length} points`,
-  );
-
-  // Build the time axis from wave data when present, otherwise fall back to
-  // wind (and then temperature) so the table still renders when a buoy's wave
-  // sensor is offline.
-  const timeSource = waveHeight.length
-    ? waveHeight
-    : windSpeed.length
-      ? windSpeed
-      : seaTemp.length
-        ? seaTemp
-        : airTemp;
-  let allTimes = timeSource.map((d) => d.time);
-
-  // Sub-hourly reporters (Crescent stations): filter to on-the-hour rows
-  if (reportsSubHourly(meta)) {
-    allTimes = allTimes.filter((time) => {
-      const date = new Date(time);
-      return date.getMinutes() === 0; // Only include times on the hour
-    });
-  }
-
-  // Get last 12 hours of wave data
-  const now = new Date();
-  const twelveHoursAgo = new Date(now - 12 * 60 * 60 * 1000);
-  const times = allTimes
-    .filter((time) => new Date(time) >= twelveHoursAgo)
-    .sort()
-    .reverse();
-
-  logger.debug(
-    "History",
-    `${buoyId}: Showing ${times.length} rows (all wave data, wind when available)`,
-  );
-
-  logger.debug("History", `${buoyId}: Generated ${times.length} time entries for table`);
-
-  // Responsive scroll indicator - only show on mobile, positioned OUTSIDE table
-  const scrollIndicator =
-    window.innerWidth < 768
-      ? `<div class="history-scroll-hint">← Scroll table horizontally →</div>`
-      : "";
-
-  let tableHTML = `
-    ${scrollIndicator}
-    <div class="history-scroll">
-      <table class="history-table">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Wind [kn]</th>
-            <th>Wave Ht [m]</th>
-            <th>Period [s]</th>
-            <th>Sea [°C]</th>
-            <th>Air [°C]</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
-
-  const waveHeightDecimals = waveHeightPrecision(meta);
-
-  // Track previous date for conditional date display
-  let previousDate = null;
-
-  times.forEach((time) => {
-    const windSpeedVal = windSpeed.find((d) => d.time === time)?.value;
-    const windDirVal = windDir.find((d) => d.time === time)?.value;
-    const windGustVal = windGust.find((d) => d.time === time)?.value;
-    const waveHeightVal = waveHeight.find((d) => d.time === time)?.value;
-    let wavePeriodVal;
-    for (const src of wavePeriodSources) {
-      const v = src.find((d) => d.time === time)?.value;
-      if (v != null) {
-        wavePeriodVal = v;
-        break;
-      }
-    }
-    const airTempVal = airTemp.find((d) => d.time === time)?.value;
-    const seaTempVal = seaTemp.find((d) => d.time === time)?.value;
-
-    const dateObj = new Date(time);
-
-    // Format: "Mo-11 08h10" (2-letter weekday, day, hour, minutes if not :00).
-    // Weekday must be Vancouver-pinned like the rest — getDay() would use the
-    // viewer's timezone and mislabel evening rows for non-Pacific visitors.
-    const dayOfWeek = dateObj
-      .toLocaleString("en-US", { weekday: "short", timeZone: "America/Vancouver" })
-      .slice(0, 2);
-    const dayOfMonth = dateObj.toLocaleString("en-US", {
-      day: "numeric",
-      timeZone: "America/Vancouver",
-    });
-    // Hour and minute in ONE call: engines only zero-pad reliably when both
-    // fields are requested together (Chromium returns "0"/"5" for minute alone)
-    const [hour, minute] = formatTimeHM(dateObj).split(":");
-
-    // Only show date prefix if it changed from previous row
-    const currentDate = `${dayOfWeek}-${dayOfMonth}`;
-    const minuteSuffix = minute !== "00" ? minute : "";
-    let timeStr;
-    if (currentDate !== previousDate) {
-      // New date: show date on first line, hour+minutes on second line
-      timeStr = `${currentDate}<br/>${hour}h${minuteSuffix}`;
-      previousDate = currentDate;
-    } else {
-      // Same date: just show hour+minutes
-      timeStr = `${hour}h${minuteSuffix}`;
-    }
-
-    // Format wind with cardinal direction and gust: "WNW 10 gust 15"
-    let windDisplay = "—";
-    if (windSpeedVal != null) {
-      const cardinal = degreesToCardinal(windDirVal);
-      const cardinalStr = cardinal ? `${cardinal} ` : "";
-      const gustStr = windGustVal != null ? ` gust ${Math.round(windGustVal)}` : "";
-      windDisplay = `${cardinalStr}${Math.round(windSpeedVal)}${gustStr}`;
-    }
-
-    tableHTML += `
-      <tr>
-        <td>${timeStr}</td>
-        <td>${windDisplay}</td>
-        <td>${waveHeightVal != null ? waveHeightVal.toFixed(waveHeightDecimals) : "—"}</td>
-        <td>${wavePeriodVal != null ? wavePeriodVal.toFixed(1) : "—"}</td>
-        <td>${seaTempVal != null ? seaTempVal.toFixed(1) : "—"}</td>
-        <td>${airTempVal != null ? airTempVal.toFixed(1) : "—"}</td>
-      </tr>
-    `;
+  return buildHistoryTableHTML(timeseries, stationMeta[buoyId], {
+    // Mobile-only cue; depends on the live viewport, so it can't be decided
+    // inside a pure builder.
+    showScrollHint: window.innerWidth < 768,
   });
-
-  tableHTML += `
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  // Add duplicate Hide button at bottom of history table
-  tableHTML += `
-    <div class="history-hide-row">
-      <button class="hide-history-btn">
-        ▲ Hide History
-      </button>
-    </div>
-  `;
-
-  // Add note for swell-display stations explaining swell data
-  if (usesSwellDisplay(meta)) {
-    tableHTML += `
-      <div class="history-note">
-        <strong>Note:</strong> Neah Bay displays <strong>swell data</strong> (long-period ocean waves from distant storms) rather than combined wave metrics. Wind waves are typically much smaller at this location.
-      </div>
-    `;
-  } else if (usesDominantPeriod(meta)) {
-    tableHTML += `
-      <div class="history-note">
-        <strong>Note:</strong> Height is significant wave height; period is the <strong>dominant period</strong> — NOAA's term for the wave period carrying the most energy (equivalent to peak period).
-      </div>
-    `;
-  }
-
-  logger.debug("History", `${buoyId}: Rendered table with ${times.length} rows`);
-  return tableHTML;
 }
 
 // Handle hash navigation from map (e.g., /#buoy-46087)

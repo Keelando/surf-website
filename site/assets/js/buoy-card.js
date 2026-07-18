@@ -18,9 +18,11 @@ import {
   isNoaaStation,
   isPileStation,
   isSurreyStation,
+  pickWavePeriod,
   sourceUrl,
   usesDominantPeriod,
   usesSwellDisplay,
+  waveHeightField,
   waveHeightPrecision,
 } from "./shared/station-meta.js";
 
@@ -135,77 +137,53 @@ function periodTag(label) {
 }
 
 /**
+ * Which direction pair represents the displayed wave, per station family.
+ * This is the one thing the three families genuinely disagree on — height and
+ * period now come from the shared station-meta field priorities.
+ *
+ * @returns {{cardinal: string|null, degrees: number|null|undefined}}
+ */
+function waveDirection(b, meta) {
+  if (usesSwellDisplay(meta)) {
+    return { cardinal: b.swell_direction_cardinal ?? null, degrees: b.swell_direction };
+  }
+  if (usesDominantPeriod(meta)) {
+    return {
+      cardinal: b.wave_direction_peak_cardinal ?? b.wave_direction_avg_cardinal ?? null,
+      degrees: b.wave_direction_peak ?? b.wave_direction_avg,
+    };
+  }
+  // EC buoys fall back to swell direction when peak is absent.
+  return {
+    cardinal: b.wave_direction_peak_cardinal ?? b.swell_direction_cardinal ?? null,
+    degrees: b.wave_direction_peak ?? b.swell_direction,
+  };
+}
+
+/**
  * Compact wave line — "Sig Wave: WSW 0.9m @ 4.1s (251°) ➤".
  *
- * Height is always significant; the period type is tagged when it isn't the
- * significant value (e.g. NOAA dominant, or an avg/peak fallback). Includes
+ * Swell-display stations headline swell, everyone else significant height.
+ * The period is tagged whenever it isn't the expected significant/swell value
+ * (NOAA dominant, or an avg/peak fallback) — see wavePeriodFields(). Includes
  * the "dominant" footnote on the NOAA stations that need it.
  */
 export function buildWaveLine(b, meta) {
-  const heightPrecision = waveHeightPrecision(meta);
+  const waveLabel = usesSwellDisplay(meta) ? "🌊 Swell:" : "🌊 Sig Wave:";
+
+  const heightValue = b[waveHeightField(meta)];
+  const height = heightValue != null ? heightValue.toFixed(waveHeightPrecision(meta)) : "—";
+  const { value: periodValue, tag } = pickWavePeriod(b, meta);
+  const { cardinal, degrees } = waveDirection(b, meta);
+
   let waveDisplay = "No data";
-  let waveLabel = "🌊 Sig Wave:";
-
-  if (usesSwellDisplay(meta)) {
-    // Neah Bay (NOAA) - show swell info (continuous open-ocean swell)
-    waveLabel = "🌊 Swell:";
-    const swellHeight = b.swell_height != null ? b.swell_height.toFixed(heightPrecision) : "—";
-    const swellPeriod = b.swell_period != null ? b.swell_period.toFixed(1) : null;
-    const swellDir = b.swell_direction_cardinal ?? null;
-    const swellDegrees = b.swell_direction != null ? ` (${Math.round(b.swell_direction)}°)` : "";
-    if (swellHeight !== "—") {
-      const dirDisplay = swellDir ? `${swellDir} ` : "";
-      const arrowDisplay =
-        b.swell_direction != null ? ` ${getDirectionalArrow(b.swell_direction, "wave")}` : "";
-      const periodDisplay = swellPeriod != null ? ` @ ${swellPeriod}s` : "";
-      waveDisplay = `${dirDisplay}${swellHeight}m${periodDisplay}${swellDegrees}${arrowDisplay}`;
-    }
-  } else if (usesDominantPeriod(meta)) {
-    // NOAA (New Dungeness, Angeles Point) - sig height + dominant period (DPD).
-    // NOAA stores DPD in wave_period_sig; tag it "dominant" so it's explicit.
-    const waveHeight = b.wave_height_sig != null ? b.wave_height_sig.toFixed(heightPrecision) : "—";
-    const wavePeriod = b.wave_period_sig != null ? b.wave_period_sig.toFixed(1) : null;
-    const waveDir = b.wave_direction_peak_cardinal ?? b.wave_direction_avg_cardinal ?? null;
-    const waveDirectionValue = b.wave_direction_peak ?? b.wave_direction_avg;
-    const waveDegrees = waveDirectionValue != null ? ` (${Math.round(waveDirectionValue)}°)` : "";
-    if (waveHeight !== "—") {
-      const dirDisplay = waveDir ? `${waveDir} ` : "";
-      const arrowDisplay =
-        waveDirectionValue != null ? ` ${getDirectionalArrow(waveDirectionValue, "wave")}` : "";
-      const periodDisplay = wavePeriod != null ? ` @ ${wavePeriod}s${periodTag("dominant")}` : "";
-      waveDisplay = `${dirDisplay}${waveHeight}m${periodDisplay}${waveDegrees}${arrowDisplay}`;
-    }
-  } else {
-    // EC buoys - significant height + significant period. The two buoy families
-    // publish sig period under different SWOB names (wave_period_sig /
-    // wave_period_sig_basic), so coalesce. Fall back to avg/peak only for
-    // non-EC stations, and tag any fallback explicitly.
-    const waveHeight = b.wave_height_sig != null ? b.wave_height_sig.toFixed(heightPrecision) : "—";
-    let wavePeriodValue = b.wave_period_sig ?? b.wave_period_sig_basic;
-    let periodType = "sig";
-    if (wavePeriodValue == null) {
-      if (b.wave_period_avg != null) {
-        wavePeriodValue = b.wave_period_avg;
-        periodType = "avg";
-      } else if (b.wave_period_peak != null) {
-        wavePeriodValue = b.wave_period_peak;
-        periodType = "peak";
-      }
-    }
-    const wavePeriod = wavePeriodValue != null ? wavePeriodValue.toFixed(1) : null;
-    const waveDir = b.wave_direction_peak_cardinal ?? b.swell_direction_cardinal ?? null;
-    const waveDirectionValue = b.wave_direction_peak ?? b.swell_direction;
-    const waveDegrees = waveDirectionValue != null ? ` (${Math.round(waveDirectionValue)}°)` : "";
-
-    if (waveHeight !== "—") {
-      const dirDisplay = waveDir ? `${waveDir} ` : "";
-      const arrowDisplay =
-        waveDirectionValue != null ? ` ${getDirectionalArrow(waveDirectionValue, "wave")}` : "";
-      // Only tag the period when it isn't the significant value
-      const periodSuffix = periodType === "sig" ? "" : periodTag(periodType);
-      const periodDisplay = wavePeriod != null ? ` @ ${wavePeriod}s${periodSuffix}` : "";
-      waveDisplay = `${dirDisplay}${waveHeight}m${periodDisplay}${waveDegrees}${arrowDisplay}`;
-    }
+  if (height !== "—") {
+    const dirDisplay = cardinal ? `${cardinal} ` : "";
+    const degreesDisplay = degrees != null ? ` (${Math.round(degrees)}°)` : "";
+    const arrowDisplay = degrees != null ? ` ${getDirectionalArrow(degrees, "wave")}` : "";
+    const periodDisplay =
+      periodValue != null ? ` @ ${periodValue.toFixed(1)}s${tag ? periodTag(tag) : ""}` : "";
+    waveDisplay = `${dirDisplay}${height}m${periodDisplay}${degreesDisplay}${arrowDisplay}`;
   }
 
   let html = `<p class="buoy-metric buoy-metric--spaced"><b>${waveLabel}</b> ${waveDisplay}</p>`;
