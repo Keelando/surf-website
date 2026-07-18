@@ -86,13 +86,21 @@ Notes:
      ordering (region order, station order, which regions start collapsed),
      which is page layout rather than a station fact. Moving it to
      stations.json would mean inventing order/collapse fields only the
-     index page reads. Note `4600206` carries a stray
-     `region: "WEST COAST VANCOUVER ISLAND"` in config that nothing reads
-     and whose casing differs from the code — clean up or adopt if this is
-     ever revisited.
+     index page reads.
    - Verified no-op: the fully-expanded `#buoy-container` DOM (all 10 cards,
      details + history + spread open) is byte-identical before/after, with
-     timestamps and ages normalized.
+     `/data/**` served from a frozen fixture copy so the two runs compare
+     like-for-like (cron refreshes the real exports every minute).
+   - Follow-ups fixed the same day:
+     - Dropped the stray `region: "WEST COAST VANCOUVER ISLAND"` from buoy
+       `4600206` in config. Nothing read it, it duplicated that entry's own
+       `location`, and its all-caps casing belonged to the *lightstation*
+       `region` convention (which does drive grouping on lightstations.html).
+     - `buildSpreadSection` gated the ℹ️ button and the explainer it toggles
+       on one `hasExplainer` condition. Previously the button rendered when
+       *either* spread existed but the explainer needed *both*, so a
+       peak-only station would have shown a dead button. Defensive only —
+       across 2,043 stored observations the pair always arrives together.
 3. **Inline styles → CSS classes**: ~83 repeated `style="..."` blocks
    (table cells, buttons, callouts) onto the existing CSS-variable /
    dark-mode system.

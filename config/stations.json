@@ -95,7 +95,6 @@
       "location": "West Coast Vancouver Island",
       "lat": 48.83,
       "lon": -126.0,
-      "region": "WEST COAST VANCOUVER ISLAND",
       "source": "Environment Canada",
       "type": "wave_buoy",
       "update_frequency_minutes": 60,

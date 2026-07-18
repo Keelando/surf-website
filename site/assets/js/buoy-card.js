@@ -360,10 +360,18 @@ export function buildSpreadSection(b, id) {
   const avgSpread = b.wave_direction_spread_avg;
   if (peakSpread == null && avgSpread == null) return "";
 
+  // The explainer covers both spreads, so it only renders when both exist.
+  // The ℹ️ button toggles it — gate them on the same condition so the button
+  // is never a no-op. In practice EC buoys always report the pair.
+  const hasExplainer = peakSpread != null && avgSpread != null;
+  const infoBtn = hasExplainer
+    ? `<span class="spread-info-btn" style="cursor: pointer; font-size: 0.9em; margin-left: 0.3rem; color: var(--color-primary); user-select: none;" title="Click for explanation">ℹ️</span>`
+    : "";
+
   let html = `
               <p class="buoy-metric" style="margin-top: 0.75rem; font-weight: 600; color: var(--color-primary-dark);">
                 🧭 Wave Direction Angular Spread
-                <span class="spread-info-btn" style="cursor: pointer; font-size: 0.9em; margin-left: 0.3rem; color: var(--color-primary); user-select: none;" title="Click for explanation">ℹ️</span>
+                ${infoBtn}
               </p>
             `;
 
@@ -410,7 +418,7 @@ export function buildSpreadSection(b, id) {
   }
 
   // Collapsible explanatory footnote (hidden by default)
-  if (peakSpread != null && avgSpread != null) {
+  if (hasExplainer) {
     html += `
                 <div id="spread-info-${id}" style="display: none; font-size: 0.85em; color: var(--color-text-light); margin-top: 0.5rem; padding: 0.75rem; background: var(--color-callout-info-bg); border-left: 3px solid var(--color-primary); border-radius: 4px; line-height: 1.5;">
                   <strong style="color: var(--color-tagline-text);">Angular Spread</strong> measures how organized the waves are:<br>

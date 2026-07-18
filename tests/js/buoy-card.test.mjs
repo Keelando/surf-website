@@ -155,14 +155,20 @@ test("spread descriptors follow the organized-to-confused scale", () => {
   assert.match(at(50), /confused/);
 });
 
-test("the spread explainer only appears when both spreads are present", () => {
+test("the ℹ️ button and the explainer it toggles appear together, or not at all", () => {
   const both = buildSpreadSection(
     { wave_direction_spread_peak: 20, wave_direction_spread_avg: 30 },
     "4600146",
   );
   assert.match(both, /id="spread-info-4600146"/);
+  assert.match(both, /spread-info-btn/);
+
+  // Explainer covers both spreads, so with only one there's nothing to toggle
+  // — and the button must not render as a dead control.
   const peakOnly = buildSpreadSection({ wave_direction_spread_peak: 20 }, "4600146");
   assert.doesNotMatch(peakOnly, /id="spread-info-/);
+  assert.doesNotMatch(peakOnly, /spread-info-btn/);
+  assert.match(peakOnly, /Peak Spread:/); // the value itself still shows
 });
 
 test("EC details are empty without any additional metrics", () => {
