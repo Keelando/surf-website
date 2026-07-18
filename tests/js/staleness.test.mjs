@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  formatDataAge,
   STALE_MARKER_OPACITY,
   staleDataWarningHTML,
   stalePopupTheme,
@@ -41,4 +42,19 @@ test("stale warning line is red and bold", () => {
   assert.match(html, /STALE DATA/);
   assert.match(html, /var\(--color-accent-red\)/);
   assert.match(html, /font-weight: 600/);
+});
+
+test("formatDataAge scales minutes to hours to days", () => {
+  assert.equal(formatDataAge(0), "0 minutes ago");
+  assert.equal(formatDataAge(1), "1 minute ago");
+  assert.equal(formatDataAge(59), "59 minutes ago");
+  assert.equal(formatDataAge(60), "1 hour ago");
+  assert.equal(formatDataAge(180), "3 hours ago");
+  assert.equal(formatDataAge(1440), "1 day ago");
+  assert.equal(formatDataAge(4320), "3 days ago");
+});
+
+test("formatDataAge returns null when the age is unknown", () => {
+  assert.equal(formatDataAge(null), null);
+  assert.equal(formatDataAge(undefined), null);
 });

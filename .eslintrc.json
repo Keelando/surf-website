@@ -34,6 +34,7 @@
         "site/assets/js/lightstation-page.js",
         "site/assets/js/storm_surge_page.js",
         "site/assets/js/main.js",
+        "site/assets/js/buoy-card.js",
         "site/assets/js/stations-map.js",
         "site/assets/js/charts-v4.js",
         "site/assets/js/wave-chart-v4.js",

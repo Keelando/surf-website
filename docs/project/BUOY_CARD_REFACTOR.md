@@ -1,7 +1,7 @@
 # Buoy Card Refactor (P2 of the 2026-07-14 maintainability roadmap)
 
-**Status:** Step 1 DONE (2026-07-18); next is step 2 (break up `loadBuoyData()`)
-**Target:** `site/assets/js/main.js` (1,288 lines) — the index-page buoy cards
+**Status:** Steps 1–2 DONE (2026-07-18); next is step 3 (inline styles → CSS)
+**Target:** `site/assets/js/main.js` (1,288 → 736 lines) — the index-page buoy cards
 **Origin:** agreed 2026-05-28 after the backend Surrey-channel config
 consolidation; same disease on the frontend: per-station behavior hardcoded
 as scattered station-ID checks instead of read from station metadata.
@@ -68,10 +68,31 @@ Notes:
      lookup (it only receives `buoyId`).
    - stations-map.js:460: same swap for its NOAA-trio copy (it already
      fetches stations.json).
-2. **Break up `loadBuoyData()`** (693 lines): extract card-section builders
-   (badge/header, compact wind/wave lines, details, nav links) into
-   functions taking `(b, meta)`; consider deriving the region grouping from
-   a new `region` field in config at this point.
+2. **Break up `loadBuoyData()`** ✅ 2026-07-18
+   - New `site/assets/js/buoy-card.js`: pure HTML-string builders taking
+     `(b, meta)` — `freshnessState`, `sourceBadge`, `applyCardBorder`,
+     `buildNoDataCard`, `buildCardHeader`, `buildWindLine`, `buildWaveLine`,
+     `buildCompactView`, `buildToggleButtons`, `buildStalenessCallout`,
+     `buildNoaaWaveDetails`, `buildSpreadSection`, `buildEcWaveDetails`,
+     `buildTempPressure`, `buildDetailsSection`, `buildNavLinks`,
+     `buildSourceLink`, `buildBuoyCardHTML`, `wireBuoyCardEvents`.
+     21 unit tests in `tests/js/buoy-card.test.mjs` (globals
+     `getDirectionalArrow`/`degreesToCardinal` stubbed).
+   - `formatDataAge` moved from main.js to `shared/staleness.js` (the hero
+     panel uses it too), with tests.
+   - main.js 1,288 → 736 lines; `loadBuoyData()` 693 → 105. It keeps the
+     fetching, region grouping, and toggle callbacks.
+   - **`buoyGroups` deliberately stays in main.js**: it encodes display
+     ordering (region order, station order, which regions start collapsed),
+     which is page layout rather than a station fact. Moving it to
+     stations.json would mean inventing order/collapse fields only the
+     index page reads. Note `4600206` carries a stray
+     `region: "WEST COAST VANCOUVER ISLAND"` in config that nothing reads
+     and whose casing differs from the code — clean up or adopt if this is
+     ever revisited.
+   - Verified no-op: the fully-expanded `#buoy-container` DOM (all 10 cards,
+     details + history + spread open) is byte-identical before/after, with
+     timestamps and ages normalized.
 3. **Inline styles → CSS classes**: ~83 repeated `style="..."` blocks
    (table cells, buttons, callouts) onto the existing CSS-variable /
    dark-mode system.

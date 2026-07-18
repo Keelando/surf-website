@@ -37,6 +37,27 @@ export function stalePopupTheme(
   };
 }
 
+/**
+ * Human-readable observation age: "5 minutes ago" / "3 hours ago" / "2 days ago".
+ *
+ * @param {number|null} ageMinutes
+ * @returns {string|null} null when the age is unknown
+ */
+export function formatDataAge(ageMinutes) {
+  if (ageMinutes == null) return null;
+
+  if (ageMinutes < 60) {
+    const mins = Math.round(ageMinutes);
+    return `${mins} minute${mins !== 1 ? "s" : ""} ago`;
+  }
+  if (ageMinutes < 1440) {
+    const hours = Math.round(ageMinutes / 60);
+    return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  }
+  const days = Math.round(ageMinutes / 1440);
+  return `${days} day${days !== 1 ? "s" : ""} ago`;
+}
+
 /** Emphasis line appended at the bottom of a popup when data is stale. */
 export function staleDataWarningHTML() {
   return `<div style="color: var(--color-accent-red); font-size: 0.85em; margin-top: 4px; font-weight: 600;">⚠️ STALE DATA</div>`;
