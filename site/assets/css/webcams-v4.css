@@ -370,16 +370,11 @@
   font-weight: 500;
 }
 
+/* On-primary, not accent: the accent blues match the banner gradient itself
+   in both themes, leaving the link illegible. */
 .webcam-attribution a {
-  color: var(--webcam-accent);
+  color: var(--webcam-on-primary);
   text-decoration: underline;
-}
-
-/* The attribution gradient stays light blue in dark mode, so the link needs a
-   dark, high-contrast colour rather than the light-blue accent (which vanishes
-   against the background). */
-[data-theme="dark"] .webcam-attribution a {
-  color: #0a2540;
 }
 
 .webcam-map-link {
