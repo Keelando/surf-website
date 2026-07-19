@@ -20,12 +20,13 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/webcams.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=5a5fec8824" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=8f2ada2f71" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=f7dd5fdf68" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=a8e91fc69b" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=32d9218449" />
   <link rel="stylesheet" href="/assets/css/webcams-v4.css?v=a352c1d387" />
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
   <!-- Warning banners container -->
   <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
@@ -33,7 +34,7 @@
 
   <div hx-get="/components/header-webcams.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 80px;"></div>
 
-  <main>
+  <main id="main-content" tabindex="-1">
 
   <div hx-get="/components/tagline-webcams.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
 
@@ -86,7 +87,7 @@
   <!-- Navigation (Bottom) -->
   <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
 
-  <div hx-get="/components/footer.html?v=3" hx-trigger="load" hx-swap="outerHTML"></div>
+  <div hx-get="/components/footer.html?v=4" hx-trigger="load" hx-swap="outerHTML"></div>
 
   <script src="/assets/js/warning-banner.js?v=7fa71bd458"></script>
   <script type="module" src="/assets/js/webcams-v4.js?v=7623f12f36"></script>

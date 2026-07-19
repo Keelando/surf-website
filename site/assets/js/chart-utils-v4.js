@@ -447,3 +447,23 @@ function getMobileOptimizedTooltipConfig() {
     padding: isMobile ? 8 : 12,
   };
 }
+
+/* =============================================================================
+   ACCESSIBILITY: CHART TEXT ALTERNATIVES
+   ============================================================================= */
+
+// Every chart gets ECharts' generated text description (aria.enabled builds an
+// aria-label from the series data) without each page opting in: wrap init once
+// so instances inject the default into any option that doesn't set its own.
+// This file loads right after the echarts vendor script on every chart page;
+// pages without charts (forecasts) don't load echarts at all, hence the guard.
+if (typeof echarts !== "undefined") {
+  const echartsInit = echarts.init.bind(echarts);
+  echarts.init = (...initArgs) => {
+    const chart = echartsInit(...initArgs);
+    const setOption = chart.setOption.bind(chart);
+    chart.setOption = (option, ...rest) =>
+      setOption({ aria: { enabled: true }, ...option }, ...rest);
+    return chart;
+  };
+}

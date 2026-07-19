@@ -20,8 +20,8 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/forecasts.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=5a5fec8824" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=8f2ada2f71" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=f7dd5fdf68" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=a8e91fc69b" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=32d9218449" />
 
   <style>
@@ -132,7 +132,7 @@
       padding: 1rem;
     }
 
-    .extended-day h4 {
+    .extended-day h3 {
       margin: 0 0 0.5rem 0;
       color: var(--color-primary-dark);
       font-size: 1rem;
@@ -240,6 +240,7 @@
 </head>
 
 <body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
   <!-- Warning Banner Container (will be populated by warning-banner.js) -->
   <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
@@ -248,7 +249,7 @@
 
   <div hx-get="/components/header-forecasts.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 80px;"></div>
 
-  <main>
+  <main id="main-content" tabindex="-1">
 
   <div hx-get="/components/tagline-forecasts.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
 
@@ -315,13 +316,13 @@
   <!-- Navigation (Bottom) -->
   <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
 
-  <div hx-get="/components/footer.html?v=3" hx-trigger="load" hx-swap="outerHTML"></div>
+  <div hx-get="/components/footer.html?v=4" hx-trigger="load" hx-swap="outerHTML"></div>
 
   <!-- Load logger first for global availability -->
   <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
   <script src="/assets/js/warning-banner.js?v=7fa71bd458"></script>
-  <script src="/assets/js/chart-utils-v4.js?v=279e5e3e08"></script>
-  <script type="module" src="/assets/js/forecasts.js?v=9cdd26f0d3"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
+  <script type="module" src="/assets/js/forecasts.js?v=a7e86abd32"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

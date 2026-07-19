@@ -210,6 +210,29 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Keyboard-only shortcut past the nav: visually hidden until focused. */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0.5rem;
+  z-index: 3000;
+  padding: 0.6rem 1rem;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-radius: 0 0 4px 4px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* The skip-link target takes programmatic focus; no visible ring needed. */
+#main-content:focus {
+  outline: none;
+}
+
 footer {
   background-color: var(--color-footer-bg);
   color: white;
@@ -230,7 +253,7 @@ footer {
   margin-bottom: 0;
 }
 
-.footer-section h4 {
+.footer-section h2 {
   margin: 0 0 0.5rem 0;
   font-size: 0.75rem;
   text-transform: uppercase;

@@ -255,7 +255,7 @@ function renderExtendedForecast(extendedForecast) {
   extendedForecast.forEach((period) => {
     html += `
       <div class="extended-day">
-        <h4>${period.period}</h4>
+        <h3>${period.period}</h3>
         <p>${period.forecast}</p>
       </div>
     `;

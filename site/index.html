@@ -21,8 +21,8 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=5a5fec8824" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=8f2ada2f71" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=f7dd5fdf68" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=a8e91fc69b" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=e6c065afeb" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=32d9218449" />
 
@@ -70,6 +70,7 @@
 </head>
 
 <body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
   <!-- Warning Banner Container -->
   <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
@@ -81,7 +82,7 @@
 
   <div hx-get="/components/header-buoys.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 80px;"></div>
 
-  <main>
+  <main id="main-content" tabindex="-1">
 
   <div hx-get="/components/tagline-buoys.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
 
@@ -286,7 +287,7 @@
   <!-- Navigation (Bottom) -->
   <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
 
-  <div hx-get="/components/footer.html?v=3" hx-trigger="load" hx-swap="outerHTML"></div>
+  <div hx-get="/components/footer.html?v=4" hx-trigger="load" hx-swap="outerHTML"></div>
 
   <!-- Leaflet JS -->
   <script src="/assets/vendor/leaflet.js?v=5a640ff863"></script>
@@ -299,7 +300,7 @@
   <script src="/assets/js/warning-banner.js?v=7fa71bd458"></script>
   <script src="/assets/js/site-notice.js?v=4300cbb31e"></script>
   <!-- Load chart utilities first to avoid race conditions -->
-  <script src="/assets/js/chart-utils-v4.js?v=279e5e3e08"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
   <!-- Module entry points: each pulls in its imports (chart renderers,
        stations-map, shared/) — imported modules must NOT get their own tags -->
   <script type="module" src="/assets/js/main.js?v=0d31b25888"></script>

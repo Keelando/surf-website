@@ -59,34 +59,30 @@ themes) and "landmark-one-main" for all pages except analytics.html.
 
 ---
 
-## Remaining scope (medium priority)
+## Remainder — DONE 2026-07-19
 
-Axe still reports these as **moderate** (all best-practice tier, not WCAG
-failures), plus manual findings axe can't see:
+All medium- and low-priority items landed (runtime-verified in Chromium +
+Firefox):
 
-1. **Duplicate identical `<nav>` landmarks** — `components/nav.html` is
-   injected at top and bottom of every page with no distinguishing label.
-   Cheapest fix in `nav.js`: `aria-label="Footer navigation"` on the second
-   instance.
-2. **No skip link** — keyboard users tab through brand + 7 links + toggles on
-   every page before content. Add a visually-hidden "Skip to main content"
-   link (link it to each page's `<main>`).
-3. **ECharts charts have no text alternative** — bare canvas. ECharts ships
-   `aria: { enabled: true }` which auto-generates a description from series
-   data; enable it in the shared chart config.
-4. **Current page not announced** — `nav.js` adds `.active` class only; add
-   `aria-current="page"` alongside.
+1. **Duplicate `<nav>` landmarks** — `nav.js` `labelNavLandmarks()` labels
+   the instances "Main navigation" / "Footer navigation" on each HTMX swap.
+2. **Skip link** — visually-hidden "Skip to main content" first in every
+   page's `<body>`, targeting `<main id="main-content" tabindex="-1">`;
+   `.skip-link` styles in `style-v4.css`.
+3. **ECharts text alternatives** — `chart-utils-v4.js` wraps `echarts.init`
+   once so every `setOption` defaults `aria: { enabled: true }` (option can
+   still override); all chart pages emit generated descriptions.
+4. **Current page announced** — `nav.js` sets `aria-current="page"`
+   alongside `.active`.
+5. **Heading-order skips** — footer "Data Sources" `<h4>`→`<h2>`, forecasts
+   extended-day `<h4>`→`<h3>` (CSS selectors updated, visuals unchanged).
+6. **`#tide-station-select:focus`** — replacement box-shadow raised from
+   0.1 to 0.45 alpha (clearly visible focus ring).
+7. **`prefers-reduced-motion`** — nav drawer transition disabled under
+   `reduce`.
 
-## Remaining scope (low priority)
-
-5. **Heading-order skips** — `<h4>` directly under `<h2>`: forecasts
-   ("Sunday"), guide ("Data Sources").
-6. **`#tide-station-select:focus`** removes the outline, replacement
-   box-shadow is 10% alpha (`nav-tide-styles-v4.css` ~line 690) — effectively
-   invisible focus. Only `outline: none` in the codebase.
-7. **analytics.html** — no `<h1>`/`<main>` (internal, noindex; optional).
-8. **No `prefers-reduced-motion` handling** — only the nav drawer slide
-   really moves; low stakes.
+Not done (accepted): **analytics.html** `<h1>`/`<main>` — internal GoAccess
+report, noindex.
 
 ## Explicitly out of scope / accepted
 

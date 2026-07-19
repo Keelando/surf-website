@@ -319,6 +319,12 @@
     transition: max-height 0.28s ease, opacity 0.2s ease, visibility 0.28s;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .nav-scroll {
+      transition: none;
+    }
+  }
+
   .main-nav.nav-open .nav-scroll {
     max-height: 80vh;
     overflow-y: auto;
@@ -690,7 +696,8 @@
 #tide-station-select:focus {
   outline: none;
   border-color: var(--color-primary-dark);
-  box-shadow: 0 0 0 3px rgba(0,119,190,0.1);
+  /* Replaces the outline, so it must be clearly visible (was 0.1 alpha). */
+  box-shadow: 0 0 0 3px rgba(0, 119, 190, 0.45);
 }
 
 /* =====================================================

@@ -36,9 +36,11 @@ check items off as they land. Full context in
       four lightstation scripts, `health_check.py`'s six copies, and
       `parse_lightstation.py`'s hardcoded `~/envcan_wave` data dirs
       (→ `PROJECT_ROOT`). *Done 2026-07-19.*
-- [ ] **Accessibility remainder** (`site/docs/ACCESSIBILITY_AUDIT.md`): skip
-      link, `aria-current` on nav, ECharts `aria: {enabled: true}`, label the
-      duplicate footer nav landmark; then the four low-priority items.
+- [x] **Accessibility remainder** (`site/docs/ACCESSIBILITY_AUDIT.md`): skip
+      link, `aria-current`, ECharts aria descriptions, labeled nav
+      landmarks, heading-order fixes, visible tide-select focus ring,
+      `prefers-reduced-motion` — all landed and runtime-verified;
+      analytics.html left as accepted. *Done 2026-07-19.*
 
 Deferred by choice (revisit only if they hurt): `health_check.py` split
 (836 lines); HTML `<head>` boilerplate duplication (no build step by design).

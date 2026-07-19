@@ -22,12 +22,23 @@
     document.querySelectorAll(".nav-link").forEach((link) => {
       if (link.dataset.page === activePage) {
         link.classList.add("active");
+        link.setAttribute("aria-current", "page");
         activeLink = link;
       } else {
         link.classList.remove("active");
+        link.removeAttribute("aria-current");
       }
     });
     return activeLink;
+  }
+
+  // The same nav fragment is injected at the top and bottom of every page;
+  // identical landmarks need distinguishing labels. Re-runs after each HTMX
+  // swap, so whichever fragment arrives last still labels both.
+  function labelNavLandmarks() {
+    document.querySelectorAll("nav.main-nav").forEach((nav, index) => {
+      nav.setAttribute("aria-label", index === 0 ? "Main navigation" : "Footer navigation");
+    });
   }
 
   function initClock() {
@@ -174,6 +185,7 @@
 
   function initNav() {
     highlightActivePage();
+    labelNavLandmarks();
     initClock();
     initThemeToggle();
     initHamburger();
