@@ -3,7 +3,7 @@
 Validate stations.json for completeness and consistency.
 
 Usage:
-    python validate_stations.py
+    .venv/bin/python scripts/utils/validate_stations.py
 
 Checks:
   ✅ JSON syntax is valid
@@ -16,10 +16,9 @@ Checks:
 
 import json
 import sys
-from pathlib import Path
 from typing import Dict, List, Set
 
-STATIONS_FILE = Path("~/envcan_wave/config/stations.json").expanduser()
+from lib.config import STATIONS_FILE
 
 # Required fields for each station type
 REQUIRED_BUOY_FIELDS = {"id", "name", "location", "lat", "lon", "source", "type", "data_types"}

@@ -495,10 +495,10 @@ tail -50 ~/envcan_wave/*.log | grep -i error
 
 ```bash
 # Run station validation script
-python3 validate_stations.py
+.venv/bin/python scripts/utils/validate_stations.py
 
 # Check stations.json is valid JSON
-cat stations.json | jq . > /dev/null && echo "Valid JSON" || echo "Invalid JSON"
+jq . config/stations.json > /dev/null && echo "Valid JSON" || echo "Invalid JSON"
 
 # Count stations
 cat stations.json | jq '[.buoys, .tide_stations] | add | length'

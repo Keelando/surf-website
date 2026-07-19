@@ -25,11 +25,12 @@ check items off as they land. Full context in
       deduping four hardcoded type lists across three files and fixing the
       unlisted `land_based_wind_station` type. DOM-diff verified.
       *Done 2026-07-19.*
-- [ ] **Repo hygiene** (audit P5): delete `archive/` (56 tracked files
-      polluting grep); move `validate_stations.py` and
-      `create_lightstation_db.py` off the repo root; point lint/test output
-      files at `logs/`; naming drift (`-v4` suffixes, snake vs kebab) — fix
-      opportunistically when files are touched anyway.
+- [x] **Repo hygiene** (audit P5): deleted `archive/` (56 tracked files);
+      moved `validate_stations.py` (now reads `lib.config.STATIONS_FILE`)
+      and `create_lightstation_db.py` to `scripts/utils/`; removed stale
+      root lint/test output files (`.gitignore` already covers them).
+      *Done 2026-07-19.* Naming drift (`-v4` suffixes, snake vs kebab)
+      stays opportunistic — fix when files are touched anyway.
 - [ ] **Hardcoded DB paths → `lib/config.py`**: `fetch_whiterock_weather.py`,
       `export_wind_24hr_timeseries.py`, `export_hindcast_json.py`,
       `migrate_wind_direction_field.py`.
