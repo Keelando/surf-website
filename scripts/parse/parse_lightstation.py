@@ -14,18 +14,17 @@ Usage:
 import re
 import sqlite3
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
-from lib.config import LIGHTSTATION_RETENTION_DAYS
+from lib.config import LIGHTSTATION_DATABASE as DB_PATH
+from lib.config import LIGHTSTATION_RETENTION_DAYS, PROJECT_ROOT
 from lib.logging_config import setup_logging
 
 # Disable console logging (runs from cron, file logging only)
 logger = setup_logging("lightstation_parse", console=False)
 
 # Configuration
-DB_PATH = Path.home() / ".local" / "share" / "lightstation_data.sqlite"
-FPCN61_DATA_DIR = Path.home() / "envcan_wave" / "data" / "lightstation"
-SXCN_DATA_DIR = Path.home() / "envcan_wave" / "data" / "lightstation_bulletins"
+FPCN61_DATA_DIR = PROJECT_ROOT / "data" / "lightstation"
+SXCN_DATA_DIR = PROJECT_ROOT / "data" / "lightstation_bulletins"
 
 # Regional sections in the FPCN61 report
 REGIONS = [

@@ -17,17 +17,16 @@ Output: ~/site/data/storm_surge/hindcast.json
 import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import pytz
 
 from lib.config import EXPORT_DIR
+from lib.config import STORM_SURGE_DATABASE as DB_PATH
 from lib.logging_config import setup_logging
 
 logger = setup_logging("hindcast_export")
 
 # Configuration
-DB_PATH = Path("~/.local/share/storm_surge_forecast.sqlite").expanduser()
 
 OUTPUT_PATH = EXPORT_DIR / "storm_surge" / "hindcast.json"
 MAX_DAYS_BACK = 12  # Show predictions for last 12 days (today + 11 back)

@@ -31,9 +31,11 @@ check items off as they land. Full context in
       root lint/test output files (`.gitignore` already covers them).
       *Done 2026-07-19.* Naming drift (`-v4` suffixes, snake vs kebab)
       stays opportunistic — fix when files are touched anyway.
-- [ ] **Hardcoded DB paths → `lib/config.py`**: `fetch_whiterock_weather.py`,
-      `export_wind_24hr_timeseries.py`, `export_hindcast_json.py`,
-      `migrate_wind_direction_field.py`.
+- [x] **Hardcoded DB paths → `lib/config.py`**: added `WEATHER_DATABASE` +
+      `LIGHTSTATION_DATABASE`; converted the four listed scripts plus the
+      four lightstation scripts, `health_check.py`'s six copies, and
+      `parse_lightstation.py`'s hardcoded `~/envcan_wave` data dirs
+      (→ `PROJECT_ROOT`). *Done 2026-07-19.*
 - [ ] **Accessibility remainder** (`site/docs/ACCESSIBILITY_AUDIT.md`): skip
       link, `aria-current` on nav, ECharts `aria: {enabled: true}`, label the
       duplicate footer nav landmark; then the four low-priority items.

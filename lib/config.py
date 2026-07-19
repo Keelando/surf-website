@@ -49,6 +49,12 @@ STORM_SURGE_DATABASE = DATA_DIR / "storm_surge_forecast.sqlite"
 # Wind observations database (Environment Canada land stations)
 WIND_DATABASE = DATA_DIR / "wind_data.sqlite"
 
+# Lightstation observations database (DFO lightstation reports)
+LIGHTSTATION_DATABASE = DATA_DIR / "lightstation_data.sqlite"
+
+# White Rock weather database (whiterock_east station)
+WEATHER_DATABASE = DATA_DIR / "weather_data.sqlite"
+
 # =============================================================================
 # Configuration Files
 # =============================================================================

@@ -5,9 +5,8 @@ Part of field name unification across buoy and wind databases.
 """
 
 import sqlite3
-from pathlib import Path
 
-WIND_DB = Path("~/.local/share/wind_data.sqlite").expanduser()
+from lib.config import WIND_DATABASE as WIND_DB
 
 
 def migrate():

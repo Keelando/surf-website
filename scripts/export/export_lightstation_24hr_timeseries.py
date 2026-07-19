@@ -22,16 +22,15 @@ Format:
 
 import sqlite3
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 # Shared utilities
 from lib.config import EXPORT_DIR, safe_json_write
+from lib.config import LIGHTSTATION_DATABASE as DB_PATH
 from lib.logging_config import setup_logging
 
 logger = setup_logging("lightstation_timeseries_export")
 
 # ---------- Config ----------
-DB_PATH = Path.home() / ".local" / "share" / "lightstation_data.sqlite"
 OUT_PATH = EXPORT_DIR / "lightstation_timeseries_24hr.json"
 
 # Time window: past 24 hours

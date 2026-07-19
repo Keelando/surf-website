@@ -23,7 +23,27 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List
 
-from lib.config import EXPORT_DIR
+from lib.config import (
+    BUOY_DATABASE as BUOY_DB,
+)
+from lib.config import (
+    EXPORT_DIR,
+)
+from lib.config import (
+    LIGHTSTATION_DATABASE as LIGHTSTATION_DB,
+)
+from lib.config import (
+    STORM_SURGE_DATABASE as STORM_SURGE_DB,
+)
+from lib.config import (
+    TIDE_DATABASE as TIDE_DB,
+)
+from lib.config import (
+    WEATHER_DATABASE as WEATHER_DB,
+)
+from lib.config import (
+    WIND_DATABASE as WIND_DB,
+)
 from lib.logging_config import setup_logging
 
 # Add lib to path for imports
@@ -33,13 +53,6 @@ from lib.stations import get_all_buoys, get_all_lightstations, get_all_tides, ge
 logger = setup_logging("health_check", console=False)
 
 # Database paths
-DB_DIR = Path.home() / ".local" / "share"
-BUOY_DB = DB_DIR / "buoy_data.sqlite"
-WIND_DB = DB_DIR / "wind_data.sqlite"
-TIDE_DB = DB_DIR / "tide_data.sqlite"
-LIGHTSTATION_DB = DB_DIR / "lightstation_data.sqlite"
-STORM_SURGE_DB = DB_DIR / "storm_surge_forecast.sqlite"
-WEATHER_DB = DB_DIR / "weather_data.sqlite"
 
 # Export paths
 SITE_DATA = EXPORT_DIR

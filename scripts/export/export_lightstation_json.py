@@ -26,16 +26,15 @@ Format:
 
 import sqlite3
 from datetime import datetime, timezone
-from pathlib import Path
 
 # Shared utilities
 from lib.config import EXPORT_DIR, safe_json_write
+from lib.config import LIGHTSTATION_DATABASE as DB_PATH
 from lib.logging_config import setup_logging
 
 logger = setup_logging("lightstation_json_export")
 
 # ---------- Config ----------
-DB_PATH = Path.home() / ".local" / "share" / "lightstation_data.sqlite"
 OUT_PATH = EXPORT_DIR / "latest_lightstation.json"
 FRESHNESS_WINDOW = 21600  # 6 hours (reports are 3-hourly, but may have delays)
 

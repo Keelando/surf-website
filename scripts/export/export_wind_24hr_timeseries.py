@@ -26,6 +26,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from lib.config import EXPORT_DIR, WIND_DATABASE, safe_json_write
+from lib.config import WEATHER_DATABASE as WHITEROCK_DATABASE
 from lib.logging_config import setup_logging
 from lib.stations import get_all_wind
 
@@ -47,7 +48,6 @@ WIND_STATIONS = {sid: meta["name"] for sid, meta in WIND_STATIONS_REGISTRY.items
 WIND_STATIONS["whiterock_east"] = "White Rock East Beach"  # Special case: different DB
 
 # White Rock East Beach database path (separate from wind database)
-WHITEROCK_DATABASE = Path("~/.local/share/weather_data.sqlite").expanduser()
 
 # Metrics to export as timeseries
 ALL_METRICS = {

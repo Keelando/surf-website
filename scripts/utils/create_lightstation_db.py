@@ -6,10 +6,8 @@ Run this once to initialize the database.
 """
 
 import sqlite3
-from pathlib import Path
 
-# Database location
-DB_PATH = Path.home() / ".local" / "share" / "lightstation_data.sqlite"
+from lib.config import LIGHTSTATION_DATABASE as DB_PATH
 
 CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS lightstation_observation (
