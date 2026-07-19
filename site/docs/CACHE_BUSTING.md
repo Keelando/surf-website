@@ -1,58 +1,37 @@
-# Cache Busting Strategy
+# Cache Busting
 
-## Simple Manual Versioning
+**Automated since 2026-07-19.** Manual `?v=` bumping is obsolete.
 
-**Rule:** Bump the version parameter whenever you edit a file.
+## How it works
 
-### For JavaScript Files
+`scripts/update_asset_versions.py` rewrites the `?v=` query param on every
+local `.js`/`.css` reference (`src`/`href`) in tracked `site/**/*.html` files
+to the first 10 hex chars of the asset's SHA-1 content hash:
 
 ```html
-<!-- When you edit main.js, increment the version -->
-<script src="/assets/js/main.js?v=20251112b"></script>
-<script src="/assets/js/main.js?v=20251114a"></script>  <!-- after edit -->
+<script src="/assets/js/theme-manager.js?v=f9b331e56b"></script>
 ```
 
-**Version format:** `YYYYMMDD` + optional letter suffix (`a`, `b`, `c`) for same-day updates
+Content-hash versions are idempotent — the URL only changes when the file's
+bytes change, which is exactly when caches need busting.
 
-### For CSS Files
+## Workflow
 
-CSS files use filename versioning (`-v3`, `-v4`):
-```html
-<link rel="stylesheet" href="/assets/css/style-v3.css">
-```
+Edit JS/CSS freely and commit. Nothing else to do:
 
-When making CSS changes, bump the filename version number:
-```bash
-git mv assets/css/style-v3.css assets/css/style-v4.css
-# Update HTML references
-```
+- **Pre-commit hook** runs the updater, stages any refreshed HTML, and
+  proceeds. The nightly auto-backup commit gets the same treatment.
+- **`tests/test_asset_versions.py`** fails the suite if a reference is stale
+  or points at a missing file (dangling refs are hard errors in the script).
+- Manual run: `.venv/bin/python scripts/update_asset_versions.py`
+  (`--check` to report without writing).
 
-## When to Bump Versions
+## Scope and limits
 
-✅ **Always bump when:**
-- Modifying JavaScript logic
-- Changing CSS styles
-- Fixing bugs in code
-- Adding new features
-
-❌ **Don't bump when:**
-- Only changing HTML content
-- Updating data files (JSON)
-- Changing comments only
-
-## Quick Reference
-
-| File Type | Strategy | Example |
-|-----------|----------|---------|
-| CSS | Filename version | `style-v3.css` → `style-v4.css` |
-| JS | Query param | `main.js?v=20251114a` |
-| HTML | No versioning | `index.html` |
-
-## During Rapid Development
-
-For rapid development phase, increment the letter suffix for same-day changes:
-- `?v=20251114a` (first change)
-- `?v=20251114b` (second change)
-- `?v=20251114c` (third change)
-
-Once development stabilizes, use date-only versions.
+- External URLs (`http(s)://`, `//`) are left untouched.
+- Only `<script src>` / `<link href>` in HTML are versioned. Static ES-module
+  `import`s inside JS resolve without query params; they rely on the origin's
+  `Cache-Control: no-store` for non-image assets (Caddyfile), same as before.
+- The `-v4` *filename* suffixes (`style-v4.css`, …) are historical naming, no
+  longer a cache-busting mechanism. Removing them is on `TODO.md` (naming
+  drift), safe to do any time since versions now live in the query string.

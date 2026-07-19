@@ -10,10 +10,10 @@ check items off as they land. Full context in
       scripts, pre-monorepo layout). *Done 2026-07-19.*
 - [x] **Remove tracked `._codebase_digest.txt`** (2.5 MB generated dump at
       repo root) and gitignore it. *Done 2026-07-19.*
-- [ ] **Automate cache busting** (audit P4): content-hash `?v=` rewriter +
-      pre-commit hook to kill the manual bump chore. Do before the forecast
-      page adds more script tags. Current spread: 28×`?v=1`, 16×`?v=2`, plus
-      a dozen mixed date formats.
+- [x] **Automate cache busting** (audit P4):
+      `scripts/update_asset_versions.py` rewrites `?v=` to content hashes;
+      pre-commit auto-fixes + stages; `tests/test_asset_versions.py` guards.
+      *Done 2026-07-19.*
 - [ ] **Deduplicate `storm_surge_page.js` twin chart functions** (audit P2):
       `updateForecastChart` / `updateHindcastChart` (~380 lines each) → one
       parameterized function. Do before building the Salish Sea forecast

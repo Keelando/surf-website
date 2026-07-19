@@ -60,9 +60,9 @@ Databases in `~/.local/share/` (never in the repo):
 - Frontend: `npm run lint:js` (0 errors, 0 warnings), `npm run format:js`
   (run after any JS edit), `npm run test:js`, `npm run test:frontend`,
   `npm run screenshots`.
-- Cache busting is still manual: bump `?v=` on `<script>`/`<link>` tags in
-  every HTML file that references a modified asset (automation is on
-  `TODO.md`).
+- Cache busting is automated: `scripts/update_asset_versions.py` rewrites
+  `?v=` to content hashes (pre-commit hook runs it and stages the result —
+  never bump versions by hand). See `site/docs/CACHE_BUSTING.md`.
 - Crontab: edit `config/crontab.txt`, apply with
   `scripts/install_crontab.sh` (`--diff-only` to preview). Never edit the
   live crontab as the primary copy.

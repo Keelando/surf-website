@@ -16,6 +16,16 @@ if [ -n "$STAGED_PY" ]; then
     echo "$STAGED_PY" | xargs .venv/bin/ruff check --no-fix
 fi
 
+# ── Asset cache-bust versions: rewrite ?v= to content hashes ─
+# Auto-fixes and stages so stale versions can never fail a commit
+# (including the nightly auto-backup commit).
+UPDATED_HTML=$(.venv/bin/python scripts/update_asset_versions.py | sed -n 's/^updated //p')
+if [ -n "$UPDATED_HTML" ]; then
+    echo "🔄 asset versions refreshed:"
+    echo "$UPDATED_HTML" | sed 's/^/    /'
+    echo "$UPDATED_HTML" | xargs git add
+fi
+
 # ── Python: pytest (exclude TestSystemHealth — depends on external station availability) ──
 echo "🧪 pytest..."
 .venv/bin/pytest tests/ -q --tb=line --deselect=tests/test_integration.py::TestSystemHealth

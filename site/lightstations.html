@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#eef4f8" />
-  <script src="/assets/js/theme-manager.js?v=20260314"></script>
+  <script src="/assets/js/theme-manager.js?v=f9b331e56b"></script>
 
   <title>BC Lightstation Reports | Real-time Coastal Conditions</title>
 
@@ -20,13 +20,13 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/lightstations.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=20260718h" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=20260621d" />
-  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=20260618" />
-  <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=20260621" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=5a5fec8824" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=8f2ada2f71" />
+  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=32d9218449" />
+  <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=e6c065afeb" />
 
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="/assets/vendor/leaflet.css"/>
+  <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
 
   <style>
     /* Lightstation map label styling */
@@ -459,21 +459,21 @@
   <div hx-get="/components/footer.html?v=3" hx-trigger="load" hx-swap="outerHTML"></div>
 
   <!-- Leaflet JS -->
-  <script src="/assets/vendor/leaflet.js"></script>
+  <script src="/assets/vendor/leaflet.js?v=5a640ff863"></script>
 
   <!-- ECharts for lightstation charts -->
-  <script src="/assets/vendor/echarts.min.js"></script>
+  <script src="/assets/vendor/echarts.min.js?v=968b4d8c55"></script>
 
-  <script src="/assets/vendor/dompurify.min.js?v=20260308"></script>
-  <script src="/assets/js/sanitize-html.js?v=20260308"></script>
-  <script src="/assets/js/logger.js?v=20251117"></script>
-  <script src="/assets/js/warning-banner.js?v=20260716"></script>
-  <script src="/assets/js/chart-utils-v4.js?v=20260718"></script>
+  <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
+  <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
+  <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
+  <script src="/assets/js/warning-banner.js?v=7fa71bd458"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=279e5e3e08"></script>
   <!-- Single module entry point: imports (and thereby runs) lightstation-charts.js
        and lightstation-map.js. They must NOT get their own script tags — the ?v=
        query would differ from the bare import specifier and the browser would
        execute them twice (module cache is keyed by full URL). -->
-  <script type="module" src="/assets/js/lightstation-page.js?v=20260716"></script>
-  <script src="/assets/vendor/htmx.min.js"></script>
+  <script type="module" src="/assets/js/lightstation-page.js?v=1c39a6d9dd"></script>
+  <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>
