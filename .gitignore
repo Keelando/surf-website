@@ -41,6 +41,9 @@ tests/screenshots/
 ruff.out
 ruff.err
 
+# Generated codebase dumps
+._codebase_digest.txt
+
 # OS
 .DS_Store
 

@@ -10,7 +10,7 @@ Real-time marine weather monitoring system for the Salish Sea region.
 
 Collects data from multiple sources, stores it in SQLite, and exports JSON files that the static frontend reads directly.
 
-**Data sources:** 4 EC wave buoys · 3 NOAA buoys · 10 EC wind stations · 2 Surrey FlowWorks stations · 12 DFO tide stations · 23 lightstations · webcams · marine forecasts · GeoMet GDSPS storm surge
+**Data sources:** EC and NOAA wave buoys · wind stations (EC SWOB-ML, NWS airports, Jericho Sailing Centre) · DFO tide stations · Surrey FlowWorks · White Rock weather · 23 lightstations · webcams · marine forecasts · GeoMet GDSPS storm surge — full registry in `config/stations.json`
 
 **Stack:** Python · SQLite · Sarracenia (sr3) · Caddy
 
@@ -42,7 +42,7 @@ See `docs/DEPLOYMENT.md` for full setup including cron jobs.
 ```
 envcan_wave/
 ├── site/                 # Static frontend (HTML/JS/CSS, served by Caddy, no build step)
-│   ├── assets/js/        # Page scripts (migrating to ES modules)
+│   ├── assets/js/        # Page scripts (ES modules, no build step)
 │   │   └── shared/       # Shared ES-module utils (formatting, staleness, markers)
 │   ├── data/             # JSON exports read by the frontend
 │   └── docs/             # Frontend documentation
@@ -71,6 +71,7 @@ envcan_wave/
 - `tide_data.sqlite` — tide observations, predictions, high/low events
 - `storm_surge_forecast.sqlite` — GDSPS storm surge forecasts
 - `lightstation_data.sqlite` — lightstation reports
+- `weather_data.sqlite` — White Rock weather station
 
 ---
 
@@ -111,8 +112,8 @@ npm run format:js             # Biome formatter — run after editing JS
 npm run screenshots           # Capture all pages × light/dark for visual QA
 ```
 
-Frontend has no build step; pages are migrating to ES modules
-(status table: `site/assets/js/shared/README.md`). Cron jobs are managed
+Frontend has no build step; all pages are ES modules as of 2026-07-18
+(module inventory: `site/assets/js/shared/README.md`). Cron jobs are managed
 via `config/crontab.txt` + `scripts/install_crontab.sh`.
 
 ---

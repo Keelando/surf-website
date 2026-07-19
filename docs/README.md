@@ -6,11 +6,12 @@ Welcome to the Salish Sea Marine Monitoring System documentation.
 
 High-level project information and planning:
 
-- **[CLAUDE.md](project/CLAUDE.md)** - Instructions for Claude Code (AI assistant context)
-- **[TODO.md](project/TODO.md)** - Project todo list and upcoming work
+- **[CLAUDE.md](../CLAUDE.md)** - Instructions for Claude Code (AI assistant context; repo root)
+- **[TODO.md](../TODO.md)** - The single project todo list (maintenance backlog + feature backlog; repo root)
+- **[WORKLOG.md](project/WORKLOG.md)** - Completed-work history
 - **[NEXT_SESSION.md](project/NEXT_SESSION.md)** - Next session work plan
 - **[BACKEND_AUDIT_2025-12-06.md](project/BACKEND_AUDIT_2025-12-06.md)** - Backend audit report (Dec 2025)
-- **[BACKEND_TEST_RESULTS.md](project/BACKEND_TEST_RESULTS.md)** - Testing results (Nov 2025)
+- **[BACKEND_TEST_RESULTS.md](../archive/docs/BACKEND_TEST_RESULTS.md)** - Testing results (Nov 2025, archived)
 
 **Historical documentation:** Outdated refactoring plans and completed migration docs have been archived to `../archive/docs/` (2025-12-06)
 

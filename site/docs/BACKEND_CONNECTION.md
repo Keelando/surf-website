@@ -61,7 +61,7 @@ Everything is in one commit now — no cross-repo linking needed.
 ```
 
 **Tide Data** (`site/data/tide-latest.json`, `tide-timeseries.json`, `tide-hi-low.json`):
-- See `docs/project/CLAUDE.md` for schema details
+- See `docs/ARCHITECTURE_DETAILED.md` for schema details
 
 ## Testing the Connection
 

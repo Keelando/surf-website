@@ -595,3 +595,12 @@ Frontend will need to handle stations that have `observedSurgeData` but no `hind
 - `lib/water_level_stations.py` (WATER_LEVEL_STATIONS tuple) - Add Surrey stations to mapping
 - `storm_surge_page.js` (lines 544-573, 575-590) - Handle stations with obs but no hindcast
 - `export_hindcast_json.py` - No changes needed (GDSPS doesn't cover these locations)
+
+---
+
+## ECharts "connect nulls" behavior (minor, not affecting operation)
+
+Charts may connect lines across data gaps in some scenarios. Not currently
+observed as a problem in production. Would require injecting explicit null
+values at gap timestamps if it ever needs fixing. (Moved here 2026-07-19 from
+the former `docs/project/TODO.md`.)

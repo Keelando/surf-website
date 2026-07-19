@@ -120,5 +120,5 @@ CREATE TABLE wind_observation (
 ## Related Documentation
 
 - `docs/ARCHITECTURE_DETAILED.md` - Wind database schema details
-- `docs/project/CLAUDE.md` - Wind station information
+- `config/stations.json` - Wind station registry (canonical)
 - `README.md` - Updated with wind pipeline architecture
