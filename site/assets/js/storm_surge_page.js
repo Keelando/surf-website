@@ -12,13 +12,11 @@ import {
   formatMonthDayTimeTZ,
 } from "./shared/format-time.js";
 
-let forecastChart = null;
-let hindcastChart = null;
+const charts = { forecast: null, hindcast: null };
+const themeListeners = { forecast: null, hindcast: null };
 let forecastData = null;
 let hindcastData = null;
 let observedSurgeData = null;
-let detachForecastThemeListener = null;
-let detachHindcastThemeListener = null;
 
 // Station display order
 const STATION_ORDER = [
@@ -132,6 +130,157 @@ function buildMidnightMarkLines(firstTime, lastTime, gridColor) {
 }
 
 /* ======================================
+   Shared chart scaffolding — everything the forecast and hindcast charts
+   do identically, with the real differences passed in as options.
+   Series + legend construction stays per-chart.
+   ====================================== */
+
+function signed(value, digits) {
+  const sign = value >= 0 ? "+" : "";
+  return `${sign}${value.toFixed(digits)}`;
+}
+
+function showChartMessage(containerId, message) {
+  const container = document.getElementById(containerId);
+  if (container) {
+    setSafeHTML(
+      container,
+      `<p style="text-align:center;color:var(--color-text-muted,#999);">${message}</p>`,
+    );
+  }
+}
+
+// Look up a station in a dataset and apply Surrey display-name overrides.
+// Returns null (with a warning) when the dataset has no entry for it.
+function resolveStation(data, stationId, kind) {
+  const forecastStationId = getForecastStationId(stationId);
+  const station = data?.stations?.[forecastStationId];
+  if (!station) {
+    logger.warn("StormSurge", `No ${kind} data found for station: ${stationId}`);
+    return null;
+  }
+  const displayName = getDisplayName(stationId, null);
+  return {
+    forecastStationId,
+    station,
+    // Override the display name without mutating the original
+    displayStation: displayName ? { ...station, station_name: displayName } : station,
+  };
+}
+
+function ensureChart(key, elementId) {
+  if (!charts[key]) {
+    charts[key] = echarts.init(document.getElementById(elementId));
+    window.addEventListener("resize", () => charts[key].resize());
+  }
+  return charts[key];
+}
+
+function ensureThemeRefresh(key, selectorId, update) {
+  if (themeListeners[key]) return;
+  themeListeners[key] = registerChartThemeListener(() => {
+    update(document.getElementById(selectorId)?.value || "Point_Atkinson");
+  });
+}
+
+function initStationSelector({ selectorId, indicatorId, data, hasData, onChange }) {
+  const selector = document.getElementById(selectorId);
+  if (!selector || selector.dataset.initialized) return;
+
+  selector.textContent = "";
+
+  STATION_ORDER.forEach((stationId) => {
+    const station = data.stations?.[getForecastStationId(stationId)];
+    if (station && hasData(station)) {
+      const option = document.createElement("option");
+      option.value = stationId;
+
+      // 📡 marks stations with observed surge data available
+      const indicator = observedSurgeData?.stations?.[stationId] ? " 📡" : "";
+      option.textContent = getDisplayName(stationId, station.station_name) + indicator;
+      selector.appendChild(option);
+    }
+  });
+
+  selector.addEventListener("change", (e) => {
+    onChange(e.target.value);
+    updateStationIndicator(indicatorId, e.target.value, data);
+  });
+
+  selector.dataset.initialized = "true";
+  updateStationIndicator(indicatorId, selector.value, data);
+}
+
+function baseSurgeChartOption(theme, opts) {
+  const mobile = window.innerWidth < 600;
+  return {
+    backgroundColor: theme.background,
+    textStyle: { color: theme.text },
+    title: {
+      text: mobile ? opts.mobileTitle : opts.title,
+      subtext: mobile ? opts.mobileSubtext : opts.subtext,
+      left: "center",
+      textStyle: {
+        fontSize: mobile ? 11 : 14,
+        fontWeight: "bold",
+        overflow: "truncate",
+        width: mobile ? window.innerWidth - 40 : null,
+        color: theme.text,
+      },
+      subtextStyle: { fontSize: 10, color: theme.mutedText },
+    },
+    tooltip: {
+      ...getMobileOptimizedTooltipConfig(),
+      formatter: (params) => {
+        if (!params || params.length === 0) return "";
+        let tooltip = `<b>${opts.tooltipTime(params[0].data[0])}</b><br/>`;
+        params.forEach((param) => {
+          tooltip += `${param.marker} ${param.seriesName}: ${signed(param.data[1], 3)} m<br/>`;
+        });
+        return tooltip;
+      },
+    },
+    grid: {
+      left: "8%",
+      right: mobile ? "4%" : "6%",
+      bottom: opts.gridBottom,
+      top: "15%",
+      containLabel: true,
+    },
+    xAxis: {
+      type: "time",
+      axisLabel: {
+        formatter: (value) =>
+          new Date(value).toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            timeZone: "America/Vancouver",
+          }),
+        rotate: mobile ? opts.mobileXRotate : 0,
+        fontSize: 10,
+        hideOverlap: opts.xHideOverlap,
+        color: theme.mutedText,
+      },
+      axisTick: { show: true },
+      axisLine: { lineStyle: { color: theme.axisLine } },
+      splitLine: { show: true, lineStyle: { color: theme.gridLine } },
+    },
+    yAxis: {
+      type: "value",
+      name: "Surge (m)",
+      ...opts.yRange,
+      axisLabel: {
+        formatter: (value) => signed(value, opts.yDigits),
+        color: theme.mutedText,
+      },
+      nameTextStyle: { color: theme.text },
+      axisLine: { lineStyle: { color: theme.axisLine } },
+      splitLine: { show: true, lineStyle: { color: theme.gridLine } },
+    },
+  };
+}
+
+/* ======================================
    Forecast Section
    ====================================== */
 
@@ -141,66 +290,30 @@ async function loadForecastData() {
       `/data/storm_surge/combined_forecast.json?t=${Date.now()}`,
     );
 
-    initForecastSelector();
+    initStationSelector({
+      selectorId: "forecast-station-select",
+      indicatorId: "forecast-station-indicator",
+      data: forecastData,
+      hasData: () => true,
+      onChange: updateForecastChart,
+    });
     const selectedStation =
       document.getElementById("forecast-station-select")?.value || "Point_Atkinson";
     updateForecastChart(selectedStation);
   } catch (err) {
     logger.error("StormSurge", "Error loading forecast data", err);
-    const container = document.getElementById("forecast-chart");
-    if (container) {
-      setSafeHTML(
-        container,
-        '<p style="text-align:center;color:var(--color-text-muted,#999);">⚠️ Forecast data unavailable</p>',
-      );
-    }
+    showChartMessage("forecast-chart", "⚠️ Forecast data unavailable");
   }
 }
 
-function initForecastSelector() {
-  const selector = document.getElementById("forecast-station-select");
-  if (!selector || selector.dataset.initialized) return;
-
-  selector.textContent = "";
-
-  STATION_ORDER.forEach((stationId) => {
-    const station = forecastData.stations?.[getForecastStationId(stationId)];
-    if (station) {
-      const option = document.createElement("option");
-      option.value = stationId;
-
-      // Check if station has observed surge data available
-      const hasObservedSurge = observedSurgeData?.stations?.[stationId];
-      const indicator = hasObservedSurge ? " 📡" : "";
-
-      option.textContent = getDisplayName(stationId, station.station_name) + indicator;
-      selector.appendChild(option);
-    }
-  });
-
-  selector.addEventListener("change", (e) => {
-    updateForecastChart(e.target.value);
-    updateStationIndicator("forecast-station-indicator", e.target.value);
-  });
-
-  selector.dataset.initialized = "true";
-  updateStationIndicator("forecast-station-indicator", selector.value);
-}
-
-function updateStationIndicator(elementId, stationId) {
+function updateStationIndicator(elementId, stationId, data) {
   const indicator = document.getElementById(elementId);
   if (!indicator) return;
 
-  const forecastStationId = getForecastStationId(stationId);
-
-  let stationName = "";
-  if (elementId.includes("forecast") && forecastData?.stations?.[forecastStationId]) {
-    stationName = forecastData.stations[forecastStationId].station_name;
-  } else if (elementId.includes("hindcast") && hindcastData?.stations?.[forecastStationId]) {
-    stationName = hindcastData.stations[forecastStationId].station_name;
-  }
-
-  stationName = getDisplayName(stationId, stationName);
+  const stationName = getDisplayName(
+    stationId,
+    data?.stations?.[getForecastStationId(stationId)]?.station_name || "",
+  );
 
   if (stationName) {
     indicator.textContent = `📍 Viewing: ${stationName}`;
@@ -299,18 +412,9 @@ function updatePeakToday(stationId) {
 }
 
 function updateForecastChart(stationId) {
-  const forecastStationId = getForecastStationId(stationId);
-
-  if (!forecastData?.stations?.[forecastStationId]) {
-    logger.warn("StormSurge", `No forecast data found for station: ${stationId}`);
-    return;
-  }
-
-  const station = forecastData.stations[forecastStationId];
-
-  // Create display station object (don't mutate original)
-  const displayName = getDisplayName(stationId, null);
-  const displayStation = displayName ? { ...station, station_name: displayName } : station;
+  const resolved = resolveStation(forecastData, stationId, "forecast");
+  if (!resolved) return;
+  const { forecastStationId, station, displayStation } = resolved;
 
   if (!station.forecast || Object.keys(station.forecast).length === 0) {
     logger.warn("StormSurge", `No forecast data for ${stationId}`);
@@ -324,7 +428,6 @@ function updateForecastChart(stationId) {
   const colors = theme.series || {};
   const textColor = theme.text;
   const mutedText = theme.mutedText;
-  const axisColor = theme.axisLine;
   const gridColor = theme.gridLine;
   const gradientTop = theme.isDark ? "rgba(92, 198, 255, 0.35)" : "rgba(0, 119, 190, 0.3)";
   const gradientBottom = theme.isDark ? "rgba(92, 198, 255, 0.05)" : "rgba(0, 119, 190, 0.05)";
@@ -338,12 +441,6 @@ function updateForecastChart(stationId) {
     .forEach(([timeStr, value]) => {
       forecastData_series.push([timeStr, value]);
     });
-
-  // Initialize chart if needed
-  if (!forecastChart) {
-    forecastChart = echarts.init(document.getElementById("forecast-chart"));
-    window.addEventListener("resize", () => forecastChart.resize());
-  }
 
   // Calculate y-axis range
   const values = forecastData_series.map((d) => d[1]);
@@ -441,86 +538,20 @@ function updateForecastChart(stationId) {
   });
 
   // Set chart options (notMerge: true to replace all data when switching stations)
-  forecastChart.setOption(
+  ensureChart("forecast", "forecast-chart").setOption(
     {
-      backgroundColor: theme.background,
-      textStyle: { color: textColor },
-      title: {
-        text:
-          window.innerWidth < 600
-            ? displayStation.station_name
-            : `${displayStation.station_name} - Surge Forecast`,
-        subtext: window.innerWidth < 600 ? "Surge Forecast" : "",
-        left: "center",
-        textStyle: {
-          fontSize: window.innerWidth < 600 ? 11 : 14,
-          fontWeight: "bold",
-          overflow: "truncate",
-          width: window.innerWidth < 600 ? window.innerWidth - 40 : null,
-          color: textColor,
-        },
-        subtextStyle: {
-          fontSize: 10,
-          color: mutedText,
-        },
-      },
-      tooltip: {
-        ...getMobileOptimizedTooltipConfig(),
-        formatter: (params) => {
-          if (!params || params.length === 0) return "";
-          const time = formatMonthDayTimeTZ(params[0].data[0]);
-          let tooltip = `<b>${time}</b><br/>`;
-          params.forEach((param) => {
-            const value = param.data[1];
-            const sign = value >= 0 ? "+" : "";
-            tooltip += `${param.marker} ${param.seriesName}: ${sign}${value.toFixed(3)} m<br/>`;
-          });
-          return tooltip;
-        },
-      },
-      grid: {
-        left: window.innerWidth < 600 ? "8%" : "8%",
-        right: window.innerWidth < 600 ? "4%" : "6%",
-        bottom: peakLabels.length > 0 ? "25%" : "15%", // More space when showing peak labels
-        top: "15%",
-        containLabel: true,
-      },
-      xAxis: {
-        type: "time",
-        axisLabel: {
-          formatter: (value) => {
-            const d = new Date(value);
-            return d.toLocaleString("en-US", {
-              month: "short",
-              day: "numeric",
-              timeZone: "America/Vancouver",
-            });
-          },
-          rotate: window.innerWidth < 600 ? 30 : 0,
-          fontSize: 10,
-          hideOverlap: true,
-          color: mutedText,
-        },
-        axisTick: { show: true },
-        axisLine: { lineStyle: { color: axisColor } },
-        splitLine: { show: true, lineStyle: { color: gridColor } },
-      },
-      yAxis: {
-        type: "value",
-        name: "Surge (m)",
-        min: yMin,
-        max: yMax,
-        axisLabel: {
-          formatter: (value) => {
-            const sign = value >= 0 ? "+" : "";
-            return `${sign}${value.toFixed(1)}`;
-          },
-          color: mutedText,
-        },
-        nameTextStyle: { color: textColor },
-        axisLine: { lineStyle: { color: axisColor } },
-        splitLine: { show: true, lineStyle: { color: gridColor } },
-      },
+      ...baseSurgeChartOption(theme, {
+        title: `${displayStation.station_name} - Surge Forecast`,
+        mobileTitle: displayStation.station_name,
+        subtext: "",
+        mobileSubtext: "Surge Forecast",
+        tooltipTime: formatMonthDayTimeTZ,
+        gridBottom: peakLabels.length > 0 ? "25%" : "15%", // More space when showing peak labels
+        mobileXRotate: 30,
+        xHideOverlap: true,
+        yDigits: 1,
+        yRange: { min: yMin, max: yMax },
+      }),
       legend: {
         show: peakLabels.length > 0,
         data:
@@ -555,23 +586,12 @@ function updateForecastChart(stationId) {
     forecastData_series.map((d) => d[0]),
     values,
   );
-  ensureForecastThemeListener();
+  ensureThemeRefresh("forecast", "forecast-station-select", updateForecastChart);
 
   logger.info(
     "StormSurge",
     `Loaded ${values.length} hours of forecast for ${displayStation.station_name}`,
   );
-}
-
-function ensureForecastThemeListener() {
-  if (detachForecastThemeListener) return;
-  detachForecastThemeListener = registerChartThemeListener(() => {
-    const selector = document.getElementById("forecast-station-select");
-    const station = selector?.value || "Point_Atkinson";
-    if (station) {
-      updateForecastChart(station);
-    }
-  });
 }
 
 function updateForecastMetadata(station, times, values) {
@@ -635,82 +655,39 @@ async function loadHindcastData() {
   try {
     hindcastData = await fetchWithTimeout(`/data/storm_surge/hindcast.json?t=${Date.now()}`);
 
-    initHindcastSelector();
+    initStationSelector({
+      selectorId: "hindcast-station-select",
+      indicatorId: "hindcast-station-indicator",
+      data: hindcastData,
+      // Only show stations that have hindcast data
+      hasData: (station) => station.hindcast && station.hindcast.length > 0,
+      onChange: updateHindcastChart,
+    });
     const selectedStation =
       document.getElementById("hindcast-station-select")?.value || "Point_Atkinson";
     updateHindcastChart(selectedStation);
   } catch (err) {
     logger.error("StormSurge", "Error loading hindcast data", err);
-    const container = document.getElementById("hindcast-chart");
-    if (container) {
-      setSafeHTML(
-        container,
-        '<p style="text-align:center;color:var(--color-text-muted,#999);">⚠️ Hindcast data unavailable</p>',
-      );
-    }
+    showChartMessage("hindcast-chart", "⚠️ Hindcast data unavailable");
   }
-}
-
-function initHindcastSelector() {
-  const selector = document.getElementById("hindcast-station-select");
-  if (!selector || selector.dataset.initialized) return;
-
-  selector.textContent = "";
-
-  // Only show stations that have hindcast data
-  STATION_ORDER.forEach((stationId) => {
-    const station = hindcastData.stations?.[getForecastStationId(stationId)];
-    if (station && station.hindcast && station.hindcast.length > 0) {
-      const option = document.createElement("option");
-      option.value = stationId;
-
-      // Check if station has observed surge data available
-      const hasObservedSurge = observedSurgeData?.stations?.[stationId];
-      const indicator = hasObservedSurge ? " 📡" : "";
-
-      option.textContent = getDisplayName(stationId, station.station_name) + indicator;
-      selector.appendChild(option);
-    }
-  });
-
-  selector.addEventListener("change", (e) => {
-    updateHindcastChart(e.target.value);
-    updateStationIndicator("hindcast-station-indicator", e.target.value);
-  });
-
-  selector.dataset.initialized = "true";
-  updateStationIndicator("hindcast-station-indicator", selector.value);
 }
 
 function updateHindcastChart(stationId) {
-  const forecastStationId = getForecastStationId(stationId);
-
-  if (!hindcastData?.stations?.[forecastStationId]) {
-    logger.warn("StormSurge", `No hindcast data found for station: ${stationId}`);
-    return;
-  }
-
-  const station = hindcastData.stations[forecastStationId];
-
-  // Create display station object (don't mutate original)
-  const displayName = getDisplayName(stationId, null);
-  const displayStation = displayName ? { ...station, station_name: displayName } : station;
+  const resolved = resolveStation(hindcastData, stationId, "hindcast");
+  if (!resolved) return;
+  const { station, displayStation } = resolved;
 
   if (!station.hindcast || station.hindcast.length === 0) {
-    const container = document.getElementById("hindcast-chart");
-    if (container) {
-      setSafeHTML(
-        container,
-        '<p style="text-align:center;color:var(--color-text-muted,#999);">No hindcast data available for this station yet. Data accumulates over time.</p>',
-      );
-    }
+    showChartMessage(
+      "hindcast-chart",
+      "No hindcast data available for this station yet. Data accumulates over time.",
+    );
     return;
   }
 
   const theme = getChartThemeColors();
   const textColor = theme.text;
   const mutedText = theme.mutedText;
-  const axisColor = theme.axisLine;
   const gridColor = theme.gridLine;
 
   // Prepare data - group by forecast date
@@ -755,13 +732,10 @@ function updateHindcastChart(stationId) {
 
   // Check if we have any data after filtering
   if (sortedDates.length === 0) {
-    const container = document.getElementById("hindcast-chart");
-    if (container) {
-      setSafeHTML(
-        container,
-        `<p style="text-align:center;color:var(--color-text-muted,#999);">No hindcast data available for this station from ${minDate} onwards. Data accumulates over time.</p>`,
-      );
-    }
+    showChartMessage(
+      "hindcast-chart",
+      `No hindcast data available for this station from ${minDate} onwards. Data accumulates over time.`,
+    );
     return;
   }
 
@@ -817,53 +791,20 @@ function updateHindcastChart(stationId) {
         )
       : [];
 
-  // Initialize chart if needed
-  if (!hindcastChart) {
-    hindcastChart = echarts.init(document.getElementById("hindcast-chart"));
-    window.addEventListener("resize", () => hindcastChart.resize());
-  }
-
   // Set chart options (notMerge: true to replace all data when switching stations)
-  hindcastChart.setOption(
+  ensureChart("hindcast", "hindcast-chart").setOption(
     {
-      backgroundColor: theme.background,
-      textStyle: { color: textColor },
-      title: {
-        text:
-          window.innerWidth < 600
-            ? `${displayStation.station_name} - Hindcast`
-            : `${displayStation.station_name} - Hindcast Comparison (48h Predictions)`,
-        subtext:
-          window.innerWidth < 600
-            ? "Observed (black) vs Forecast runs (colored)"
-            : "Black line = Tide offset observations | Colored lines = Historical forecast runs",
-        left: "center",
-        textStyle: {
-          fontSize: window.innerWidth < 600 ? 11 : 14,
-          fontWeight: "bold",
-          overflow: "truncate",
-          width: window.innerWidth < 600 ? window.innerWidth - 40 : null,
-          color: textColor,
-        },
-        subtextStyle: { fontSize: 10, color: mutedText },
-      },
-      tooltip: {
-        ...getMobileOptimizedTooltipConfig(),
-        formatter: (params) => {
-          if (!params || params.length === 0) return "";
-
-          const time = formatMonthDayTime(params[0].data[0]);
-
-          let tooltip = `<b>${time}</b><br/>`;
-          params.forEach((param) => {
-            const value = param.data[1];
-            const sign = value >= 0 ? "+" : "";
-            tooltip += `${param.marker} ${param.seriesName}: ${sign}${value.toFixed(3)} m<br/>`;
-          });
-
-          return tooltip;
-        },
-      },
+      ...baseSurgeChartOption(theme, {
+        title: `${displayStation.station_name} - Hindcast Comparison (48h Predictions)`,
+        mobileTitle: `${displayStation.station_name} - Hindcast`,
+        subtext: "Black line = Tide offset observations | Colored lines = Historical forecast runs",
+        mobileSubtext: "Observed (black) vs Forecast runs (colored)",
+        tooltipTime: formatMonthDayTime,
+        gridBottom: "18%",
+        mobileXRotate: 45,
+        xHideOverlap: false,
+        yDigits: 2,
+      }),
       legend: {
         show: true,
         bottom: 0,
@@ -871,45 +812,6 @@ function updateHindcastChart(stationId) {
         data: ["Forecast", "Observed Surge (Actual)"],
         type: "plain",
         textStyle: { color: textColor },
-      },
-      grid: {
-        left: window.innerWidth < 600 ? "8%" : "8%",
-        right: window.innerWidth < 600 ? "4%" : "6%",
-        bottom: "18%",
-        top: "15%",
-        containLabel: true,
-      },
-      xAxis: {
-        type: "time",
-        axisLabel: {
-          formatter: (value) => {
-            const d = new Date(value);
-            return d.toLocaleString("en-US", {
-              month: "short",
-              day: "numeric",
-              timeZone: "America/Vancouver",
-            });
-          },
-          rotate: window.innerWidth < 600 ? 45 : 0,
-          fontSize: 10,
-          color: mutedText,
-        },
-        axisLine: { lineStyle: { color: axisColor } },
-        splitLine: { show: true, lineStyle: { color: gridColor } },
-      },
-      yAxis: {
-        type: "value",
-        name: "Surge (m)",
-        axisLabel: {
-          formatter: (value) => {
-            const sign = value >= 0 ? "+" : "";
-            return `${sign}${value.toFixed(2)}`;
-          },
-          color: mutedText,
-        },
-        nameTextStyle: { color: textColor },
-        axisLine: { lineStyle: { color: axisColor } },
-        splitLine: { show: true, lineStyle: { color: gridColor } },
       },
       series: series.concat([
         {
@@ -937,23 +839,12 @@ function updateHindcastChart(stationId) {
 
   // Update metadata
   updateHindcastMetadata(displayStation);
-  ensureHindcastThemeListener();
+  ensureThemeRefresh("hindcast", "hindcast-station-select", updateHindcastChart);
 
   logger.info(
     "StormSurge",
     `Loaded hindcast data for ${displayStation.station_name} (${sortedDates.length} forecast dates)`,
   );
-}
-
-function ensureHindcastThemeListener() {
-  if (detachHindcastThemeListener) return;
-  detachHindcastThemeListener = registerChartThemeListener(() => {
-    const selector = document.getElementById("hindcast-station-select");
-    const station = selector?.value || "Point_Atkinson";
-    if (station) {
-      updateHindcastChart(station);
-    }
-  });
 }
 
 function getColorForIndex(index, total, theme) {
@@ -1036,27 +927,20 @@ function getIndexPathWithHash(hash) {
   return `${normalizedBase}index.html${hash}`;
 }
 
-// Show selected surge station on map from forecast selector
-function showSelectedForecastSurgeOnMap(event) {
-  event.preventDefault();
-  const select = document.getElementById("forecast-station-select");
-  if (!select || !select.value) return;
+// Navigate to the index map with the selected surge station highlighted.
+// Event listeners replace onclick= attributes (CSP compliance).
+function wireShowOnMapButton(buttonId, selectorId) {
+  const btn = document.getElementById(buttonId);
+  if (!btn) return;
 
-  window.location.href = getIndexPathWithHash(`#surge-${select.value}`);
+  btn.addEventListener("click", (event) => {
+    event.preventDefault();
+    const select = document.getElementById(selectorId);
+    if (!select || !select.value) return;
+
+    window.location.href = getIndexPathWithHash(`#surge-${select.value}`);
+  });
 }
 
-// Show selected surge station on map from hindcast selector
-function showSelectedHindcastSurgeOnMap(event) {
-  event.preventDefault();
-  const select = document.getElementById("hindcast-station-select");
-  if (!select || !select.value) return;
-
-  window.location.href = getIndexPathWithHash(`#surge-${select.value}`);
-}
-
-// Event listeners replacing onclick= attributes (CSP compliance)
-const forecastMapBtn = document.getElementById("show-forecast-surge-on-map-btn");
-if (forecastMapBtn) forecastMapBtn.addEventListener("click", showSelectedForecastSurgeOnMap);
-
-const hindcastMapBtn = document.getElementById("show-hindcast-surge-on-map-btn");
-if (hindcastMapBtn) hindcastMapBtn.addEventListener("click", showSelectedHindcastSurgeOnMap);
+wireShowOnMapButton("show-forecast-surge-on-map-btn", "forecast-station-select");
+wireShowOnMapButton("show-hindcast-surge-on-map-btn", "hindcast-station-select");

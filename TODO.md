@@ -14,10 +14,11 @@ check items off as they land. Full context in
       `scripts/update_asset_versions.py` rewrites `?v=` to content hashes;
       pre-commit auto-fixes + stages; `tests/test_asset_versions.py` guards.
       *Done 2026-07-19.*
-- [ ] **Deduplicate `storm_surge_page.js` twin chart functions** (audit P2):
-      `updateForecastChart` / `updateHindcastChart` (~380 lines each) → one
-      parameterized function. Do before building the Salish Sea forecast
-      section — that page will be modeled on this one.
+- [x] **Deduplicate `storm_surge_page.js` twin chart functions** (audit P2):
+      shared scaffolding extracted (`baseSurgeChartOption`, `resolveStation`,
+      `ensureChart`, `initStationSelector`, …); update functions now hold only
+      their unique series logic. Pixel-verified against baseline screenshots.
+      *Done 2026-07-19.*
 - [ ] **`stations-map.js` data-source unification**: resolve the line-414
       TODO (buoy-vs-wind JSON lookup duplicated between marker and popup
       paths); the "see note above (line 316)" comment pointer has drifted.
