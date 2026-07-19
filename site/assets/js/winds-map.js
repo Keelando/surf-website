@@ -7,6 +7,7 @@
  */
 
 import { createDirectionalMarker } from "./shared/markers.js";
+import { stationTypeLabel } from "./shared/station-meta.js";
 import { windData } from "./wind-data.js";
 
 // --- Constants ---
@@ -72,16 +73,6 @@ async function loadWindStationsAndMarkers() {
         '<div class="winds-map-error">Unable to load station markers. Try refreshing the page.</div>';
     }
   }
-}
-
-/**
- * Resolve a human-readable type label for a station
- */
-function getStationTypeLabel(station, isBuoy) {
-  if (!isBuoy) return "Weather Station";
-  if (station.type === "pile_mounted_wave_station") return "Pile-Mounted Wave Station";
-  if (station.type === "wind_monitoring_station") return "Wind Monitoring Station";
-  return "Wave Buoy";
 }
 
 /**
@@ -172,7 +163,7 @@ function addWindMarker(station, currentData, isBuoy = false) {
   }
 
   // Station details
-  const typeLabel = getStationTypeLabel(station, isBuoy);
+  const typeLabel = stationTypeLabel(station);
   popupContent += `
     <div class="popup-station-details">
       <div><strong>ID:</strong> ${station.id}</div>

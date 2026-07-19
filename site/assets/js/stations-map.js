@@ -8,7 +8,7 @@
 
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
 import { createDirectionalMarker } from "./shared/markers.js";
-import { isNoaaStation } from "./shared/station-meta.js";
+import { isNoaaStation, isWaveStation, stationTypeLabel } from "./shared/station-meta.js";
 import { staleDataWarningHTML, stalePopupTheme } from "./shared/staleness.js";
 
 let stationsMap = null;
@@ -132,7 +132,7 @@ async function loadStationsAndMarkers() {
       logger.debug("StationsMap", `Loading ${windCount} wind stations to map...`);
       Object.values(stations.wind).forEach((windStation) => {
         // Wind stations use the same marker function as buoys
-        addBuoyMarker({ ...windStation, type: "weather_station" });
+        addBuoyMarker(windStation);
       });
     }
 
@@ -289,35 +289,21 @@ function createTideGaugeSVG() {
   `;
 }
 
+/**
+ * Latest observation for a station, from whichever export feeds it:
+ * wave stations → latest_buoy_v2.json, wind stations → latest_wind.json.
+ * Single lookup shared by the marker and popup paths.
+ */
+function latestStationData(station) {
+  const source = isWaveStation(station) ? latestBuoyData : latestWindData;
+  return source?.[station.id] ?? null;
+}
+
 // Add buoy marker to map
 function addBuoyMarker(buoy) {
-  // Determine marker icon and type label based on station type
-  let markerEmoji = "🌊"; // Default: wave buoy (includes pile-mounted wave stations)
-  let typeLabel = "Wave Buoy";
-  let isWaveStation = true;
-
-  if (buoy.type === "pile_mounted_wave_station") {
-    // Keep wave icon since it measures waves
-    markerEmoji = "🌊";
-    typeLabel = "Pile-Mounted Wave Station";
-    isWaveStation = true;
-  } else if (buoy.type === "wind_monitoring_station") {
-    markerEmoji = "💨";
-    typeLabel = "Wind Monitoring Station";
-    isWaveStation = false;
-  } else if (buoy.type === "weather_station") {
-    markerEmoji = "💨";
-    typeLabel = "Weather Station";
-    isWaveStation = false;
-  } else if (buoy.type === "c_man_station") {
-    markerEmoji = "💨";
-    typeLabel = "C-MAN Station";
-    isWaveStation = false;
-  } else if (buoy.type === "land_station") {
-    markerEmoji = "💨";
-    typeLabel = "Land Station";
-    isWaveStation = false;
-  }
+  const isWave = isWaveStation(buoy);
+  const markerEmoji = isWave ? "🌊" : "💨";
+  const typeLabel = stationTypeLabel(buoy);
 
   // Check if we have live data with direction for this buoy
   let iconHtml = `<div class="marker-icon">${markerEmoji}</div>`;
@@ -325,16 +311,7 @@ function addBuoyMarker(buoy) {
   let iconAnchor = [15, 15];
 
   try {
-    // Get data from appropriate source
-    // Wave stations (buoys) → latest_buoy_v2.json
-    // Wind stations (land-based) → latest_wind.json
-    let data = null;
-    if (isWaveStation) {
-      data = latestBuoyData ? latestBuoyData[buoy.id] : null;
-    } else {
-      // All non-buoy wind stations are now in latest_wind.json
-      data = latestWindData ? latestWindData[buoy.id] : null;
-    }
+    const data = latestStationData(buoy);
 
     if (data) {
       // Try multiple possible field names for wave direction
@@ -346,7 +323,7 @@ function addBuoyMarker(buoy) {
       const isStale = data.stale || false;
 
       // For wave stations with wave direction data
-      if (isWaveStation && waveDirection !== null && waveDirection !== undefined) {
+      if (isWave && waveDirection !== null && waveDirection !== undefined) {
         // Create directional arrow marker with wave height (BLUE)
         iconHtml = createDirectionalMarker(waveDirection, waveHeight, {
           type: "wave",
@@ -359,7 +336,7 @@ function addBuoyMarker(buoy) {
       }
       // For wave stations without wave direction but with wind direction and wave height
       else if (
-        isWaveStation &&
+        isWave &&
         waveHeight !== null &&
         waveHeight !== undefined &&
         windDirection !== null &&
@@ -374,7 +351,7 @@ function addBuoyMarker(buoy) {
         iconAnchor = [13, 38];
       }
       // For non-wave stations with wind direction
-      else if (!isWaveStation && windDirection !== null && windDirection !== undefined) {
+      else if (!isWave && windDirection !== null && windDirection !== undefined) {
         // Show red wind direction marker
         // Wind stations use wind_speed_kt, buoys use wind_speed
         const windSpeed = data.wind_speed_kt !== undefined ? data.wind_speed_kt : data.wind_speed;
@@ -411,15 +388,7 @@ function addBuoyMarker(buoy) {
   let popupContent = `<div class="station-popup"><h3>${buoy.name}</h3>`;
 
   // Add latest data if available (priority data at top)
-  // TODO: REFACTOR - See data source unification note above (line 316)
-  let popupData = null;
-  if (isWaveStation) {
-    popupData = latestBuoyData ? latestBuoyData[buoy.id] : null;
-  } else {
-    // For wind stations, check both sources
-    popupData =
-      (latestWindData && latestWindData[buoy.id]) || (latestBuoyData && latestBuoyData[buoy.id]);
-  }
+  const popupData = latestStationData(buoy);
 
   if (popupData) {
     const data = popupData;
@@ -576,13 +545,8 @@ function addBuoyMarker(buoy) {
   }
 
   // Determine link based on station type
-  const isWindStation =
-    buoy.type === "weather_station" ||
-    buoy.type === "wind_monitoring_station" ||
-    buoy.type === "c_man_station" ||
-    buoy.type === "land_station";
-  const linkHref = isWindStation ? `/winds.html#wind-${buoy.id}` : `/#buoy-${buoy.id}`;
-  const linkText = isWindStation ? "View on Winds Page →" : "View Data →";
+  const linkHref = isWave ? `/#buoy-${buoy.id}` : `/winds.html#wind-${buoy.id}`;
+  const linkText = isWave ? "View Data →" : "View on Winds Page →";
 
   popupContent += `
     <a href="${linkHref}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">${linkText}</a>

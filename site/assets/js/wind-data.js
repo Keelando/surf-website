@@ -7,6 +7,8 @@
  * before the module entry points).
  */
 
+import { isWaveStation } from "./shared/station-meta.js";
+
 const store = {
   stations: null, // stations.json
   latestWind: null, // latest_wind.json (wind stations only)
@@ -36,11 +38,7 @@ function normalizeBuoyLatest(buoy, stationMeta) {
     windObsTime = buoy.field_times.wind_speed || buoy.field_times.wind_direction;
   }
 
-  const isWindType =
-    stationMeta?.type === "wind_monitoring_station" ||
-    stationMeta?.type === "weather_station" ||
-    stationMeta?.type === "c_man_station" ||
-    stationMeta?.type === "land_station";
+  const isWindType = !isWaveStation(stationMeta);
 
   return {
     name: buoy.name,
@@ -148,13 +146,8 @@ async function load() {
       .forEach(([id, buoy]) => {
         if (buoy.timeseries?.wind_speed?.data && buoy.timeseries.wind_speed.data.length > 0) {
           const meta = stations.buoys?.[id];
-          const isWindType =
-            meta?.type === "wind_monitoring_station" ||
-            meta?.type === "weather_station" ||
-            meta?.type === "c_man_station" ||
-            meta?.type === "land_station";
           timeseries[id] = {
-            name: isWindType ? buoy.name : buoy.name + " \u{1F30A}",
+            name: isWaveStation(meta) ? buoy.name + " \u{1F30A}" : buoy.name,
             timeseries: normalizeTimeseries(buoy.timeseries),
           };
         }

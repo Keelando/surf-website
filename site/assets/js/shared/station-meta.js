@@ -17,6 +17,33 @@ export function isNoaaStation(meta) {
   return meta?.source === "NOAA NDBC";
 }
 
+/**
+ * Wave-measuring station (wave buoy or pile-mounted sensor). Everything
+ * else — the `wind` section's weather/land/C-MAN types — is a wind station.
+ * This split decides which export feeds a station: wave stations publish to
+ * latest_buoy_v2.json, wind stations to latest_wind.json (disjoint ID sets).
+ * Unknown/missing type defaults to wave, matching the map's fallback class.
+ */
+export function isWaveStation(meta) {
+  const type = meta?.type;
+  return type == null || type === "wave_buoy" || type === "pile_mounted_wave_station";
+}
+
+const WIND_STATION_LABELS = {
+  wind_monitoring_station: "Wind Monitoring Station",
+  c_man_station: "C-MAN Station",
+  land_station: "Land Station",
+  land_based_wind_station: "Land-Based Wind Station",
+};
+
+/** Human-readable station type ("Wave Buoy", "C-MAN Station", …). */
+export function stationTypeLabel(meta) {
+  if (isWaveStation(meta)) {
+    return isPileStation(meta) ? "Pile-Mounted Wave Station" : "Wave Buoy";
+  }
+  return WIND_STATION_LABELS[meta.type] ?? "Weather Station";
+}
+
 /** Surrey FlowWorks station (badge/border styling). */
 export function isSurreyStation(meta) {
   return meta?.source === "Surrey FlowWorks";

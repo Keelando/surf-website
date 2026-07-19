@@ -19,9 +19,12 @@ check items off as they land. Full context in
       `ensureChart`, `initStationSelector`, …); update functions now hold only
       their unique series logic. Pixel-verified against baseline screenshots.
       *Done 2026-07-19.*
-- [ ] **`stations-map.js` data-source unification**: resolve the line-414
-      TODO (buoy-vs-wind JSON lookup duplicated between marker and popup
-      paths); the "see note above (line 316)" comment pointer has drifted.
+- [x] **`stations-map.js` data-source unification**: marker/popup lookups
+      share `latestStationData()`; wave-vs-wind classification + type labels
+      moved to `shared/station-meta.js` (`isWaveStation`/`stationTypeLabel`),
+      deduping four hardcoded type lists across three files and fixing the
+      unlisted `land_based_wind_station` type. DOM-diff verified.
+      *Done 2026-07-19.*
 - [ ] **Repo hygiene** (audit P5): delete `archive/` (56 tracked files
       polluting grep); move `validate_stations.py` and
       `create_lightstation_db.py` off the repo root; point lint/test output

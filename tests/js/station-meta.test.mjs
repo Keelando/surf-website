@@ -4,6 +4,8 @@ import {
   isNoaaStation,
   isPileStation,
   isSurreyStation,
+  isWaveStation,
+  stationTypeLabel,
   pickWavePeriod,
   reportsSubHourly,
   sourceUrl,
@@ -40,6 +42,33 @@ const crescent = {
   update_frequency_minutes: 10,
   source_url: "https://developers.flowworks.com/",
 };
+
+test("isWaveStation splits wave stations from the wind-section types", () => {
+  assert.equal(isWaveStation(ecBuoy), true);
+  assert.equal(isWaveStation(crescent), true);
+  for (const type of [
+    "weather_station",
+    "wind_monitoring_station",
+    "c_man_station",
+    "land_station",
+    "land_based_wind_station",
+  ]) {
+    assert.equal(isWaveStation({ type }), false, type);
+  }
+  // Unknown station defaults to wave, matching the map's fallback class
+  assert.equal(isWaveStation(undefined), true);
+  assert.equal(isWaveStation({}), true);
+});
+
+test("stationTypeLabel names every registry type, generic fallback for the rest", () => {
+  assert.equal(stationTypeLabel(ecBuoy), "Wave Buoy");
+  assert.equal(stationTypeLabel(crescent), "Pile-Mounted Wave Station");
+  assert.equal(stationTypeLabel({ type: "c_man_station" }), "C-MAN Station");
+  assert.equal(stationTypeLabel({ type: "land_station" }), "Land Station");
+  assert.equal(stationTypeLabel({ type: "land_based_wind_station" }), "Land-Based Wind Station");
+  assert.equal(stationTypeLabel({ type: "weather_station" }), "Weather Station");
+  assert.equal(stationTypeLabel({ type: "some_future_station" }), "Weather Station");
+});
 
 test("source predicates split EC / NOAA / Surrey", () => {
   assert.equal(isNoaaStation(neahBay), true);
