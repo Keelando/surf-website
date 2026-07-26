@@ -174,8 +174,8 @@ Some webcams only capture during daylight hours to avoid useless nighttime image
 - White Rock East Beach
 
 **How it works:**
-1. Script calls `is_daylight(lat, lon, margin_minutes)` from `scripts/utils/daylight.py`
-2. Uses Skyfield library to calculate sunrise/sunset for location
+1. Script calls `is_daylight(lat, lon, margin_minutes)` from `lib/daylight.py`
+2. Uses the astral library to calculate sunrise/sunset for location
 3. Adds margin (e.g., ±75 min) to capture golden hour
 4. Exits gracefully if outside daylight window
 

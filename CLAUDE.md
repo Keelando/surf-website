@@ -18,10 +18,12 @@ project: commit straight to `main` (branch by exception, `--ff-only` merges).
   `parse/` (XML/text → SQLite), `export/` (SQLite → JSON), `pipelines/`
   (cron orchestrators), `monitoring/`, `hooks/`, `utils/`
 - `lib/` — shared Python: `config.py` (canonical paths — use it, don't
-  hardcode), `stations.py` (registry access), units, directions, logging
-- `config/` — `stations.json` (canonical station registry),
-  `crontab.txt` (canonical crontab), `sr3/` (AMQP subscription configs,
-  deployed to `~/.config/sr3/subscribe/`)
+  hardcode), `stations.py` (registry access), units, directions, logging,
+  `daylight.py` (astral sunrise/sunset), `water_level_stations.py`, `webcam/`
+- `config/` — `stations.json` (canonical station registry, tides included),
+  `webcams.json` (canonical webcam registry, gitignored — schema in
+  `webcams.example.json`), `crontab.txt` (canonical crontab), `sr3/` (AMQP
+  subscription configs, deployed to `~/.config/sr3/subscribe/`)
 - `site/` — static frontend; all pages are ES modules, shared helpers in
   `site/assets/js/shared/` (see its README for the module inventory)
 - `tests/` — pytest (backend + crontab validation), `tests/js/` node unit
@@ -60,6 +62,8 @@ Databases in `~/.local/share/` (never in the repo):
 - Frontend: `npm run lint:js` (0 errors, 0 warnings), `npm run format:js`
   (run after any JS edit), `npm run test:js`, `npm run test:frontend`,
   `npm run screenshots`.
+- Everything: `npm test` (pytest + JS unit tests + Playwright);
+  `npm run test:python` for the pytest suite alone.
 - Cache busting is automated: `scripts/update_asset_versions.py` rewrites
   `?v=` to content hashes (pre-commit hook runs it and stages the result —
   never bump versions by hand). See `site/docs/CACHE_BUSTING.md`.
@@ -79,4 +83,4 @@ Databases in `~/.local/share/` (never in the repo):
 | `docs/ARCHITECTURE_DETAILED.md` | Database schemas, script details |
 | `site/assets/js/shared/README.md` | Frontend shared-module inventory |
 | `docs/project/` | Active plans (forecast upgrade, pressure page, …) |
-| `TODO.md` | Mandatory maintenance backlog (2026-07-19 audit) |
+| `TODO.md` | Feature backlog (the 2026-07-19 maintenance items are all done) |

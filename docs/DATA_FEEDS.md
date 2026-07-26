@@ -132,9 +132,9 @@ Tide observations and predictions for DFO water level stations.
 
 **Base URL:** `https://api-iwls.dfo-mpo.gc.ca/api/v1`
 **Auth:** None required (public API)
-**Fetched by:** `scripts/fetch/fetch_dfo_tides.py` (via `tide_to_sqlite.py`)
+**Fetched by:** `scripts/parse/tide_to_sqlite.py` (fetches and stores)
 **Stored in:** `tide_data.sqlite`
-**Station list:** `config/tide_stations.json`
+**Station list:** `config/stations.json` (`tides` section, via `lib/stations.py`)
 
 **Series codes:**
 | Code | Description | Fetch schedule |

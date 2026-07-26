@@ -54,15 +54,13 @@ envcan_wave/
 │   └── monitoring/       # health_check.py, daily digest
 ├── lib/                  # Shared utilities (config, stations, logging)
 ├── config/
-│   ├── stations.json     # Master station registry
-│   ├── tide_stations.json
+│   ├── stations.json     # Master station registry (buoys, winds, tides, …)
 │   ├── webcams.json      # Webcam registry (read by fetch + monitoring)
 │   ├── crontab.txt       # Canonical crontab (install via scripts/install_crontab.sh)
 │   └── sr3/              # Sarracenia configs (source of truth, deployed to ~/.config/sr3/subscribe/)
 ├── docs/                 # Backend documentation
 ├── data/                 # Raw XML/text files from EC (auto-purged after 2 days)
-├── tests/                # pytest + JS unit tests (tests/js) + Playwright (tests/playwright)
-└── archive/              # Deprecated scripts and old docs
+└── tests/                # pytest + JS unit tests (tests/js) + Playwright (tests/playwright)
 ```
 
 **Databases** live in `~/.local/share/` (not in the repo):

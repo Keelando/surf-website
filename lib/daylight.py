@@ -6,7 +6,7 @@ Determines whether it's currently daylight hours at a given location.
 Uses the astral library for accurate sunrise/sunset calculations.
 
 Usage:
-    from scripts.utils.daylight import is_daylight
+    from lib.daylight import is_daylight
 
     if is_daylight(49.0, -122.8):
         # It's daylight, capture webcam image

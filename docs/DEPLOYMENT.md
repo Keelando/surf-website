@@ -558,7 +558,7 @@ The system performs automatic backups every night at 11 PM via cron jobs:
 **What gets backed up:**
 - **Backend repo** (`~/envcan_wave`):
   - All Python scripts (parsers, fetchers, exporters)
-  - Configuration files (`stations.json`, `tide_stations.json`)
+  - Configuration files (`config/stations.json`)
   - **Crontab** (`config/crontab.txt`) - Automatically saved before git push
   - Documentation (README, CLAUDE.md, docs/)
   - SQLite databases (via git-lfs if configured, otherwise excluded)
