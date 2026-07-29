@@ -341,7 +341,9 @@ def main():
             "timestamp": timestamp.isoformat(),
             "timestamp_unix": timestamp_unix,
             "source": config["source_text"],
-            "url": config.get("youtube_url") or config.get("image_url") or config.get("source_url"),
+            # source_url wins: it is the operator's public page. Fall back to the
+            # feed URL only when no public page is configured.
+            "url": config.get("source_url") or config.get("youtube_url") or config.get("image_url"),
         }
 
         metadata_path = config["website_dir"] / "latest.json"

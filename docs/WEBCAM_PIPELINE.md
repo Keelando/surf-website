@@ -599,6 +599,8 @@ sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backu
 ```
 For a **direct-image** source instead of YouTube, swap `youtube_url`/`video_id` for `image_url`. Optional keys `image_referer`, `image_user_agent`, and `image_from` are available — use them if the host requires a referer, and set UA/From as good bot-identification practice. Only fetch with permission from the source.
 
+The "Source:" link written into `latest.json` prefers `source_url`, falling back to `youtube_url` then `image_url`. Set `source_url` to the operator's own public page for the cam whenever the feed URL isn't something a visitor should be sent to (e.g. a raw scraped `.jpg`).
+
 2. **Add cron job**:
 ```bash
 crontab -e
