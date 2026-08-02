@@ -1,16 +1,35 @@
-# Venv prune — pending cutover
+# Venv prune — DONE 2026-08-02
 
-**Status:** staged as a written procedure only. Nothing has been done to the
-live `.venv`. Nothing is broken; this is hygiene, not a fix.
+**Status: complete.** The rebuild-and-swap below was executed on 2026-08-02.
+The live `.venv` now matches `requirements-lock.txt` exactly: 84 packages → 34,
+246 MB → 139 MB. The lock is now a truthful record of production.
+
+Outcome, against the verification block below:
+
+- Package diff vs the lock: clean apart from `pip==24.0`, which `python3 -m venv`
+  bootstraps into every venv and the lock does not pin. **Expect this one line** —
+  it is not drift.
+- `sr3 features` → `amqp Installed`; all four subscriptions came back `active`
+  with no errors in `journalctl`.
+- `pytest -q` → 267 passed (same as pre-swap). `ruff check .` clean.
+- `cdigest` still resolves from pipx at `~/.local/bin/cdigest`.
+- Buoy pipeline ticked over post-swap with 0 stage failures, 10 buoys.
+- Rebuild took **3.9 s** (warm cache), well under the 16 s budgeted.
+
+`.venv.old` was kept as the rollback. **Delete it once a full day of pipelines
+has run clean** — see Rollback below.
+
+The procedure is left intact below; it is the reference for the next time the
+venv needs rebuilding.
 
 **Prerequisite work: DONE** (commit `8d3cd8a`, 2026-08-02) — dependencies are
 declared in `pyproject.toml`, `requirements-lock.txt` is the derived pinned
 artifact, `requirements.txt` is gone, and the nightly cron installs from the
 lock.
 
-## What is actually wrong
+## What was wrong (resolved 2026-08-02)
 
-The live `.venv` holds ~84 packages; `requirements-lock.txt` describes 32. It is
+The live `.venv` held ~84 packages; `requirements-lock.txt` describes 32. It was
 a strict **superset** — nothing the project needs is missing, so the site, the
 pipelines and the sr3 services all run correctly today. The problem is only that
 what runs is not what the lock describes, so the lock is not yet a truthful
@@ -109,11 +128,13 @@ sudo systemctl start sr3-bc-buoys sr3-bc-wind-stations \
 Once you have watched a full cycle of every pipeline succeed — give it a day —
 delete `.venv.old`.
 
-## Is it worth doing at all?
+## Was it worth doing?
 
-Reasonable to decline. The gain is that the lock becomes a truthful record of
-production; the cost is a service interruption on a box with no staging. The
-dependency-drift danger was the *reverse* case — the lock missing things a
-rebuild needed — and that is already fixed and committed. If you skip this,
-nothing degrades; the divergence just persists until the next time the venv is
-rebuilt for some other reason, at which point it resolves itself.
+It was cheap in the end — under 4 s of rebuild, ~90 s of total wall clock, and
+no pipeline lost a cycle. The gain is that the lock is now a truthful record of
+production, so a future rebuild on a fresh box reproduces what actually runs.
+
+Worth recording for next time: the risk that justified the caution here was the
+*reverse* drift case — the lock missing something a rebuild needed — and that
+was already fixed in `8d3cd8a`. Had this been declined, nothing would have
+degraded; the divergence would simply have persisted until the next rebuild.

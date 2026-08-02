@@ -2,7 +2,37 @@
 
 A periodic review to catch slow-burn issues before they cause outages.
 
-## Last Run: 2026-03-10
+## Last Run: 2026-08-02
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| Disk: `/` | OK | 18% used (182G free) |
+| Log rotation | **Fixed** | logrotate healthy, but 540 MB of pre-2026-03-10 orphans found and removed — see below |
+| Python venv | **Fixed** | Live `.venv` pruned to match `requirements-lock.txt` (84 → 34 packages, 246 → 139 MB) |
+| sr3 subscriptions | OK | 4/4 active after the venv swap, no errors in `journalctl` |
+| Tests | OK | 267 passed, `ruff check .` clean |
+
+### Actions Taken
+
+**Log orphans (540 MB reclaimed).** `logs/` had grown to 1.1 GB. The cause was a
+one-time artifact of enabling logrotate on 2026-03-10: the rotation set up that
+day uses `compress`, so it began a fresh `foo.log.N.gz` chain and **never again
+touched the uncompressed `foo.log.N` files left by the previous scheme**.
+logrotate rotates `.2.gz → .3.gz → .4.gz → deleted` and simply does not see the
+plain siblings, so they sat outside any retention policy indefinitely. Removed
+26 orphaned `*.log.2`–`.4` plus 8 `*.log.5` files (the latter also stranded
+beyond `rotate 4`), all holding Dec 2025 – Mar 2026 content. `logs/` is now
+507 MB and fully under logrotate's control.
+
+*This will not recur* — it was residue from the transition, not an ongoing leak.
+The remaining 315 MB of `*.log.1` is legitimate (`delaycompress` leaves the most
+recent rotation uncompressed) and compresses on the next cycle.
+
+**Venv prune.** Executed the rebuild-and-swap staged in
+`docs/project/VENV_PRUNE.md`; see that doc for the outcome and the retained
+`.venv.old` rollback.
+
+## Previous Run: 2026-03-10
 
 | Check | Status | Notes |
 |-------|--------|-------|
