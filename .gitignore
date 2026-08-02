@@ -2,7 +2,7 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
-.venv/
+.venv*/
 venv/
 .pytest_cache/
 
@@ -68,10 +68,9 @@ docs/MIGRATION.md
 data/
 storm_surge/
 
-# JSON data files (but keep examples and requirements.txt)
+# JSON data files (but keep examples)
 *.json
 !examples/*.json
-!requirements.txt
 !package.json
 !package-lock.json
 !.eslintrc.json

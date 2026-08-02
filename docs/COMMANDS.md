@@ -11,8 +11,9 @@ Detailed command examples for working with the marine weather monitoring system.
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (pinned) and the project itself
+pip install -r requirements-lock.txt
+pip install -e ".[dev]"
 
 # Start sr3 to begin downloading Environment Canada XML files
 sr3 start subscribe/bc_buoys

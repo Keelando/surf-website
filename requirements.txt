@@ -1,9 +1,0 @@
-amqp==5.3.1
-anthropic==0.69.0
-astral==3.2
-defusedxml==0.7.1
-metpx-sr3==3.1.0
-OWSLib==0.34.1
-paho-mqtt==2.1.0
-reactivex==4.0.4
-ruff==0.5.5

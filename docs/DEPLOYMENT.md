@@ -832,7 +832,8 @@ If rebuilding system from scratch:
    cd ~/envcan_wave
    python3 -m venv .venv
    source .venv/bin/activate
-   pip install -r requirements.txt
+   pip install -r requirements-lock.txt
+   pip install -e .
 
    # Start sr3
    sr3 start subscribe/bc_buoys

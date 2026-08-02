@@ -59,7 +59,11 @@ sudo systemctl start sr3-bc-buoys
 
 **sr3 is installed inside the project venv** at `.venv/bin/sr3` (metpx-sr3 pip package).
 All systemd services use the absolute path `/home/keelando/envcan_wave/.venv/bin/sr3`.
-If the venv is recreated, `pip install metpx-sr3` must be run or all four services will break.
+If the venv is recreated, reinstall from `requirements-lock.txt` or all four
+services will break. Note that `metpx-sr3` alone is not enough: the `amqp`
+package is an *optional* feature of sr3 (confirm with `sr3 features`), so pip
+will not pull it in automatically, yet every `config/sr3/*.conf` connects with
+`broker amqps://`. Both are declared in `pyproject.toml` for this reason.
 
 ## Config Files
 

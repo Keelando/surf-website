@@ -82,15 +82,33 @@ After changing a JS or CSS file, bump its `?v=` query string in the HTML that lo
 
 ### Python dependencies
 
-If you add a new `import` to any script that runs via cron, **add it to `requirements.txt`** immediately. The venv syncs nightly, but cron jobs will fail silently until then.
+**`pyproject.toml` is the single source of truth for dependencies.**
+`requirements-lock.txt` is derived from it — a pinned artifact recording the
+exact versions this server runs. There is no `requirements.txt`.
+
+If you add a new `import` to any script that runs via cron, add it to
+`[project.dependencies]` immediately. Cron jobs fail silently otherwise.
 
 ```bash
-# Install locally right away
+# 1. Declare it in pyproject.toml (unpinned — the lock file does the pinning)
+# 2. Install locally right away
 .venv/bin/pip install some-package
 
-# Add to requirements with pinned version
-echo "some-package==1.2.3" >> requirements.txt
+# 3. Regenerate the lock (see the header of requirements-lock.txt)
 ```
+
+Two kinds of dependency are easy to miss, because nothing imports them in a way
+a grep for `import` will find:
+
+- **Subprocess-invoked binaries** — e.g. `yt-dlp`, called from the venv `bin/`
+  by `lib/webcam/youtube.py`. Still a real dependency; declare it.
+- **Optional features of another package** — e.g. `amqp`, which `metpx-sr3`
+  lists as an optional feature (`sr3 features`) and pip therefore will *not*
+  install, even though every `config/sr3/*.conf` uses `broker amqps://`.
+
+Never rely on a package arriving transitively. `Pillow` reached this venv only
+because an unrelated tool happened to require it — one cleanup away from
+silently breaking the webcam pipeline.
 
 ### XML parsing
 

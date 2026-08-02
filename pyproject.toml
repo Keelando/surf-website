@@ -6,6 +6,28 @@ build-backend = "setuptools.build_meta"
 name = "envcan-wave"
 version = "0.1.0"
 requires-python = ">=3.10"
+dependencies = [
+    # sr3's AMQP transport is an optional feature of metpx-sr3 (see `sr3
+    # features`) — pip will not pull it in, but every config/sr3/*.conf uses
+    # broker amqps://, so it is mandatory here.
+    "amqp",
+    "astral",
+    "defusedxml",
+    "metpx-sr3",
+    "OWSLib",
+    "paho-mqtt",
+    "Pillow",
+    "pytz",
+    "requests",
+    # invoked as a subprocess from the venv bin, not imported
+    "yt-dlp",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]

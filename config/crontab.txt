@@ -152,8 +152,11 @@ SURREY_API_PASSWORD=surreyrain
 # so a down Forgejo never blocks the origin push, and vice versa.
 17 7 * * * cd /home/keelando/envcan_wave && { /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) ; /usr/bin/git push forgejo main --tags ; } >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
 
-# Sync venv with requirements.txt (07:04 UTC / 11:04pm PT, after git backup)
-18 7 * * * /home/keelando/envcan_wave/.venv/bin/pip install -q -r /home/keelando/envcan_wave/requirements.txt >> /home/keelando/envcan_wave/logs/pip_sync.log 2>&1
+# Sync venv with the pinned lock file (07:18 UTC / 12:18am PT, after git
+# backup). Installs from requirements-lock.txt, not pyproject.toml, so
+# transitive versions are pinned too and a rebuilt venv can't drift.
+# Near-always a no-op; --disable-pip-version-check keeps the log to real work.
+18 7 * * * /home/keelando/envcan_wave/.venv/bin/pip install -q --disable-pip-version-check -r /home/keelando/envcan_wave/requirements-lock.txt >> /home/keelando/envcan_wave/logs/pip_sync.log 2>&1
 
 # Restic system backup (10:33 UTC / 2:33am PT)
 33 10 * * * /home/keelando/backup_surf.sh >> /home/keelando/envcan_wave/logs/restic_backup.log 2>&1

@@ -22,7 +22,8 @@ Collects data from multiple sources, stores it in SQLite, and exports JSON files
 cd ~/envcan_wave
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-lock.txt   # exact versions this server runs
+pip install -e .                       # make lib/ importable
 
 # Start Sarracenia subscriptions (EC data push)
 sr3 start subscribe/bc_buoys
