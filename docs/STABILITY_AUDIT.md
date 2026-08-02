@@ -92,6 +92,58 @@ would have gone empty. Resolved by making the logger own the split:
 
 Applied with `scripts/install_crontab.sh` (live crontab backed up first).
 
+### Follow-up: verify on 2026-08-03
+
+Everything below was changed on 2026-08-02 and needs one clean day before it can
+be called done. Run this after the 06:02 UTC digest:
+
+```bash
+cd ~/envcan_wave
+
+# 1. Overall state vs. the 2026-08-02 baseline
+.venv/bin/python3 scripts/monitoring/daily_digest.py --verbose
+tail -4 logs/health_check.log
+
+# 2. Surrey observations staying current (was: silently 17h stale)
+.venv/bin/python3 -c "
+import json;d=json.load(open('site/data/tide-latest.json'))['stations']
+for k in ('crescent_beach_ocean','crescent_channel_ocean'):
+    o=d[k]['observation']; print(k, o['age_minutes'],'min', 'STALE' if o['stale'] else 'ok')"
+
+# 3. The 928/day error sources should be gone
+grep -c '404 Client Error' logs/surrey_tide_sync.log
+grep -c '400 Client Error' logs/tide_obs.log
+
+# 4. No log is double-written (any count of 2 = two handlers, not two runs)
+for f in logs/*.log; do
+  d=$(tail -40 "$f" | sort | uniq -c | awk '$1>1' | wc -l)
+  [ "$d" -gt 0 ] && echo "DOUBLED: $f ($d)"
+done; echo "duplicate scan done"
+```
+
+**Expected:** digest `0 cascade risks` and the `tides` warning gone; stale count
+down from 9 to 7 (lightstations only); both grep counts unchanged from their
+2026-08-02 totals (i.e. no *new* errors); duplicate scan silent.
+
+Specific items, in order of how much they actually need watching:
+
+1. **`tide_to_sqlite.py` mode split — first real run at 10:06 / 10:11 UTC.**
+   This is new code that has never executed under cron. Confirm `tide_pred.log`
+   and `tide_highlow.log` each got a fresh, non-doubled run written by the
+   *logger* (not console spill), and that `tide_obs.log` no longer collects all
+   three modes.
+2. **Nine logging scripts not yet observed post-fix.** Six run every 10–15 min
+   and self-verify within the hour; `export_hindcast_json` (02:13) and
+   `fetch_storm_surge` (01:31) need overnight. Covered by the duplicate scan.
+3. **`.venv.old` (246 MB)** — delete once a full day of pipelines has run clean.
+   This is the gate from `docs/project/VENV_PRUNE.md`.
+4. **`*.log.1` (315 MB)** should compress at the next weekly logrotate, taking
+   `logs/` from ~507 MB to roughly 200 MB. No action, just confirm.
+
+Not fixed, and expected to still be flagged: the **7 stale lightstations**
+(Pine Island 120 h, four at 63.7 h, Egg Island never reported). Separate EC
+bulletin-feed issue, own session.
+
 ## Previous Run: 2026-03-10
 
 | Check | Status | Notes |
