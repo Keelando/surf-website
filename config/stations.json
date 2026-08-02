@@ -227,8 +227,7 @@
         "water_level_observed": 2296,
         "tidal_residual": 2414,
         "geodiff_cb_vs_cc": 2129,
-        "geodiff_cbvscc_pt": 2126,
-        "geodiff_cb_pt_vs_radar": 2454
+        "geodiff_cbvscc_pt": 2126
       },
       "fallback_channels": {
         "wave_height_sig": 2158,
@@ -266,8 +265,7 @@
         "air_temp": 1821,
         "water_level_predicted": 2621,
         "water_level_observed": 2279,
-        "tidal_residual": 3660,
-        "geodiff_pt_vs_radar": 2455
+        "tidal_residual": 3660
       },
       "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum",
       "source_url": "https://developers.flowworks.com/",

@@ -26,7 +26,9 @@ from lib.config import TIDE_DATABASE
 from lib.logging_config import setup_logging
 from lib.stations import get_buoy
 
-logger = setup_logging("surrey_tide_sync")
+# console=False: cron redirects stdout into logs/surrey_tide_sync.log, so a
+# console handler would write every line to that file a second time.
+logger = setup_logging("surrey_tide_sync", console=False)
 
 # ---- Configuration ----
 
@@ -285,7 +287,13 @@ def fetch_observations(api, station_config, tide_conn, hours_past=48):
     data_points = api.get_channel_data(site_id, channel_id, hours_past=hours_past)
 
     if not data_points:
-        logger.debug(f"{station_config['display_name']}: No observation data available")
+        # WARNING, not DEBUG: an empty window is how a stalled feed presents, and
+        # at DEBUG it is invisible. Surrey's sensors can lag hours behind real
+        # time, so a window narrower than that lag returns nothing at all.
+        logger.warning(
+            f"{station_config['display_name']}: no observations in the last "
+            f"{hours_past}h window - upstream feed may be lagging or stalled"
+        )
         return 0
 
     # Insert into tide_observation table
@@ -474,15 +482,19 @@ def main():
                 pred_count = fetch_predictions(api, station_config, tide_conn, hours_future=96)
                 total_pred += pred_count
 
-            # Fetch observations (2 hours backward - running every 20 min)
+            # Fetch observations (24 hours backward - running every 20 min).
+            # The window must be wider than Surrey's upstream lag, which has been
+            # observed at 3+ hours: a 2h window sat entirely after the newest
+            # available reading and silently returned zero points every run.
+            # Inserts are INSERT OR REPLACE, so re-fetching the overlap is free.
             if args.observations or args.all:
-                obs_count = fetch_observations(api, station_config, tide_conn, hours_past=2)
+                obs_count = fetch_observations(api, station_config, tide_conn, hours_past=24)
                 total_obs += obs_count
 
             # Fetch geodetic data (tidal residual, geodetic differences)
             # Same time window as observations - for calibration/comparison
             if args.observations or args.all:
-                geo_count = fetch_geodetic_data(api, station_config, tide_conn, hours_past=2)
+                geo_count = fetch_geodetic_data(api, station_config, tide_conn, hours_past=24)
                 total_geo += geo_count
 
         if args.predictions or args.all:

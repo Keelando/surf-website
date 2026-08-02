@@ -27,10 +27,15 @@ HEADERS = {"User-Agent": "keelan_w@hotmail.com"}
 
 
 def load_stations():
-    """Load tide stations from unified station registry."""
-    # Extract tide stations from unified stations.json
+    """Load DFO IWLS tide stations from the unified station registry.
+
+    Surrey FlowWorks stations live in the same registry but carry internal
+    storage identifiers (``surrey_crescent_ocean``), not DFO station ids.
+    Passing those to the IWLS API returns 400 on every call, so they are
+    excluded here — ``fetch_surrey_tides.py`` fetches them from FlowWorks.
+    """
     tides = STATIONS.tides
-    return {k: v["id"] for k, v in tides.items()}
+    return {k: v["id"] for k, v in tides.items() if v.get("type") != "SURREY_FLOWWORKS"}
 
 
 def ensure_db():

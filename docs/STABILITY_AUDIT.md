@@ -32,6 +32,36 @@ recent rotation uncompressed) and compresses on the next cycle.
 `docs/project/VENV_PRUNE.md`; see that doc for the outcome and the retained
 `.venv.old` rollback.
 
+**Surrey tide observations were silently not updating.** Investigating the log
+error ranking surfaced a real data bug. `fetch_surrey_tides.py` requested a
+2-hour observation window, but Surrey's upstream FlowWorks sensors lag ~3+ hours
+behind real time — so the requested window sat entirely *after* the newest
+available reading and returned zero points on every run, every 20 minutes. The
+empty-result branch logged at `DEBUG`, so it was invisible. Crescent Channel
+Ocean had gone 17 h without an observation; Crescent Beach Ocean 3.7 h.
+
+Note the page still *looked* healthy throughout, because `tide-latest.json`
+carries both `prediction_now` (fetched daily, 96 h ahead — always current) and
+`observation`. Only the latter was stalled. **When judging Surrey tide health,
+check `observation.stale`, not whether the page renders.**
+
+Fixes: window 2 h → 24 h (inserts are `INSERT OR REPLACE`, so overlap is free);
+empty result now logs `WARNING`. First run backfilled 15 h for Crescent Channel.
+
+Also cleared two chronic error sources found in the same ranking:
+
+- **548 errors/day** — channels 2454/2455 (`geodiff_*_vs_radar`) were retired
+  upstream and 404 on every call; last real value was 2026-01-21. Removed from
+  `config/stations.json`. Nothing reads them: no frontend reference, and the
+  historical rows stay in `surrey_geodetic_data`.
+- **380 errors/day** — `tide_to_sqlite.py` was passing Surrey's internal ids
+  (`surrey_crescent_ocean`) to the DFO IWLS API, which 400s them. Now filtered
+  on the registry's own `type != "SURREY_FLOWWORKS"` rather than a hardcoded list.
+- **Log volume halved** for `surrey_tide_sync.log` (7 MB): `setup_logging()`
+  defaults to `console=True`, and cron redirects stdout into the same file, so
+  every line was written twice. Now `console=False`, matching `daily_digest.py`.
+  **Worth checking other cron'd scripts for the same pattern.**
+
 ## Previous Run: 2026-03-10
 
 | Check | Status | Notes |
