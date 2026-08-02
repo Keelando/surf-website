@@ -114,12 +114,20 @@ for k in ('crescent_beach_ocean','crescent_channel_ocean'):
 grep -c '404 Client Error' logs/surrey_tide_sync.log
 grep -c '400 Client Error' logs/tide_obs.log
 
-# 4. No log is double-written (any count of 2 = two handlers, not two runs)
+# 4. No log is double-written. Handler duplication doubles EVERY line, so
+#    compare unique vs total. Two filters matter or this false-positives:
+#    only look at timestamped logger-format lines (several logs are bare
+#    print() or raw shell output that repeats identically every run), and
+#    drop "=====" separators (legitimately repeat within one second).
 for f in logs/*.log; do
-  d=$(tail -40 "$f" | sort | uniq -c | awk '$1>1' | wc -l)
-  [ "$d" -gt 0 ] && echo "DOUBLED: $f ($d)"
+  b=$(tail -40 "$f" | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9:]{8} - .+ - [A-Z]+ - ' | grep -v '===')
+  t=$(echo "$b" | grep -c .); u=$(echo "$b" | sort -u | grep -c .)
+  [ "$t" -gt 20 ] && [ "$u" -lt $((t / 2)) ] && echo "DOUBLED: $f ($u unique of $t)"
 done; echo "duplicate scan done"
 ```
+
+Note the scan reads the *tail*, so a log whose last run predates a fix will
+still show old doubled lines — check the timestamps before concluding anything.
 
 **Expected:** digest `0 cascade risks` and the `tides` warning gone; stale count
 down from 9 to 7 (lightstations only); both grep counts unchanged from their
