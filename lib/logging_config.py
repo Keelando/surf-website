@@ -35,7 +35,7 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def setup_logging(
-    name: str, log_level: int = DEFAULT_LOG_LEVEL, console: bool = True, log_file: str = None
+    name: str, log_level: int = DEFAULT_LOG_LEVEL, console: bool = None, log_file: str = None
 ) -> logging.Logger:
     """
     Set up logging for a script with rotating file handler.
@@ -43,7 +43,12 @@ def setup_logging(
     Args:
         name: Logger name (typically script name without .py)
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        console: Whether to also log to console (default: True)
+        console: Whether to also log to console. Default None = auto-detect:
+            enabled when stdout is a terminal, disabled otherwise. Cron jobs
+            redirect stdout into the script's own log file, so an unconditional
+            console handler wrote every line twice. Auto-detection makes that
+            structurally impossible while keeping interactive runs readable.
+            Pass True/False to force it.
         log_file: Optional custom log filename (default: {name}.log)
 
     Returns:
@@ -80,7 +85,11 @@ def setup_logging(
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    # Add console handler if requested
+    # Add console handler if requested. None means "only when interactive" —
+    # under cron stdout is the log file itself, which would double every line.
+    if console is None:
+        console = sys.stdout.isatty()
+
     if console:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(log_level)

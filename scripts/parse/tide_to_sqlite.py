@@ -11,6 +11,7 @@ Uses separate database (tide_data.sqlite) with three tables:
 import argparse
 import datetime
 import sqlite3
+import sys
 import time
 
 import requests
@@ -20,7 +21,15 @@ from lib.config import TIDE_DATABASE
 from lib.logging_config import setup_logging
 from lib.stations import STATIONS
 
-logger = setup_logging("tide_obs")
+# One script, three cron modes, three separate logs. The mode is read from argv
+# here rather than after parse_args() because the logger is module-level.
+# Previously all three modes logged to tide_obs.log and the per-mode files were
+# filled only by the console handler being redirected by cron — which also meant
+# tide_obs.log got every line twice.
+_MODE_LOGS = {"--predictions": "tide_pred", "--highlow": "tide_highlow"}
+_LOG_NAME = next((v for k, v in _MODE_LOGS.items() if k in sys.argv), "tide_obs")
+
+logger = setup_logging(_LOG_NAME)
 
 BASE_URL = "https://api-iwls.dfo-mpo.gc.ca/api/v1/stations"
 HEADERS = {"User-Agent": "keelan_w@hotmail.com"}

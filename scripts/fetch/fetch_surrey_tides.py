@@ -26,9 +26,7 @@ from lib.config import TIDE_DATABASE
 from lib.logging_config import setup_logging
 from lib.stations import get_buoy
 
-# console=False: cron redirects stdout into logs/surrey_tide_sync.log, so a
-# console handler would write every line to that file a second time.
-logger = setup_logging("surrey_tide_sync", console=False)
+logger = setup_logging("surrey_tide_sync")
 
 # ---- Configuration ----
 

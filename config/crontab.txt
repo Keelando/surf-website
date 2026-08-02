@@ -39,7 +39,7 @@ SURREY_API_PASSWORD=surreyrain
 */10 * * * * /usr/bin/flock -n /tmp/envcan_timeseries_export.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_24hr_timeseries.py >> /home/keelando/envcan_wave/logs/timeseries_export.log 2>&1
 
 # Export stations metadata (hourly)
-6 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_stations_json.py >> /home/keelando/envcan_wave/logs/stations_export.log 2>&1
+6 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_stations_json.py >> /home/keelando/envcan_wave/logs/stations_json_export.log 2>&1
 
 # Purge SR3 XMLs older than 24 hours (hourly) — data is in SQLite
 7 * * * * find /home/keelando/envcan_wave/data/buoy -name "*.xml" -mtime +1 -delete
@@ -62,13 +62,13 @@ SURREY_API_PASSWORD=surreyrain
 */3 * * * * /usr/bin/flock -n /tmp/envcan_wind_parse.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/parse/wind_to_sqlite.py >> /home/keelando/envcan_wave/logs/wind_parser.log 2>&1
 
 # Export wind JSON (every 5 min)
-*/5 * * * * /usr/bin/flock -n /tmp/envcan_wind_export.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_wind_json.py >> /home/keelando/envcan_wave/logs/wind_export.log 2>&1
+*/5 * * * * /usr/bin/flock -n /tmp/envcan_wind_export.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_wind_json.py >> /home/keelando/envcan_wave/logs/wind_json_export.log 2>&1
 
 # Export wind 24hr timeseries (every 10 min)
 */15 * * * * /usr/bin/flock -n /tmp/envcan_wind_timeseries.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_wind_24hr_timeseries.py >> /home/keelando/envcan_wave/logs/wind_timeseries_export.log 2>&1
 
 # Jericho Sailing Centre wind (every 30 min)
-*/30 * * * * /usr/bin/flock -n /tmp/envcan_jericho_wind.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_jericho_wind.py >> /home/keelando/envcan_wave/logs/jericho_wind.log 2>&1
+*/30 * * * * /usr/bin/flock -n /tmp/envcan_jericho_wind.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_jericho_wind.py >> /home/keelando/envcan_wave/logs/jericho_fetch.log 2>&1
 
 # White Rock Pier weather (every 10 min)
 */10 * * * * /usr/bin/flock -n /tmp/envcan_whiterock.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_whiterock_weather.py >> /home/keelando/envcan_wave/logs/whiterock_weather.log 2>&1
@@ -114,7 +114,7 @@ SURREY_API_PASSWORD=surreyrain
 
 # ==================== SURREY FLOWWORKS ====================
 # Fetch wave/water data (every 20 min)
-*/20 * * * * /usr/bin/flock -n /tmp/envcan_surrey_wave.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_surrey_wave_v2.py >> /home/keelando/envcan_wave/logs/surrey.log 2>&1
+*/20 * * * * /usr/bin/flock -n /tmp/envcan_surrey_wave.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_surrey_wave_v2.py >> /home/keelando/envcan_wave/logs/surrey_fetch.log 2>&1
 
 # ==================== WEBCAMS ====================
 # White Rock Pier (10 min interval, offset :00)

@@ -57,10 +57,40 @@ Also cleared two chronic error sources found in the same ranking:
 - **380 errors/day** — `tide_to_sqlite.py` was passing Surrey's internal ids
   (`surrey_crescent_ocean`) to the DFO IWLS API, which 400s them. Now filtered
   on the registry's own `type != "SURREY_FLOWWORKS"` rather than a hardcoded list.
-- **Log volume halved** for `surrey_tide_sync.log` (7 MB): `setup_logging()`
-  defaults to `console=True`, and cron redirects stdout into the same file, so
-  every line was written twice. Now `console=False`, matching `daily_digest.py`.
-  **Worth checking other cron'd scripts for the same pattern.**
+- **Log volume halved** for `surrey_tide_sync.log` (7 MB). See the systemic fix
+  below — this turned out to affect 12 scripts, not one.
+
+### Duplicate log lines: systemic fix
+
+Auditing every cron job against its script's logger found **12 of 25 writing
+every line twice**, including both pipeline orchestrators. The mechanism:
+`setup_logging()` added a console handler unconditionally, and cron redirects
+stdout into the script's own log file — so the file handler and the console
+handler both wrote to the same file.
+
+`lib/logging_config.py` now defaults `console=None`, meaning **auto-detect via
+`sys.stdout.isatty()`**: console output when run interactively, file-only under
+cron. Explicit `True`/`False` still override. This makes the duplication
+structurally impossible for existing and future scripts alike. The 8 scripts
+that already passed `console=False` were exactly the 8 that never duplicated.
+
+Cron redirects are deliberately **kept** — with the console handler gone they
+capture only genuine stderr and tracebacks that crash before logging starts,
+which is what they are actually useful for.
+
+Five scripts had a cron redirect target that differed from their logger's
+filename, so that second file was populated *entirely* by console output and
+would have gone empty. Resolved by making the logger own the split:
+
+- `tide_to_sqlite.py` runs in three cron modes but logged everything to
+  `tide_obs.log`; `tide_pred.log` and `tide_highlow.log` existed only as console
+  spill. It now picks its log file from argv, so each mode writes its own file
+  through the file handler.
+- The other four (`export_stations_json`, `export_wind_json`,
+  `fetch_jericho_wind`, `fetch_surrey_wave_v2`) had their crontab redirect
+  pointed at the logger's real filename, so each log has exactly one writer.
+
+Applied with `scripts/install_crontab.sh` (live crontab backed up first).
 
 ## Previous Run: 2026-03-10
 
