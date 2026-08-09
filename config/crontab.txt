@@ -175,3 +175,20 @@ SURREY_API_PASSWORD=surreyrain
 # MaxMind releases GeoLite2 every Tuesday; update Wed + Sat at 03:30 UTC
 # Feeds IP→location lookups for site/scripts/generate_analytics.sh
 30 3 * * 3,6 sudo geoipupdate --config-file /home/keelando/.config/GeoIP.conf >> /home/keelando/envcan_wave/logs/geoipupdate.log 2>&1
+
+# ==================== COOKIE CLICKER ====================
+# Moved here from survivor 2026-08-08 (survivor was under load); the survivor
+# crontab line is commented out there, not deleted.
+#
+# The container leaks memory. daily-restart.sh is GUARDED: it takes a save via
+# backup.sh FIRST and restarts only if the save succeeded, because a restart is
+# exactly when an unflushed save is lost. On a failed save it logs SKIP and
+# leaves the container running.
+#   => A persistently broken backup.sh silently disables the restart.
+#      projects/cookie_clicker/restart.log is where that shows up, and it is the
+#      file to check if memory starts climbing again.
+#
+# 13:29 UTC / 06:29 PT. The minute matters: on survivor this job failed silently
+# for five days when it collided with the restic backup. 29 is clear of every
+# other minute pattern in this file, and 13:29 is well clear of restic at 10:33.
+29 13 * * * /home/keelando/projects/cookie_clicker/daily-restart.sh >> /home/keelando/projects/cookie_clicker/cron.log 2>&1
