@@ -191,9 +191,14 @@ SURREY_API_PASSWORD=surreyrain
 # 13:29 UTC / 06:29 PT. The minute matters: on survivor this job failed silently
 # for five days when it collided with the restic backup. 29 is clear of every
 # other minute pattern in this file, and 13:29 is well clear of restic at 10:33.
-# DISABLED 2026-08-09 -- Cookie Clicker retired (surfserver's 2 physical cores
-# can't run it acceptably; see homelab STATUS.md / hosts/surfserver/hat-5-cookie-clicker.md).
-# Container stopped too. Line kept, not deleted, per the survivor precedent above.
+# PARKED AGAIN 2026-08-09, container stopped. Second attempt that day: the
+# selkies server defaults WERE the reset Keelan kept hitting and they are now
+# pinned in projects/cookie_clicker/docker-compose.yml -- but pinning them did
+# not fix the lag, so the cause is still open. What the evening ruled out, by
+# measurement: CPU capacity, cgroup throttling, the encoder settings, the ads,
+# and Chromium itself (the game draws a full 30.7 fps internally). Remaining
+# suspect is the capture/encode/transport path. See
+# homelab hosts/surfserver/hat-5-cookie-clicker.md before trying again.
 #29 13 * * * /home/keelando/projects/cookie_clicker/daily-restart.sh >> /home/keelando/projects/cookie_clicker/cron.log 2>&1
 
 # PSI sampler (added 2026-08-09). Appends kernel pressure avg10 to
