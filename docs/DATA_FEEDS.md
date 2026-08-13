@@ -208,6 +208,13 @@ diurnal cycle. Sea temperature at `CRPILE` is unaffected (2.4 °C swing).
 Reproduce with the hour-of-day query in `docs/COMMANDS.md`; wind, wave and
 water-level channels from these sites show no such bias.
 
+**Consequence for the Windy push:** `push_to_windy` deliberately sends no
+`temp` parameter. On our own pages the reading carries a footnote; on Windy
+it would be a bare public observation with nothing to qualify it. Wind is
+the trustworthy signal from these stations, so wind is all we publish. A
+time-of-day gate was considered and rejected — it would still publish a
+number nobody should trust, just less often.
+
 ---
 
 ## Jericho Sailing Centre

@@ -377,13 +377,17 @@ def fetch_and_store(api, station_id, meta, conn, is_wind_station=False, hours=2)
 
 
 def get_latest_station_data(conn, buoy_id):
-    """Get the most recent observation for a station from SQLite."""
+    """Latest wind observation for a station — feeds the Windy push only.
+
+    Air temperature is not selected: `push_to_windy` no longer publishes it
+    (unshielded sensors, see that function).
+    """
     cur = conn.cursor()
 
     # Get the latest observation with required wind data
     cur.execute(
         """
-        SELECT observation_time, wind_speed, wind_direction, wind_gust, air_temp
+        SELECT observation_time, wind_speed, wind_direction, wind_gust
         FROM buoy_observation
         WHERE buoy_id = ?
           AND wind_speed IS NOT NULL
@@ -399,40 +403,26 @@ def get_latest_station_data(conn, buoy_id):
     if not row:
         return None
 
-    # If air_temp is NULL, try to get the most recent non-null value
-    air_temp = row[4]
-    if air_temp is None:
-        cur.execute(
-            """
-            SELECT air_temp
-            FROM buoy_observation
-            WHERE buoy_id = ? AND air_temp IS NOT NULL
-            ORDER BY observation_time DESC
-            LIMIT 1
-        """,
-            (buoy_id,),
-        )
-        temp_row = cur.fetchone()
-        if temp_row:
-            air_temp = temp_row[0]
-
     return {
         "timestamp": row[0],
         "wind_speed": row[1],
         "wind_direction": row[2],
         "wind_gust": row[3],
-        "air_temp": air_temp,
     }
 
 
 def get_latest_wind_station_data(conn, station_id):
-    """Get the most recent observation for a wind station from SQLite."""
+    """Latest observation for a wind station — feeds the Windy push only.
+
+    Air temperature is not selected: `push_to_windy` no longer publishes it
+    (unshielded sensors, see that function).
+    """
     cur = conn.cursor()
 
     # Get the latest observation with required wind data
     cur.execute(
         """
-        SELECT observation_time, wind_speed_kmh, wind_direction_deg, wind_gust_kmh, air_temp_c
+        SELECT observation_time, wind_speed_kmh, wind_direction_deg, wind_gust_kmh
         FROM wind_observation
         WHERE station_id = ?
           AND wind_speed_kmh IS NOT NULL
@@ -448,29 +438,11 @@ def get_latest_wind_station_data(conn, station_id):
     if not row:
         return None
 
-    # If air_temp is NULL, try to get the most recent non-null value
-    air_temp = row[4]
-    if air_temp is None:
-        cur.execute(
-            """
-            SELECT air_temp_c
-            FROM wind_observation
-            WHERE station_id = ? AND air_temp_c IS NOT NULL
-            ORDER BY observation_time DESC
-            LIMIT 1
-        """,
-            (station_id,),
-        )
-        temp_row = cur.fetchone()
-        if temp_row:
-            air_temp = temp_row[0]
-
     return {
         "timestamp": row[0],
         "wind_speed": row[1],
         "wind_direction": row[2],
         "wind_gust": row[3],
-        "air_temp": air_temp,
     }
 
 
@@ -507,9 +479,15 @@ def push_to_windy(station_key, data, windy_config, meta):
             "shareOption": "Open",
         }
 
-        # Add temperature if available
-        if data["air_temp"] is not None:
-            params["temp"] = round(data["air_temp"], 1)
+        # Air temperature is deliberately NOT pushed. All three FlowWorks
+        # sensors sit in unshielded enclosures and read high whenever the sun
+        # is on them — Colebrook averages 38.6 °C at 16:00 PDT and has hit
+        # 42.6 °C, roughly +19 °C against a marine reference, while matching
+        # that reference overnight (measured 2026-08-13, see
+        # docs/DATA_FEEDS.md § Surrey FlowWorks). On our own pages that number
+        # carries a footnote; on Windy it would appear as a bare public
+        # observation with nothing to qualify it. Wind is the trustworthy
+        # signal from these stations, so wind is all we publish.
 
         # Make request
         url = f"https://stations.windy.com/pws/update/{WINDY_API_KEY}"
