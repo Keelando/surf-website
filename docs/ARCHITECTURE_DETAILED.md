@@ -117,7 +117,9 @@ CREATE UNIQUE INDEX uniq_wind_station_ts ON wind_observation(station_id, observa
 - MSNG (missing) values in XMLs → NULL in database
 - Schema auto-expands to add new columns as needed (future-proof)
 
-**Monitored stations (10):**
+**Monitored EC stations** — see the `wind` section of `config/stations.json`
+for the authoritative list (it also carries the non-EC stations: Jericho,
+White Rock, the NOAA land sites, and Colebrook):
 - CWGT (Sisters Island)
 - CWGB (Ballenas)
 - CWEL (Entrance Island)
@@ -126,8 +128,13 @@ CREATE UNIQUE INDEX uniq_wind_station_ts ON wind_observation(station_id, observa
 - CWVF (Sand Heads)
 - CWEZ (Saturna Island)
 - CWQK (Race Rocks)
+- CWAS (Pam Rocks)
 - CYVR (YVR Airport)
 - CZBB (Boundary Bay Airport)
+- CYAZ (Tofino Airport)
+- CWZO (Kelp Reefs — wind only)
+- CWDR (Discovery Island)
+- CWLM (Victoria Gonzales — 65 m hilltop)
 
 ---
 

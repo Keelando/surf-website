@@ -50,8 +50,20 @@ Environment Canada data delivered via **sr3 AMQP push**. Configs in `config/sr3/
 | Sand Heads | `CWVF` | Fraser River mouth |
 | Saturna | `CWEZ` | Gulf Islands |
 | Race Rocks | `CWQK` | Juan de Fuca Strait |
+| Pam Rocks | `CWAS` | Howe Sound |
 | YVR Airport | `CYVR` | Richmond (manual obs) |
 | Boundary Bay Airport | `CZBB` | Delta |
+| Tofino Airport | `CYAZ` | West Coast Vancouver Island |
+| Kelp Reefs | `CWZO` | Haro Strait (wind only — no temp/pressure) |
+| Discovery Island | `CWDR` | Haro Strait |
+| Victoria Gonzales | `CWLM` | Victoria (hilltop, 65 m — see note below) |
+
+`config/stations.json` is the source of truth for this list; the table above
+is a reading aid, so check the registry before trusting it.
+
+**Elevation caveat:** `CWLM` sits 65 m up on Gonzales Heights. Its
+`pressure_hpa` (station pressure) runs ~8 hPa below the sea-level sites — the
+SWOB feed also carries `mslp`, which we store as `pressure_mslp_hpa`.
 
 **Config:** `config/sr3/bc_wind_stations.conf`
 **Parsed by:** `scripts/parse/wind_to_sqlite.py`
@@ -161,6 +173,38 @@ Wave and geodetic tide data from Boundary Bay instrument sites.
 **Scripts:**
 - Wave/wind: `scripts/fetch/fetch_surrey_wave_v2.py` (every 20 min)
 - Tides: `scripts/fetch/fetch_surrey_tides.py` (obs every 20 min, predictions daily)
+
+### Air temperature runs hot in daylight (solar loading)
+
+**Do not treat FlowWorks `air_temp` as a shaded air temperature.** The three
+FlowWorks sensors (`COLEB`, `CRPILE`, `CRCHAN`) appear to sit in unshielded
+enclosures, so they read high whenever the sun is on them. This is not a
+constant offset that can be subtracted — it is near zero at night and peaks
+mid-afternoon.
+
+Measured over the 10 days to 2026-08-13, against Sand Heads (`CWVF`, a
+marine EC station, the fair reference for over-water siting):
+
+| Station | Overnight bias | Midday bias | Daytime excess | Peak in record |
+|---------|---------------|-------------|----------------|----------------|
+| `COLEB` | −0.3 °C | +18.8 °C | **+19.1 °C** | 42.6 °C |
+| `CRPILE` | +0.6 °C | +7.6 °C | +7.0 °C | 33.5 °C |
+| `CRCHAN` | +1.0 °C | +6.5 °C | +5.5 °C | 28.8 °C |
+
+All three **agree with the marine reference to within ~1 °C overnight** and
+diverge only in daylight — the signature of solar heating rather than a
+miscalibrated or genuinely warmer site. `COLEB` is the extreme case: a mean
+of 38.6 °C at 16:00 PDT and a 22.6 °C diurnal swing, versus 3.0 °C at Sand
+Heads. Its 42.6 °C peak is not an air temperature.
+
+Two caveats on the numbers above: `CRPILE`/`CRCHAN` sit near the beach, so
+some of their +6–7 °C is genuine daytime land warming rather than the
+enclosure; and comparing against a land station (`CZBB`) instead hides the
+effect for the Crescent pair, because that reference has its own large
+diurnal cycle. Sea temperature at `CRPILE` is unaffected (2.4 °C swing).
+
+Reproduce with the hour-of-day query in `docs/COMMANDS.md`; wind, wave and
+water-level channels from these sites show no such bias.
 
 ---
 

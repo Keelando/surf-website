@@ -154,6 +154,22 @@
   margin-bottom: 1rem;
 }
 
+/* --- Station caveat footnotes (siting notes marked with * in the table) --- */
+
+.station-caveat {
+  max-width: 1200px;
+  margin: 0.5rem auto 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.station-caveat-mark {
+  color: var(--color-accent-blue);
+  cursor: help;
+  font-weight: 700;
+}
+
 /* --- Station suggestion callout --- */
 
 .station-suggestion {

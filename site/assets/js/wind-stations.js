@@ -20,6 +20,15 @@ function setSafeHTML(element, html) {
   }
 }
 
+/** Escape a string for safe interpolation into an HTML attribute. */
+function escapeAttr(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 // --- Constants ---
 const STALE_THRESHOLD_HOURS = 2; // Data older than this is dimmed
 const OFFLINE_THRESHOLD_HOURS = 4; // Data older than this moves to offline list
@@ -302,6 +311,13 @@ async function loadWindTable() {
 
       const mobileName = meta.short_name || station.name;
 
+      // Stations with a `caveat` in stations.json get an asterisk linking to
+      // the footnote below the table (e.g. CWLM sits 65 m up a hill, so its
+      // pressure reads low next to the sea-level stations).
+      const caveatMark = meta.caveat
+        ? ` <sup class="station-caveat-mark" title="${escapeAttr(meta.caveat)}">*</sup>`
+        : "";
+
       tableHTML += `
         <tr ${rowClass}
             data-name="${station.name}"
@@ -311,7 +327,7 @@ async function loadWindTable() {
             data-air_temp_c="${station.air_temp_c || ""}"
             data-pressure_hpa="${station.pressure_hpa || ""}"
             data-observation_time="${station.observation_time}">
-          <td>${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;"><strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}</a>` : `<strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}`}</td>
+          <td>${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;"><strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}</a>` : `<strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}`}${caveatMark}</td>
           <td class="wind-table-actions"><span class="hide-mobile">${updated}</span><span class="show-mobile">${formatTimeHM(station.observation_time)}</span></td>
           <td class="wind-table-actions">${direction}</td>
           <td>${windSpeed}</td>
@@ -329,6 +345,8 @@ async function loadWindTable() {
 
     tableHTML += "</tbody>";
     table.innerHTML = tableHTML;
+
+    renderCaveatFootnotes(stations);
 
     // Add sort functionality
     initializeSortableTable();
@@ -357,6 +375,34 @@ async function loadWindTable() {
         '<tbody><tr><td colspan="7" class="table-message-cell">Error loading wind data</td></tr></tbody>';
     }
   }
+}
+
+/**
+ * Render the "*" footnotes under the conditions table — one line per visible
+ * station that carries a `caveat` in stations.json. Driven entirely by the
+ * registry, so adding a caveat to a station needs no change here.
+ */
+function renderCaveatFootnotes(stations) {
+  const container = document.getElementById("wind-table-footnotes");
+  if (!container) return;
+
+  const caveats = stations
+    .map(([id, station]) => [getStationMeta(id).caveat, station.name])
+    .filter(([caveat]) => caveat);
+
+  if (caveats.length === 0) {
+    container.innerHTML = "";
+    return;
+  }
+
+  setSafeHTML(
+    container,
+    caveats
+      .map(
+        ([caveat, name]) => `<p class="station-caveat">* <strong>${name}</strong> — ${caveat}</p>`,
+      )
+      .join(""),
+  );
 }
 
 /**

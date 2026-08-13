@@ -313,6 +313,30 @@ sqlite3 ~/.local/share/tide_data.sqlite "
 
 ---
 
+### Sensor Bias Check (hour-of-day profile)
+
+Mean air temp by hour in Pacific time (host runs UTC, hence the `-7*3600`).
+Comparing a station against a marine reference like `CWVF` separates a real
+temperature difference — which persists overnight — from solar loading on the
+sensor, which vanishes at night. This is what documented the FlowWorks warm
+bias in `docs/DATA_FEEDS.md`.
+
+```bash
+sqlite3 ~/.local/share/wind_data.sqlite "
+  SELECT strftime('%H', observation_time - 7*3600, 'unixepoch') AS pdt_hour,
+         ROUND(AVG(CASE WHEN station_id='COLEB' THEN air_temp_c END), 1) AS coleb,
+         ROUND(AVG(CASE WHEN station_id='CWVF'  THEN air_temp_c END), 1) AS sandheads
+  FROM wind_observation
+  WHERE air_temp_c IS NOT NULL
+    AND observation_time > strftime('%s', 'now') - 10*86400
+  GROUP BY pdt_hour ORDER BY pdt_hour;"
+```
+
+The pile-mounted Crescent stations live in the buoy database instead —
+same query against `buoy_observation`, using `buoy_id` and `air_temp`.
+
+---
+
 ## JSON Export Verification
 
 ### Check Buoy JSON Exports
