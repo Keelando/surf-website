@@ -326,17 +326,21 @@ for field in available_fields:
 
 **File**: `fetch_surrey_wave_v2.py:29-30`
 ```python
-USERNAME = "surreyrain"
-PASSWORD = "surreyrain"
+USERNAME = "<hardcoded literal>"
+PASSWORD = "<hardcoded literal>"
 ```
 
 **Assessment**: Public API credentials (appears to be read-only public access), low risk
 
 **Recommendation**: Move to environment variable for consistency:
 ```python
-USERNAME = os.environ.get("SURREY_USERNAME", "surreyrain")
-PASSWORD = os.environ.get("SURREY_PASSWORD", "surreyrain")
+USERNAME = os.environ.get("SURREY_USERNAME")
+PASSWORD = os.environ.get("SURREY_PASSWORD")
 ```
+
+> **Resolved 2026-08-13.** Both now come from `config/.env` via
+> `lib/env.py`. The literal values were redacted from this audit at the
+> same time — low risk or not, they do not belong in a public repo.
 
 ### Logging - Sensitive Data ✅
 

@@ -54,6 +54,10 @@ Databases in `~/.local/share/` (never in the repo):
 - Single source of truth: read canonical files (`config/stations.json`,
   `config/crontab.txt`, `config/webcams.json`) — never duplicate their
   contents into code or docs.
+- Credentials go in `config/.env` (gitignored) and are read via
+  `lib/env.py`. The repo is public and the nightly cron commits unattended,
+  so no secret may enter a tracked file — including `config/crontab.txt`.
+  See `docs/SECRETS.md`.
 
 ## Commands
 
@@ -79,6 +83,7 @@ Databases in `~/.local/share/` (never in the repo):
 | `docs/DATA_FEEDS.md` | Every external feed: URLs, auth, schedule |
 | `docs/DEPLOYMENT.md` | Server setup, cron schedule, Caddy |
 | `docs/SR3_MANAGEMENT.md` | Sarracenia subscription management |
+| `docs/SECRETS.md` | Credential handling — `config/.env`, `lib/env.py`, the pre-commit secret scan |
 | `docs/TROUBLESHOOTING.md` | Common issues and fixes |
 | `docs/ARCHITECTURE_DETAILED.md` | Database schemas, script details |
 | `site/assets/js/shared/README.md` | Frontend shared-module inventory |

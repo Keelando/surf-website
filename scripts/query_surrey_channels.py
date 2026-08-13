@@ -5,23 +5,17 @@ Usage: python3 query_surrey_channels.py <site_id>
 """
 
 import json
-import os
 import sys
 
 import requests
 
+from lib.env import require_env
+
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
 
 
-def _require_env(var_name: str) -> str:
-    value = os.environ.get(var_name)
-    if not value:
-        raise RuntimeError(f"{var_name} environment variable not set")
-    return value
-
-
-USERNAME = _require_env("SURREY_API_USERNAME")
-PASSWORD = _require_env("SURREY_API_PASSWORD")
+USERNAME = require_env("SURREY_API_USERNAME")
+PASSWORD = require_env("SURREY_API_PASSWORD")
 
 
 def authenticate():

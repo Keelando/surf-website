@@ -161,7 +161,9 @@ Tide observations and predictions for DFO water level stations.
 
 Wave and geodetic tide data from Boundary Bay instrument sites.
 
-**Auth:** `SURREY_API_USERNAME` / `SURREY_API_PASSWORD` (set in environment)
+**Auth:** `SURREY_API_USERNAME` / `SURREY_API_PASSWORD` — in `config/.env`
+(gitignored), read via `lib/env.py`. Never in `config/crontab.txt`; see
+`docs/SECRETS.md`.
 **Timezone:** API expects **Pacific time** (not UTC) — see `docs/SURREY.md`
 **Channel reference:** `docs/SURREY_CHANNELS.md`
 

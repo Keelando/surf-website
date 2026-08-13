@@ -96,3 +96,8 @@ site/*.log
 site/*.tmp
 site/*~
 a11y-results/
+
+# Crontab backups — snapshots of the live crontab, which has historically
+# carried credentials. Canonical copy is config/crontab.txt.
+config/crontab.txt.bak-*
+config/crontab.txt.broken-*

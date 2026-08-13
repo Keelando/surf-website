@@ -15,7 +15,6 @@ IMPORTANT DATUM NOTES:
 """
 
 import argparse
-import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -23,6 +22,7 @@ from zoneinfo import ZoneInfo
 import requests
 
 from lib.config import TIDE_DATABASE
+from lib.env import require_env
 from lib.logging_config import setup_logging
 from lib.stations import get_buoy
 
@@ -33,16 +33,9 @@ logger = setup_logging("surrey_tide_sync")
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
 
 
-# Surrey FlowWorks API credentials
-def _require_env(var_name: str) -> str:
-    value = os.environ.get(var_name)
-    if not value:
-        raise RuntimeError(f"{var_name} environment variable not set")
-    return value
-
-
-USERNAME = _require_env("SURREY_API_USERNAME")
-PASSWORD = _require_env("SURREY_API_PASSWORD")
+# Surrey FlowWorks API credentials (environment, else config/.env)
+USERNAME = require_env("SURREY_API_USERNAME")
+PASSWORD = require_env("SURREY_API_PASSWORD")
 
 # Tide-pipeline storage identifiers, keyed by stations.json buoy id. These are
 # the keys used in the tide_data.sqlite tables (kept here for data continuity).

@@ -10,9 +10,9 @@
 # ==============================================================================
 
 # ==================== ENVIRONMENT VARIABLES ====================
-# WINDY_API_KEY loaded from config/.env by scripts that need it
-SURREY_API_USERNAME=surreyrain
-SURREY_API_PASSWORD=surreyrain
+# No credentials in this file — it is tracked and the repo is public.
+# SURREY_API_USERNAME, SURREY_API_PASSWORD and WINDY_API_KEY live in
+# config/.env (gitignored) and are read by lib/env.py.
 
 # ==================== SYSTEM MONITORING ====================
 # System stats to Home Assistant via MQTT (every 15 min)

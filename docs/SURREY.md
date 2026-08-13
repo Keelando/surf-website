@@ -54,11 +54,17 @@ pip install requests python-dotenv
 
 ### 2. Configure Credentials
 
-Add to crontab:
+Put them in `config/.env` (gitignored) — **never** in `config/crontab.txt`,
+which is tracked and public:
+
 ```bash
-SURREY_API_USERNAME=surreyrain
-SURREY_API_PASSWORD=surreyrain
+SURREY_API_USERNAME=<username>
+SURREY_API_PASSWORD=<password>
 ```
+
+`lib/env.py` reads this file, so the fetch scripts pick the values up under
+cron without the crontab exporting anything. `os.environ` still takes
+precedence if you'd rather export them another way.
 
 ### 3. Add Cron Jobs
 

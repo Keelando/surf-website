@@ -20,6 +20,18 @@ crontab -l > "$TMP" 2>/dev/null || {
   exit 1
 }
 
+# Refuse to write credentials into the canonical file. Someone editing via
+# `crontab -e` can reintroduce a `KEY=value` line, and this script would
+# otherwise dump it straight into a tracked, public file — which is how the
+# Windy key leaked. Credentials belong in config/.env (see lib/env.py).
+if grep -qE '^\s*[A-Z0-9_]*(API_KEY|APIKEY|PASSWORD|PASSWD|SECRET|TOKEN|CREDENTIAL)[A-Z0-9_]*\s*=\s*\S' "$TMP"; then
+  echo "ERROR: live crontab assigns a credential-shaped variable." >&2
+  grep -nE '^\s*[A-Z0-9_]*(API_KEY|APIKEY|PASSWORD|PASSWD|SECRET|TOKEN|CREDENTIAL)[A-Z0-9_]*\s*=' "$TMP" \
+    | sed -E 's/=.*/=<redacted>/' >&2
+  echo "Move it to config/.env (gitignored); $CANONICAL left untouched." >&2
+  exit 1
+fi
+
 # Validate: every absolute /path/to/script.{py,sh} referenced must exist.
 missing=()
 while IFS= read -r path; do

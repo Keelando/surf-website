@@ -9,6 +9,12 @@ set -e
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
+# ── Secrets: scan staged content ─────────────────────────────
+# First, because a leaked credential is the one failure a later commit can't
+# undo — the repo is public and the 07:17 auto-backup pushes unattended.
+echo "🔐 secret scan..."
+.venv/bin/python scripts/hooks/check_secrets.py
+
 # ── Python: ruff check ───────────────────────────────────────
 STAGED_PY=$(git diff --cached --name-only --diff-filter=ACM -- '*.py')
 if [ -n "$STAGED_PY" ]; then

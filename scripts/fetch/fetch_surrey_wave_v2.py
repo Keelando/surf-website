@@ -9,7 +9,6 @@ Stations:
 - Colebrook (18507): Wind + temp only
 """
 
-import os
 import sqlite3
 import time
 from datetime import datetime, timedelta, timezone
@@ -18,6 +17,7 @@ from zoneinfo import ZoneInfo
 import requests
 
 from lib.config import BUOY_DATABASE, WIND_DATABASE
+from lib.env import get_env, require_env
 from lib.logging_config import setup_logging
 from lib.stations import get_all_buoys, get_all_wind
 
@@ -30,26 +30,12 @@ logger = setup_logging("surrey_fetch")
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
 
 
-# Surrey FlowWorks API credentials
-def _require_env(var_name: str) -> str:
-    value = os.environ.get(var_name)
-    if not value:
-        raise RuntimeError(f"{var_name} environment variable not set")
-    return value
+# Surrey FlowWorks API credentials (environment, else config/.env)
+USERNAME = require_env("SURREY_API_USERNAME")
+PASSWORD = require_env("SURREY_API_PASSWORD")
 
-
-USERNAME = _require_env("SURREY_API_USERNAME")
-PASSWORD = _require_env("SURREY_API_PASSWORD")
-
-# Windy API Configuration (check env first, then config/.env file)
-WINDY_API_KEY = os.environ.get("WINDY_API_KEY")
-if not WINDY_API_KEY:
-    _env_file = os.path.join(os.path.dirname(__file__), "..", "..", "config", ".env")
-    if os.path.exists(_env_file):
-        for _line in open(_env_file):
-            if _line.startswith("WINDY_API_KEY="):
-                WINDY_API_KEY = _line.strip().split("=", 1)[1]
-                break
+# Windy API key — optional, only needed when WINDY_PUSH_ENABLED is on.
+WINDY_API_KEY = get_env("WINDY_API_KEY")
 
 # Paused 2026-05-28: the Windy upload key returns HTTP 410 (station/key
 # deactivated on Windy's side). Re-enable once a new API key is issued
