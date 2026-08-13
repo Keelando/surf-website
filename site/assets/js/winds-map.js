@@ -6,6 +6,7 @@
  * (classic script, loaded earlier).
  */
 
+import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { createDirectionalMarker } from "./shared/markers.js";
 import { stationTypeLabel } from "./shared/station-meta.js";
 import { windData } from "./wind-data.js";
@@ -33,6 +34,8 @@ function initWindsMap() {
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19,
   }).addTo(windsMap);
+
+  addFullscreenControl(windsMap, { title: "View map fullscreen" });
 
   // Create layer group for markers
   windMarkersLayer = L.layerGroup().addTo(windsMap);

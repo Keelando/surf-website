@@ -7,6 +7,7 @@
  */
 
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
+import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { createDirectionalMarker } from "./shared/markers.js";
 import { isNoaaStation, isWaveStation, stationTypeLabel } from "./shared/station-meta.js";
 import { staleDataWarningHTML, stalePopupTheme } from "./shared/staleness.js";
@@ -41,12 +42,23 @@ function getDirectionalArrow(degrees, arrowType = "wind") {
   return `<span style="display:inline-block;transform:rotate(${rotation}deg);margin-left:0.3rem;vertical-align:middle;">${svg}</span>`;
 }
 
+// Desktop gets one extra zoom level: at 600px+ the map is wide enough that
+// zoom 8 leaves the Salish Sea stations bunched in the middle. Narrow screens
+// stay at 8, where the extra level would push most stations off-screen.
+// 600px matches the nav's mobile breakpoint (nav-tide-styles-v4.css).
+const DESKTOP_BREAKPOINT_PX = 600;
+const STATIONS_MAP_ZOOM_DESKTOP = 9;
+const STATIONS_MAP_ZOOM_MOBILE = 8;
+
 // Initialize the map
 function initStationsMap() {
   // Create map centered on Salish Sea
   stationsMap = L.map("stations-map", {
     center: [49.2, -123.3],
-    zoom: 8,
+    zoom:
+      window.innerWidth >= DESKTOP_BREAKPOINT_PX
+        ? STATIONS_MAP_ZOOM_DESKTOP
+        : STATIONS_MAP_ZOOM_MOBILE,
     scrollWheelZoom: true,
     zoomControl: true,
   });
@@ -57,6 +69,8 @@ function initStationsMap() {
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19,
   }).addTo(stationsMap);
+
+  addFullscreenControl(stationsMap, { title: "View map fullscreen" });
 
   // Create layer group for markers
   markersLayer = L.layerGroup().addTo(stationsMap);

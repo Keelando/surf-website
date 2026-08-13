@@ -4,6 +4,7 @@
  */
 
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
+import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { staleDataWarningHTML, stalePopupTheme } from "./shared/staleness.js";
 import { viewLightstationDataById } from "./lightstation-charts.js";
 
@@ -70,6 +71,8 @@ function initLightstationMap() {
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19,
   }).addTo(lightstationMap);
+
+  addFullscreenControl(lightstationMap, { title: "View map fullscreen" });
 
   // Create layer group for markers
   lightstationMarkersLayer = L.layerGroup().addTo(lightstationMap);

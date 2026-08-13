@@ -311,11 +311,12 @@ async function loadWindTable() {
 
       const mobileName = meta.short_name || station.name;
 
-      // Stations with a `caveat` in stations.json get an asterisk linking to
-      // the footnote below the table (e.g. CWLM sits 65 m up a hill, so its
-      // pressure reads low next to the sea-level stations).
+      // Stations with a `caveat` in stations.json get an asterisk that links
+      // down to the footnote below the table (e.g. CWLM sits 65 m up a hill,
+      // so its pressure reads low next to the sea-level stations). The title
+      // answers on hover; the anchor is what works without a pointer.
       const caveatMark = meta.caveat
-        ? ` <sup class="station-caveat-mark" title="${escapeAttr(meta.caveat)}">*</sup>`
+        ? ` <sup class="station-caveat-mark"><a href="#caveat-${escapeAttr(id)}" title="${escapeAttr(meta.caveat)}" aria-label="Footnote: why ${escapeAttr(station.name)} readings differ">*</a></sup>`
         : "";
 
       tableHTML += `
@@ -387,7 +388,7 @@ function renderCaveatFootnotes(stations) {
   if (!container) return;
 
   const caveats = stations
-    .map(([id, station]) => [getStationMeta(id).caveat, station.name])
+    .map(([id, station]) => [getStationMeta(id).caveat, station.name, id])
     .filter(([caveat]) => caveat);
 
   if (caveats.length === 0) {
@@ -395,11 +396,14 @@ function renderCaveatFootnotes(stations) {
     return;
   }
 
+  // tabindex="-1" so the asterisk anchor moves focus here, not just scroll —
+  // otherwise a keyboard user jumps but their focus stays up in the table.
   setSafeHTML(
     container,
     caveats
       .map(
-        ([caveat, name]) => `<p class="station-caveat">* <strong>${name}</strong> — ${caveat}</p>`,
+        ([caveat, name, id]) =>
+          `<p class="station-caveat" id="caveat-${id}" tabindex="-1">* <strong>${name}</strong> — ${caveat}</p>`,
       )
       .join(""),
   );

@@ -73,6 +73,15 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 - [ ] **Mobile ECharts touch behavior** (open bug-ish): cursor/tooltip
       interaction is "funky" on mobile across chart pages; investigate
       ECharts touch/tooltip config, test on real devices.
+- [ ] **Map marker decluttering** (low): markers overlap at zoomed-out
+      levels, and the station count keeps growing (55 plotted as of
+      2026-08-13, 3 added that day). Options: offset/spiderfy colliding
+      markers, or thin them by zoom level so only major stations show when
+      zoomed out. Until this lands, the buoy map's desktop start zoom is a
+      straight trade — it moved 8 → 9 on 2026-08-13, which drops 15 of the
+      38 initially-visible stations (all of Haro Strait, Juan de Fuca and
+      the west coast) in exchange for legible spacing. Solving this reopens
+      that choice; see `initStationsMap` in `site/assets/js/stations-map.js`.
 - [ ] **Backend data audit** (low, rainy-day): compare captured fields vs
       what EC SWOB-ML / NOAA feeds actually provide; parser-log error sweep;
       schema/index review; per-station completeness stats.

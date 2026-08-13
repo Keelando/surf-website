@@ -159,15 +159,37 @@
 .station-caveat {
   max-width: 1200px;
   margin: 0.5rem auto 0;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
   color: var(--color-text-muted);
   font-size: 0.85rem;
   line-height: 1.4;
+  transition: background-color 0.6s ease;
+  /* The asterisk anchor scrolls the footnote flush to the viewport top,
+     where the mobile sticky nav bar (≤600px) would cover it. */
+  scroll-margin-top: 4rem;
+}
+
+/* Jumped-to footnote: hold a tint so the reader sees where they landed. */
+.station-caveat:target {
+  background: var(--color-callout-info-bg);
+  outline: 2px solid var(--color-accent-blue);
 }
 
 .station-caveat-mark {
+  font-weight: 700;
+}
+
+.station-caveat-mark a {
   color: var(--color-accent-blue);
   cursor: help;
-  font-weight: 700;
+  padding: 0 0.15rem;
+  text-decoration: none;
+}
+
+.station-caveat-mark a:hover,
+.station-caveat-mark a:focus-visible {
+  text-decoration: underline;
 }
 
 /* --- Station suggestion callout --- */

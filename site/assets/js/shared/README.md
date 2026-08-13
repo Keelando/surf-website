@@ -17,6 +17,9 @@ node can import these files in tests; browsers ignore it.
 - `staleness.js` — stale-data presentation (marker opacity, popup theme,
   `formatDataAge`)
 - `markers.js` — directional map marker, angular spread vector, ECharts arrow path
+- `map-fullscreen.js` — Leaflet fullscreen control (`addFullscreenControl`),
+  used by all three maps; custom rather than a vendored plugin because the
+  CSP blocks CDNs and the native Fullscreen API is enough
 - `station-meta.js` — predicates over stations.json entries (NOAA/Surrey/pile,
   swell display, precision, sub-hourly) plus the displayed-field priorities
   (`waveHeightField`/`wavePeriodFields`/`pickWavePeriod`, shared by the card's

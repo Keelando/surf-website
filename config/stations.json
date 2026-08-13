@@ -234,6 +234,7 @@
         "wave_period_peak": 2157
       },
       "note": "Water levels referenced to CGVD28 GVRD datum. fallback_channels are radar sensors (Hm0_RADAR, Tp_RADAR) used only when the primary Anderaa sensor is offline.",
+      "caveat": "Air temperature reads several degrees high on sunny afternoons — the sensor enclosure is unshielded. Wave, wind and water-level data are unaffected.",
       "source_url": "https://developers.flowworks.com/",
       "short_name": "Crescent Bch.",
       "flag": "🏛️"
@@ -268,6 +269,7 @@
         "tidal_residual": 3660
       },
       "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum",
+      "caveat": "Air temperature reads several degrees high on sunny afternoons — the sensor enclosure is unshielded. Wave, wind and water-level data are unaffected.",
       "source_url": "https://developers.flowworks.com/",
       "short_name": "Crescent Ch.",
       "flag": "🏛️"
@@ -1006,6 +1008,7 @@
         "air_temp": 1439
       },
       "note": "LAND-BASED wind monitoring station at pump house - NOT a buoy, NO wave data",
+      "caveat": "Air temperature is unreliable in daylight — the sensor enclosure bakes in the sun, reading up to ~19 °C above nearby marine stations mid-afternoon. Wind data is unaffected.",
       "short_name": "Colebrook",
       "flag": "🏛️"
     },

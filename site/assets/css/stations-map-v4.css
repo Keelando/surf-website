@@ -197,3 +197,80 @@
   font-weight: bold;
   color: var(--map-marker-text);
 }
+
+/* --- Fullscreen control (shared/map-fullscreen.js) --------------------
+   Icon is drawn with borders rather than an image so it follows the
+   Leaflet control text colour in both themes. */
+
+/* Must out-specify `.leaflet-bar a` (0,1,1), which sets display:block and a
+   fixed 26px box — a bare `.map-fullscreen-btn` (0,1,0) loses and the icon
+   lands in the top-left corner. Size is deliberately left to Leaflet so this
+   button matches the zoom buttons, including the 30px touch variant. */
+.leaflet-bar a.map-fullscreen-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.map-fullscreen-icon {
+  position: relative;
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+/* Two opposing corner brackets read as "expand". */
+.map-fullscreen-icon::before,
+.map-fullscreen-icon::after {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border: 2px solid currentColor;
+}
+
+.map-fullscreen-icon::before {
+  top: 0;
+  left: 0;
+  border-right: none;
+  border-bottom: none;
+}
+
+.map-fullscreen-icon::after {
+  right: 0;
+  bottom: 0;
+  border-top: none;
+  border-left: none;
+}
+
+/* Flip the brackets inward once expanded, so the button reads as "exit". */
+.map-fullscreen-btn.is-fullscreen .map-fullscreen-icon::before {
+  top: 1px;
+  left: 1px;
+  border: 2px solid currentColor;
+  border-left: none;
+  border-top: none;
+}
+
+.map-fullscreen-btn.is-fullscreen .map-fullscreen-icon::after {
+  right: 1px;
+  bottom: 1px;
+  border: 2px solid currentColor;
+  border-right: none;
+  border-bottom: none;
+}
+
+/* The map element itself goes fullscreen, so it must fill the screen and
+   drop the sizing the page gave it. */
+.map-is-fullscreen {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+}
+
+.map-is-fullscreen:fullscreen {
+  background: var(--color-bg, #fff);
+}
