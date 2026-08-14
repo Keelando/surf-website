@@ -34,21 +34,41 @@ API_BASE = "https://developers.flowworks.com/fwapi/v2"
 USERNAME = require_env("SURREY_API_USERNAME")
 PASSWORD = require_env("SURREY_API_PASSWORD")
 
-# Windy API key — optional, only needed when WINDY_PUSH_ENABLED is on.
-WINDY_API_KEY = get_env("WINDY_API_KEY")
+# Windy Stations API v2, in force since January 2026. The account-wide upload
+# key is gone: uploads now authenticate with a per-station password, so every
+# station carries its own identifier/password pair in config/.env. The legacy
+# endpoint this script used until 2026-05-28 answers HTTP 410 and shuts down
+# entirely at the end of 2026.
+WINDY_UPDATE_URL = "https://stations.windy.com/api/v2/observation/update"
 
-# Paused 2026-05-28: the Windy upload key returns HTTP 410 (station/key
-# deactivated on Windy's side). Re-enable once a new API key is issued
-# (and update WINDY_STATIONS if the stations are re-registered).
-WINDY_PUSH_ENABLED = False
+# Stations published to Windy. Deliberately a fixed list rather than "whatever
+# config/.env happens to hold", so adding a station stays an explicit edit.
+WINDY_PUSH_STATIONS = ("CRPILE", "CRCHAN", "COLEB")
 
-# Windy push registration: account-specific Windy station IDs and elevation.
-# Station name/lat/lon are read from stations.json (the source of truth).
-WINDY_STATIONS = {
-    "CRPILE": {"stationid": 0, "elevation": 5},
-    "CRCHAN": {"stationid": 1, "elevation": 5},
-    "COLEB": {"stationid": 2, "elevation": 2},
-}
+# Resumed 2026-08-14 on the v2 API, after 2.5 months paused (the legacy key
+# began returning HTTP 410 on 2026-05-28). Verified at go-live by reading the
+# stations back: all three flipped is_online false -> true with the observation
+# time we sent. Note the update endpoint answers 200 with an *empty* body even
+# when nothing lands, so a green run is never self-verifying — check the
+# station read endpoint, not the exit code.
+WINDY_PUSH_ENABLED = True
+
+
+def load_windy_credentials():
+    """Per-station Windy identifier/password pairs from config/.env.
+
+    A station is skipped unless it has both halves of its pair, so a partly
+    configured account pushes the stations it can rather than failing outright.
+    """
+    credentials = {}
+    for station_key in WINDY_PUSH_STATIONS:
+        station_id = get_env(f"WINDY_{station_key}_ID")
+        password = get_env(f"WINDY_{station_key}_PASSWORD")
+        if station_id and password:
+            credentials[station_key] = {"id": station_id, "password": password}
+        else:
+            logger.warning(f"{station_key}: no Windy credentials in config/.env - skipping")
+    return credentials
 
 # Channel fields this fetcher pulls from each station's stations.json channel map.
 # Water-level and geodetic channels live in the same map but are owned by the
@@ -446,69 +466,78 @@ def get_latest_wind_station_data(conn, station_id):
     }
 
 
-def push_to_windy(station_key, data, windy_config, meta):
-    """Push station data to Windy API."""
-    if not WINDY_API_KEY:
-        logger.warning("WINDY_API_KEY not set - skipping Windy push")
-        return False
+def push_to_windy(station_key, data, credentials):
+    """Upload one station's latest wind observation to Windy.
 
+    Measurements only: the v2 update endpoint has no parameters for station
+    name, position or elevation, which now live on Windy's side and are set
+    under My Stations (or via the PWS endpoints), not on every upload.
+    """
     if not data:
         logger.warning(f"{station_key}: No data to push to Windy")
         return False
 
+    # Air temperature is deliberately NOT pushed. All three FlowWorks sensors
+    # sit in unshielded enclosures and read high whenever the sun is on them —
+    # Colebrook averages 38.6 °C at 16:00 PDT and has hit 42.6 °C, roughly
+    # +19 °C against a marine reference, while matching that reference
+    # overnight (measured 2026-08-13, see docs/DATA_FEEDS.md § Surrey
+    # FlowWorks). On our own pages that number carries a footnote; on Windy it
+    # would appear as a bare public observation with nothing to qualify it.
+    # Wind is the trustworthy signal from these stations, so wind is all we
+    # publish.
+    params = {
+        "id": credentials["id"],
+        # POSIX seconds — the same epoch the observation is stored under.
+        "ts": int(data["timestamp"]),
+        # Windy expects m/s; the databases store km/h.
+        "wind": round(data["wind_speed"] / 3.6, 2),
+        "gust": round(data["wind_gust"] / 3.6, 2),
+        "winddir": int(data["wind_direction"]),
+    }
+
+    # The station password goes in the Authorization header, not the PASSWORD
+    # query parameter Windy also accepts. requests embeds the full URL in
+    # HTTPError messages, so a password in the query string would be written
+    # verbatim into surrey_fetch.log on every rejected upload.
+    headers = {"Authorization": f"Bearer {credentials['password']}"}
+
     try:
-        # Convert timestamp to UTC ISO format
-        dt = datetime.fromtimestamp(data["timestamp"], tz=timezone.utc)
-        dt_utc_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+        response = requests.get(WINDY_UPDATE_URL, params=params, headers=headers, timeout=10)
 
-        # Convert wind speeds from km/h to m/s (Windy expects m/s)
-        wind_ms = data["wind_speed"] / 3.6
-        gust_ms = data["wind_gust"] / 3.6
-
-        # Build query parameters (station name/lat/lon from stations.json)
-        params = {
-            "station": windy_config["stationid"],
-            "name": meta["name"],
-            "latitude": meta["lat"],
-            "longitude": meta["lon"],
-            "elevation": windy_config["elevation"],
-            "dateutc": dt_utc_str,
-            "wind": round(wind_ms, 2),
-            "winddir": int(data["wind_direction"]),
-            "gust": round(gust_ms, 2),
-            "shareOption": "Open",
-        }
-
-        # Air temperature is deliberately NOT pushed. All three FlowWorks
-        # sensors sit in unshielded enclosures and read high whenever the sun
-        # is on them — Colebrook averages 38.6 °C at 16:00 PDT and has hit
-        # 42.6 °C, roughly +19 °C against a marine reference, while matching
-        # that reference overnight (measured 2026-08-13, see
-        # docs/DATA_FEEDS.md § Surrey FlowWorks). On our own pages that number
-        # carries a footnote; on Windy it would appear as a bare public
-        # observation with nothing to qualify it. Wind is the trustworthy
-        # signal from these stations, so wind is all we publish.
-
-        # Make request
-        url = f"https://stations.windy.com/pws/update/{WINDY_API_KEY}"
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
-
-        # Log response details for debugging
-        response_text = response.text.strip()
-        logger.debug(f"{station_key}: Windy response - HTTP {response.status_code}: {response_text}")
-        logger.debug(f"{station_key}: Sent params: {params}")
-
-        # Check for success indicators in response
-        if response_text.lower() in ["success", "ok"] or response.status_code == 200:
+        # 409 means Windy already holds this exact observation. The fetcher
+        # runs every 20 minutes but Surrey often reports less often, so
+        # re-sending an unchanged reading is routine, not a failure.
+        if response.status_code == 409:
+            logger.debug(f"{station_key}: Windy already has this observation (HTTP 409)")
             return True
-        else:
-            logger.warning(f"{station_key}: Unexpected Windy response: {response_text}")
+
+        if response.status_code == 429:
+            retry_after = response.json().get("retry_after", "unknown")
+            logger.warning(f"{station_key}: Windy rate limit hit - retry after {retry_after}")
             return False
 
+        response.raise_for_status()
+
+        # A 200 is not proof the observation landed: stations have been seen
+        # returning clean 200s for hours while still showing Offline. Log the
+        # body rather than just the status, so the log is evidence instead of
+        # an assumption, and confirm against the station detail page before
+        # trusting a green run. Logged at INFO during bring-up; drop to DEBUG
+        # once the success body's shape is known and checked for explicitly.
+        body = response.text.strip()
+        logger.info(
+            f"{station_key}: Windy HTTP {response.status_code} ts={params['ts']} body={body[:200]!r}"
+        )
+        return True
+
     except requests.exceptions.HTTPError as e:
-        if e.response is not None and e.response.status_code == 410:
-            logger.warning(f"{station_key}: Windy station/key deactivated (HTTP 410) - follow up for a new API key")
+        status = e.response.status_code if e.response is not None else None
+        if status in (400, 401):
+            logger.error(
+                f"{station_key}: Windy rejected the station password (HTTP {status}) - "
+                f"check WINDY_{station_key}_ID and WINDY_{station_key}_PASSWORD in config/.env"
+            )
         else:
             logger.error(f"{station_key}: Windy push failed - {e}")
         return False
@@ -553,11 +582,18 @@ def main():
         return 0
 
     # Push latest data to Windy for each station
+    windy_credentials = load_windy_credentials()
+    if not windy_credentials:
+        logger.warning("No Windy credentials configured - skipping Windy push")
+        buoy_conn.close()
+        wind_conn.close()
+        return 0
+
     logger.info("Pushing data to Windy...")
     windy_success = 0
-    for station_id, meta, is_wind_only in surrey_stations:
+    for station_id, _meta, is_wind_only in surrey_stations:
         try:
-            if station_id not in WINDY_STATIONS:
+            if station_id not in windy_credentials:
                 continue
 
             # Route to appropriate database (wind-only stations use wind database)
@@ -566,12 +602,12 @@ def main():
             else:
                 data = get_latest_station_data(buoy_conn, station_id)
 
-            if data and push_to_windy(station_id, data, WINDY_STATIONS[station_id], meta):
+            if data and push_to_windy(station_id, data, windy_credentials[station_id]):
                 windy_success += 1
         except Exception as e:
             logger.error(f"  Windy push error for {station_id}: {e}")
 
-    logger.info(f"Windy: {windy_success}/{len(WINDY_STATIONS)} stations updated")
+    logger.info(f"Windy: {windy_success}/{len(windy_credentials)} stations updated")
 
     buoy_conn.close()
     wind_conn.close()

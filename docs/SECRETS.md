@@ -7,10 +7,18 @@ This repo is public. Nothing secret goes in a tracked file, ever.
 `config/.env` — gitignored, never committed:
 
 ```bash
-WINDY_API_KEY=<key>
 SURREY_API_USERNAME=<username>
 SURREY_API_PASSWORD=<password>
+
+# Windy Stations API v2 — one identifier/password pair per station,
+# for CRPILE, CRCHAN and COLEB.
+WINDY_<STATION>_ID=<windy station identifier>
+WINDY_<STATION>_PASSWORD=<station password>
 ```
+
+`WINDY_API_KEY` is the retired account-wide upload key: dead since Windy's
+January 2026 API change, kept in `config/.env` only so the scanner keeps
+blocking it from re-entering a tracked file.
 
 Read them with `lib/env.py`, which checks `os.environ` first and falls back
 to the file, so cron jobs work without the crontab exporting anything:
@@ -72,6 +80,8 @@ to `SKIP_PATHS` in `check_secrets.py` rather than reaching for
 1. Put the new value in `config/.env`. Confirm it is not tracked:
    `git check-ignore -v config/.env`
 2. `.venv/bin/python scripts/hooks/check_secrets.py --all`
-3. For Windy specifically, flip `WINDY_PUSH_ENABLED` back to `True` in
-   `scripts/fetch/fetch_surrey_wave_v2.py` and re-check `WINDY_STATIONS`
-   against the station ids the new account issues.
+3. For Windy specifically, add both halves of each station's pair
+   (`WINDY_<STATION>_ID`, `WINDY_<STATION>_PASSWORD`), confirm each station's
+   name, position and elevation under My Stations on windy.com — the v2
+   update endpoint sends measurements only and cannot set them — then flip
+   `WINDY_PUSH_ENABLED` to `True` in `scripts/fetch/fetch_surrey_wave_v2.py`.

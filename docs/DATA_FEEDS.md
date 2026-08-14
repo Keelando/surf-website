@@ -215,6 +215,16 @@ the trustworthy signal from these stations, so wind is all we publish. A
 time-of-day gate was considered and rejected — it would still publish a
 number nobody should trust, just less often.
 
+**Pending:** Surrey has indicated a proper temperature sensor is coming for
+Colebrook (word received 2026-08-14, possibly months out) — which independently
+confirms the operator does not trust the current reading either, and is the
+strongest argument yet for suppressing it. If it lands,
+re-run the hour-of-day bias query above against the new channel before
+changing anything — the suppression above is justified by measured bias, not
+by the sensor's identity, so it stays until fresh data says otherwise. Only
+then is adding `temp` to `push_to_windy` worth considering, and only for the
+stations that actually pass.
+
 ---
 
 ## Jericho Sailing Centre
