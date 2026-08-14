@@ -58,6 +58,12 @@ Databases in `~/.local/share/` (never in the repo):
   `lib/env.py`. The repo is public and the nightly cron commits unattended,
   so no secret may enter a tracked file — including `config/crontab.txt`.
   See `docs/SECRETS.md`.
+- **Two public surfaces, not one.** The git repo publishes *tracked* files;
+  `site/data/` publishes *everything Caddy serves*. `site/data/` is
+  gitignored, so the pre-commit scan and `tests/test_secrets.py` never look
+  at it — whatever an export or monitor writes there goes straight to
+  halibutbank.ca unchecked. Never write an upstream API response into
+  `site/data/` wholesale; copy an explicit allowlist of fields.
 
 ## Commands
 

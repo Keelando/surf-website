@@ -529,6 +529,37 @@ jq . config/stations.json > /dev/null && echo "Valid JSON" || echo "Invalid JSON
 cat stations.json | jq '[.buoys, .tide_stations] | add | length'
 ```
 
+### Verify the Windy Push
+
+The update endpoint returns an empty HTTP 200 whether or not the observation
+lands, so never conclude anything from the push log alone — read the stations
+back:
+
+```bash
+# Windy's own view of all three stations (online status + observation age)
+.venv/bin/python scripts/monitoring/health_check.py --verbose 2>&1 | grep -A5 "Checking Windy"
+
+# What we last sent, and Windy's reply (body is expected to be empty)
+grep "Windy HTTP" logs/surrey_fetch.log | tail -5
+
+# Push once by hand
+.venv/bin/python scripts/fetch/fetch_surrey_wave_v2.py
+```
+
+Windy results are logged, never written to `site/data/system_health.json` —
+that file is publicly served, and our upstream publishing arrangement is not
+public. See `docs/DATA_FEEDS.md` § Outbound.
+
+### Audit Both Public Surfaces
+
+```bash
+# Tracked files (what git publishes)
+.venv/bin/python scripts/hooks/check_secrets.py --all
+
+# Everything Caddy serves, including gitignored site/data/
+.venv/bin/python scripts/hooks/check_secrets.py --served
+```
+
 ---
 
 ## Git Operations

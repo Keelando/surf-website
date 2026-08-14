@@ -2,6 +2,28 @@
 
 This repo is public. Nothing secret goes in a tracked file, ever.
 
+## Two public surfaces
+
+Easy to think of "public" as meaning git. It doesn't — there are two surfaces,
+and they fail differently:
+
+| Surface | What's public | Guarded by |
+|---------|---------------|------------|
+| **The git repo** | Every *tracked* file, plus anything the 07:17 cron commits unattended | `.gitignore`, the pre-commit scan, `tests/test_secrets.py` |
+| **`site/`** | Everything Caddy serves at halibutbank.ca, tracked or not | `check_secrets.py --served` |
+
+The dangerous overlap is `site/data/`: it is **gitignored** — so every
+git-based defence above is blind to it — while every file in it is fetchable
+by name from the live site. Directory listing is off, but that is not a
+boundary: the frontend JS names these files, so they are all discoverable in
+the page source.
+
+The rule that follows: **never write an upstream API response into
+`site/data/` wholesale.** Copy an explicit allowlist of fields. `lib/windy.py`
+is the worked example — the Windy read endpoint echoes station passwords, so
+it returns a fixed tuple of safe fields and the health check keeps Windy out
+of the published report entirely.
+
 ## Where credentials live
 
 `config/.env` — gitignored, never committed:
@@ -61,11 +83,13 @@ Two lessons shaped the defences below:
 | `scripts/hooks/pre-commit` | Runs the scan first, before ruff/pytest/eslint |
 | `tests/test_secrets.py` | Same scan over every tracked file — catches a `--no-verify` commit or an uninstalled hook |
 | `scripts/backup_crontab.sh` | Refuses to dump a live crontab that assigns a credential-shaped variable |
+| `check_secrets.py --served` | Scans everything Caddy serves from `site/`, including gitignored `site/data/` |
 
-Audit the whole tracked tree at any time:
+Audit both surfaces at any time:
 
 ```bash
-.venv/bin/python scripts/hooks/check_secrets.py --all
+.venv/bin/python scripts/hooks/check_secrets.py --all      # tracked tree
+.venv/bin/python scripts/hooks/check_secrets.py --served   # what the web sees
 ```
 
 Docs may show the *shape* of a credential line — `<password>`,

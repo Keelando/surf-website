@@ -167,10 +167,13 @@ Wave and geodetic tide data from Boundary Bay instrument sites.
 **Timezone:** API expects **Pacific time** (not UTC) — see `docs/SURREY.md`
 **Channel reference:** `docs/SURREY_CHANNELS.md`
 
-| Station | Site ID | Buoy ID | Data |
-|---------|---------|---------|------|
-| Crescent Beach Ocean | `20182` | `CRPILE` | Wave, wind, geodetic tide |
-| Crescent Channel Ocean | `20183` | `CRCHAN` | Wave, geodetic tide |
+| Station | Site ID | Station ID | Data | Database |
+|---------|---------|-----------|------|----------|
+| Crescent Beach Ocean | `20182` | `CRPILE` | Wave, wind, geodetic tide | `buoy_data` |
+| Crescent Channel Ocean | `20183` | `CRCHAN` | Wave, geodetic tide | `buoy_data` |
+| Colebrook | `18507` | `COLEB` | Wind, air temp | `wind_data` |
+
+Colebrook is land-based, not a buoy, which is why it routes to `wind_data`.
 
 **Scripts:**
 - Wave/wind: `scripts/fetch/fetch_surrey_wave_v2.py` (every 20 min)
@@ -236,3 +239,50 @@ Wind observations from the Jericho Sailing Centre anemometer (English Bay area).
 **Auth:** None
 **Fetched by:** `scripts/fetch/fetch_jericho_wind.py`
 **Stored in:** `wind_data.sqlite`
+
+---
+
+## Outbound — Windy Stations API
+
+The one feed that goes the other way: the three Surrey FlowWorks wind readings
+are republished to Windy, with the sensor owners' permission. Everything else
+in this document is inbound.
+
+**Upload:** `https://stations.windy.com/api/v2/observation/update`
+**Read back:** `https://stations.windy.com/api/v2/observation`
+**Auth:** per-station password as `Authorization: Bearer` — never the
+`PASSWORD` query parameter Windy also accepts, because `requests` puts the
+full URL into `HTTPError` strings and would log the password verbatim.
+Credentials are `WINDY_<STATION>_ID` / `WINDY_<STATION>_PASSWORD` in
+`config/.env`; see `docs/SECRETS.md`.
+**Shared config:** `lib/windy.py` — station list, credentials, read-back
+**Pushed by:** `scripts/fetch/fetch_surrey_wave_v2.py` (every 20 min)
+**Monitored by:** `scripts/monitoring/health_check.py` (hourly, log only)
+
+Sends `id`, `ts`, `wind`, `gust`, `winddir` and nothing else. Wind speeds are
+converted km/h → m/s. Air temperature is deliberately omitted (see above).
+
+### Three things this API will catch you out on
+
+1. **A 200 means nothing.** The update endpoint returns HTTP 200 with a
+   zero-length body whether or not the observation lands. Stations can sit
+   Offline for days behind a stream of successful-looking pushes. The only
+   honest check is reading the station back — which is why the health check
+   does exactly that rather than trusting the push log.
+2. **The read endpoint echoes the station password** in its `header` block.
+   Never dump one of its responses into a log, a JSON export, or anything
+   under `site/data/`. `lib/windy.py` copies an explicit field allowlist.
+3. **Metadata is no longer part of the upload.** The v2 endpoint has no
+   `name`, `latitude`, `longitude`, `elevation` or `shareOption` parameters —
+   those live on Windy's side under My Stations. Changing a station's position
+   or elevation means editing it there, not here.
+
+Two unrelated Windy key systems exist: forecast/map keys from
+`api.windy.com/keys`, and Stations keys from `stations.windy.com/keys`. A
+forecast key returns `400 invalid token` against the Stations API forever.
+We hold no API key at all — only station passwords, which are enough to
+upload and read, but cannot manage or rotate stations.
+
+**History:** the account-wide upload key was retired in Windy's January 2026
+API change; the push sat dark from 2026-05-28 (HTTP 410) until it was migrated
+to v2 on 2026-08-14.

@@ -196,6 +196,21 @@ else:
 - ✅ Clear documentation prevents future "buoy" confusion
 - ✅ Architecture properly separates land stations from marine buoys
 
+### Where this lives now (updated 2026-08-14)
+
+The fix still holds, but the code above is historical — don't grep for it.
+The Windy push was rewritten for Stations API v2 on 2026-08-14: the
+`station_key == "colebrook"` test is gone, routing is driven by the station's
+type in `config/stations.json` (`is_wind_only`), and Windy configuration moved
+to `lib/windy.py`. The underlying lesson is unchanged and is now enforced by
+the module docstring in `scripts/fetch/fetch_surrey_wave_v2.py`: **Colebrook
+is land-based, so it lives in `wind_data.sqlite`, not `buoy_data.sqlite`.**
+
+This entry is also the original instance of a trap that bit again in 2026-08:
+Windy reported success while publishing garbage. The API returns HTTP 200 with
+an empty body regardless of outcome, so success must always be confirmed by
+reading the station back — see `docs/TROUBLESHOOTING.md` issue 14.
+
 ---
 
 ## 📍 Database Locations (Reference)

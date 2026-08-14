@@ -18,9 +18,15 @@ Two checks, cheapest and most precise first:
    credentials this repo does not hold yet — a new key pasted before it ever
    reaches `.env`.
 
+There are two public surfaces, and git is only one of them. `site/` is served
+by Caddy at halibutbank.ca, and `site/data/` is *gitignored* — so the staged
+and tracked scans never look at it, while every file in it is fetchable by
+name. `--served` covers that blind spot.
+
 Usage:
     check_secrets.py              # scan staged content (pre-commit)
     check_secrets.py --all        # scan every tracked file (audit)
+    check_secrets.py --served     # scan everything Caddy serves from site/
     check_secrets.py FILE [FILE…] # scan specific files
 
 Escape hatch for a genuine false positive:
@@ -140,6 +146,20 @@ def staged_content(path: str) -> str | None:
         return None  # binary
 
 
+def served_files() -> list[str]:
+    """Every file Caddy serves from `site/`, whatever git thinks of it.
+
+    Deliberately walks the filesystem rather than asking git: the point is to
+    catch what git cannot see. `site/data/` is gitignored but public, so a
+    credential written there by an export or a monitor would pass every other
+    check in this repo and land straight on halibutbank.ca.
+    """
+    root = REPO_ROOT / "site"
+    if not root.is_dir():
+        return []
+    return [str(p.relative_to(REPO_ROOT)) for p in sorted(root.rglob("*")) if p.is_file()]
+
+
 def tracked_files() -> list[str]:
     out = subprocess.run(
         ["git", "ls-files"], capture_output=True, text=True, cwd=REPO_ROOT, check=True
@@ -174,6 +194,11 @@ def main(argv: list[str]) -> int:
 
     if "--all" in argv:
         paths = tracked_files()
+        read = lambda p: (  # noqa: E731
+            (REPO_ROOT / p).read_text(errors="replace") if (REPO_ROOT / p).is_file() else None
+        )
+    elif "--served" in argv:
+        paths = served_files()
         read = lambda p: (  # noqa: E731
             (REPO_ROOT / p).read_text(errors="replace") if (REPO_ROOT / p).is_file() else None
         )

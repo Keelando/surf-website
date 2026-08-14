@@ -573,6 +573,45 @@ site keeps updating through an archive outage — only the archive copy is lost.
 
 ---
 
+### 14. Windy Stations Show Offline Despite Successful Pushes
+
+**Symptoms:**
+- `surrey_fetch.log` shows `Windy: 3/3 stations updated`, no errors, HTTP 200s.
+- The stations still show **Offline** on windy.com, or their last observation
+  is hours or days old.
+
+**Why this is confusing:** the Windy update endpoint returns **HTTP 200 with a
+zero-length body** whether or not the observation is accepted. There is no
+success signal in the response at all. A completely healthy-looking run is
+entirely consistent with a station that has been dark for a week — so the push
+log cannot answer this question, and neither can our exit codes.
+
+**Diagnosis** — read the station back, which is the only honest check:
+```bash
+# Hourly health check already does this; its result is in the log, not the
+# public JSON report.
+grep -A5 "Checking Windy" logs/health_check.log | tail -20
+
+# Or check right now
+.venv/bin/python scripts/monitoring/health_check.py --verbose 2>&1 | grep -A5 "Checking Windy"
+```
+
+**Common causes:**
+
+| Cause | Signature | Fix |
+|-------|-----------|-----|
+| Upstream data is stale | Windy age matches the FlowWorks age | Not a Windy problem — see issue 2 |
+| Wrong/expired station password | HTTP 400 or 401 in `surrey_fetch.log` | Re-check `WINDY_<STATION>_PASSWORD` in `config/.env` |
+| Rate limited | HTTP 429 with `retry_after` | Uploads are capped at one per 5 min per station |
+| Push disabled | `Windy push paused` in the log | `WINDY_PUSH_ENABLED` in `lib/windy.py` |
+
+**Note:** we hold station passwords only, not a Windy API key, so we cannot
+rotate a password or edit station metadata from here — both need the account
+owner. Station name, position and elevation are *not* part of the upload; they
+live on Windy's side under My Stations.
+
+---
+
 ## Debugging Tools
 
 ### Enable Verbose Logging

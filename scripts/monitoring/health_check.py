@@ -7,8 +7,13 @@ Checks:
 - Database integrity (size, WAL mode, recent writes)
 - Export file freshness and validity
 - Basic cron job monitoring
+- Windy push read-back (log only, never published — see below)
 
-Output: /home/keelando/site/data/system_health.json
+Output: site/data/system_health.json
+
+That output file is served publicly by Caddy, so it carries only what we are
+happy to publish. The Windy push check is deliberately kept out of it and out
+of `overall_status`, and is reported through the log instead.
 
 Usage:
     python3 health_check.py [--verbose]
@@ -48,6 +53,7 @@ from lib.logging_config import setup_logging
 
 # Add lib to path for imports
 from lib.stations import get_all_buoys, get_all_lightstations, get_all_tides, get_all_wind
+from lib.windy import WINDY_PUSH_ENABLED, load_windy_credentials, read_station_status
 
 # Setup logging (console disabled for cron, file only)
 logger = setup_logging("health_check", console=False)
@@ -627,6 +633,85 @@ def check_storage_mount() -> Dict:
         }
 
 
+def check_windy_push() -> Dict:
+    """Confirm Windy actually holds recent observations for each station.
+
+    This cannot be inferred from our own logs: the Windy update endpoint
+    answers HTTP 200 with an empty body whether or not the observation lands,
+    so a run of clean pushes is consistent with a station sitting Offline for
+    days. The only honest signal is reading the station back.
+
+    Deliberately NOT part of the published report — see the caller.
+    """
+    log("\n=== Checking Windy Push ===")
+
+    if not WINDY_PUSH_ENABLED:
+        log("  ⏭️  Windy push disabled — skipping")
+        return {"status": "skipped", "reason": "WINDY_PUSH_ENABLED is False", "stations": []}
+
+    credentials = load_windy_credentials()
+    if not credentials:
+        log("  ⏭️  No Windy credentials configured — skipping")
+        return {"status": "skipped", "reason": "no credentials in config/.env", "stations": []}
+
+    now = datetime.now(timezone.utc)
+    stations = []
+    statuses = []
+
+    for station_key in sorted(credentials):
+        info = read_station_status(credentials[station_key])
+
+        if "error" in info:
+            # A network blip should not read as a data outage.
+            log(f"  ⚠️  {station_key}: could not read back — {info['error']}")
+            stations.append({"station": station_key, "status": "warning", "error": info["error"]})
+            statuses.append("warning")
+            continue
+
+        age_hours = None
+        last = info.get("last_observation_time")
+        if last:
+            try:
+                observed = datetime.fromisoformat(str(last).replace("Z", "+00:00"))
+                age_hours = (now - observed).total_seconds() / 3600
+            except ValueError:
+                pass
+
+        thresholds = THRESHOLDS["wind"]
+        if age_hours is None:
+            status = "error"
+            log(f"  ❌ {station_key}: Windy reports no observation time")
+        elif age_hours >= thresholds["error"]:
+            status = "error"
+            log(f"  ❌ {station_key}: Windy's latest is {age_hours:.1f}h old")
+        elif age_hours >= thresholds["warning"] or not info.get("is_online"):
+            status = "warning"
+            log(f"  ⚠️  {station_key}: {age_hours:.1f}h old, online={info.get('is_online')}")
+        else:
+            status = "ok"
+            log(f"  ✅ {station_key}: {age_hours:.1f}h old, online")
+
+        stations.append(
+            {
+                "station": station_key,
+                "status": status,
+                "is_online": info.get("is_online"),
+                "last_observation_time": last,
+                "age_hours": round(age_hours, 1) if age_hours is not None else None,
+            }
+        )
+        statuses.append(status)
+
+    if "error" in statuses:
+        overall = "error"
+    elif "warning" in statuses:
+        overall = "warning"
+    else:
+        overall = "ok"
+
+    return {"status": overall, "stations": stations}
+
+
 def check_database_integrity() -> Dict:
     """Check database health: size, WAL mode, recent writes."""
     log("\n=== Checking Database Integrity ===")
@@ -786,8 +871,12 @@ def main():
     data_freshness = check_data_freshness()
     db_integrity = check_database_integrity()
     export_freshness = check_export_freshness()
+    windy_push = check_windy_push()
 
-    # Determine overall status
+    # Determine overall status. Windy is excluded on purpose: it feeds the log
+    # only, and overall_status is published (see the report block below), so
+    # folding it in would signal a Windy outage on a public page with no
+    # corresponding entry to explain it.
     statuses = [storage_mount["status"], data_freshness["status"], db_integrity["status"], export_freshness["status"]]
 
     if "error" in statuses:
@@ -797,7 +886,11 @@ def main():
     else:
         overall_status = "ok"
 
-    # Build report
+    # Build report. This file is written to site/data/ and served publicly at
+    # halibutbank.ca, so it carries only what we are happy to publish. The
+    # Windy push status is intentionally absent: our upstream publishing
+    # arrangement is nobody else's business, and the Windy read-back it is
+    # derived from echoes station passwords. Windy results go to the log.
     report = {
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "overall_status": overall_status,
@@ -822,8 +915,18 @@ def main():
         f"Data: {data_freshness['status']} "
         f"({data_freshness['stale_count']} stale/{data_freshness['total_stations']} total) | "
         f"DB: {db_integrity['status']} | "
-        f"Exports: {export_freshness['status']}"
+        f"Exports: {export_freshness['status']} | "
+        f"Windy: {windy_push['status']}"
     )
+
+    # Windy is log-only, so say enough here to act on without the JSON report.
+    if windy_push["status"] not in ("ok", "skipped"):
+        degraded = [s for s in windy_push["stations"] if s["status"] != "ok"]
+        logger.warning(
+            "Windy push degraded: "
+            + ", ".join(f"{s['station']}={s['status']}" for s in degraded)
+            + " — Windy returns empty 200s, so check the station read-back, not the push log"
+        )
 
     # Log any issues
     if overall_status != "ok":

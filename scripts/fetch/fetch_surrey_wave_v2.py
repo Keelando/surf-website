@@ -1,12 +1,33 @@
 #!/usr/bin/env python3
 """
-Fetch Surrey FlowWorks wave/wind data (API v2) and store to SQLite.
-Based on v1 implementation - migrated to v2 API with JWT auth.
+Fetch Surrey FlowWorks wave/wind data into SQLite, then republish the wind
+readings to Windy.
 
-Stations:
-- Crescent Beach Ocean (20182): Full wave + wind + temp
-- Crescent Channel (20183): Wind + radar wave + temp
-- Colebrook (18507): Wind + temp only
+Stations, and which database each lands in:
+
+| Station              | Site  | Key      | Data                     | Database |
+|----------------------|-------|----------|--------------------------|----------|
+| Crescent Beach Ocean | 20182 | `CRPILE` | wave + wind + temp       | buoy     |
+| Crescent Channel     | 20183 | `CRCHAN` | wind + radar wave + temp | buoy     |
+| Colebrook            | 18507 | `COLEB`  | wind + temp only         | wind     |
+
+Colebrook is a land-based wind station, not a buoy, so its readings live in
+`wind_data.sqlite`; the other two are marine sites in `buoy_data.sqlite`. Both
+the fetch and the Windy push route per station accordingly — getting this
+wrong once pushed month-old data to Windy while reporting success (see
+`docs/KNOWN_ISSUES.md`).
+
+**Two unrelated APIs here are both called "v2".** Keep them apart:
+
+- *FlowWorks API v2* (inbound, `API_BASE`) — Surrey's data source. JWT auth
+  from a username/password pair; `FlowWorksAPI` manages the token.
+- *Windy Stations API v2* (outbound, `lib/windy.py`) — where the wind readings
+  are republished. Per-station passwords, no account-wide key. In force since
+  January 2026; the legacy endpoint answers HTTP 410 and dies end of 2026.
+
+Air temperature is fetched and stored but deliberately never pushed to Windy:
+these sensors are unshielded and read up to ~19 °C high in daylight. See
+`docs/DATA_FEEDS.md` § Surrey FlowWorks.
 """
 
 import sqlite3
@@ -17,12 +38,18 @@ from zoneinfo import ZoneInfo
 import requests
 
 from lib.config import BUOY_DATABASE, WIND_DATABASE
-from lib.env import get_env, require_env
+from lib.env import require_env
 from lib.logging_config import setup_logging
 from lib.stations import get_all_buoys, get_all_wind
 
 # Shared utilities
 from lib.units import ms_to_kmh
+from lib.windy import (
+    WINDY_PUSH_ENABLED,
+    WINDY_UPDATE_URL,
+    auth_headers,
+    load_windy_credentials,
+)
 
 logger = setup_logging("surrey_fetch")
 
@@ -34,41 +61,11 @@ API_BASE = "https://developers.flowworks.com/fwapi/v2"
 USERNAME = require_env("SURREY_API_USERNAME")
 PASSWORD = require_env("SURREY_API_PASSWORD")
 
-# Windy Stations API v2, in force since January 2026. The account-wide upload
-# key is gone: uploads now authenticate with a per-station password, so every
-# station carries its own identifier/password pair in config/.env. The legacy
-# endpoint this script used until 2026-05-28 answers HTTP 410 and shuts down
-# entirely at the end of 2026.
-WINDY_UPDATE_URL = "https://stations.windy.com/api/v2/observation/update"
-
-# Stations published to Windy. Deliberately a fixed list rather than "whatever
-# config/.env happens to hold", so adding a station stays an explicit edit.
-WINDY_PUSH_STATIONS = ("CRPILE", "CRCHAN", "COLEB")
-
-# Resumed 2026-08-14 on the v2 API, after 2.5 months paused (the legacy key
-# began returning HTTP 410 on 2026-05-28). Verified at go-live by reading the
-# stations back: all three flipped is_online false -> true with the observation
-# time we sent. Note the update endpoint answers 200 with an *empty* body even
-# when nothing lands, so a green run is never self-verifying — check the
-# station read endpoint, not the exit code.
-WINDY_PUSH_ENABLED = True
-
-
-def load_windy_credentials():
-    """Per-station Windy identifier/password pairs from config/.env.
-
-    A station is skipped unless it has both halves of its pair, so a partly
-    configured account pushes the stations it can rather than failing outright.
-    """
-    credentials = {}
-    for station_key in WINDY_PUSH_STATIONS:
-        station_id = get_env(f"WINDY_{station_key}_ID")
-        password = get_env(f"WINDY_{station_key}_PASSWORD")
-        if station_id and password:
-            credentials[station_key] = {"id": station_id, "password": password}
-        else:
-            logger.warning(f"{station_key}: no Windy credentials in config/.env - skipping")
-    return credentials
+# Windy configuration, credentials and read-back live in lib/windy.py, shared
+# with the health check so both agree on which stations we publish and how
+# their credentials are named. See that module for the two traps this API sets:
+# the read endpoint echoes station passwords, and the update endpoint returns
+# an empty 200 whether or not the observation lands.
 
 # Channel fields this fetcher pulls from each station's stations.json channel map.
 # Water-level and geodetic channels live in the same map but are owned by the
@@ -496,14 +493,12 @@ def push_to_windy(station_key, data, credentials):
         "winddir": int(data["wind_direction"]),
     }
 
-    # The station password goes in the Authorization header, not the PASSWORD
-    # query parameter Windy also accepts. requests embeds the full URL in
-    # HTTPError messages, so a password in the query string would be written
-    # verbatim into surrey_fetch.log on every rejected upload.
-    headers = {"Authorization": f"Bearer {credentials['password']}"}
-
+    # Bearer header, never the PASSWORD query parameter Windy also accepts —
+    # see lib/windy.py for why.
     try:
-        response = requests.get(WINDY_UPDATE_URL, params=params, headers=headers, timeout=10)
+        response = requests.get(
+            WINDY_UPDATE_URL, params=params, headers=auth_headers(credentials), timeout=10
+        )
 
         # 409 means Windy already holds this exact observation. The fetcher
         # runs every 20 minutes but Surrey often reports less often, so
