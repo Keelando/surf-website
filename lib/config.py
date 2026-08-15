@@ -46,6 +46,9 @@ TIDE_DATABASE = DATA_DIR / "tide_data.sqlite"
 # Storm surge forecast database (GDSPS)
 STORM_SURGE_DATABASE = DATA_DIR / "storm_surge_forecast.sqlite"
 
+# Wave forecast database (RDWPS)
+WAVE_FORECAST_DATABASE = DATA_DIR / "wave_forecast.sqlite"
+
 # Wind observations database (Environment Canada land stations)
 WIND_DATABASE = DATA_DIR / "wind_data.sqlite"
 
@@ -83,6 +86,9 @@ TIDE_HIGHLOW_RETENTION_DAYS = 3
 
 # How long to keep storm surge forecasts (for hindcast analysis)
 STORM_SURGE_RETENTION_DAYS = 30
+
+# How long to keep wave forecasts (for model-vs-buoy validation)
+WAVE_FORECAST_RETENTION_DAYS = 60
 
 # How long to keep lightstation observations
 LIGHTSTATION_RETENTION_DAYS = 7

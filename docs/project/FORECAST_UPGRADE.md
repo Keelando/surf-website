@@ -89,6 +89,13 @@ and surge; RDWPS for wind-driven wave height/period/direction.
   the project venv; pygrib 2.1.8 installs clean from wheels and reads the
   files without system deps.
 
+**Implemented 2026-08-15:** `scripts/fetch/fetch_wave_forecast.py` fetches
+4 fields × 49 timesteps at Halibut Bank via GeoMet `GetFeatureInfo`,
+stores every run to `wave_forecast.sqlite` (epoch timestamps, 60-day
+retention) and exports `site/data/wave_forecast/<buoy>.json`. Full
+parameter inventory + parse notes in
+[`RDWPS_PARAMETERS.md`](RDWPS_PARAMETERS.md). Not yet in cron.
+
 **Implication — starting architecture:** clone the
 `fetch_storm_surge.py` GeoMet pattern (owslib `getfeatureinfo` per station
 per timestep) for the wave variables at the four EC buoys + chosen surf

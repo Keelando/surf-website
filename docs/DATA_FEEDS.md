@@ -116,6 +116,18 @@ FICN33 is the key bulletin — it contains the west coast VI stations missing fr
 **Schedule:** Every 6 hours, after 00Z and 12Z model runs (cron at 1, 7, 13, 19 UTC)
 **Stored in:** `storm_surge_forecast.sqlite` + exported JSON to `site/data/storm_surge/`
 
+### RDWPS Wave Forecast
+
+**URL:** `https://geo.weather.gc.ca/geomet`
+**Layers:** `RDWPS_2.5km_SignificantWaveHeight`, `RDWPS_2.5km_PeakWavePeriod`,
+`RDWPS_2.5km_MeanWaveDir`, `RDWPS_2.5km_WindWavesSignificantHeight`
+(full inventory: `docs/project/RDWPS_PARAMETERS.md`)
+**Protocol:** WMS 1.3.0 GetFeatureInfo (JSON) via requests
+**Fetched by:** `scripts/fetch/fetch_wave_forecast.py`
+**Schedule:** Not yet in cron (manual runs while validating; model runs 00/06/12/18Z, files land ~3.5 h later)
+**Stored in:** `wave_forecast.sqlite` + exported JSON to `site/data/wave_forecast/`
+**Note:** masked cells (absent wind-wave/swell partition, land) come back as sentinel `9999.0` — the fetcher drops values ≥ 9000.
+
 ---
 
 ## NOAA NDBC — ndbc.noaa.gov
