@@ -97,6 +97,13 @@
 # Surrey tide predictions (daily at 02:12)
 12 2 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_surrey_tides.py --predictions >> /home/keelando/envcan_wave/logs/surrey_tide_sync.log 2>&1
 
+# ==================== WAVE FORECAST (RDWPS) ====================
+# RDWPS runs 4x/day at 00/06/12/18Z. Datamart files land ~3h25m after the run
+# (measured to the minute on two consecutive runs) and GeoMet ingests shortly
+# after, so fetch at run+4h35m for margin. 33 timesteps x 4 variables = 133
+# requests/run, 532/day — 0.6% of MSC's 86,400/day guidance.
+35 4,10,16,22 * * * /usr/bin/flock -n /tmp/envcan_wave_forecast.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_wave_forecast.py >> /home/keelando/envcan_wave/logs/wave_forecast.log 2>&1
+
 # ==================== STORM SURGE ====================
 # Fetch GeoMet storm surge (every 12 hours at :31)
 31 1,13 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_storm_surge.py >> /home/keelando/envcan_wave/logs/storm_surge.log 2>&1

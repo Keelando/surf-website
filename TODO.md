@@ -87,6 +87,38 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       38 initially-visible stations (all of Haro Strait, Juan de Fuca and
       the west coast) in exchange for legible spacing. Solving this reopens
       that choice; see `initStationsMap` in `site/assets/js/stations-map.js`.
+- [ ] **Stop guessing timestamps to find EC data** (policy, do first): MSC's
+      usage policy says plainly "Do not request directory listings to assess
+      the availability of new data, the AMQPS notification service must be
+      used for this need". `scripts/fetch/fetch_lightstation.py` does exactly
+      that — it walks `dd.weather.gc.ca/today/bulletins/alphanumeric/.../FP/
+      CWVR/HH/` hourly, guessing the last two likely report hours. It is also
+      probably redundant: `config/sr3/bc_lightstation_obs.conf` already has
+      `accept .*FPCN61.*` and FPCN61 files are arriving in
+      `data/lightstation_bulletins/`. See the footprint section of
+      `docs/DATA_FEEDS.md`.
+- [ ] **Audit duplicate lightstation fetching** (medium): a manual backup
+      source was added while debugging why the Tofino-area lightstations
+      weren't populating, and it was never removed. Work out whether the HTTP
+      poller and the sr3 subscription are genuinely redundant paths we rely
+      on, or just duplicate work — and if the former, document *why* so it
+      doesn't get "cleaned up" later. Pairs with the item above; do them
+      together since they touch the same feed.
+- [ ] **Why are English Bay and Southern Georgia Strait so chatty?** (low):
+      those two buoys publish ~4,300 and ~4,100 files/day against ~715/day for
+      Halibut Bank, La Perouse and Sentry Shoal — 6× the others, and 80% of
+      our whole Datamart download volume (measured 2026-08-15). Could be
+      genuinely higher-rate instruments, could be duplicate postings we could
+      filter. Note `bc_wind_stations.conf` carries
+      `reject .*minute-swob\.xml.*` but `bc_buoys.conf` has no equivalent.
+- [ ] **Spread out the storm-surge fetch** (small): `fetch_storm_surge.py` is
+      2,894 requests/day — 5× the wave forecaster and our largest HTTP load by
+      far — because it pulls all 241 hourly steps of the 10-day GDSPS forecast
+      for 6 stations. The same taper the wave fetcher now uses would cut it
+      hard: hourly to 48 h then 3-hourly to 240 h is 113 steps (−53%,
+      ~1,360/day); uniform 3-hourly is 81 steps (−66%, ~972/day). Touches a
+      live user-facing chart, so check the storm-surge page still reads well
+      at coarser resolution before committing.
 - [ ] **Backend data audit** (low, rainy-day): compare captured fields vs
       what EC SWOB-ML / NOAA feeds actually provide; parser-log error sweep;
       schema/index review; per-station completeness stats.

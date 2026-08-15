@@ -18,6 +18,46 @@ Data arrives via two mechanisms:
 
 ---
 
+## Fetch footprint against ECCC
+
+ECCC's [usage policy](https://eccc-msc.github.io/open-data/usage-policy/readme_en/)
+asks anyone at **86,400 requests/day (~1/s) or higher** to get in touch, and
+reserves the right to block users who saturate the services. Two rules from it
+bind us directly:
+
+> "Do not request directory listings to assess the availability of new data,
+> the AMQPS notification service must be used for this need"
+>
+> "For systematic data retrieval, the AMQPS service must be used" — wget/curl
+> are for ad hoc retrieval only.
+
+**Guessing timestamps or walking directory listings to find new files is not
+allowed.** If a feed needs to know when data landed, that is what the sr3/AMQP
+subscription is for. Update this table when adding or rescheduling a feed.
+
+### HTTP requests/day (counts against the 86,400 guidance)
+
+| Endpoint | Job | Schedule | Requests/day |
+|---|---|---|---|
+| `geo.weather.gc.ca` | `fetch_storm_surge.py` | 2×/day | 2,894 (6 stations × 241 steps + caps) |
+| `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 532 (33 steps × 4 vars + caps) |
+| `dd.weather.gc.ca` | `fetch_lightstation.py` | hourly | ~48 — **policy violation, see `TODO.md`** |
+| | | **Total** | **~3,470 (4.0%)** |
+
+### sr3/AMQP (the sanctioned channel — separate from the request guidance)
+
+| Subscription | Files/day |
+|---|---|
+| `bc_buoys` (5 buoys) | 10,559 — 80% of it from two buoys, see `TODO.md` |
+| `bc_wind_stations` (15 stations) | 9,097 |
+| `bc_lightstation_obs` | 178 |
+| `marine_forecast` | a handful |
+
+4 AMQP connections of the 500-connection limit. Measured 2026-08-15 by counting
+distinct `source_file` values recorded in the last 24 h.
+
+---
+
 ## MSC Datamart — dd.weather.gc.ca
 
 Environment Canada data delivered via **sr3 AMQP push**. Configs in `config/sr3/`
