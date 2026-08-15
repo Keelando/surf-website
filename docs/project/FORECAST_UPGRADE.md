@@ -11,6 +11,17 @@ actually resolves the Strait of Georgia, feeding a better forecast section.
 > the two disagree on numbers (e.g. CIOPS-SalishSea is **500 m**, not
 > ~2.5 km as first noted below), the catalogue is the better reference.
 
+**Priorities (decided 2026-08-15):**
+
+1. **Waves first** — the most fine-grained wave forecast available for the
+   Salish Sea, i.e. **RDWPS Pacific North-East** (~2.5 km regridded).
+2. **Water levels second** — the new high-resolution water-level source,
+   i.e. **CIOPS-SalishSea** (500 m) sea surface height, pending the tide
+   treatment check in `FORECAST_MODELS.md` §2.
+
+Everything else in the catalogue (HRDPS wind, GDWPS/GEWPS long-range,
+GDSPS retention) is downstream of these two.
+
 ## The lead: two-pronged regional model setup
 
 ### 1. Surface waves — RDWPS
