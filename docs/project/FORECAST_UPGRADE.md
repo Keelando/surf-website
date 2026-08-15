@@ -4,6 +4,13 @@
 **Goal:** Replace/augment the current forecast offering with model data that
 actually resolves the Strait of Georgia, feeding a better forecast section.
 
+> **Model specs:** the full catalogue of candidate models (domains,
+> horizons, cadences, parameters, access paths — including GDWPS/GEWPS,
+> CIOPS-West, HRDPS, SalishSeaCast, and validation anchors) now lives in
+> [`FORECAST_MODELS.md`](FORECAST_MODELS.md), captured 2026-08-15. Where
+> the two disagree on numbers (e.g. CIOPS-SalishSea is **500 m**, not
+> ~2.5 km as first noted below), the catalogue is the better reference.
+
 ## The lead: two-pronged regional model setup
 
 ### 1. Surface waves — RDWPS
