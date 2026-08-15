@@ -60,6 +60,44 @@ and surge; RDWPS for wind-driven wave height/period/direction.
 - GDSPS need not be ripped out immediately — CIOPS can run alongside for
   comparison/hindcast continuity before switchover.
 
+## RDWPS recon — verified live 2026-08-15
+
+- **Datamart layout has changed** to date-first:
+  `https://dd.weather.gc.ca/YYYYMMDD/WXO-DD/model_rdwps/…`, with a stable
+  `https://dd.weather.gc.ca/today/…` alias. The old `/model_rdwps/` root
+  cited elsewhere 404s.
+- **There is no Pacific subdomain.** Domains are the four Great Lakes plus
+  `national/2.5km/` — and the national rotated grid (0.0225°, 1286×2536,
+  lat 27–71, lon −153…−41) covers the Pacific and resolves the Strait:
+  nearest cell to the Halibut Bank buoy is ~400 m away and is a valid sea
+  point.
+- **Files:** one GRIB2 per variable per lead hour, ~1.9 MB each;
+  19 variables × 49 lead hours (0–48 h) = 931 files/run. Variables include
+  HTSGW, WVHGT, swell partitions (SWHF/SSWEL, PWPF/SSWEL, MWDF/SSWEL),
+  periods (PWPER, MZWPER, PPERWW), directions (WVDIR, PWAVEDIR, WWSDIR),
+  wind (UGRD/VGRD), Stokes drift (USSD/VSSD), ICEC. Runs 00/06/12/18Z
+  (12Z files landed ~15:24 UTC, so latency ≈ 3.5 h).
+- **GeoMet WMS works for point extraction** and matches the GRIB exactly:
+  `GetFeatureInfo` on layer `RDWPS_2.5km_SignificantWaveHeight` at Halibut
+  Bank returned 0.11212 m for 2026-08-16T12Z — bit-identical to the value
+  pygrib read from the corresponding GRIB2 file. 15 national layers exist
+  (`RDWPS_2.5km_*`: SignificantWaveHeight, PeakWavePeriod, PeakWaveDir,
+  MeanWaveDir, MeanZeroCrossingWavePeriod, wind-wave + first/second swell
+  height/period/direction, IceFraction). JSON responses carry `value`,
+  `time`, and `dim_reference_time` (model run).
+- **Decoding GRIB2 needs pygrib** (or cfgrib/eccodes) — not currently in
+  the project venv; pygrib 2.1.8 installs clean from wheels and reads the
+  files without system deps.
+
+**Implication — starting architecture:** clone the
+`fetch_storm_surge.py` GeoMet pattern (owslib `getfeatureinfo` per station
+per timestep) for the wave variables at the four EC buoys + chosen surf
+points. Near-zero new code, no GRIB tooling, JSON in. Mind request volume:
+points × variables × 49 timesteps per run — trim to ~4 variables and
+consider 3-hourly steps beyond +24 h. The sr3 + GRIB2 route stays as the
+later upgrade path if we outgrow WMS (whole-strait fields for a map layer,
+or WMS flakiness).
+
 ## To verify before building
 
 - Exact Datamart directory layout, file formats (GRIB2?), and variables for
