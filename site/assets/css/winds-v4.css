@@ -156,6 +156,27 @@
 
 /* --- Station caveat footnotes (siting notes marked with * in the table) --- */
 
+/* Collapsed by default so the notes don't crowd out the content below them. */
+.station-caveat-notes {
+  max-width: 1200px;
+  margin: 0.75rem auto 0;
+}
+
+.station-caveat-notes > summary {
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  width: fit-content;
+}
+
+.station-caveat-notes > summary:hover,
+.station-caveat-notes > summary:focus-visible {
+  color: var(--color-text);
+  background: var(--color-callout-info-bg);
+}
+
 .station-caveat {
   max-width: 1200px;
   margin: 0.5rem auto 0;

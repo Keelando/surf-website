@@ -234,7 +234,7 @@
         "wave_period_peak": 2157
       },
       "note": "Water levels referenced to CGVD28 GVRD datum. fallback_channels are radar sensors (Hm0_RADAR, Tp_RADAR) used only when the primary Anderaa sensor is offline.",
-      "caveat": "Air temperature reads several degrees high on sunny afternoons — the sensor enclosure is unshielded. Wave, wind and water-level data are unaffected.",
+      "caveat": "Air temperature reads high on sunny afternoons (unshielded sensor). Wave, wind and water level unaffected.",
       "source_url": "https://developers.flowworks.com/",
       "short_name": "Crescent Bch.",
       "flag": "🏛️"
@@ -269,7 +269,7 @@
         "tidal_residual": 3660
       },
       "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum",
-      "caveat": "Air temperature reads several degrees high on sunny afternoons — the sensor enclosure is unshielded. Wave, wind and water-level data are unaffected.",
+      "caveat": "Air temperature reads high on sunny afternoons (unshielded sensor). Wave, wind and water level unaffected.",
       "source_url": "https://developers.flowworks.com/",
       "short_name": "Crescent Ch.",
       "flag": "🏛️"
@@ -875,7 +875,7 @@
       "source_url": "https://weather.gc.ca/marine/weatherConditions-currentConditions_e.html?mapID=03&siteID=06100&stationID=WLM",
       "short_name": "Gonzales",
       "elevation_m": 65.3,
-      "caveat": "Hilltop station, 65 m above sea level: pressure reads ~8 hPa below the sea-level stations, and wind is more exposed than the marine sites.",
+      "caveat": "Hilltop site, 65 m above sea level: pressure reads ~8 hPa low, wind more exposed than marine sites.",
       "flag": "🇨🇦"
     },
     "JERICHO": {
@@ -1008,7 +1008,7 @@
         "air_temp": 1439
       },
       "note": "LAND-BASED wind monitoring station at pump house - NOT a buoy, NO wave data",
-      "caveat": "Air temperature is unreliable in daylight — the sensor enclosure bakes in the sun, reading up to ~19 °C above nearby marine stations mid-afternoon. Wind data is unaffected.",
+      "caveat": "Air temperature unreliable in daylight (sun-baked sensor, up to ~19 °C high). Wind unaffected.",
       "short_name": "Colebrook",
       "flag": "🏛️"
     },

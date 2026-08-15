@@ -91,31 +91,23 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       what EC SWOB-ML / NOAA feeds actually provide; parser-log error sweep;
       schema/index review; per-station completeness stats.
 
-Frontend polish, added 2026-08-15:
+Frontend polish, added 2026-08-15 — all four **done 2026-08-15**:
 
-- [ ] **Forecasts page: "coming soon" flag for RDWPS waves** (quick): small
-      badge/callout near the top of `forecasts.html` (below the page-header
-      area, above the zone cards) announcing that RDWPS wave forecasting
-      for the Salish Sea is coming soon. Ties into the active forecast
-      upgrade (`docs/project/FORECAST_UPGRADE.md`).
-- [ ] **Winds page: condense + collapse the footnote wall** (medium): the
-      asterisk footnotes under the conditions table
-      (`#wind-table-footnotes`, built in `wind-stations.js` ~line 382, one
-      line per visible station) are too verbose and bulky — condense the
-      text and make the block expandable (e.g. `<details>`) so it's
-      opt-in. Part of the goal: the "Missing your favorite station?"
-      suggestion note (`winds.html` `.station-suggestion`) is currently
-      shadowed by the wall and should become visible again.
-- [ ] **Forecasts page: reorder Related Resources** (quick): move the
-      "Wind & Pressure Maps" subsection above "Aviation Forecasts
-      (TAF/METAR)" within the Related Resources section of
-      `forecasts.html` (~line 263).
-- [ ] **Footer health indicator: count-based color thresholds** (small):
-      badge color currently mirrors `overall_status` from
-      `scripts/monitoring/health_check.py` (any single check error → red),
-      while `assets/js/footer.js` separately computes reporting/total.
-      Proposal: drive the color from the reporting fraction instead —
-      initial numbers: green ≥ ~70/75 reporting, yellow ≤ 65, red ≤ 55 —
-      but pick final thresholds deliberately (percentage bands would
-      survive station-count growth better than absolute counts; decide
-      whether check-level errors should still be able to force red).
+- [x] **Forecasts page: "coming soon" flag for RDWPS waves** — `.forecast-coming-soon`
+      callout above `#forecast-container` in `forecasts.html` (styles in that
+      page's own `<style>` block; remove both when waves ship).
+- [x] **Winds page: condense + collapse the footnote wall** — caveat text in
+      `config/stations.json` shortened, and `renderCaveatFootnotes`
+      (`wind-stations.js`) now wraps the notes in a collapsed
+      `<details class="station-caveat-notes">` ("Station notes (N)"), 29 px
+      instead of a four-paragraph wall. A delegated click handler opens the
+      `<details>` before an asterisk jump, since a collapsed one hides the
+      target from fragment navigation.
+- [x] **Forecasts page: reorder Related Resources** — Wind & Pressure Maps now
+      precedes Aviation Forecasts.
+- [x] **Footer health indicator: reporting-fraction color thresholds** —
+      `footer.js` drives the badge from reporting % (green ≥ 93, yellow ≥ 75,
+      red below) instead of `overall_status`. `data_freshness` is excluded from
+      the escalation path (the fraction already covers it); the other checks —
+      storage, database integrity, export freshness — can still force the badge
+      worse, so a broken pipeline never shows green.

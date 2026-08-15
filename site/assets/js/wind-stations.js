@@ -396,17 +396,54 @@ function renderCaveatFootnotes(stations) {
     return;
   }
 
+  // Collapsed by default: the notes are reference material, and left open they
+  // buried the "Missing your favorite station?" prompt below them.
   // tabindex="-1" so the asterisk anchor moves focus here, not just scroll —
   // otherwise a keyboard user jumps but their focus stays up in the table.
+  const label = `Station notes (${caveats.length})`;
   setSafeHTML(
     container,
-    caveats
-      .map(
-        ([caveat, name, id]) =>
-          `<p class="station-caveat" id="caveat-${id}" tabindex="-1">* <strong>${name}</strong> — ${caveat}</p>`,
-      )
-      .join(""),
+    `<details class="station-caveat-notes">` +
+      `<summary>${label}</summary>` +
+      caveats
+        .map(
+          ([caveat, name, id]) =>
+            `<p class="station-caveat" id="caveat-${id}" tabindex="-1">* <strong>${name}</strong> — ${caveat}</p>`,
+        )
+        .join("") +
+      `</details>`,
   );
+
+  ensureCaveatJumpOpensNotes();
+}
+
+/**
+ * A collapsed <details> hides its contents from an in-page jump in browsers
+ * that don't auto-expand on fragment navigation, so open it ourselves when an
+ * asterisk footnote link is followed.
+ */
+let caveatJumpHandlerAttached = false;
+
+function ensureCaveatJumpOpensNotes() {
+  if (caveatJumpHandlerAttached) return;
+  caveatJumpHandlerAttached = true;
+
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest?.('a[href^="#caveat-"]');
+    if (!link) return;
+
+    const notes = document.querySelector(".station-caveat-notes");
+    if (notes) notes.open = true;
+
+    // Re-target after opening so the browser scrolls to a laid-out element.
+    const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
+    if (target) {
+      event.preventDefault();
+      window.location.hash = link.hash;
+      target.focus();
+      target.scrollIntoView({ block: "start" });
+    }
+  });
 }
 
 /**

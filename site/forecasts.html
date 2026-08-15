@@ -35,6 +35,35 @@
       padding: 0 1rem;
     }
 
+    /* "Coming soon" callout for the RDWPS wave forecast work
+       (docs/project/FORECAST_UPGRADE.md). Remove once waves ship. */
+    .forecast-coming-soon {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      background: var(--color-callout-info-bg);
+      border-left: 4px solid var(--color-accent-blue);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      color: var(--color-text);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .forecast-coming-soon .coming-soon-badge {
+      flex-shrink: 0;
+      background: var(--color-accent-blue);
+      color: #fff;
+      border-radius: 999px;
+      padding: 0.15rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
     .forecast-zone {
       background: var(--color-surface);
       border: 1px solid var(--color-border-light);
@@ -254,6 +283,14 @@
   <div hx-get="/components/tagline-forecasts.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
 
   <div class="forecast-main-content">
+    <p class="forecast-coming-soon">
+      <span class="coming-soon-badge">Coming soon</span>
+      <span><strong>Wave forecasts for the Salish Sea.</strong> Modelled wave
+      height, period and direction from Environment Canada's regional wave
+      model (RDWPS) are in the works, to sit alongside these text
+      forecasts.</span>
+    </p>
+
     <div id="forecast-container">
       <div class="loading-state">
         <p>Loading marine forecasts...</p>
@@ -263,6 +300,21 @@
     <!-- Related Resources Section -->
     <div class="forecast-zone" style="margin-top: 2rem;">
       <h2>🔗 Related Resources</h2>
+
+      <!-- Wind & Pressure Maps -->
+      <div class="forecast-section">
+        <h3>🌬️ Wind & Pressure Maps</h3>
+        <div class="resource-links">
+          <div class="resource-item">
+            <strong>RASP Wind Forecast:</strong>
+            <a href="https://www.canadarasp.com/RASPtable.html?param=sfcwind3,opacity=50,zoom=10,lat=49.05,lon=-122.18,model=hrdps,twodaydynamic=false,windgrams=false,wind_checkbox=true" target="_blank" rel="noopener">Strait of Georgia</a>
+          </div>
+          <div class="resource-item">
+            <strong>NOAA Pressure Map:</strong>
+            <a href="https://ocean.weather.gov/Pac_tab.php" target="_blank" rel="noopener">Pacific Surface Analysis</a>
+          </div>
+        </div>
+      </div>
 
       <!-- Aviation Forecasts -->
       <div class="forecast-section">
@@ -291,20 +343,6 @@
         </div>
       </div>
 
-      <!-- Wind & Pressure Maps -->
-      <div class="forecast-section">
-        <h3>🌬️ Wind & Pressure Maps</h3>
-        <div class="resource-links">
-          <div class="resource-item">
-            <strong>RASP Wind Forecast:</strong>
-            <a href="https://www.canadarasp.com/RASPtable.html?param=sfcwind3,opacity=50,zoom=10,lat=49.05,lon=-122.18,model=hrdps,twodaydynamic=false,windgrams=false,wind_checkbox=true" target="_blank" rel="noopener">Strait of Georgia</a>
-          </div>
-          <div class="resource-item">
-            <strong>NOAA Pressure Map:</strong>
-            <a href="https://ocean.weather.gov/Pac_tab.php" target="_blank" rel="noopener">Pacific Surface Analysis</a>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 
