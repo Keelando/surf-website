@@ -111,14 +111,35 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       genuinely higher-rate instruments, could be duplicate postings we could
       filter. Note `bc_wind_stations.conf` carries
       `reject .*minute-swob\.xml.*` but `bc_buoys.conf` has no equivalent.
-- [ ] **Spread out the storm-surge fetch** (small): `fetch_storm_surge.py` is
-      2,894 requests/day — 5× the wave forecaster and our largest HTTP load by
-      far — because it pulls all 241 hourly steps of the 10-day GDSPS forecast
-      for 6 stations. The same taper the wave fetcher now uses would cut it
-      hard: hourly to 48 h then 3-hourly to 240 h is 113 steps (−53%,
-      ~1,360/day); uniform 3-hourly is 81 steps (−66%, ~972/day). Touches a
-      live user-facing chart, so check the storm-surge page still reads well
-      at coarser resolution before committing.
+- [ ] **Spread out the storm-surge fetch** (small, next up): `fetch_storm_surge.py`
+      is 2,894 requests/day — 5× the wave forecaster and our largest HTTP load
+      by far — because it pulls all 241 hourly steps of the 10-day GDSPS
+      forecast for 6 stations. Surge is smooth enough that this is wasted:
+      measured over 168 archived forecast series (40,256 hourly steps),
+      hour-to-hour change is **mean 1.55 cm, p95 4.10 cm, max 11.3 cm**, and
+      the error from sampling coarser then linearly interpolating is:
+
+      | sampling | mean err | p95 | max |
+      |---|---|---|---|
+      | 2-hourly | 1.07 cm | 2.95 cm | 8.40 cm |
+      | 3-hourly | 1.35 cm | 3.63 cm | 9.83 cm |
+      | 4-hourly | 1.51 cm | 3.95 cm | 11.20 cm |
+
+      All well inside GDSPS's own error. **Recommended: taper rather than
+      uniform 2-hourly** — hourly to 48 h then 3-hourly to 240 h is 113 steps
+      (−53%, ~1,360/day), about the same saving as uniform 2-hourly (121
+      steps) but it keeps full resolution over the near term, which is exactly
+      when a surge event is being watched and where the 8 cm worst-case error
+      would otherwise land. Touches a live user-facing chart, so eyeball the
+      storm-surge page at the coarser resolution before committing.
+- [ ] **Smoothing on the storm-surge plots** (low, pairs with the above):
+      cosmetic, and safe *if* it can't overshoot. ECharts `smooth: true` uses
+      a spline that can overshoot at sharp peaks — on a surge chart that would
+      invent a higher peak than the model forecast, which is the one thing
+      this plot must not do. Use a monotone interpolation or a damped
+      `smooth: 0.3` and check a steep event against the raw points. Note that
+      at 2-hourly sampling the line already reads smooth at 10-day zoom, so
+      this may be unnecessary once the taper lands.
 - [ ] **Backend data audit** (low, rainy-day): compare captured fields vs
       what EC SWOB-ML / NOAA feeds actually provide; parser-log error sweep;
       schema/index review; per-station completeness stats.
