@@ -125,13 +125,16 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       | 3-hourly | 1.35 cm | 3.63 cm | 9.83 cm |
       | 4-hourly | 1.51 cm | 3.95 cm | 11.20 cm |
 
-      All well inside GDSPS's own error. **Recommended: taper rather than
-      uniform 2-hourly** — hourly to 48 h then 3-hourly to 240 h is 113 steps
-      (−53%, ~1,360/day), about the same saving as uniform 2-hourly (121
-      steps) but it keeps full resolution over the near term, which is exactly
-      when a surge event is being watched and where the 8 cm worst-case error
-      would otherwise land. Touches a live user-facing chart, so eyeball the
-      storm-surge page at the coarser resolution before committing.
+      All well inside GDSPS's own error. **Chosen shape (user, 2026-08-15):
+      hourly to 72 h, then 3-hourly to 240 h** — 129 of 241 steps, ~1,548
+      requests/day (−47%). Note the interpolation error barely moves with the
+      fine-window length (mean 1.45 cm at 48 h, 1.50 at 72 h, 1.55 at 96 h)
+      because surge variability doesn't decay with lead time — so the fine
+      window is purely a choice about how much hourly detail to offer, not an
+      accuracy trade. 72 h covers the three-day window people plan around and
+      costs ~190 requests/day more than 48 h. Touches a live user-facing
+      chart, so eyeball the storm-surge page at the coarser resolution before
+      committing.
 - [ ] **Smoothing on the storm-surge plots** (low, pairs with the above):
       cosmetic, and safe *if* it can't overshoot. ECharts `smooth: true` uses
       a spline that can overshoot at sharp peaks — on a surge chart that would
