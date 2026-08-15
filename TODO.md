@@ -85,3 +85,32 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 - [ ] **Backend data audit** (low, rainy-day): compare captured fields vs
       what EC SWOB-ML / NOAA feeds actually provide; parser-log error sweep;
       schema/index review; per-station completeness stats.
+
+Frontend polish, added 2026-08-15:
+
+- [ ] **Forecasts page: "coming soon" flag for RDWPS waves** (quick): small
+      badge/callout near the top of `forecasts.html` (below the page-header
+      area, above the zone cards) announcing that RDWPS wave forecasting
+      for the Salish Sea is coming soon. Ties into the active forecast
+      upgrade (`docs/project/FORECAST_UPGRADE.md`).
+- [ ] **Winds page: condense + collapse the footnote wall** (medium): the
+      asterisk footnotes under the conditions table
+      (`#wind-table-footnotes`, built in `wind-stations.js` ~line 382, one
+      line per visible station) are too verbose and bulky — condense the
+      text and make the block expandable (e.g. `<details>`) so it's
+      opt-in. Part of the goal: the "Missing your favorite station?"
+      suggestion note (`winds.html` `.station-suggestion`) is currently
+      shadowed by the wall and should become visible again.
+- [ ] **Forecasts page: reorder Related Resources** (quick): move the
+      "Wind & Pressure Maps" subsection above "Aviation Forecasts
+      (TAF/METAR)" within the Related Resources section of
+      `forecasts.html` (~line 263).
+- [ ] **Footer health indicator: count-based color thresholds** (small):
+      badge color currently mirrors `overall_status` from
+      `scripts/monitoring/health_check.py` (any single check error → red),
+      while `assets/js/footer.js` separately computes reporting/total.
+      Proposal: drive the color from the reporting fraction instead —
+      initial numbers: green ≥ ~70/75 reporting, yellow ≤ 65, red ≤ 55 —
+      but pick final thresholds deliberately (percentage bands would
+      survive station-count growth better than absolute counts; decide
+      whether check-level errors should still be able to force red).
