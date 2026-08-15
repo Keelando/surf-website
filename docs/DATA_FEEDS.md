@@ -56,6 +56,28 @@ subscription is for. Update this table when adding or rescheduling a feed.
 4 AMQP connections of the 500-connection limit. Measured 2026-08-15 by counting
 distinct `source_file` values recorded in the last 24 h.
 
+### Burst rate matters more than the daily total
+
+The guidance is phrased as a *rate* — "about 1 request per second" — and our
+daily totals are only ~4% of it, so the number to watch is what a fetch does
+while it is running, not what it adds up to. Every point-extraction fetcher
+loops `request → sleep(FETCH_DELAY)`, and with ~0.45 s of network per request:
+
+| `FETCH_DELAY` | effective rate |
+|---|---|
+| 0.5 s | **1.05 req/s** — at the line |
+| 1.0 s | 0.69 req/s |
+| 1.5 s | 0.51 req/s |
+| 2.0 s | 0.41 req/s |
+
+`fetch_storm_surge.py` still sits at 0.5 s and sustains that for 23 minutes
+twice a day — the largest single thing we do to ECCC. Raising its delay is
+backlogged in `TODO.md`. `fetch_wave_forecast.py` uses 1.5 s.
+
+Note that thinning timesteps does **not** help the burst rate — it shortens the
+burst but leaves the rate unchanged. The two levers are independent: taper for
+the daily total, `FETCH_DELAY` for the rate.
+
 ---
 
 ## MSC Datamart — dd.weather.gc.ca

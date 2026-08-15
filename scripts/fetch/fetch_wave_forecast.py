@@ -61,7 +61,11 @@ LOCKFILE = Path("/tmp/wave_forecast_fetch.lock")
 # WMS 1.3.0 + EPSG:4326 uses lat,lon axis order. We ask for a small box
 # centred on the buoy and query the centre pixel.
 BBOX_OFFSET = 0.02  # degrees
-FETCH_DELAY = 0.5  # seconds between requests (rate limiting)
+# Rate limiting. MSC's guidance is "about 1 request per second"; with ~0.45 s
+# of network per request, a 0.5 s delay puts a burst at 1.05 req/s — right at
+# that line. 1.5 s gives 0.51 req/s, and a 4-minute run is nothing for a job
+# that goes 4x/day. Daily totals were never the risk here; the burst rate was.
+FETCH_DELAY = 1.5  # seconds between requests
 REQUEST_TIMEOUT = 60  # seconds
 
 # The model publishes 49 hourly steps (0–48 h), but we don't fetch them all:
@@ -162,6 +166,13 @@ def ensure_db_schema(conn):
             lead_hours INTEGER NOT NULL,
             forecast_value REAL,
             observed_value REAL,
+            -- The buoy reading at (or nearest) the model run hour: the
+            -- persistence baseline. Bias and RMSE alone say how wrong the
+            -- model is; a skill score says whether it beats "conditions stay
+            -- as they are", which is the question that decides how far out
+            -- the forecast is worth displaying at all. Captured here because
+            -- it is cheap now and needs re-deriving every past t0 later.
+            reference_value REAL,
             obs_offset_seconds INTEGER,
             created_at INTEGER DEFAULT (strftime('%s', 'now')),
             PRIMARY KEY (station_id, variable, forecast_run_time, valid_time)
@@ -178,6 +189,12 @@ def migrate_db_schema(conn):
     in place, so the table is rebuilt — ALTER TABLE ... ADD COLUMN alone
     leaves the old NOT NULL and every masked insert fails.
     """
+    ver_cols = {row[1] for row in conn.execute("PRAGMA table_info(wave_forecast_verification)")}
+    if ver_cols and "reference_value" not in ver_cols:
+        conn.execute("ALTER TABLE wave_forecast_verification ADD COLUMN reference_value REAL")
+        conn.commit()
+        logger.info("    🔧 Migrated wave_forecast_verification: added reference_value")
+
     info = list(conn.execute("PRAGMA table_info(wave_forecast)"))
     if not info:
         return

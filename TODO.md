@@ -135,6 +135,17 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       costs ~190 requests/day more than 48 h. Touches a live user-facing
       chart, so eyeball the storm-surge page at the coarser resolution before
       committing.
+
+      **Also raise `FETCH_DELAY` while in there (user, 2026-08-15).** MSC's
+      guidance is "about 1 request per second". With ~0.45 s of network per
+      request, the current 0.5 s delay puts a burst at **1.05 req/s — right at
+      that line — sustained for 23 minutes.** Daily totals were never the risk
+      here; the burst rate was. Tapering alone doesn't fix it (fewer requests,
+      same rate). At 2 s the tapered run is 0.41 req/s over ~32 min, which is
+      free for a job that goes 2×/day. The wave fetcher was moved to 1.5 s
+      (0.51 req/s) for the same reason in `d194792`'s follow-up. Nothing
+      downstream is time-critical: the water-level export runs every 10 min
+      regardless.
 - [ ] **Smoothing on the storm-surge plots** (low, pairs with the above):
       cosmetic, and safe *if* it can't overshoot. ECharts `smooth: true` uses
       a spline that can overshoot at sharp peaks — on a surge chart that would

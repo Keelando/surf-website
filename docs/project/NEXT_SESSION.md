@@ -44,15 +44,24 @@ sr3 files/day. Update that table when adding or rescheduling a feed.
 
 ## Next session — pick up here
 
-1. **Storm-surge taper** (`TODO.md`, has the measured numbers): our largest
-   HTTP load at 2,894/day, and surge changes slowly enough that it's waste —
-   hour-to-hour change averages 1.55 cm. Recommended shape is hourly to 48 h
-   then 3-hourly to 240 h (−53%). Touches a live chart, so look at the page
-   before committing. Plot smoothing is a separate, optional follow-up.
+Theme: continue the wave forecast, and lighten the request burden.
+
+1. **Storm-surge taper + delay** (`TODO.md`, has all the measured numbers):
+   our largest HTTP load at 2,894/day, and surge changes slowly enough that
+   it's waste — hour-to-hour change averages 1.55 cm. Chosen shape is hourly
+   to 72 h then 3-hourly to 240 h (129 of 241 steps, −47%). **Raise
+   `FETCH_DELAY` to ~2 s at the same time** — it currently runs at 1.05 req/s
+   for 23 minutes, which is the more important problem. Touches a live chart,
+   so look at the page before committing. Plot smoothing is a separate,
+   optional follow-up, with the overshoot caveat in `TODO.md`.
 2. **Verification writer** — a small script on a lag behind the observations,
    pairing each past-valid forecast value with the nearest buoy observation
-   into `wave_forecast_verification`. This is what makes the winter data
-   worth having; the table exists and is empty.
+   into `wave_forecast_verification`. This is what makes the winter data worth
+   having; the table exists and is empty. It has a `reference_value` column
+   for the buoy reading at the model run hour — fill it, because a **skill
+   score against persistence** ("do we beat 'conditions stay as they are'?")
+   is what decides how far out the forecast is worth displaying, and EC's own
+   verification won't answer it (see `RDWPS_PARAMETERS.md`).
 3. **Unlisted `site/forecast-waves.html`** — noindex, unlinked, out of the
    sitemap and test suites (see the preview decision below). Forecast chart
    plus buoy-observation overlay is the validation story made visible. The
@@ -91,6 +100,12 @@ this morning's review are done (`c723f47`).
 
 - **Never discover EC data by guessing timestamps or walking directory
   listings** — MSC's usage policy forbids it; AMQPS is what that's for.
+- **Burst rate, not daily total, is the ECCC constraint.** The guidance is
+  "about 1 request per second"; our daily totals are ~4% of it. `FETCH_DELAY`
+  controls the rate, tapering timesteps controls the total — thinning steps
+  shortens a burst but does not slow it. See `docs/DATA_FEEDS.md`.
+- **Skill score ≠ bias/RMSE.** A skill score is relative to a reference
+  (`SS = 1 − MSE_fc / MSE_ref`); ours should be persistence.
 - **GRIB2 coordinates are sign-bit magnitude, not two's complement.** Reading
   La1 as a signed int gives −2135°, not −12.2575° — a plausible-looking grid
   in the wrong hemisphere.
