@@ -14,6 +14,7 @@
    ----------------------------- */
 
 import { formatModelRunTime, formatMonthDayTimeTZ } from "./shared/format-time.js";
+import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
 
 function setSafeHTML(element, html) {
   if (!element) return;
@@ -32,8 +33,12 @@ const STATION_ID = "4600146"; // Halibut Bank
 // axis holds a fixed 0–1 m unless the forecast exceeds it.
 const MIN_HEIGHT_AXIS_MAX = 1.0;
 
+// Hours of the table shown before the reader asks for more.
+const DEFAULT_VISIBLE_HOURS = 12;
+
 let waveChart = null;
 let detachWaveThemeListener = null;
+let visibleHours = DEFAULT_VISIBLE_HOURS;
 
 /**
  * Convert the forecast object into a sorted array of rows.
@@ -72,6 +77,53 @@ function heightAxisMax(rows) {
   if (peak <= MIN_HEIGHT_AXIS_MAX) return MIN_HEIGHT_AXIS_MAX;
   // Round up to the next half metre so the line never touches the frame.
   return Math.ceil((peak * 1.1) / 0.5) * 0.5;
+}
+
+/**
+ * Build the direction-arrow scatter points, as on the buoy wave chart.
+ *
+ * Sampled by elapsed time rather than by array index, which is where this
+ * departs from `createWaveDirectionArrowData` in wave-chart-v4.js. That one
+ * steps a fixed number of points because buoy observations are evenly
+ * spaced; these steps taper from hourly to 3-hourly at the 24-hour mark, so
+ * an index stride would thin out to one arrow per 9 hours across the back
+ * half of the forecast.
+ *
+ * @param {Array<Object>} rows
+ * @param {number} axisMax - Height axis maximum, for vertical placement
+ * @param {Object} colors - Resolved theme palette
+ * @returns {Array<Object>} ECharts scatter points carrying symbolRotate
+ */
+function createDirectionArrows(rows, axisMax, colors) {
+  // Match the buoy chart's density: every 3 h, or 6 h where a narrow screen
+  // would otherwise overlap them.
+  const intervalMs = (window.innerWidth < 600 ? 6 : 3) * 60 * 60 * 1000;
+
+  // Ride near the top of the axis rather than just above the data. The axis
+  // is pinned to a 1 m floor, so tracking the peak would drop the arrows
+  // into the middle of an empty chart every calm summer day.
+  const arrowY = axisMax * 0.92;
+
+  const arrows = [];
+  let lastStamp = null;
+
+  for (const row of rows) {
+    if (row.waveDirection === null) continue;
+
+    const stamp = row.time.getTime();
+    if (lastStamp !== null && stamp - lastStamp < intervalMs) continue;
+
+    arrows.push({
+      value: [stamp, arrowY],
+      // Meteorological direction is where waves come FROM; the arrow points
+      // where they are going, hence the negation.
+      symbolRotate: calculateArrowRotation(row.waveDirection),
+      itemStyle: { color: colors.marker, opacity: 0.75 },
+    });
+    lastStamp = stamp;
+  }
+
+  return arrows;
 }
 
 /**
@@ -129,6 +181,9 @@ function renderChart(rows) {
   const heightSeries = rows.map((row) => [row.time.getTime(), row.waveHeight]);
   const periodSeries = rows.map((row) => [row.time.getTime(), row.peakPeriod]);
 
+  const axisMax = heightAxisMax(rows);
+  const arrows = createDirectionArrows(rows, axisMax, colors);
+
   waveChart.setOption(
     {
       backgroundColor: "transparent",
@@ -137,7 +192,7 @@ function renderChart(rows) {
       legend: {
         top: 8,
         textStyle: { color: colors.mutedText },
-        data: ["Significant wave height", "Peak period"],
+        data: ["Significant wave height", "Peak period", "Wave direction"],
       },
       tooltip: {
         trigger: "axis",
@@ -168,7 +223,7 @@ function renderChart(rows) {
           name: "Height (m)",
           nameTextStyle: { color: colors.mutedText },
           min: 0,
-          max: heightAxisMax(rows),
+          max: axisMax,
           axisLabel: { color: colors.mutedText },
           splitLine: { lineStyle: { color: colors.gridLine } },
         },
@@ -201,6 +256,18 @@ function renderChart(rows) {
           showSymbol: false,
           lineStyle: { width: 2, color: colors.series.secondary, type: "dashed" },
         },
+        {
+          name: "Wave direction",
+          type: "scatter",
+          data: arrows,
+          yAxisIndex: 0,
+          symbol: DIRECTION_ARROW_PATH,
+          symbolSize: 14,
+          symbolRotate: (value, params) => arrows[params.dataIndex]?.symbolRotate ?? 0,
+          // The axis tooltip already reports direction on every step; letting
+          // the arrows answer as well would double the line up.
+          tooltip: { show: false },
+        },
       ],
     },
     // Replace wholesale on theme change rather than merging, so stale
@@ -210,16 +277,54 @@ function renderChart(rows) {
 }
 
 /**
- * Render the tabular forecast.
+ * Hours of forecast covered by a row set.
  *
  * @param {Array<Object>} rows
+ * @returns {number}
+ */
+function spanHours(rows) {
+  if (rows.length < 2) return 0;
+  return (rows[rows.length - 1].time - rows[0].time) / (1000 * 60 * 60);
+}
+
+/**
+ * The leading slice of rows falling within `hours` of the first step.
+ *
+ * Filtered on elapsed time rather than row count, so the window means the
+ * same thing either side of the 24-hour point where steps taper from
+ * hourly to 3-hourly.
+ *
+ * @param {Array<Object>} rows
+ * @param {number} hours
+ * @returns {Array<Object>}
+ */
+function rowsWithin(rows, hours) {
+  if (rows.length === 0) return [];
+  const cutoff = rows[0].time.getTime() + hours * 60 * 60 * 1000;
+  return rows.filter((row) => row.time.getTime() <= cutoff);
+}
+
+/**
+ * Render the tabular forecast, showing `visibleHours` of it.
+ *
+ * The full 48 hours is 33 rows, which buries the chart and the provenance
+ * block below it. It previously lived in a fixed-height scrolling box, but
+ * an inner scrollbar is easy to miss entirely — the table simply looks
+ * shorter than the chart above it. Explicit expand controls say how much
+ * more there is.
+ *
+ * @param {Array<Object>} rows - Every forecast step
  * @returns {void}
  */
 function renderTable(rows) {
   const container = document.getElementById("wave-forecast-table");
   if (!container) return;
 
-  const body = rows
+  const total = spanHours(rows);
+  const shown = rowsWithin(rows, visibleHours);
+  const atFullExtent = shown.length >= rows.length;
+
+  const body = shown
     .map(
       (row) => `
         <tr>
@@ -246,8 +351,44 @@ function renderTable(rows) {
         </tr>
       </thead>
       <tbody>${body}</tbody>
-    </table>`,
+    </table>
+    <div class="wave-forecast-controls">
+      <span class="wave-forecast-extent">
+        Showing ${atFullExtent ? "all" : `the first ${Math.round(Math.min(visibleHours, total))} h`}
+        of ${Math.round(total)} h — ${shown.length} of ${rows.length} steps
+      </span>
+      <span class="wave-forecast-buttons">
+        ${
+          atFullExtent
+            ? ""
+            : `<button type="button" class="wave-forecast-btn" data-expand="12">+12 hours</button>
+               <button type="button" class="wave-forecast-btn" data-expand="24">+24 hours</button>
+               <button type="button" class="wave-forecast-btn" data-expand="all">Show all</button>`
+        }
+        ${
+          visibleHours > DEFAULT_VISIBLE_HOURS
+            ? '<button type="button" class="wave-forecast-btn wave-forecast-btn-quiet" data-collapse="1">Collapse</button>'
+            : ""
+        }
+      </span>
+    </div>`,
   );
+
+  for (const button of container.querySelectorAll("[data-expand]")) {
+    button.addEventListener("click", () => {
+      const step = button.dataset.expand;
+      visibleHours = step === "all" ? total : visibleHours + Number(step);
+      renderTable(rows);
+    });
+  }
+
+  const collapse = container.querySelector("[data-collapse]");
+  if (collapse) {
+    collapse.addEventListener("click", () => {
+      visibleHours = DEFAULT_VISIBLE_HOURS;
+      renderTable(rows);
+    });
+  }
 }
 
 /**

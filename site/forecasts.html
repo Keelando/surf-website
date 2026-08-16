@@ -282,10 +282,13 @@
       color: var(--color-text-muted);
     }
 
+    /* Full height, no inner scroll. A capped, inner-scrolling table hides
+       most of its rows behind a scrollbar that readers don't notice —
+       the table looks shorter than the 48 h chart above it. Only the
+       horizontal overflow is handled, for narrow screens. */
     .wave-forecast-table-wrap {
       margin-top: 1.5rem;
-      max-height: 420px;
-      overflow: auto;
+      overflow-x: auto;
     }
 
     .wave-forecast-table {
@@ -304,9 +307,6 @@
     }
 
     .wave-forecast-table thead th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
       background: var(--color-surface);
       font-size: 0.8rem;
       text-transform: uppercase;
@@ -316,6 +316,53 @@
 
     .wave-forecast-table tbody th {
       font-weight: 400;
+      color: var(--color-text);
+    }
+
+    .wave-forecast-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .wave-forecast-extent {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+
+    .wave-forecast-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .wave-forecast-btn {
+      padding: 0.4rem 0.85rem;
+      border: 1px solid var(--color-accent-blue);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--color-accent-blue);
+      font-size: 0.85rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .wave-forecast-btn:hover {
+      background: var(--color-accent-blue);
+      color: var(--color-surface);
+    }
+
+    .wave-forecast-btn-quiet {
+      border-color: var(--color-border);
+      color: var(--color-text-muted);
+    }
+
+    .wave-forecast-btn-quiet:hover {
+      background: var(--color-border);
       color: var(--color-text);
     }
   </style>
@@ -342,8 +389,26 @@
       </div>
     </div>
 
+    <!-- RDWPS wave forecast — UNDER DEVELOPMENT preview.
+         docs/project/FORECAST_UPGRADE.md -->
+    <div class="forecast-zone" id="wave-forecast-section" style="margin-top: 2rem;">
+      <h2>🌊 Wave Forecast — Halibut Bank</h2>
+
+      <p class="dev-note">
+        <span class="dev-badge">Experimental</span>
+        <span>Use at your own risk. Modelled waves from Environment Canada's
+        regional wave model (RDWPS), updated four times a day.</span>
+      </p>
+
+      <div id="wave-forecast-chart"></div>
+
+      <div class="wave-forecast-table-wrap" id="wave-forecast-table"></div>
+
+      <div id="wave-forecast-metadata"></div>
+    </div>
+
     <!-- Related Resources Section -->
-    <div class="forecast-zone" style="margin-top: 2rem;">
+    <div class="forecast-zone">
       <h2>🔗 Related Resources</h2>
 
       <!-- Wind & Pressure Maps -->
@@ -389,27 +454,6 @@
       </div>
 
     </div>
-
-    <!-- RDWPS wave forecast — UNDER DEVELOPMENT preview.
-         docs/project/FORECAST_UPGRADE.md -->
-    <div class="forecast-zone" id="wave-forecast-section">
-      <h2>🌊 Wave Forecast — Halibut Bank</h2>
-
-      <p class="dev-note">
-        <span class="dev-badge">Under development</span>
-        <span>Modelled waves from Environment Canada's regional wave model
-        (RDWPS), updated four times a day. <strong>Do not rely on this
-        yet</strong> — it covers one station, and it has only been checked
-        against the Halibut Bank buoy through a calm summer, which is not
-        enough to say how it behaves in a winter southeasterly.</span>
-      </p>
-
-      <div id="wave-forecast-chart"></div>
-
-      <div class="wave-forecast-table-wrap" id="wave-forecast-table"></div>
-
-      <div id="wave-forecast-metadata"></div>
-    </div>
   </div>
 
   <!-- About Section -->
@@ -430,7 +474,7 @@
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
   <script type="module" src="/assets/js/forecasts.js?v=a7e86abd32"></script>
-  <script type="module" src="/assets/js/wave-forecast.js?v=cad543a16a"></script>
+  <script type="module" src="/assets/js/wave-forecast.js?v=9123370a55"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>
