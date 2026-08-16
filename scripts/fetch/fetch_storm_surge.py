@@ -16,6 +16,7 @@ from pathlib import Path
 from owslib.wms import WebMapService
 
 from lib.config import EXPORT_DIR, STORM_SURGE_DATABASE, STORM_SURGE_RETENTION_DAYS
+from lib.forecast_steps import taper_time_steps
 from lib.logging_config import setup_logging
 
 logger = setup_logging("storm_surge")
@@ -41,15 +42,30 @@ LAYER = "GDSPS_15km_StormSurge"
 # Database configuration
 DB_RETENTION_DAYS = STORM_SURGE_RETENTION_DAYS
 
-# Rate limiting
-FETCH_DELAY = 0.5  # seconds between requests
+# Rate limiting. MSC's guidance is "about 1 request per second"; with ~0.45 s
+# of network per request, the old 0.5 s delay put a burst at 1.05 req/s — right
+# at that line, sustained for 23 minutes. 2 s gives 0.41 req/s over ~32 min,
+# which is free for a job that goes 2x/day. Nothing downstream is time-critical:
+# the water-level export runs every 10 minutes regardless.
+FETCH_DELAY = 2.0  # seconds between requests
+
+# GDSPS publishes 241 hourly steps (0–240 h), but one WMS request buys one
+# (station, hour), so the time axis is what drives the request count. Surge is
+# smooth: measured over 168 archived series (40,256 steps), hour-to-hour change
+# is mean 1.55 cm / p95 4.10 cm, and sampling 3-hourly then interpolating costs
+# mean 1.35 cm / p95 3.63 cm — well inside GDSPS's own error. The fine window is
+# therefore a choice about how much hourly detail to offer, not an accuracy
+# trade: 72 h covers the three-day window people plan around.
+# 73 + 56 = 129 of 241 steps → 774 requests/run, 1,548/day (was 2,894).
+FINE_HORIZON_HOURS = 72  # hourly out to here
+COARSE_STEP_HOURS = 3  # then this spacing to the end of the run
 
 
 def acquire_lock():
     """Simple file-based lock to prevent concurrent runs."""
     if LOCKFILE.exists():
         age = time.time() - LOCKFILE.stat().st_mtime
-        if age > 300:  # 5 minutes
+        if age > 3600:  # 1 hour (a full fetch takes ~32 minutes)
             logger.info("⚠️  Removing stale lock file")
             LOCKFILE.unlink()
         else:
@@ -331,15 +347,20 @@ def main():
         )
         logger.info(f"⏱️  Interval: {interval} hours")
 
-        # Build time list
-        time_list = [start_time]
-        while time_list[-1] < end_time:
-            time_list.append(time_list[-1] + timedelta(hours=interval))
+        # Build the model's full step list, then taper it
+        published_steps = [start_time]
+        while published_steps[-1] < end_time:
+            published_steps.append(published_steps[-1] + timedelta(hours=interval))
 
-        logger.info(f"📊 Total timesteps: {len(time_list)}")
+        time_list = taper_time_steps(published_steps, FINE_HORIZON_HOURS, COARSE_STEP_HOURS)
+
+        logger.info(
+            f"📊 Fetching {len(time_list)} of {len(published_steps)} timesteps "
+            f"(hourly to {FINE_HORIZON_HOURS}h, then {COARSE_STEP_HOURS}-hourly)"
+        )
 
         # Estimate total time
-        total_minutes = len(time_list) * len(STATIONS) * FETCH_DELAY / 60
+        total_minutes = len(time_list) * len(STATIONS) * (FETCH_DELAY + 0.45) / 60
 
         if TESTING:
             logger.info(f"\n⏰ Estimated total time: ~{total_minutes:.1f} minutes")

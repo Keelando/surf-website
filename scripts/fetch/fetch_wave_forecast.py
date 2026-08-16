@@ -26,6 +26,7 @@ from lib.config import (
     WAVE_FORECAST_RETENTION_DAYS,
     safe_json_write,
 )
+from lib.forecast_steps import taper_time_steps
 from lib.logging_config import setup_logging
 from lib.stations import get_buoy
 
@@ -275,27 +276,6 @@ def get_time_steps(layer):
     return steps
 
 
-def taper_time_steps(steps):
-    """Thin the model's hourly steps: hourly to FINE_HORIZON_HOURS, then
-    every COARSE_STEP_HOURS. Keeps the last step so the horizon is unchanged.
-
-    Driven off the first step (the run hour) rather than wall-clock, so a late
-    fetch still tapers at the same lead times.
-    """
-    if not steps:
-        return steps
-
-    run_start = steps[0]
-    kept = []
-    for step in steps:
-        lead = (step - run_start).total_seconds() / 3600
-        if lead <= FINE_HORIZON_HOURS or lead % COARSE_STEP_HOURS == 0:
-            kept.append(step)
-    if kept[-1] != steps[-1]:
-        kept.append(steps[-1])
-    return kept
-
-
 def fetch_point(layer, lat, lon, timestamp):
     """Fetch one value at one location and time.
 
@@ -479,7 +459,7 @@ def main():
     try:
         first_layer = next(iter(VARIABLES.values()))
         published_steps = get_time_steps(first_layer)
-        time_steps = taper_time_steps(published_steps)
+        time_steps = taper_time_steps(published_steps, FINE_HORIZON_HOURS, COARSE_STEP_HOURS)
         logger.info(
             f"📅 Forecast period: {time_steps[0].strftime('%Y-%m-%d %H:%M')} to "
             f"{time_steps[-1].strftime('%Y-%m-%d %H:%M')} UTC "

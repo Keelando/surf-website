@@ -105,12 +105,18 @@
 35 4,10,16,22 * * * /usr/bin/flock -n /tmp/envcan_wave_forecast.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_wave_forecast.py >> /home/keelando/envcan_wave/logs/wave_forecast.log 2>&1
 
 # ==================== STORM SURGE ====================
-# Fetch GeoMet storm surge (every 12 hours at :31)
+# Fetch GeoMet storm surge (every 12 hours at :31). GDSPS publishes 241 hourly
+# steps; we fetch 129 (hourly to 72 h, then 3-hourly) x 6 stations = 774
+# requests/run, 1,548/day. At 2 s between requests that is 0.41 req/s against
+# MSC's "about 1 request per second" guidance, and the run takes ~32 minutes.
 31 1,13 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_storm_surge.py >> /home/keelando/envcan_wave/logs/storm_surge.log 2>&1
 
-# Water level export — forecast + observed surge in one process (every 10 min + after storm surge)
+# Water level export — forecast + observed surge in one process (every 10 min +
+# after storm surge). The follow-up run is at 2:05/14:05 because the fetch above
+# starts at :31 and takes ~32 min; it only rewrites combined_forecast.json at the
+# end, so anything earlier would just re-read the previous run.
 */10 * * * * /usr/bin/flock -n /tmp/envcan_water_level.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/water_level_export.py >> /home/keelando/envcan_wave/logs/water_level_export.log 2>&1
-35 1,13 * * * /usr/bin/flock -n /tmp/envcan_water_level.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/water_level_export.py >> /home/keelando/envcan_wave/logs/water_level_export.log 2>&1
+5 2,14 * * * /usr/bin/flock -n /tmp/envcan_water_level.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/water_level_export.py >> /home/keelando/envcan_wave/logs/water_level_export.log 2>&1
 
 # Export hindcast (daily at 02:00)
 13 2 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_hindcast_json.py >> /home/keelando/envcan_wave/logs/hindcast_export.log 2>&1

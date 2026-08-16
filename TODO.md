@@ -55,6 +55,20 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+- [ ] **"Security cam" wall view for the webcam page** (idea, user
+      2026-08-16): a mode that drops all six cams into a dense grid of
+      smaller images side by side with a little padding between them, so
+      the whole area reads at a glance instead of scrolling one big card
+      at a time. Today `webcams-v4.css` is `repeat(auto-fill, minmax(500px,
+      1fr))` with a full card (header, timestamp, metadata) per cam — the
+      wall would be a second, tighter layout, not a replacement.
+      Open questions: is it a toggle (wall ↔ detail) or the default with
+      click-to-enlarge; how much chrome survives at small size (probably
+      just name + a stale indicator, since `webcam-stale`/`webcam-stale-error`
+      states must stay legible); whether a fixed aspect-ratio box with
+      `object-fit: cover` is acceptable given the cams don't share an
+      aspect ratio. Ships as an unlisted page first per the preview
+      decision below, since it reworks an existing surface.
 - [ ] **Tighten graph margins** (medium): start with the buoys page ECharts
       (grid left/right/top/bottom, container padding), then audit the other
       chart pages. Prefer a shared pattern over per-page one-offs.
@@ -111,8 +125,18 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       genuinely higher-rate instruments, could be duplicate postings we could
       filter. Note `bc_wind_stations.conf` carries
       `reject .*minute-swob\.xml.*` but `bc_buoys.conf` has no equivalent.
-- [ ] **Spread out the storm-surge fetch** (small, next up): `fetch_storm_surge.py`
-      is 2,894 requests/day — 5× the wave forecaster and our largest HTTP load
+- [x] **Spread out the storm-surge fetch** *(done 2026-08-16)*: taper landed as
+      specified below (hourly to 72 h, then 3-hourly — 129 of 241 steps,
+      2,894 → 1,548 req/day) and `FETCH_DELAY` went 0.5 s → 2 s (1.05 → 0.41
+      req/s over ~32 min). The taper is now `lib/forecast_steps.py`, shared with
+      the wave fetcher and unit-tested in `tests/test_forecast_steps.py`. Two
+      things fixed alongside: the stale-lock threshold was 5 min against a
+      23-minute run (→ 1 h), and the follow-up `water_level_export` at :35 fired
+      mid-fetch and re-read the previous run's file (→ 2:05/14:05). Downstream
+      was already safe — `water_level_export.interpolate_surge()` interpolates
+      linearly, the hindcast export only queries 38–61 h leads (inside the fine
+      window), and the page's x-axis is `type: "time"`. Original analysis:
+      `fetch_storm_surge.py` was 2,894 requests/day — 5× the wave forecaster and our largest HTTP load
       by far — because it pulls all 241 hourly steps of the 10-day GDSPS
       forecast for 6 stations. Surge is smooth enough that this is wasted:
       measured over 168 archived forecast series (40,256 hourly steps),
@@ -146,8 +170,11 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       (0.51 req/s) for the same reason in `d194792`'s follow-up. Nothing
       downstream is time-critical: the water-level export runs every 10 min
       regardless.
-- [ ] **Smoothing on the storm-surge plots** (low, pairs with the above):
-      cosmetic, and safe *if* it can't overshoot. ECharts `smooth: true` uses
+- [ ] **Smoothing on the storm-surge plots** (low, **deferred 2026-08-16** —
+      explicitly not done with the taper): cosmetic, and safe *if* it can't
+      overshoot. Note the forecast series in `storm_surge_page.js` already sets
+      `smooth: true`, so the risk below is live today, not hypothetical — and
+      the 3-hourly tail past 72 h gives the spline more room to overshoot. ECharts `smooth: true` uses
       a spline that can overshoot at sharp peaks — on a surge chart that would
       invent a higher peak than the model forecast, which is the one thing
       this plot must not do. Use a monotone interpolation or a damped

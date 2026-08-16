@@ -38,9 +38,18 @@ GDSPS retention) is downstream of these two.
 
 - **What:** Coastal Ice-Ocean Prediction System for the Salish Sea.
 - **Why:** Upgrade over the current GDSPS feed (3–9 km, struggles with
-  complex coastlines). CIOPS-SalishSea is 1/36° (~2.5 km), nested
+  complex coastlines). CIOPS-SalishSea is **500 m** (0.008 × 0.005°), nested
   specifically to Salish Sea / Strait of Georgia bathymetry. Also provides
-  tidal heights and ocean currents.
+  ocean currents.
+- **Beware the 1/36° (~2 km) figure** — it is everywhere, including in
+  ECCC's own layer abstract, and it is *not* the Salish Sea number. The
+  abstract opens with family-level boilerplate ("different domains … at
+  1/36° resolution") and only corrects itself in its last sentence: East and
+  West are 2 km, and "the CIOPS-West system also outputs a regional
+  enhancement at 500m resolution (0.008 x 0.005 degree) that covers the
+  Salish Sea region only." Anyone quoting the opening sentence will hand you
+  2 km. Verified against GeoMet GetCapabilities 2026-08-16; the layer name
+  itself settles it: `CIOPS-SalishSea_500m_SeaSfcHeight`.
 - **Where:** MSC Datamart, <https://dd.weather.gc.ca/model_ciops/>
   (look for the `salishsea` subdirectories).
 

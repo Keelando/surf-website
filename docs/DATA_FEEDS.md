@@ -39,10 +39,19 @@ subscription is for. Update this table when adding or rescheduling a feed.
 
 | Endpoint | Job | Schedule | Requests/day |
 |---|---|---|---|
-| `geo.weather.gc.ca` | `fetch_storm_surge.py` | 2×/day | 2,894 (6 stations × 241 steps + caps) |
-| `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 532 (33 steps × 4 vars + caps) |
+| `geo.weather.gc.ca` | `fetch_storm_surge.py` | 2×/day | 1,548 (6 stations × 129 of 241 steps + caps) |
+| `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 532 (33 of 49 steps × 4 vars + caps) |
 | `dd.weather.gc.ca` | `fetch_lightstation.py` | hourly | ~48 — **policy violation, see `TODO.md`** |
-| | | **Total** | **~3,470 (4.0%)** |
+| | | **Total** | **~2,128 (2.5%)** |
+
+This table is maintained by hand, not instrumented — deliberately (decided
+2026-08-16). A project-wide request counter is more machinery than a number we
+are 2.5% of deserves. **Keep it honest by updating the row in the same commit
+that changes a fetcher's schedule, station count, or step count** — all three
+are visible in the source constants, so the count is derivable, never measured.
+Revisit the decision if a new point-extraction feed lands (a gridded water-level
+forecast is the likely next one) and the total clears ~20,000/day, or if any one
+job's steps stop being a fixed number known before the run.
 
 ### sr3/AMQP (the sanctioned channel — separate from the request guidance)
 
@@ -59,7 +68,7 @@ distinct `source_file` values recorded in the last 24 h.
 ### Burst rate matters more than the daily total
 
 The guidance is phrased as a *rate* — "about 1 request per second" — and our
-daily totals are only ~4% of it, so the number to watch is what a fetch does
+daily totals are only ~2.5% of it, so the number to watch is what a fetch does
 while it is running, not what it adds up to. Every point-extraction fetcher
 loops `request → sleep(FETCH_DELAY)`, and with ~0.45 s of network per request:
 
@@ -70,9 +79,10 @@ loops `request → sleep(FETCH_DELAY)`, and with ~0.45 s of network per request:
 | 1.5 s | 0.51 req/s |
 | 2.0 s | 0.41 req/s |
 
-`fetch_storm_surge.py` still sits at 0.5 s and sustains that for 23 minutes
-twice a day — the largest single thing we do to ECCC. Raising its delay is
-backlogged in `TODO.md`. `fetch_wave_forecast.py` uses 1.5 s.
+`fetch_storm_surge.py` uses 2.0 s (0.41 req/s over ~32 min, measured 2026-08-16)
+and `fetch_wave_forecast.py` uses 1.5 s (0.51 req/s over ~4 min). Both are the
+default for a new point-extraction feed: start at 1.5–2 s, and only argue the
+rate down if something downstream is actually time-critical.
 
 Note that thinning timesteps does **not** help the burst rate — it shortens the
 burst but leaves the rate unchanged. The two levers are independent: taper for
@@ -175,7 +185,10 @@ FICN33 is the key bulletin — it contains the west coast VI stations missing fr
 **Layer:** `GDSPS_15km_StormSurge`
 **Protocol:** WMS 1.3.0 via OWSLib
 **Fetched by:** `scripts/fetch/fetch_storm_surge.py`
-**Schedule:** Every 6 hours, after 00Z and 12Z model runs (cron at 1, 7, 13, 19 UTC)
+**Schedule:** Twice daily at 01:31 and 13:31 UTC, after the 00Z and 12Z model runs
+**Sampling:** 129 of the model's 241 hourly steps — hourly to 72 h, then 3-hourly
+to 240 h. 774 requests/run, 1,548/day, at 2 s spacing (0.41 req/s, ~32 min/run).
+See `TODO.md` for the measured interpolation error behind the taper.
 **Stored in:** `storm_surge_forecast.sqlite` + exported JSON to `site/data/storm_surge/`
 
 ### RDWPS Wave Forecast
@@ -186,7 +199,9 @@ FICN33 is the key bulletin — it contains the west coast VI stations missing fr
 (full inventory: `docs/project/RDWPS_PARAMETERS.md`)
 **Protocol:** WMS 1.3.0 GetFeatureInfo (JSON) via requests
 **Fetched by:** `scripts/fetch/fetch_wave_forecast.py`
-**Schedule:** Not yet in cron (manual runs while validating; model runs 00/06/12/18Z, files land ~3.5 h later)
+**Schedule:** 04:35, 10:35, 16:35, 22:35 UTC — run+4h35m (model runs 00/06/12/18Z, files land ~3h25m later)
+**Sampling:** 33 of 49 hourly steps — hourly to 24 h, then 3-hourly. 133
+requests/run, 532/day, at 1.5 s spacing (0.51 req/s, ~4 min/run).
 **Stored in:** `wave_forecast.sqlite` + exported JSON to `site/data/wave_forecast/`
 **Note:** masked cells (absent wind-wave/swell partition, land) come back as sentinel `9999.0` — the fetcher drops values ≥ 9000.
 
@@ -329,7 +344,9 @@ in this document is inbound.
 full URL into `HTTPError` strings and would log the password verbatim.
 Credentials are `WINDY_<STATION>_ID` / `WINDY_<STATION>_PASSWORD` in
 `config/.env`; see `docs/SECRETS.md`.
-**Shared config:** `lib/windy.py` — station list, credentials, read-back
+**Shared config:** `lib/windy.py` — station list, credential names, the
+`WINDY_PUSH_ENABLED` kill switch, and the read-back helper. Read its docstring
+before touching the push; both the pusher and the health check import from it.
 **Pushed by:** `scripts/fetch/fetch_surrey_wave_v2.py` (every 20 min)
 **Monitored by:** `scripts/monitoring/health_check.py` (hourly, log only)
 

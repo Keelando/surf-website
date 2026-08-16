@@ -108,4 +108,5 @@ to `SKIP_PATHS` in `check_secrets.py` rather than reaching for
    (`WINDY_<STATION>_ID`, `WINDY_<STATION>_PASSWORD`), confirm each station's
    name, position and elevation under My Stations on windy.com — the v2
    update endpoint sends measurements only and cannot set them — then flip
-   `WINDY_PUSH_ENABLED` to `True` in `scripts/fetch/fetch_surrey_wave_v2.py`.
+   `WINDY_PUSH_ENABLED` to `True` in `lib/windy.py` (both the pusher and the
+   health check read it from there).

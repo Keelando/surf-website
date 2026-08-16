@@ -71,9 +71,25 @@ Theme: continue the wave forecast, and lighten the request burden.
    data by walking Datamart directory listings, which MSC's usage policy
    explicitly forbids, and looks redundant with the sr3 subscription already
    delivering FPCN61. Pairs with the duplicate-fetching audit.
-5. **CIOPS-SalishSea recon** (priority ②) — open question from
-   `FORECAST_MODELS.md`: does SSH include tidal forcing? That decides the
-   surge calculation.
+5. **CIOPS-SalishSea recon** (priority ②) — **does SSH include tidal
+   forcing?** Still open, and it decides the arithmetic: if tides are in the
+   field it *is* total water level and we stop adding the DFO prediction to
+   it; if not, it is a surge-like field we add as we do today. ECCC's layer
+   abstract does not say, so this needs the CIOPS technical note or a
+   comparison of the field against a known tide curve at a station.
+
+   Settled by GetCapabilities 2026-08-16, so don't re-derive:
+   - Layer `CIOPS-SalishSea_500m_SeaSfcHeight`, **500 m**, title *"Sea
+     surface height above geoid [m]"* — a **geoid** datum, where DFO
+     predictions are on chart datum. The offset is a second open item and is
+     independent of the tide question.
+   - Bounding box −126.204…−121.109 E, 46.998…50.994 N — covers every station
+     we carry.
+   - 48 hourly steps (`PT1H`), two reference times online at once (06Z, 12Z
+     when checked), 4 runs/day. So one station is 48 requests/run, 192/day;
+     six stations ~1,150/day untapered — affordable against the headroom the
+     storm-surge taper just freed, but not free.
+   - Atmospheric forcing is HRDPS, which is also our candidate wind upgrade.
 
 Backlog beyond this lives in `TODO.md`; the four frontend-polish items from
 this morning's review are done (`c723f47`).
