@@ -20,8 +20,8 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/forecasts.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=f7dd5fdf68" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=5f6c7e1671" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=a1c341be43" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=ebdd052e14" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=32d9218449" />
 
   <style>
@@ -184,6 +184,18 @@
 
       .extended-forecast {
         grid-template-columns: 1fr;
+      }
+    }
+
+    /* Narrow screens: give the tables and chart the width back. Matches the
+       gutter treatment in style-v4.css and the tides page. */
+    @media (max-width: 600px) {
+      .forecast-main-content {
+        padding: 0 0.25rem;
+      }
+
+      .forecast-zone {
+        padding: 1rem 0.75rem;
       }
     }
 
@@ -474,7 +486,7 @@
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
   <script type="module" src="/assets/js/forecasts.js?v=a7e86abd32"></script>
-  <script type="module" src="/assets/js/wave-forecast.js?v=9123370a55"></script>
+  <script type="module" src="/assets/js/wave-forecast.js?v=051a167e58"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

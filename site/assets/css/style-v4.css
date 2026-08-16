@@ -2070,3 +2070,31 @@ header h2 {
   color: var(--color-text-light);
   line-height: 1.4;
 }
+
+/* -----------------------------
+   Narrow-screen gutters
+
+   This is a data-heavy site: tables and charts are the content, and on a
+   phone every 16 px of gutter is a column of numbers pushed off-screen or
+   an axis label dropped. Halve the horizontal padding on the major section
+   wrappers below 600 px so content runs closer to the edge.
+
+   Vertical rhythm is untouched — only the side gutters shrink.
+----------------------------- */
+@media (max-width: 600px) {
+  #charts-section,
+  #wave-height-table-section,
+  #storm-surge-section,
+  #map-section,
+  #tide-current-section,
+  #wind-chart-section,
+  #wind-table-section,
+  #wind-data-table-section,
+  #lightstation-selector-section,
+  #lightstation-chart-section,
+  #lightstation-map-section,
+  #lightstation-data-table-section {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}

@@ -227,6 +227,15 @@
    the resting bar to a single slim row while every destination stays reachable.
    The clock remains display:none on mobile. */
 @media (max-width: 600px) {
+  /* The footer nav is a second copy of the same fragment. Below 600px the
+     header nav is sticky and permanently on screen, so a duplicate
+     hamburger at the bottom of the page is redundant — hide the whole
+     footer nav here. It stays on desktop, where the header nav is not
+     sticky and a bottom nav saves a scroll back up. */
+  .main-nav-footer {
+    display: none;
+  }
+
   .main-nav {
     position: sticky;
     top: 0;

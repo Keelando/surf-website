@@ -188,17 +188,16 @@ function renderChart(rows) {
     {
       backgroundColor: "transparent",
       textStyle: { color: colors.text },
-      grid: { left: 56, right: 56, top: 48, bottom: 56 },
+      // Grid, legend and tooltip all come from the shared responsive helpers,
+      // so this chart breaks at the same widths as the buoy wave charts.
+      grid: getResponsiveGridConfig(false),
       legend: {
-        top: 8,
-        textStyle: { color: colors.mutedText },
         data: ["Significant wave height", "Peak period", "Wave direction"],
+        bottom: getResponsiveLegendBottom(),
+        textStyle: { color: colors.mutedText },
       },
       tooltip: {
-        trigger: "axis",
-        backgroundColor: colors.tooltipBg,
-        borderColor: colors.tooltipBorder,
-        textStyle: { color: colors.tooltipText },
+        ...getMobileOptimizedTooltipConfig(),
         formatter: (params) => {
           const stamp = params[0]?.value?.[0];
           const row = rows.find((r) => r.time.getTime() === stamp);
@@ -212,26 +211,43 @@ function renderChart(rows) {
       xAxis: {
         type: "time",
         axisLabel: {
+          // Same treatment as the buoy wave chart. `hideOverlap` is what
+          // actually stops the labels colliding — a 48 h span at 33 steps
+          // asks for far more ticks than fit, and ECharts will happily draw
+          // them on top of each other otherwise. The tilt buys room for the
+          // ones that survive on a narrow screen.
+          fontSize: window.innerWidth < 600 ? 9 : 10,
+          rotate: window.innerWidth < 600 ? 30 : 0,
+          formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
+          hideOverlap: true,
+          margin: 10,
           color: colors.mutedText,
-          formatter: (value) => formatStepLabel(new Date(value)),
         },
+        axisTick: { show: true },
         axisLine: { lineStyle: { color: colors.axisLine } },
+        splitLine: { show: true, lineStyle: { color: colors.gridLine } },
       },
+      // Axis furniture tinted to match its series, as on the buoy charts, so
+      // which axis a line belongs to is readable without the legend.
       yAxis: [
         {
           type: "value",
           name: "Height (m)",
-          nameTextStyle: { color: colors.mutedText },
+          position: "left",
           min: 0,
           max: axisMax,
+          nameTextStyle: { color: colors.series.primary },
+          axisLine: { lineStyle: { color: colors.series.primary } },
           axisLabel: { color: colors.mutedText },
           splitLine: { lineStyle: { color: colors.gridLine } },
         },
         {
           type: "value",
           name: "Period (s)",
-          nameTextStyle: { color: colors.mutedText },
+          position: "right",
           min: 0,
+          nameTextStyle: { color: colors.series.secondary },
+          axisLine: { lineStyle: { color: colors.series.secondary } },
           axisLabel: { color: colors.mutedText },
           splitLine: { show: false },
         },
@@ -267,6 +283,8 @@ function renderChart(rows) {
           // The axis tooltip already reports direction on every step; letting
           // the arrows answer as well would double the line up.
           tooltip: { show: false },
+          silent: true,
+          z: 2,
         },
       ],
     },

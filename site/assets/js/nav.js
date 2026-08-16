@@ -38,6 +38,11 @@
   function labelNavLandmarks() {
     document.querySelectorAll("nav.main-nav").forEach((nav, index) => {
       nav.setAttribute("aria-label", index === 0 ? "Main navigation" : "Footer navigation");
+      // The same fragment is injected top and bottom, so the copies are
+      // otherwise indistinguishable. Tag the footer one: below 600px the
+      // header nav is sticky and always on screen, which makes a second
+      // hamburger down here redundant, and CSS needs a handle to hide it.
+      nav.classList.toggle("main-nav-footer", index > 0);
     });
   }
 
@@ -128,12 +133,24 @@
     }
   }
 
-  function initHamburger() {
-    const nav = document.querySelector(".main-nav");
-    const button = document.querySelector(".nav-toggle");
+  // Close every open drawer on the page and sync its button's aria state.
+  function closeAllNavs() {
+    document.querySelectorAll(".main-nav.nav-open").forEach((nav) => {
+      nav.classList.remove("nav-open");
+      nav.querySelector(".nav-toggle")?.setAttribute("aria-expanded", "false");
+    });
+  }
 
-    // Per-element wiring (re-runs safely after each HTMX nav swap).
-    if (nav && button && !button.dataset.bound) {
+  function initHamburger() {
+    // The nav fragment is injected TWICE per page — once at the top, once
+    // above the footer — so every lookup here has to be per-nav. A singular
+    // querySelector wired only the first, which left the footer hamburger
+    // drawing its three bars and doing nothing when tapped.
+    document.querySelectorAll(".main-nav").forEach((nav) => {
+      const button = nav.querySelector(".nav-toggle");
+
+      // Per-element wiring (re-runs safely after each HTMX nav swap).
+      if (!button || button.dataset.bound) return;
       button.dataset.bound = "true";
 
       const setOpen = (open) => {
@@ -143,42 +160,36 @@
 
       button.addEventListener("click", (event) => {
         event.stopPropagation();
-        setOpen(!nav.classList.contains("nav-open"));
+        const open = !nav.classList.contains("nav-open");
+        // Only one drawer open at a time, or tapping the footer hamburger
+        // would leave the header's drawer hanging open off-screen.
+        closeAllNavs();
+        setOpen(open);
       });
 
       // Tapping a destination closes the drawer.
       nav.querySelectorAll(".nav-link").forEach((link) => {
         link.addEventListener("click", () => setOpen(false));
       });
-    }
+    });
 
     // Document-level listeners bind once; they re-query the current nav so they
     // keep working across HTMX fragment swaps.
     if (!window._navHamburgerGlobal) {
       window._navHamburgerGlobal = true;
 
-      const closeMenu = () => {
-        const currentNav = document.querySelector(".main-nav");
-        const currentButton = document.querySelector(".nav-toggle");
-        if (currentNav && currentNav.classList.contains("nav-open")) {
-          currentNav.classList.remove("nav-open");
-          if (currentButton) currentButton.setAttribute("aria-expanded", "false");
-        }
-      };
-
       document.addEventListener("click", (event) => {
-        const currentNav = document.querySelector(".main-nav");
-        if (
-          currentNav &&
-          currentNav.classList.contains("nav-open") &&
-          !currentNav.contains(event.target)
-        ) {
-          closeMenu();
-        }
+        // Close any open drawer the click landed outside of.
+        document.querySelectorAll(".main-nav.nav-open").forEach((nav) => {
+          if (!nav.contains(event.target)) {
+            nav.classList.remove("nav-open");
+            nav.querySelector(".nav-toggle")?.setAttribute("aria-expanded", "false");
+          }
+        });
       });
 
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") closeMenu();
+        if (event.key === "Escape") closeAllNavs();
       });
     }
   }
