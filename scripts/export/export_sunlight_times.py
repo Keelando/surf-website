@@ -219,14 +219,22 @@ def load_tide_stations():
         return {}
 
 
-def export_all_locations(days_ahead=4):
+def export_all_locations(days_ahead=5):
     """
     Export sunlight times for all configured locations (webcams and tide stations).
 
     Args:
-        days_ahead: Number of days to calculate ahead (default: 4 to account for
-                    timezone offset - cron runs at 00:06 UTC which is still previous
-                    day in Pacific time, so we need an extra day buffer)
+        days_ahead: Number of days to calculate ahead (default: 5). Two of those
+                    are spoken for before the site sees any of them:
+
+                    - Cron runs at 00:14 UTC, which is still the *previous*
+                      Pacific day, so the first day emitted is yesterday.
+                    - The tides page day navigation reaches today+2, and the
+                      daylight-change line on that day needs today+3 to
+                      difference against.
+
+                    Four days left the last reachable day with nothing to
+                    compare to; five gives the change line a day of headroom.
     """
     local_tz = pytz.timezone("America/Vancouver")
     today = datetime.now(local_tz).date()

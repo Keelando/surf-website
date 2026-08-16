@@ -785,6 +785,12 @@
   color: var(--color-primary);
 }
 
+/* Day-over-day trend in day length, under the duration */
+.sunlight-duration-change {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
 /* Tablet: 2x2 grid */
 @media (max-width: 768px) {
   .sunlight-cards-grid {

@@ -13,6 +13,65 @@ function setSafeHTML(element, html) {
 }
 
 /**
+ * Build the YYYY-MM-DD key used by sunlight_times.json from a Date.
+ *
+ * @param {Date} date
+ * @returns {string} Date in YYYY-MM-DD format
+ */
+function toDateKey(date) {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/**
+ * Daylight length, sunrise to sunset, in seconds.
+ *
+ * @param {Object|null} sunlight - A day entry from sunlight_times.json
+ * @returns {number|null} Seconds of daylight, or null if unusable
+ */
+function daylightSeconds(sunlight) {
+  if (!sunlight || sunlight.error || !sunlight.sunrise || !sunlight.sunset) return null;
+
+  const sunrise = new Date(sunlight.sunrise);
+  const sunset = new Date(sunlight.sunset);
+  if (isNaN(sunrise) || isNaN(sunset)) return null;
+
+  return (sunset - sunrise) / 1000;
+}
+
+/**
+ * Describe the change in day length from one day to the next.
+ *
+ * Seconds are kept alongside minutes deliberately: within a week or so of a
+ * solstice the day-over-day change drops below a minute, and a minutes-only
+ * display would read a flat "0m" for a fortnight — which is exactly the
+ * stretch of the year this is most interesting for.
+ *
+ * @param {number|null} todaySeconds
+ * @param {number|null} tomorrowSeconds
+ * @returns {string} Phrase such as "gaining 2m 11s each day", or "" if unknown
+ */
+function describeDaylightChange(todaySeconds, tomorrowSeconds) {
+  if (todaySeconds === null || tomorrowSeconds === null) return "";
+
+  const delta = Math.round(tomorrowSeconds - todaySeconds);
+  const magnitude = Math.abs(delta);
+  const minutes = Math.floor(magnitude / 60);
+  const seconds = magnitude % 60;
+
+  // Around the solstice the change passes through zero; say so rather than
+  // rendering a signed "0s" that reads like a rounding artifact.
+  if (magnitude === 0) return "day length holding steady";
+
+  const amount = minutes === 0 ? `${seconds}s` : `${minutes}m ${seconds}s`;
+  const direction = delta > 0 ? "gaining" : "losing";
+
+  return `${direction} ${amount} each day`;
+}
+
+/**
  * Sunlight data store
  */
 class SunlightDataStore {
@@ -94,13 +153,18 @@ export function displaySunlightTimes(
   const targetDate = new Date(year, month - 1, day);
   targetDate.setDate(targetDate.getDate() + dayOffset);
 
-  const targetYear = targetDate.getFullYear();
-  const targetMonth = targetDate.getMonth() + 1;
-  const targetDay = targetDate.getDate();
-  const targetDateStr = `${targetYear}-${String(targetMonth).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
+  const targetDateStr = toDateKey(targetDate);
 
   // Get sunlight times for the target date
   const sunlight = sunlightStore.getForDate(stationKey, targetDateStr);
+
+  // And for the day after, to show which way day length is trending. The
+  // export runs 4 days ahead while navigation stops at offset 2, so the
+  // following day is normally present — but a stale export can leave it
+  // missing, in which case the change line is simply omitted.
+  const nextDate = new Date(targetDate);
+  nextDate.setDate(nextDate.getDate() + 1);
+  const nextSunlight = sunlightStore.getForDate(stationKey, toDateKey(nextDate));
 
   // Check if we have valid sunlight data for this station (not missing or error)
   if (!sunlight || sunlight.error || !sunlight.first_light) {
@@ -137,6 +201,12 @@ export function displaySunlightTimes(
   const hours = Math.floor(daylightDurationMs / (1000 * 60 * 60));
   const minutes = Math.floor((daylightDurationMs % (1000 * 60 * 60)) / (1000 * 60));
   const daylightDuration = `${hours}h ${minutes}m`;
+
+  // Day-over-day trend in day length
+  const changeText = describeDaylightChange(
+    daylightDurationMs / 1000,
+    daylightSeconds(nextSunlight),
+  );
 
   // Format date label for heading
   const dateStr = targetDate.toLocaleDateString("en-US", {
@@ -206,6 +276,7 @@ export function displaySunlightTimes(
         <div>
           <div class="sunlight-duration-label">Daylight Duration</div>
           <div class="sunlight-duration-value">${daylightDuration}</div>
+          ${changeText ? `<div class="sunlight-duration-change">${changeText}</div>` : ""}
         </div>
       </div>
     </div>
@@ -247,4 +318,4 @@ export function displaySunlightTimes(
   }
 }
 
-export { SunlightDataStore };
+export { SunlightDataStore, daylightSeconds, describeDaylightChange, toDateKey };
