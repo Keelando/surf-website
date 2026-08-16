@@ -791,6 +791,26 @@
   color: var(--color-text-muted);
 }
 
+/* Outbound link for fuller sun detail than this widget carries */
+.sunlight-more-info {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+}
+
+.sunlight-more-info a {
+  color: var(--color-accent-blue);
+  text-decoration: none;
+}
+
+.sunlight-more-info a:hover {
+  text-decoration: underline;
+}
+
+.sunlight-more-info a::after {
+  content: " ↗";
+  opacity: 0.6;
+}
+
 /* Tablet: 2x2 grid */
 @media (max-width: 768px) {
   .sunlight-cards-grid {

@@ -62,11 +62,24 @@ Theme: continue the wave forecast, and lighten the request burden.
    score against persistence** ("do we beat 'conditions stay as they are'?")
    is what decides how far out the forecast is worth displaying, and EC's own
    verification won't answer it (see `RDWPS_PARAMETERS.md`).
-3. **Unlisted `site/forecast-waves.html`** — noindex, unlinked, out of the
-   sitemap and test suites (see the preview decision below). Forecast chart
-   plus buoy-observation overlay is the validation story made visible. The
-   "coming soon" callout now on `forecasts.html` is the thing it promotes;
-   remove that callout and its page-local styles when waves ship.
+3. ~~**Unlisted `site/forecast-waves.html`**~~ — **DONE 2026-08-16, but not
+   as a separate page.** User's call: the preview lives at the bottom of the
+   existing `forecasts.html` under an "Under development" badge, which is
+   the dev environment. `site/assets/js/wave-forecast.js` renders chart +
+   table + provenance from `site/data/wave_forecast/4600146.json`; the old
+   "coming soon" callout and its page-local styles are gone, since the thing
+   it promoted is now on the same page.
+   - **Height axis floors at 0–1 m** and only grows past it. Summer
+     forecasts sit under 0.2 m and auto-scaling renders a flat calm as a
+     mountain range.
+   - **Time axis, not category.** The fetch tapers to 3-hourly after 24 h;
+     evenly spacing those steps would stretch the back half of the forecast
+     to look like the front half.
+   - **`wind_wave_height` is table-only, never plotted.** Where present it
+     equals total Hs within 1 mm in 88 of 96 DB rows — the Strait has no
+     swell at this fetch, so a second line would just hide under the first.
+   - Still to come here: the buoy-observation overlay, which is the
+     validation story made visible, and which wants item 2 first.
 4. **Policy cleanup** (`TODO.md`, quick): `fetch_lightstation.py` discovers
    data by walking Datamart directory listings, which MSC's usage policy
    explicitly forbids, and looks redundant with the sr3 subscription already

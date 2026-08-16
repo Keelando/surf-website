@@ -69,6 +69,14 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       `object-fit: cover` is acceptable given the cams don't share an
       aspect ratio. Ships as an unlisted page first per the preview
       decision below, since it reworks an existing surface.
+- [ ] **timeanddate.com embed for the sunlight widget** (small, user
+      2026-08-16): the tides page now links out to
+      <https://www.timeanddate.com/sun/canada/vancouver> under the daylight
+      duration. Check whether they publish an embeddable widget or free API
+      we could use in place of (or beside) the plain link — unverified;
+      their free tier historically is signup-gated and their site scripts
+      would need a CSP allowance, so an outbound link may remain the right
+      answer. If nothing embeddable exists, close this and keep the link.
 - [ ] **Tighten graph margins** (medium): start with the buoys page ECharts
       (grid left/right/top/bottom, container padding), then audit the other
       chart pages. Prefer a shared pattern over per-page one-offs.
@@ -190,6 +198,9 @@ Frontend polish, added 2026-08-15 — all four **done 2026-08-15**:
 - [x] **Forecasts page: "coming soon" flag for RDWPS waves** — `.forecast-coming-soon`
       callout above `#forecast-container` in `forecasts.html` (styles in that
       page's own `<style>` block; remove both when waves ship).
+      **Removed 2026-08-16** along with its styles: the wave preview now sits
+      at the bottom of the same page, so the callout was promoting content
+      one scroll below it.
 - [x] **Winds page: condense + collapse the footnote wall** — caveat text in
       `config/stations.json` shortened, and `renderCaveatFootnotes`
       (`wind-stations.js`) now wraps the notes in a collapsed

@@ -279,6 +279,12 @@ export function displaySunlightTimes(
           ${changeText ? `<div class="sunlight-duration-change">${changeText}</div>` : ""}
         </div>
       </div>
+
+      <p class="sunlight-more-info">
+        <a href="https://www.timeanddate.com/sun/canada/vancouver" target="_blank" rel="noopener">
+          More sun &amp; daylight detail for Vancouver (timeanddate.com)
+        </a>
+      </p>
     </div>
   `,
   );
