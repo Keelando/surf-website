@@ -69,6 +69,25 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       `object-fit: cover` is acceptable given the cams don't share an
       aspect ratio. Ships as an unlisted page first per the preview
       decision below, since it reworks an existing surface.
+- [ ] **Tests for the wave-forecast pipeline** (user 2026-08-16): the RDWPS
+      chain shipped with no tests of its own — `tests/test_forecast_steps.py`
+      covers `taper_time_steps()` and nothing else. Worth having, roughly in
+      order of value:
+      - **Fetch/parse** (`scripts/fetch/fetch_wave_forecast.py`): the 9999
+        masked-cell sentinel becomes `status='masked'` with a NULL value, not
+        a 9999 reading; a failed fetch writes no row at all, so missing and
+        masked stay distinguishable; the schema migration that relaxes
+        `value REAL NOT NULL` is idempotent.
+      - **Export**: the JSON carries only the allowlisted fields — the
+        `site/data/` surface is public and unscanned (see CLAUDE.md), so an
+        upstream response must never reach it wholesale.
+      - **Frontend** (`tests/js/`, needs the pure helpers exported the way
+        `sunlight.js` now does): `heightAxisMax` floors at 1.0 and grows past
+        it; `rowsWithin` windows by elapsed time across the hourly→3-hourly
+        taper; `toSortedRows` sorts despite the payload being an object;
+        `createDirectionArrows` keeps even spacing across the taper.
+      A masked-step fixture is the key asset — this summer's data has 67 of
+      them, so capture one before retention drops it.
 - [ ] **timeanddate.com embed for the sunlight widget** (small, user
       2026-08-16): the tides page now links out to
       <https://www.timeanddate.com/sun/canada/vancouver> under the daylight

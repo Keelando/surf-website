@@ -1,13 +1,69 @@
 # Next Session Plan
 
-**Last updated:** 2026-08-15
-**Status:** Forecast upgrade ACTIVE — RDWPS waves now running in cron on a
-trial basis at Halibut Bank. Frontend-polish backlog from the 2026-08-15
-review is cleared.
+**Last updated:** 2026-08-16
+**Status:** Forecast upgrade ACTIVE — RDWPS waves are in cron *and now
+rendering* on `forecasts.html` as an experimental preview. The next piece is
+the verification writer, and it is time-sensitive.
 
 ---
 
-## Where we're at (2026-08-15, end of session)
+## Session of 2026-08-16 — what shipped
+
+Five commits, all on `main`, all suites green at each one:
+
+| Commit | What |
+|---|---|
+| `20d3ac3` | Day-length change on the tides page (side quest) |
+| `693f8ec` | RDWPS wave forecast preview on `forecasts.html` |
+| `70e2d84` | Direction arrows, table expand controls, section reorder |
+| `b8f5adc` | Footer-hamburger fix, mobile gutters, plot rework |
+
+**Wave forecast preview** (`site/assets/js/wave-forecast.js`, page-local
+styles in `forecasts.html`). Chart + table + provenance for Halibut Bank,
+under an "Experimental — use at your own risk" badge. Decisions baked in:
+
+- **Height axis floors at 0–1 m**, growing only past that. Summer forecasts
+  sit under 0.2 m; auto-scaling renders a flat calm as a mountain range.
+- **Time axis, not category.** Steps taper to 3-hourly after 24 h — even
+  spacing would stretch the back half to look like the front half.
+- **`hideOverlap: true` is what fixes crowded x labels**, not the tilt. A
+  48 h span asks for more ticks than fit and ECharts will draw them on top
+  of one another; the 30° tilt below 600 px just buys room for the
+  survivors. Chart otherwise follows the buoy wave charts (shared
+  `getResponsiveGridConfig` / `getResponsiveLegendBottom` /
+  `getMobileOptimizedTooltipConfig`, axis furniture tinted per series).
+- **Direction arrows sample by elapsed time, not array index** — the one
+  deliberate divergence from `createWaveDirectionArrowData`. Buoy
+  observations are evenly spaced; these are not, so an index stride would
+  thin to one arrow per 9 h across the back half. They ride at 92 % of the
+  axis rather than above the peak, because the axis has a fixed floor.
+- **`wind_wave_height` is table-only, never plotted.** Where the model
+  reports it, it equals total Hs within 1 mm in 88 of 96 DB rows — no swell
+  reaches this fetch. Masked steps stay blank, never zero: the masked and
+  unmasked bands overlap between 0.05 and 0.12 m, so zero-filling draws a
+  sawtooth that is a plot artifact, not weather.
+- **Table opens on 12 h with +12 / +24 / Show all / Collapse.** It was a
+  fixed-height scrolling box; the user did not notice it scrolled at all,
+  and would not have been the only one. The window is measured in hours, so
+  it means the same thing either side of the taper.
+
+**Two bugs found and fixed, both pre-existing and site-wide:**
+
+1. `nav.js` used singular `querySelector` throughout, but the nav fragment
+   is injected **twice** per page. Only the header hamburger was ever wired;
+   the footer one drew its bars and did nothing. Now per-nav — and since the
+   header nav is `position: sticky` below 600 px, the footer nav is hidden
+   on mobile outright and kept on desktop.
+2. `export_sunlight_times.py` only reached today+2. The 00:14 UTC cron fires
+   at 17:14 PDT the *previous* Pacific day, so one of its four days was
+   already yesterday, and the tides page's day navigation reaches today+2 —
+   whose day-length-change line needs today+3. Raised to `days_ahead=5`.
+
+**Mobile gutters** halved below 600 px on the major section wrappers. The
+tides page already used 0.25 rem; this brings the rest in line rather than
+inventing a new value.
+
+## Where we're at (2026-08-15, still current)
 
 **RDWPS wave forecast — live in cron (`a621316`):**
 
@@ -42,10 +98,78 @@ runs 0.7–1.0 s below the buoy. Don't draw conclusions from calm-summer data.
 requests/day to ECCC (4.0% of MSC's 86,400/day guidance) plus ~19,800
 sr3 files/day. Update that table when adding or rescheduling a feed.
 
+## Decision tree: verification, hindcast and skill
+
+Raised 2026-08-16 — the user proposed letting readers flick back through
+~14 days of past forecasts against what actually happened. Settled
+vocabulary and design so this isn't re-derived:
+
+**These are three different things. Keep the words apart.**
+
+- **Hindcast** (modelling usage) = re-running the model over a past period.
+  **We are not doing this** and cannot — we don't run RDWPS. Avoid the word
+  in code, docs and UI or it will mislead.
+- **Verification / forecast archive** = comparing *archived* forecasts to
+  observations. This is what the user described, and what we can build.
+  Qualitative: "does this look right?"
+- **Skill score** = one number, relative to a reference:
+  `SS = 1 − MSE_forecast / MSE_reference`. Ours must use **persistence**
+  ("conditions stay as they are now") as the reference. A forecast that
+  can't beat persistence at 24 h isn't worth displaying at 24 h — that is
+  the number that sets the horizon, and EC's own verification products
+  won't answer it for this station.
+
+**Both views eat the same table.** `wave_forecast_verification` already has
+`forecast_value`, `observed_value` and `reference_value`, and is exempt from
+the 60-day retention. It has **0 rows**. The writer feeds the browser and
+the score alike — building it is not a detour around the user's idea, it is
+the shared foundation.
+
+**The decision the browser forces.** "Flick back 14 days" is
+under-specified: every past hour was forecast *many* times, once per run, at
+different lead times. Two views, both wanted:
+
+1. **Fixed lead time**, scrolled by day — "what the 24-hour-ahead forecast
+   said." The user calls 24 h the gold standard to watch. Build this first;
+   it matches how someone actually used the page.
+2. **Fixed target day, all runs overlaid** — shows the forecast converging
+   (or not) as an event approaches. User is keen, and it is well suited
+   here: the wave horizon is **48 h** (33 steps), so a calendar day is
+   covered by only ~8 runs — a legible number of lines. Contrast storm
+   surge at **240 h / 10 days** (129 steps post-taper), where the same view
+   would be 40 runs deep and unreadable.
+
+**Measured facts that constrain this** (checked 2026-08-16, don't re-derive):
+
+- Halibut Bank's buoy id is `4600146` — **identical to the forecast station
+  id**. No mapping trap, unlike the NDBC-numbered stations.
+- Buoy observations are hourly: 720 rows over 30 days, all with
+  `wave_height_sig`.
+- **The buoy quantises Hs to 0.1 m.** Thirty days of observations contain
+  exactly **11 distinct values, 0.0–1.0 m**. Against a forecast of 0.139 m
+  the observation carries ±0.05 m of rounding — **36 % of the value**. Any
+  bias or RMSE computed this month measures the buoy's reporting step, not
+  the model. This is the single most important caveat: a browser opened in
+  August draws a smooth curve against a staircase and says nothing true.
+- **Retention is asymmetric and will silently eat history**: buoy
+  observations 30 days, forecasts 60, verification pairs permanent. Anything
+  reading the raw tables loses its past at day 30. Only the writer's output
+  survives.
+- Volume is a non-issue: 4 variables × 33 steps × 4 runs/day ≈ 530 rows/day,
+  under 200 k/year.
+
+**Therefore the order is: writer → accumulate → fixed-lead browser → skill
+score → convergence view.** Every day without the writer is a day of autumn
+data that cannot be recovered.
+
 ## Next session — pick up here
 
-Theme: continue the wave forecast, and lighten the request burden.
+Theme: start the verification writer; it is the time-sensitive one.
 
+0. **Verification writer** — promoted to the top (was item 2 below, detail
+   there). The reasoning is in the decision tree above: the user's forecast
+   browser and the skill score are the same build, and the pairs only
+   accumulate going forward. Nothing else here expires.
 1. **Storm-surge taper + delay** (`TODO.md`, has all the measured numbers):
    our largest HTTP load at 2,894/day, and surge changes slowly enough that
    it's waste — hour-to-hour change averages 1.55 cm. Chosen shape is hourly
@@ -145,5 +269,23 @@ this morning's review are done (`c723f47`).
 - **Module double-load:** a module loaded via both a `<script type="module">`
   tag AND a bare import runs twice (cache keyed on full URL incl. query). One
   entry-point tag per page.
+- **The nav fragment is injected twice per page** (header and above the
+  footer). Any `document.querySelector` in `nav.js` silently wires only the
+  header copy — this is exactly how the footer hamburger sat dead. Iterate
+  `.main-nav` and scope lookups to each one.
+- **ECharts renders to `<canvas>`, not SVG.** There are no `<text>` nodes,
+  so axis-label overlap cannot be asserted from the DOM — a probe for them
+  returns 0 and looks like a pass. Verify chart legibility by screenshot.
+- **`isMobile` in Playwright is Chromium-only**; passing it to Firefox
+  throws at `newContext`. Set the viewport for both, and gate
+  `isMobile`/`hasTouch` on the engine.
+- **A cron job's "today" is Pacific-yesterday** for anything running before
+  08:00 UTC. `export_sunlight_times.py` lost a whole day of its forward
+  window to this. Count the days a consumer actually needs, then add the
+  offset — don't assume `days_ahead` means days ahead of the viewer.
+- **New ESLint module files need adding to `.eslintrc.json`.** The module
+  `sourceType` override is an explicit file allowlist; a new ES module fails
+  with "'import' and 'export' may appear only with sourceType: module" until
+  it is listed.
 - **Verify visual changes in BOTH engines** — user's daily browser is Firefox;
   Playwright and screenshots default to Chromium. Pin timezones.
