@@ -192,7 +192,7 @@ function showNoDataMessage(stationName) {
   if (tbody) {
     setSafeHTML(
       tbody,
-      '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-accent-red,#e53e3e);">⚠️ No data available from the past 24 hours for this station.<br/><span style="font-size: 0.9rem; color: var(--color-text-muted,#718096); margin-top: 0.5rem; display: inline-block;">Most recent observation may be older than 24 hours.</span></td></tr>',
+      '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-accent-red,#e53e3e);">⚠️ No data from the past 24 hours</td></tr>',
     );
   }
 

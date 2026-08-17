@@ -577,7 +577,10 @@ def check_webcam_freshness() -> List[Dict]:
                     "type": "webcam",
                     "age_hours": None,
                     "severity": "error",
-                    "message": str(e),
+                    # Not str(e): this dict is published to
+                    # site/data/system_health.json, which Caddy serves to
+                    # anyone. Exception text carries absolute paths.
+                    "message": "Metadata unreadable",
                 }
             )
 
@@ -629,7 +632,7 @@ def check_storage_mount() -> Dict:
         return {
             "status": "error",
             "mounted": True,
-            "error": str(e),
+            "error": "disk_usage_unavailable",
         }
 
 
@@ -781,7 +784,9 @@ def check_database_integrity() -> Dict:
 
         except Exception as e:
             log(f"  ❌ {name}: Error - {e}")
-            db_status[name] = {"exists": True, "status": "error", "error": str(e)}
+            # "error" is published in site/data/system_health.json; sqlite3
+            # exceptions carry the ~/.local/share database path.
+            db_status[name] = {"exists": True, "status": "error", "error": "unreadable"}
             status = "error"
 
     return {"status": status, "databases": db_status}
@@ -849,7 +854,7 @@ def check_export_freshness() -> Dict:
             status = "error"
         except Exception as e:
             log(f"  ❌ {name}: Error - {e}")
-            export_status[name] = {"exists": True, "status": "error", "error": str(e)}
+            export_status[name] = {"exists": True, "status": "error", "error": "unreadable"}
             status = "error"
 
     return {"status": status, "exports": export_status}

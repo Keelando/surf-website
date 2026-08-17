@@ -78,8 +78,18 @@ def parse_log_24h(log_path: Path) -> dict:
                     if msg not in errors:
                         errors.append(msg)
 
-    except Exception as e:
-        return {"exists": True, "parse_error": str(e)}
+    except Exception:
+        logger.exception(f"Failed to parse {log_path}")
+        return {"exists": True, "status": "parse_error"}
+
+    # The error text stays out of the return value: this dict is published to
+    # site/data/daily_digest.json, which Caddy serves to anyone. Raw log lines
+    # name internal tooling, exit codes and absolute paths. The count says
+    # whether something is wrong; the log says what.
+    if errors:
+        logger.warning(f"{log_path.name}: {len(errors)} unique error(s) in 24h")
+        for msg in errors[:10]:
+            logger.warning(f"  {log_path.name}: {msg}")
 
     return {
         "exists": True,
@@ -87,7 +97,7 @@ def parse_log_24h(log_path: Path) -> dict:
         "warning": counts.get("WARNING", 0),
         "error": counts.get("ERROR", 0),
         "last_activity": last_timestamp.isoformat() if last_timestamp else None,
-        "unique_errors": errors[:10],  # Cap at 10
+        "unique_error_count": len(errors),
     }
 
 
@@ -216,11 +226,14 @@ def check_cascade_risks() -> list:
             conn = sqlite3.connect(db_path, timeout=5)
             conn.execute("SELECT 1")
             conn.close()
-        except Exception as e:
+        except Exception:
+            # Published surface: sqlite3 errors carry the absolute database
+            # path. Name the database, not the exception.
+            logger.exception(f"Cascade check failed to open {db_name}")
             risks.append({
                 "type": "db_locked",
                 "severity": "error",
-                "message": f"{db_name}: {e}",
+                "message": f"Database unavailable: {db_name}",
             })
 
     return risks
