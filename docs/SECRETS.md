@@ -66,6 +66,19 @@ Windy's API returns HTTP 410 — and it is **not** being rotated out of history:
 rewriting a public repo's history is disruptive and buys nothing for a dead
 credential.
 
+Separately, credentials sat in `config/crontab.txt` — tracked and public — as
+plain `VAR=value` lines, which is how cron exported them to the fetch scripts.
+Commit `1442565` (2026-02-01) removed the file and gitignored it; `lib/env.py`
+replaced the ad-hoc parsing it fed (one `.env` reader and three copies of
+`_require_env`). Three values were exposed, and all three are still the
+current ones, but neither needs rotating:
+
+- `WINDY_API_KEY` — the same v1 key described above. Expired; Windy returns
+  HTTP 410. Kept in `config/.env` only so the scanner keeps blocking it from
+  re-entering a tracked file.
+- `SURREY_API_USERNAME` / `SURREY_API_PASSWORD` — published on Surrey's own
+  website. Moving them out of the repo was hygiene, not an incident.
+
 Two lessons shaped the defences below:
 
 1. **The dangerous files are generated, not written.** Digests, dumps, logs

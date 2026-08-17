@@ -1,14 +1,14 @@
 """
 Credential loading from the environment, with `config/.env` as fallback.
 
-Credentials must never live in a tracked file. They used to sit in
-`config/crontab.txt` (tracked, public) as plain `VAR=value` lines, which is
-how cron exported them to the fetch scripts. They now live in `config/.env`,
-which is gitignored, and this module is the single place that reads it —
-replacing one ad-hoc `.env` parser and three copies of `_require_env`.
+Credentials must never live in a tracked file. `config/.env` is gitignored,
+and this module is the single place that reads it.
 
-`os.environ` still wins, so a value exported by systemd, a shell or a test
-overrides the file without editing it.
+`os.environ` wins over the file, so a value exported by systemd, a shell or a
+test overrides it without editing anything on disk.
+
+Background on what leaked and why the defences look like this:
+`docs/SECRETS.md`.
 """
 
 from __future__ import annotations
