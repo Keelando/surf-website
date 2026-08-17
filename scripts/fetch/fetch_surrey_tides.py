@@ -298,11 +298,23 @@ def fetch_observations(api, station_config, tide_conn, hours_past=48):
             continue
 
         try:
+            # Upsert rather than INSERT OR REPLACE. Surrey revises readings:
+            # the newest point in a channel is provisional and gets corrected
+            # within an hour or so (observed 2-32 mm), so the row must stay
+            # updatable — INSERT OR IGNORE would freeze the provisional value.
+            # But REPLACE deletes and re-inserts, which resets the
+            # recorded_at default on every row of the re-fetched window every
+            # 20 minutes, destroying the only record of when data first
+            # reached us. This form updates the value and leaves recorded_at
+            # alone. See the CAVEAT in lib/reporting_lag.py.
             tide_cur.execute(
                 """
-                INSERT OR REPLACE INTO tide_observation
+                INSERT INTO tide_observation
                 (station_id, station_name, observation_time, water_level, quality)
                 VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(station_id, observation_time) DO UPDATE SET
+                    water_level = excluded.water_level,
+                    quality = excluded.quality
             """,
                 (
                     station_info["station_id"],
