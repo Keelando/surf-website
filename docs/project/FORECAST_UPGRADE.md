@@ -103,7 +103,20 @@ and surge; RDWPS for wind-driven wave height/period/direction.
 stores every run to `wave_forecast.sqlite` (epoch timestamps, 60-day
 retention) and exports `site/data/wave_forecast/<buoy>.json`. Full
 parameter inventory + parse notes in
-[`RDWPS_PARAMETERS.md`](RDWPS_PARAMETERS.md). Not yet in cron.
+[`RDWPS_PARAMETERS.md`](RDWPS_PARAMETERS.md). In cron 4×/day since 2026-08-15.
+
+**Extended 2026-08-17 — HRDPS wind in the same fetch.** 3 more fields
+(`wind_speed`, `wind_direction`, `wind_gust` from WSPD/WD/WGX), because RDWPS
+publishes no wind WMS layer and the wave series alone cannot be sanity-checked:
+a 0.72 m overnight peak read as implausible until it was cross-checked against
+17 kt of model wind. Two models in one archive, so every row now carries a
+`model` and `wave_forecast_run` keys on it. 932 requests/day, 2.9% of the MSC
+guidance, same 0.51 req/s burst rate. Backend only — `wave-forecast.js` still
+renders waves and ignores the new fields.
+
+**Next:** put wind on the page (chart series + table columns), then the
+verification writer — which wind unblocks, since it varies enough to score this
+summer where the waves do not.
 
 **Implication — starting architecture:** clone the
 `fetch_storm_surge.py` GeoMet pattern (owslib `getfeatureinfo` per station

@@ -185,5 +185,63 @@ below the buoy. Real skill numbers need autumn.
 
 Deliberately skipped for now: swell partitions (mostly masked in-Strait —
 revisit for outer-coast points), MZWPER/PPERWW (redundant with PWPER for
-display), ICEC (not relevant), wind/Stokes (GRIB-only; HRDPS is the
-better wind source anyway).
+display), ICEC (not relevant), RDWPS's own wind/Stokes (GRIB-only — see the
+HRDPS section below, which is where wind comes from instead).
+
+## Wind: HRDPS, not RDWPS (added 2026-08-17)
+
+RDWPS carries UGRD/VGRD at `AGL-10m` in its GRIB2 files but publishes **no wind
+WMS layer**, so the forcing wind cannot be point-extracted the way the waves
+can. HRDPS is not merely a comparable source — it is *the* source. From the
+RDWPS layer abstract in GetCapabilities, identical to
+<https://eccc-msc.github.io/open-data/msc-data/nwp_rdwps/readme_rdwps_en/>:
+
+> The Regional Deterministic Wave Prediction System (RDWPS) produces wave
+> forecasts out to 48 hours in the future using the third generation spectral
+> wave forecast model WaveWatch III® (WW3). **The model is forced by the 10
+> meters winds from the High Resolution Deterministic Prediction System
+> (HRDPS).**
+
+So `HRDPS.CONTINENTAL_WSPD` is the input that produced `RDWPS_2.5km_*`, not an
+independent opinion about the same hour. Two things follow:
+
+- **Run alignment is correctness, not bookkeeping.** An RDWPS 18Z run was
+  forced by one particular HRDPS run. Catch a different HRDPS run in the same
+  fetch and the two series stop being causally linked. This is why `run_time`
+  is stored per model rather than once per fetch — a divergence is detectable
+  rather than invisible.
+- **Verification can attribute error.** With buoy wind *and* buoy waves as
+  ground truth, "the wave model is wrong" separates from "the forcing wind was
+  wrong": if HRDPS under-forecast the wind, RDWPS under-forecasting Hs is not a
+  wave-model failure. Scoring waves alone cannot tell those apart.
+
+| Our field | Layer | Units served | Stored as |
+|---|---|---|---|
+| `wind_speed` | `HRDPS.CONTINENTAL_WSPD` | m/s | km/h |
+| `wind_direction` | `HRDPS.CONTINENTAL_WD` | ° true, FROM | ° true, FROM |
+| `wind_gust` | `HRDPS.CONTINENTAL_WGX` | m/s | km/h |
+
+- **Direction convention verified 2026-08-17** the same way the wave direction
+  was: on a 100 % wind-sea hour (2026-08-18T06:00Z at Halibut Bank), WD read
+  276.2° against RDWPS MeanWaveDir 275.7°. Coming FROM, no conversion needed.
+  Note `UU`/`VV` are *not* queryable via GetFeatureInfo (both return errors),
+  so the U/V cross-check used for the waves is not available here.
+- **WGX (gust max), not WGE (gust estimate) or WGN (gust min).** Sampled across
+  a run: WGE and WGN were identical to each other, and only WGX sat above the
+  sustained wind (10.71 vs 8.67 m/s at the peak hour).
+- **Gusts are masked at most hours** — 8 of 9 sampled steps returned empty
+  features. The model only diagnoses a gust where there is one, so a gust row
+  existing is itself the signal. Same handling as `wind_wave_height`: stored
+  with a NULL value and `status='masked'`, omitted from the JSON.
+- **Two models means per-row provenance.** Both publish runs on the same
+  00/06/12/18Z hours but not at the same minute, so `wave_forecast.model` is
+  carried per row and `wave_forecast_run`'s primary key includes `model`.
+  Field names are unique across models, which is what lets the row key stay
+  `(station, variable, run, valid)` — `tests/test_wave_forecast.py` asserts it.
+
+Why bother: the wave forecast alone can't be sanity-checked. On 2026-08-17 a
+0.72 m overnight peak looked implausible against the *south* of Nanaimo text
+forecast ("variable 5 to 15"), while the *north* zone called "northwest 10 to
+20" — Halibut Bank sits on that zone boundary. A point wind forecast has no
+zone boundary. It also gives the verification writer a variable that actually
+varies this summer, where the waves are too flat to score.

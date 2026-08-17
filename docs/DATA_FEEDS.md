@@ -40,13 +40,20 @@ subscription is for. Update this table when adding or rescheduling a feed.
 | Endpoint | Job | Schedule | Requests/day |
 |---|---|---|---|
 | `geo.weather.gc.ca` | `fetch_storm_surge.py` | 2×/day | 1,548 (6 stations × 129 of 241 steps + caps) |
-| `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 532 (33 of 49 steps × 4 vars + caps) |
+| `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 932 (33 of 49 steps × 7 vars + 2 caps) |
 | `dd.weather.gc.ca` | `fetch_lightstation.py` | hourly | ~48 — **policy violation, see `TODO.md`** |
-| | | **Total** | **~2,128 (2.5%)** |
+| | | **Total** | **~2,528 (2.9%)** |
+
+`fetch_wave_forecast.py` covers two models: 4 RDWPS wave variables and 3 HRDPS
+wind variables (added 2026-08-17), one GetCapabilities each. It went 532 → 932
+requests/day, and the total 2.5% → 2.9%. The **rate** did not move — `FETCH_DELAY`
+is unchanged, so the burst is longer (~4 → ~7.6 min per run) at the same
+0.51 req/s. It does not overlap `fetch_storm_surge.py`, which runs 01:31/13:31
+for ~32 min against the same host.
 
 This table is maintained by hand, not instrumented — deliberately (decided
 2026-08-16). A project-wide request counter is more machinery than a number we
-are 2.5% of deserves. **Keep it honest by updating the row in the same commit
+are 2.9% of deserves. **Keep it honest by updating the row in the same commit
 that changes a fetcher's schedule, station count, or step count** — all three
 are visible in the source constants, so the count is derivable, never measured.
 Revisit the decision if a new point-extraction feed lands (a gridded water-level

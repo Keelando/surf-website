@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 """
-Wave Forecast Fetcher for Surf Server
-Fetches RDWPS (national 2.5 km) wave forecasts from Environment Canada GeoMet
-WMS via point extraction at buoy locations, storing every run to the database
-for model-vs-buoy validation (bias/RMSE scoring).
+Wave and Wind Forecast Fetcher for Surf Server
+Fetches RDWPS (national 2.5 km) wave forecasts and HRDPS (continental 2.5 km)
+10 m wind forecasts from Environment Canada GeoMet WMS via point extraction at
+buoy locations, storing every run to the database for model-vs-buoy validation
+(bias/RMSE scoring).
 
 Verified 2026-08-15: GetFeatureInfo values are bit-identical to the raw GRIB2
 files, so nothing is lost by extracting points over WMS instead of downloading
 grids. Full parameter inventory and field-selection rationale in
 docs/project/RDWPS_PARAMETERS.md.
+
+Wind comes from HRDPS rather than RDWPS (added 2026-08-17) because RDWPS's own
+forcing wind (UGRD/VGRD) exists only in the GRIB2 files — it is not published
+as a WMS layer, and HRDPS is the better wind source regardless. Two models in
+one fetch is why every row carries its own `model`: an RDWPS run and an HRDPS
+run share the same 00/06/12/18Z hours but are not the same forecast, and
+blending them would quietly corrupt the verification archive.
 """
 
 import re
@@ -32,29 +40,65 @@ from lib.stations import get_buoy
 
 logger = setup_logging("wave_forecast")
 
-# GeoMet layers to fetch, keyed by our field names.
+MODEL_NAME = "RDWPS national 2.5km"
+WIND_MODEL_NAME = "HRDPS continental 2.5km"
+
+# GeoMet layers to fetch, keyed by our field names, grouped by the model that
+# publishes them. Field names are globally unique across models on purpose:
+# `variable` alone identifies the source, which is what lets the storage tables
+# keep their existing primary keys (see test_field_names_are_unique_across_models).
+#
 # Heights in metres, periods in seconds, directions degrees true coming FROM
-# (matches the site-wide meteorological convention — verified against the
-# model's own wind field, see docs/project/RDWPS_PARAMETERS.md).
-VARIABLES = {
-    "wave_height": "RDWPS_2.5km_SignificantWaveHeight",
-    "peak_period": "RDWPS_2.5km_PeakWavePeriod",
-    "wave_direction": "RDWPS_2.5km_MeanWaveDir",
-    "wind_wave_height": "RDWPS_2.5km_WindWavesSignificantHeight",
+# (matches the site-wide meteorological convention — waves verified against the
+# model's own wind field, wind direction verified 2026-08-17 against RDWPS
+# MeanWaveDir on a 100 % wind-sea hour: WD 276.2° vs 275.7°. See
+# docs/project/RDWPS_PARAMETERS.md).
+SOURCES = {
+    MODEL_NAME: {
+        "wave_height": "RDWPS_2.5km_SignificantWaveHeight",
+        "peak_period": "RDWPS_2.5km_PeakWavePeriod",
+        "wave_direction": "RDWPS_2.5km_MeanWaveDir",
+        "wind_wave_height": "RDWPS_2.5km_WindWavesSignificantHeight",
+    },
+    WIND_MODEL_NAME: {
+        "wind_speed": "HRDPS.CONTINENTAL_WSPD",
+        "wind_direction": "HRDPS.CONTINENTAL_WD",
+        # WGX (gust maximum), not WGE (gust estimate): sampled 2026-08-17, WGE
+        # and WGN were identical to each other and WGX was the only one above
+        # the sustained wind. All three are masked at most hours — the model
+        # only diagnoses a gust where there is one to diagnose, so a gust row
+        # existing at all is itself the signal (8 of 9 sampled hours masked;
+        # the one that wasn't is the 20.8 kt peak over a 16.8 kt sustained).
+        "wind_gust": "HRDPS.CONTINENTAL_WGX",
+    },
 }
+
+# Flat field -> layer view of SOURCES, for callers that don't care which model
+# a field came from.
+VARIABLES = {field: layer for layers in SOURCES.values() for field, layer in layers.items()}
 
 UNITS = {
     "wave_height": "m",
     "peak_period": "s",
     "wave_direction": "degrees_true_from",
     "wind_wave_height": "m",
+    "wind_speed": "km/h",
+    "wind_direction": "degrees_true_from",
+    "wind_gust": "km/h",
+}
+
+# GeoMet serves wind in m/s; the site stores km/h everywhere and converts to
+# knots for display. Convert on the way in so the database never holds two
+# units for the same quantity.
+MS_TO_KMH = 3.6
+CONVERSIONS = {
+    "wind_speed": lambda value: value * MS_TO_KMH,
+    "wind_gust": lambda value: value * MS_TO_KMH,
 }
 
 # Buoys to extract at (ids from config/stations.json). Halibut Bank first;
 # add the other EC buoys once the validation run looks sane.
 BUOY_IDS = ["4600146"]
-
-MODEL_NAME = "RDWPS national 2.5km"
 
 OUTPUT_DIR = EXPORT_DIR / "wave_forecast"
 LOCKFILE = Path("/tmp/wave_forecast_fetch.lock")
@@ -69,12 +113,15 @@ BBOX_OFFSET = 0.02  # degrees
 FETCH_DELAY = 1.5  # seconds between requests
 REQUEST_TIMEOUT = 60  # seconds
 
-# The model publishes 49 hourly steps (0–48 h), but we don't fetch them all:
+# Both models publish 49 hourly steps (0–48 h), but we don't fetch them all:
 # one WMS request buys one (variable, hour), so the time axis is what drives
 # our request count. Hourly detail matters for planning a day on the water;
 # past 24 h the model's skill is soft enough that 3-hourly is plenty.
-# 25 + 8 = 33 steps → 133 requests/run, 532/day at 4 runs — 0.6% of MSC's
-# 86,400/day guidance (https://eccc-msc.github.io/open-data/usage-policy/).
+# 25 + 8 = 33 steps × 7 variables + 2 GetCapabilities = 233 requests/run,
+# 932/day at 4 runs — ~1.1% of MSC's 86,400/day guidance
+# (https://eccc-msc.github.io/open-data/usage-policy/). Note the guidance is a
+# *rate*: this leaves FETCH_DELAY untouched, so it lengthens the burst
+# (~4 → ~7.6 min) without raising the 0.51 req/s it runs at.
 FINE_HORIZON_HOURS = 24  # hourly out to here
 COARSE_STEP_HOURS = 3  # then this spacing to the end of the run
 
@@ -114,8 +161,16 @@ def ensure_db_schema(conn):
     # `value` is nullable and `status` says why: 'ok' or 'masked'. A masked
     # cell is information, not absence — RDWPS masks wind-wave height when
     # there is no wind sea (all 22 masked steps on 2026-08-15 had Hs <=
-    # 0.104 m). Storing a row either way also means a missing row can only
-    # mean a failed fetch.
+    # 0.104 m), and HRDPS masks gusts at every hour it doesn't diagnose one.
+    # Storing a row either way also means a missing row can only mean a failed
+    # fetch.
+    #
+    # `model` is carried per row, not just per run: two models are fetched in
+    # one pass and they publish runs at the same 00/06/12/18Z hours, so
+    # forecast_run_time alone does not say which forecast a value came from.
+    # It stays out of the primary key because `variable` already identifies the
+    # model (field names are unique across SOURCES) — the column is there so a
+    # verification query never has to encode that mapping.
     cur.execute("""
         CREATE TABLE IF NOT EXISTS wave_forecast (
             station_id TEXT NOT NULL,
@@ -124,6 +179,7 @@ def ensure_db_schema(conn):
             valid_time INTEGER NOT NULL,
             value REAL,
             status TEXT NOT NULL DEFAULT 'ok',
+            model TEXT NOT NULL DEFAULT '',
             created_at INTEGER DEFAULT (strftime('%s', 'now')),
             PRIMARY KEY (station_id, variable, forecast_run_time, valid_time)
         )
@@ -139,17 +195,20 @@ def ensure_db_schema(conn):
         ON wave_forecast(station_id, variable, (valid_time - forecast_run_time))
     """)
     # Which runs we actually captured, and how cleanly. `model` is provenance:
-    # an RDWPS version change must not silently blend into the archive.
+    # a model version change must not silently blend into the archive, and it
+    # is part of the primary key because RDWPS and HRDPS both publish an 00Z
+    # run — keyed on (station, run) alone, the second model written would
+    # overwrite the first model's row for the same hour.
     cur.execute("""
         CREATE TABLE IF NOT EXISTS wave_forecast_run (
             station_id TEXT NOT NULL,
+            model TEXT NOT NULL,
             forecast_run_time INTEGER NOT NULL,
             fetched_at INTEGER NOT NULL,
-            model TEXT NOT NULL,
             n_ok INTEGER NOT NULL DEFAULT 0,
             n_masked INTEGER NOT NULL DEFAULT 0,
             n_failed INTEGER NOT NULL DEFAULT 0,
-            PRIMARY KEY (station_id, forecast_run_time)
+            PRIMARY KEY (station_id, model, forecast_run_time)
         )
     """)
     # Forecast/observation pairs, written once a valid_time has passed.
@@ -175,6 +234,7 @@ def ensure_db_schema(conn):
             -- it is cheap now and needs re-deriving every past t0 later.
             reference_value REAL,
             obs_offset_seconds INTEGER,
+            model TEXT,
             created_at INTEGER DEFAULT (strftime('%s', 'now')),
             PRIMARY KEY (station_id, variable, forecast_run_time, valid_time)
         )
@@ -182,20 +242,41 @@ def ensure_db_schema(conn):
     conn.commit()
 
 
-def migrate_db_schema(conn):
-    """Bring pre-2026-08-15 databases up to the current schema.
+def _columns(conn, table):
+    """PRAGMA table_info as {name: row}, empty when the table doesn't exist."""
+    return {row[1]: row for row in conn.execute(f"PRAGMA table_info({table})")}
 
-    The original table had `value REAL NOT NULL`, which now has to accept NULL
-    so masked steps can be recorded. SQLite cannot relax a column constraint
-    in place, so the table is rebuilt — ALTER TABLE ... ADD COLUMN alone
-    leaves the old NOT NULL and every masked insert fails.
+
+def migrate_db_schema(conn):
+    """Bring older databases up to the current schema.
+
+    Two rounds of change so far:
+
+    1. **2026-08-15** — the original table had `value REAL NOT NULL`, which now
+       has to accept NULL so masked steps can be recorded. SQLite cannot relax
+       a column constraint in place, so the table is rebuilt: ALTER TABLE ...
+       ADD COLUMN alone leaves the old NOT NULL and every masked insert fails.
+    2. **2026-08-17** — a second model (HRDPS wind) joined the fetch, so every
+       row carries a `model`, and `wave_forecast_run` needs it in the primary
+       key. Both models publish an 00Z run; without the key change the second
+       model written each pass would overwrite the first model's run row.
     """
-    ver_cols = {row[1] for row in conn.execute("PRAGMA table_info(wave_forecast_verification)")}
+    ver_cols = _columns(conn, "wave_forecast_verification")
     if ver_cols and "reference_value" not in ver_cols:
         conn.execute("ALTER TABLE wave_forecast_verification ADD COLUMN reference_value REAL")
         conn.commit()
         logger.info("    🔧 Migrated wave_forecast_verification: added reference_value")
+    if ver_cols and "model" not in ver_cols:
+        conn.execute("ALTER TABLE wave_forecast_verification ADD COLUMN model TEXT")
+        conn.commit()
+        logger.info("    🔧 Migrated wave_forecast_verification: added model")
 
+    _migrate_forecast_table(conn)
+    _migrate_run_table(conn)
+
+
+def _migrate_forecast_table(conn):
+    """Relax `value` to nullable (2026-08-15) and add `model` (2026-08-17)."""
     info = list(conn.execute("PRAGMA table_info(wave_forecast)"))
     if not info:
         return
@@ -207,6 +288,9 @@ def migrate_db_schema(conn):
             conn.execute("ALTER TABLE wave_forecast ADD COLUMN status TEXT NOT NULL DEFAULT 'ok'")
             conn.commit()
             logger.info("    🔧 Migrated wave_forecast: added status column")
+        if "model" not in cols:
+            conn.execute("ALTER TABLE wave_forecast ADD COLUMN model TEXT NOT NULL DEFAULT ''")
+            _backfill_model(conn)
         return
 
     logger.info("    🔧 Rebuilding wave_forecast to allow NULL values (masked steps)...")
@@ -221,6 +305,7 @@ def migrate_db_schema(conn):
             valid_time INTEGER NOT NULL,
             value REAL,
             status TEXT NOT NULL DEFAULT 'ok',
+            model TEXT NOT NULL DEFAULT '',
             created_at INTEGER DEFAULT (strftime('%s', 'now')),
             PRIMARY KEY (station_id, variable, forecast_run_time, valid_time)
         );
@@ -236,8 +321,78 @@ def migrate_db_schema(conn):
     """)
     # Indexes lived on the dropped table — recreate them.
     ensure_db_schema(conn)
+    _backfill_model(conn)
     rows = conn.execute("SELECT COUNT(*) FROM wave_forecast").fetchone()[0]
     logger.info(f"    🔧 Rebuild complete, {rows} rows preserved")
+
+
+def _backfill_model(conn):
+    """Label pre-2026-08-17 rows, all of which are RDWPS waves.
+
+    Matched on the field names rather than blanket-set, so a row whose variable
+    we no longer recognise stays visibly unlabelled instead of being asserted
+    into the wrong model.
+    """
+    for model, layers in SOURCES.items():
+        placeholders = ",".join("?" * len(layers))
+        conn.execute(
+            f"UPDATE wave_forecast SET model = ? WHERE model = '' AND variable IN ({placeholders})",
+            (model, *layers),
+        )
+    conn.commit()
+    labelled = conn.execute("SELECT COUNT(*) FROM wave_forecast WHERE model != ''").fetchone()[0]
+    orphans = conn.execute("SELECT COUNT(*) FROM wave_forecast WHERE model = ''").fetchone()[0]
+    logger.info(f"    🔧 Migrated wave_forecast: labelled {labelled} rows with their model")
+    if orphans:
+        logger.info(f"    ⚠️  {orphans} rows have a variable not in SOURCES and stay unlabelled")
+
+
+def _migrate_run_table(conn):
+    """Put `model` in the run table's primary key (2026-08-17)."""
+    cols = _columns(conn, "wave_forecast_run")
+    if not cols or cols["model"][5]:  # row[5] is the column's position in the PK
+        return
+
+    logger.info("    🔧 Rebuilding wave_forecast_run to key runs by model...")
+    conn.executescript("""
+        PRAGMA foreign_keys=off;
+        BEGIN;
+        CREATE TABLE wave_forecast_run_new (
+            station_id TEXT NOT NULL,
+            model TEXT NOT NULL,
+            forecast_run_time INTEGER NOT NULL,
+            fetched_at INTEGER NOT NULL,
+            n_ok INTEGER NOT NULL DEFAULT 0,
+            n_masked INTEGER NOT NULL DEFAULT 0,
+            n_failed INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (station_id, model, forecast_run_time)
+        );
+        INSERT INTO wave_forecast_run_new
+            (station_id, model, forecast_run_time, fetched_at, n_ok, n_masked, n_failed)
+        SELECT station_id, model, forecast_run_time, fetched_at, n_ok, n_masked, n_failed
+        FROM wave_forecast_run;
+        DROP TABLE wave_forecast_run;
+        ALTER TABLE wave_forecast_run_new RENAME TO wave_forecast_run;
+        COMMIT;
+        PRAGMA foreign_keys=on;
+    """)
+    rows = conn.execute("SELECT COUNT(*) FROM wave_forecast_run").fetchone()[0]
+    logger.info(f"    🔧 Rebuild complete, {rows} run rows preserved")
+
+
+def to_utc(dt):
+    """Normalise a forecast timestamp to UTC.
+
+    Every timestamp in this module is a model valid time, which is always UTC:
+    `get_time_steps` attaches UTC explicitly, and GeoMet only speaks Z. This
+    guards the two places where that could silently go wrong — `strftime` on a
+    non-UTC aware datetime would label local time as `Z`, and `.timestamp()` on
+    a naive datetime would read it in the server's local zone, putting every
+    valid_time 7–8 hours out. A naive datetime is therefore taken as UTC.
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 def get_time_steps(layer):
@@ -268,11 +423,19 @@ def get_time_steps(layer):
     iso_format = "%Y-%m-%dT%H:%M:%SZ"
     start_time = datetime.strptime(start_str, iso_format).replace(tzinfo=timezone.utc)
     end_time = datetime.strptime(end_str, iso_format).replace(tzinfo=timezone.utc)
-    interval_hours = int(re.sub(r"\D", "", interval_str))
+
+    # RDWPS publishes PT1H, but read the unit rather than assuming it: stripping
+    # the letters out of "PT30M" would step the axis 30 *hours* at a time and
+    # quietly fetch three days of the wrong instants.
+    unit_match = re.fullmatch(r"PT(\d+)([HM])", interval_str.strip())
+    if not unit_match:
+        raise ValueError(f"Unsupported time interval {interval_str!r} for layer {layer}")
+    amount, unit = int(unit_match.group(1)), unit_match.group(2)
+    interval = timedelta(hours=amount) if unit == "H" else timedelta(minutes=amount)
 
     steps = [start_time]
     while steps[-1] < end_time:
-        steps.append(steps[-1] + timedelta(hours=interval_hours))
+        steps.append(steps[-1] + interval)
     return steps
 
 
@@ -288,7 +451,7 @@ def fetch_point(layer, lat, lon, timestamp):
     'masked' and 'failed' are kept apart deliberately: the first is a
     statement by the model, the second is a gap in our record.
     """
-    time_str = timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
+    time_str = to_utc(timestamp).strftime("%Y-%m-%dT%H:%M:%SZ")
     try:
         resp = SESSION.get(
             GEOMET_WMS_BASE,
@@ -328,11 +491,12 @@ def fetch_point(layer, lat, lon, timestamp):
         return None, None, "failed"
 
 
-def fetch_station_forecast(station_id, station_info, time_steps):
-    """Fetch all variables for all timesteps at one station.
+def fetch_station_forecast(station_id, station_info, layers, time_steps):
+    """Fetch one model's variables for all timesteps at one station.
 
-    Returns (forecast, run_time) where forecast maps ISO valid time ->
-    {field: value} and run_time is the model run the values came from.
+    `layers` is a {field: layer} map — one model's entry in SOURCES. Returns
+    (forecast, readings, counts, run_time) where forecast maps ISO valid time
+    -> {field: value} and run_time is the model run the values came from.
     """
     logger.info(f"\n📍 Fetching {station_info['name']}...")
     lat, lon = station_info["lat"], station_info["lon"]
@@ -342,21 +506,26 @@ def fetch_station_forecast(station_id, station_info, time_steps):
     run_times = set()
     counts = {"ok": 0, "masked": 0, "failed": 0}
 
-    for field, layer in VARIABLES.items():
+    for field, layer in layers.items():
         logger.info(f"  🌊 {field} ({layer})")
+        convert = CONVERSIONS.get(field)
         for timestamp in time_steps:
             value, run_time, status = fetch_point(layer, lat, lon, timestamp)
+            # Convert before anything stores or exports it, so km/h is the only
+            # unit this field ever has downstream.
+            if value is not None and convert:
+                value = convert(value)
             counts[status] += 1
             if run_time:
                 run_times.add(run_time)
             if status != "failed":
                 readings.append((field, timestamp, value, status))
             if value is not None:
-                time_key = timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
+                time_key = to_utc(timestamp).strftime("%Y-%m-%dT%H:%M:%SZ")
                 forecast.setdefault(time_key, {})[field] = round(value, 3)
             time.sleep(FETCH_DELAY)
 
-    total = len(VARIABLES) * len(time_steps)
+    total = len(layers) * len(time_steps)
     logger.info(
         f"    ✅ Retrieved {counts['ok']}/{total} values "
         f"(masked: {counts['masked']}, failed: {counts['failed']})"
@@ -368,8 +537,8 @@ def fetch_station_forecast(station_id, station_info, time_steps):
     return forecast, readings, counts, run_time
 
 
-def store_forecast_to_db(station_id, readings, counts, run_time):
-    """Store one station's forecast, keyed by model run for validation.
+def store_forecast_to_db(station_id, model, readings, counts, run_time):
+    """Store one station's forecast for one model, keyed by run for validation.
 
     Writes a row for every step we got an answer for — masked included, with
     value NULL — so an absent row unambiguously means the fetch failed.
@@ -389,28 +558,28 @@ def store_forecast_to_db(station_id, readings, counts, run_time):
 
     stored = 0
     for field, timestamp, value, status in readings:
-        valid_epoch = int(timestamp.timestamp())
+        valid_epoch = int(to_utc(timestamp).timestamp())
         cur.execute(
             """
             INSERT OR REPLACE INTO wave_forecast
-            (station_id, variable, forecast_run_time, valid_time, value, status)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (station_id, variable, forecast_run_time, valid_time, value, status, model)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (station_id, field, run_epoch, valid_epoch, value, status),
+            (station_id, field, run_epoch, valid_epoch, value, status, model),
         )
         stored += 1
 
     cur.execute(
         """
         INSERT OR REPLACE INTO wave_forecast_run
-        (station_id, forecast_run_time, fetched_at, model, n_ok, n_masked, n_failed)
+        (station_id, model, forecast_run_time, fetched_at, n_ok, n_masked, n_failed)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         (
             station_id,
+            model,
             run_epoch,
             int(time.time()),
-            MODEL_NAME,
             counts["ok"],
             counts["masked"],
             counts["failed"],
@@ -427,20 +596,34 @@ def store_forecast_to_db(station_id, readings, counts, run_time):
     conn.commit()
     conn.close()
 
-    logger.info(f"    💾 Stored {stored} values to database (run {run_time})")
+    logger.info(f"    💾 Stored {stored} {model} values to database (run {run_time})")
     if deleted > 0:
         logger.info(f"    🗑️  Purged {deleted} records older than {WAVE_FORECAST_RETENTION_DAYS} days")
 
 
-def save_forecast(station_id, station_info, forecast, run_time):
-    """Save forecast JSON with an explicit allowlist of fields (site/data is public)."""
+def save_forecast(station_id, station_info, forecast, run_times):
+    """Save forecast JSON with an explicit allowlist of fields (site/data is public).
+
+    `run_times` maps model name -> that model's run. `model`/`model_run_time`
+    stay at the top level describing the wave model, because that is what the
+    page reads today; `models` carries the full per-model provenance, which is
+    what a reader needs once wind from a second model shares the same series.
+    """
     output_data = {
         "station_id": station_id,
         "station_name": station_info["name"],
         "location": {"lat": station_info["lat"], "lon": station_info["lon"]},
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "model": MODEL_NAME,
-        "model_run_time": run_time,
+        "model_run_time": run_times.get(MODEL_NAME),
+        "models": [
+            {
+                "name": model,
+                "run_time": run_times.get(model),
+                "variables": sorted(SOURCES[model]),
+            }
+            for model in SOURCES
+        ],
         "units": UNITS,
         "forecast": forecast,
     }
@@ -449,25 +632,40 @@ def save_forecast(station_id, station_info, forecast, run_time):
     logger.info(f"    💾 Saved to {output_file}")
 
 
+def plan_time_steps():
+    """Read each model's published time axis and taper it.
+
+    Read per model rather than once: RDWPS and HRDPS publish on the same
+    00/06/12/18Z cadence but not at the same minute, so a fetch can legitimately
+    catch different runs, and their step lists must be allowed to differ.
+    """
+    plan = {}
+    for model, layers in SOURCES.items():
+        published = get_time_steps(next(iter(layers.values())))
+        steps = taper_time_steps(published, FINE_HORIZON_HOURS, COARSE_STEP_HOURS)
+        plan[model] = steps
+        logger.info(
+            f"📅 {model}: {steps[0].strftime('%Y-%m-%d %H:%M')} to "
+            f"{steps[-1].strftime('%Y-%m-%d %H:%M')} UTC "
+            f"({len(steps)} of {len(published)} published steps — "
+            f"hourly to {FINE_HORIZON_HOURS}h, then {COARSE_STEP_HOURS}-hourly)"
+        )
+    return plan
+
+
 def main():
-    logger.info("🌊 Wave Forecast Fetcher (RDWPS)")
+    logger.info("🌊 Wave + Wind Forecast Fetcher (RDWPS waves, HRDPS wind)")
     logger.info("=" * 50)
 
     if not acquire_lock():
         return 1
 
     try:
-        first_layer = next(iter(VARIABLES.values()))
-        published_steps = get_time_steps(first_layer)
-        time_steps = taper_time_steps(published_steps, FINE_HORIZON_HOURS, COARSE_STEP_HOURS)
-        logger.info(
-            f"📅 Forecast period: {time_steps[0].strftime('%Y-%m-%d %H:%M')} to "
-            f"{time_steps[-1].strftime('%Y-%m-%d %H:%M')} UTC "
-            f"({len(time_steps)} of {len(published_steps)} published steps — "
-            f"hourly to {FINE_HORIZON_HOURS}h, then {COARSE_STEP_HOURS}-hourly)"
-        )
+        steps_by_model = plan_time_steps()
 
-        requests_planned = len(time_steps) * len(VARIABLES) * len(BUOY_IDS)
+        requests_planned = sum(
+            len(steps) * len(SOURCES[model]) for model, steps in steps_by_model.items()
+        ) * len(BUOY_IDS)
         # ~0.45 s of network per request on top of our own delay (measured
         # 2026-08-15); the old estimate counted only the sleep and came in at
         # half the real runtime.
@@ -484,20 +682,32 @@ def main():
                 failures += 1
                 continue
 
-            forecast, readings, counts, run_time = fetch_station_forecast(
-                buoy_id, station_info, time_steps
-            )
-            if forecast:
-                store_forecast_to_db(buoy_id, readings, counts, run_time)
-                save_forecast(buoy_id, station_info, forecast, run_time)
+            # One merged series per station across models — they share a valid
+            # time axis — but each model stored and labelled separately.
+            merged = {}
+            run_times = {}
+            for model, layers in SOURCES.items():
+                forecast, readings, counts, run_time = fetch_station_forecast(
+                    buoy_id, station_info, layers, steps_by_model[model]
+                )
+                if not forecast:
+                    logger.info(f"    ❌ No {model} data retrieved for {buoy_id}")
+                    failures += 1
+                    continue
+                store_forecast_to_db(buoy_id, model, readings, counts, run_time)
+                run_times[model] = run_time
+                for time_key, values in forecast.items():
+                    merged.setdefault(time_key, {}).update(values)
+
+            if merged:
+                save_forecast(buoy_id, station_info, merged, run_times)
             else:
                 logger.info(f"    ❌ No data retrieved for {buoy_id}")
-                failures += 1
 
         if failures:
-            logger.info(f"\n⚠️  Completed with {failures} station failure(s)")
+            logger.info(f"\n⚠️  Completed with {failures} fetch failure(s)")
             return 1
-        logger.info("\n✅ Wave forecast update complete!")
+        logger.info("\n✅ Wave + wind forecast update complete!")
         return 0
 
     except Exception as e:
