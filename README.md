@@ -10,9 +10,31 @@ Real-time marine weather monitoring system for the Salish Sea region.
 
 Collects data from multiple sources, stores it in SQLite, and exports JSON files that the static frontend reads directly.
 
-**Data sources:** EC and NOAA wave buoys · wind stations (EC SWOB-ML, NWS airports, Jericho Sailing Centre) · DFO tide stations · Surrey FlowWorks · White Rock weather · 23 lightstations · webcams · marine forecasts · GeoMet GDSPS storm surge — full registry in `config/stations.json`
+**Data sources:** EC and NOAA wave buoys · wind stations (EC SWOB-ML, NWS airports, Jericho Sailing Centre) · DFO tide stations · Surrey FlowWorks · White Rock weather · 23 lightstations · webcams · marine forecasts · GeoMet model forecasts (RDWPS waves, GDSPS storm surge) — full registry in `config/stations.json`
 
 **Stack:** Python · SQLite · Sarracenia (sr3) · Caddy
+
+---
+
+## Forecast Models
+
+Alongside the live observations, two Environment Canada models are pulled from
+GeoMet by point extraction — one value per location per hour, rather than whole
+grids:
+
+**RDWPS** (Regional Deterministic Wave Prediction System, 2.5 km) — what the
+waves are expected to do. Significant wave height, peak period, mean direction,
+and wind-wave height out to 48 hours. Runs four times a day; we fetch hourly
+detail for the first 24 hours, then every 3 hours. Currently Halibut Bank only,
+and every run is kept so the forecast can be scored against what the buoy
+actually measured.
+
+**GDSPS** (Global Deterministic Storm Surge Prediction System, 15 km) — how much
+higher or lower the water will sit than the tide table says. Ten days out, twice
+a day, for six stations around the Salish Sea and outer coast. Added to the DFO tide
+prediction, this is the water level the tides page shows.
+
+Details: `docs/project/FORECAST_MODELS.md`, `docs/STORM_SURGE_SETUP.md`.
 
 ---
 
@@ -69,6 +91,7 @@ envcan_wave/
 - `wind_data.sqlite` — wind station observations
 - `tide_data.sqlite` — tide observations, predictions, high/low events
 - `storm_surge_forecast.sqlite` — GDSPS storm surge forecasts
+- `wave_forecast.sqlite` — RDWPS wave forecasts (every run, for scoring)
 - `lightstation_data.sqlite` — lightstation reports
 - `weather_data.sqlite` — White Rock weather station
 
@@ -85,6 +108,7 @@ envcan_wave/
 | `scripts/fetch/fetch_jericho_wind.py` | Fetch Jericho Sailing Centre wind |
 | `scripts/parse/tide_to_sqlite.py` | Fetch DFO IWLS tide data |
 | `scripts/fetch/fetch_storm_surge.py` | Fetch GeoMet GDSPS storm surge |
+| `scripts/fetch/fetch_wave_forecast.py` | Fetch GeoMet RDWPS wave forecast |
 | `scripts/fetch/fetch_lightstation.py` | Fetch DFO lightstation bulletins |
 | `scripts/parse/parse_lightstation.py` | Parse lightstation text → SQLite |
 | `scripts/parse/parse_marine_forecast.py` | Parse EC marine forecast XMLs → JSON |
@@ -135,7 +159,7 @@ via `config/crontab.txt` + `scripts/install_crontab.sh`.
 
 ## Acknowledgements
 
-**Environment Canada** — SWOB-ML buoy/wind data, GeoMet GDSPS storm surge, marine forecasts
+**Environment Canada** — SWOB-ML buoy/wind data, GeoMet RDWPS wave and GDSPS storm surge forecasts, marine forecasts
 **NOAA NDBC** — Spectral and meteorological feeds
 **DFO** — IWLS tide data, lightstation weather reports
 **City of Surrey** — FlowWorks wave and tide data

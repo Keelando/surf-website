@@ -294,6 +294,13 @@
       color: var(--color-text-muted);
     }
 
+    .wave-forecast-about {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--color-text-muted);
+    }
+
     /* Full height, no inner scroll. A capped, inner-scrolling table hides
        most of its rows behind a scrollbar that readers don't notice —
        the table looks shorter than the 48 h chart above it. Only the
@@ -417,6 +424,16 @@
       <div class="wave-forecast-table-wrap" id="wave-forecast-table"></div>
 
       <div id="wave-forecast-metadata"></div>
+
+      <p class="wave-forecast-about">
+        <strong>About this model:</strong> RDWPS is Environment Canada's regional
+        wave model. It works out the sea state on a 2.5 km grid and looks 48 hours
+        ahead, re-running every six hours as new wind observations come in. These
+        numbers are the model's raw output at the Halibut Bank buoy — nothing here
+        is tuned to local knowledge, so treat it as a good read on wind-driven seas
+        and a rough one where the Strait's currents and channels dominate. The buoy
+        readings on the home page are the check: same spot, actually measured.
+      </p>
     </div>
 
     <!-- Related Resources Section -->
