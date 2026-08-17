@@ -55,6 +55,28 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+- [ ] **Revisit whether the repo should stay public** (user 2026-08-17):
+      decide deliberately rather than by inertia. Audience today is one
+      follower and one star (self-awarded), so the outward benefit is close
+      to nil in practice.
+      *What public currently costs:* every commit is scrutinised, the 07:17
+      cron pushes unattended to a public remote, and git history permanently
+      holds the expired v1 Windy key plus the Surrey credentials (neither
+      needs rotating — see `docs/SECRETS.md` — but they can't be un-published
+      short of a history rewrite).
+      *What it buys:* the discipline is real and worth keeping either way —
+      the pre-commit secret scan, `tests/test_secrets.py`, and the
+      two-public-surfaces rule all exist because the repo is public.
+      *Things to weigh before flipping:*
+      - `site/data/` stays public regardless. halibutbank.ca is the surface
+        that actually matters, and going private does nothing for it — so
+        none of the export-side hygiene can be relaxed.
+      - `site/components/about-generic.html` links to the GitHub repo from
+        every page's About section; that link would 404 for visitors.
+      - The `forgejo` remote (survivor.local) already mirrors main+tags
+        nightly, so backup is not a reason to stay on public GitHub.
+      - Reversible in one direction only: private→public later re-exposes
+        the whole history, so a future flip back needs the same thinking.
 - [ ] **"Security cam" wall view for the webcam page** (idea, user
       2026-08-16): a mode that drops all six cams into a dense grid of
       smaller images side by side with a little padding between them, so
