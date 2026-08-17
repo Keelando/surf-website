@@ -116,6 +116,46 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       ~1 viewport of scroll, fades in/out, hides at page bottom. Theme vars
       for light/dark, accessible label, keyboard-activatable,
       `prefers-reduced-motion` → instant jump, `addEventListener` only.
+- [x] **Track buoy reporting lag over time** (user 2026-08-17): **collecting
+      as of 2026-08-17.** `lib/reporting_lag.py` + `reporting_lag.sqlite`,
+      one row per observation, written by the buoy export after the JSON
+      lands (no new fetch, no new cron — the pipeline already runs it every
+      3 min). Lag is split into its two components rather than one number:
+      `source_lag` (instrument → our DB, upstream + fetch/parse) and
+      `publish_lag` (our DB → site, export cadence). First live readings
+      confirm the split is bimodal as expected — AMQP-pushed EC buoys land
+      at ~4 min source lag, polled NOAA/Surrey at 25–70 min — so compare a
+      station against its own baseline, never a global threshold.
+      `stale_seconds` is the slow-degradation signal the 2-hour freshness
+      window can only answer yes/no about. Seeded rows (first sighting per
+      station) have an inflated publish lag by construction: exclude them
+      with `WHERE seeded = 0`.
+      **Tide wired too (2026-08-17)**, aimed at Surrey: `export_tide_json.py`
+      records only stations that published an *observation*, never ones
+      showing prediction-only — a prediction is computed, not measured, and
+      it is exactly what masked the stalled Surrey feed on the page before.
+      First readings: Surrey ~69–80 min source lag on both the wave and tide
+      channels (so it is a FlowWorks-wide publishing delay, not per-channel),
+      DFO IWLS 0.6–5.8 min.
+      Remaining: (a) extend to wind/lightstation — the writer is
+      source-agnostic, each export needs ~3 lines; (b) a per-station
+      distribution (median / p90 / worst) on an unlisted page; (c) `source_lag`
+      backfill, valid for every source *except* Surrey tides before
+      2026-08-17 — see below.
+- [x] **Surrey tide observations: stop resetting `recorded_at`**
+      (2026-08-17): `fetch_surrey_tides.py` used `INSERT OR REPLACE`, which
+      deletes and re-inserts, so every row of the 24 h re-fetch window got a
+      fresh `recorded_at` every 20 min — Surrey history read as ~22 h of
+      fake lag. Not switched to `INSERT OR IGNORE`, because Surrey genuinely
+      revises: a live-vs-stored comparison found the newest point in each
+      channel corrected (2 mm on the channel, **32 mm** on the ocean gauge)
+      while the other 1,494 points were identical. So it is now an
+      `ON CONFLICT DO UPDATE` that updates the value and leaves
+      `recorded_at` alone — matching what `fetch_surrey_wave_v2.py` already
+      did. Predictions were always `INSERT OR IGNORE` and stay that way;
+      astronomical predictions don't change. Pre-2026-08-17 Surrey tide
+      `recorded_at` values are unrecoverable. `surrey_geodetic_data` still
+      uses REPLACE — harmless today (not lag-tracked), fix if it ever is.
 - [ ] **Mobile ECharts touch behavior** (open bug-ish): cursor/tooltip
       interaction is "funky" on mobile across chart pages; investigate
       ECharts touch/tooltip config, test on real devices.

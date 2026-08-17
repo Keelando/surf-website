@@ -41,8 +41,10 @@ DFO, Surrey, Jericho, White Rock, webcams).
 
 Databases in `~/.local/share/` (never in the repo):
 `buoy_data.sqlite`, `wind_data.sqlite`, `tide_data.sqlite`,
-`lightstation_data.sqlite`, `storm_surge_forecast.sqlite`, and
-`weather_data.sqlite` (White Rock weather).
+`lightstation_data.sqlite`, `storm_surge_forecast.sqlite`,
+`weather_data.sqlite` (White Rock weather), and `reporting_lag.sqlite`
+(instrument → database → website latency, written by the exports via
+`lib/reporting_lag.py`).
 
 ## Critical conventions
 

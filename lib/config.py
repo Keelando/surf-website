@@ -58,6 +58,10 @@ LIGHTSTATION_DATABASE = DATA_DIR / "lightstation_data.sqlite"
 # White Rock weather database (whiterock_east station)
 WEATHER_DATABASE = DATA_DIR / "weather_data.sqlite"
 
+# Reporting-lag history: instrument -> database -> website, per observation.
+# Separate from the source databases because lag is a cross-source question.
+REPORTING_LAG_DATABASE = DATA_DIR / "reporting_lag.sqlite"
+
 # =============================================================================
 # Configuration Files
 # =============================================================================
@@ -92,6 +96,11 @@ WAVE_FORECAST_RETENTION_DAYS = 60
 
 # How long to keep lightstation observations
 LIGHTSTATION_RETENTION_DAYS = 7
+
+# How long to keep reporting-lag rows. Longer than the observations they
+# describe: the point is spotting slow degradation over weeks, and the rows
+# are small (no measurements, just timestamps).
+REPORTING_LAG_RETENTION_DAYS = 180
 
 # =============================================================================
 # Freshness Windows (seconds)

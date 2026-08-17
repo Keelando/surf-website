@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from lib.config import BUOY_DATABASE, BUOY_FRESHNESS_WINDOW, EXPORT_DIR, safe_json_write
 from lib.directions import degrees_to_cardinal
 from lib.logging_config import setup_logging
+from lib.reporting_lag import record_publication
 from lib.stations import get_all_buoys
 
 # Shared utilities
@@ -69,6 +70,10 @@ ALL_FIELDS = [
 
 def query_and_export():
     latest_json = {}
+    # buoy_id -> observation_time of the reading this export actually puts on
+    # the page. Buoys that fall through as stubs or get skipped below are
+    # deliberately absent: nothing of theirs was published.
+    published = {}
 
     with sqlite3.connect(BUOY_DATABASE, timeout=5) as conn:
         # Enable WAL mode for safe concurrent reads during ingestion
@@ -178,6 +183,7 @@ def query_and_export():
                 continue
 
             latest_json[buoy_id] = buoy_json
+            published[buoy_id] = latest_time
             logger.debug(f"Exported {buoy_id} ({BUOYS[buoy_id]['name']})")
 
     # Add metadata about this export
@@ -189,6 +195,11 @@ def query_and_export():
 
     # Atomic write
     safe_json_write(OUT_PATH, latest_json)
+
+    # Record the lag only once the JSON is on disk, so published_at means
+    # "reached the site" rather than "we intended to publish it".
+    with sqlite3.connect(f"file:{BUOY_DATABASE}?mode=ro", uri=True, timeout=5) as lag_src:
+        record_publication("buoy", lag_src, "buoy_observation", "buoy_id", published)
 
     # Count actual buoys (exclude _meta)
     buoy_count = len([k for k in latest_json.keys() if k != "_meta"])

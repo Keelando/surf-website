@@ -20,6 +20,7 @@ from zoneinfo import ZoneInfo
 # Shared utilities
 from lib.config import EXPORT_DIR, TIDE_DATABASE, safe_json_write
 from lib.logging_config import setup_logging
+from lib.reporting_lag import record_publication
 from lib.stations import STATIONS
 
 logger = setup_logging("tide_export")
@@ -70,6 +71,11 @@ def export_latest(conn, station_metadata):
     now_timestamp = int(now.timestamp())
 
     latest_data = {}
+    # station_id -> observation_time of the reading this export puts on the
+    # page. Stations that publish only a prediction are deliberately absent:
+    # a prediction is computed, not measured, so it has no reporting lag —
+    # and it is exactly what masks a stalled observation feed on the page.
+    published = {}
 
     # Get all stations from observations
     cur.execute("SELECT DISTINCT station_name, station_id FROM tide_observation")
@@ -254,10 +260,13 @@ def export_latest(conn, station_metadata):
         # Only add if we have at least one data point
         if "observation" in station_data or "prediction_now" in station_data:
             latest_data[station_name] = station_data
+            if obs_row:
+                published[station_id] = obs_row[0]
 
     output = {"_meta": {"generated_utc": now.isoformat(), "type": "current_conditions"}, "stations": latest_data}
 
     safe_json_write(LATEST_OUT, output, sort_keys=True)
+    record_publication("tide", conn, "tide_observation", "station_id", published)
     logger.info(f"Exported latest conditions for {len(latest_data)} stations")
     return len(latest_data)
 
