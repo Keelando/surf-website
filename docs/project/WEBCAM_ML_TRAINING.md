@@ -34,6 +34,34 @@ Webcams (image side — already archived to `/mnt/storage/<cam>_cam/` as origina
 
 Total ~50k images, ~6 GB. `/mnt/storage` is 220 G with 198 G free — storage is not a constraint for years.
 
+Note the naming trap: the `boundarybay` key is the **White Rock East Beach**
+YouTube livestream, not the boundarybayweather.com cam below. Don't reuse the
+key.
+
+### Pending permissions
+
+More streams are wanted, both to populate the site and to widen the training
+set — more viewpoints and sea states is the main lever on a wave height model,
+more than any amount of extra history from the cams already listed. Acquiring
+one is a permissions problem, not a technical one.
+
+| Cam | Status (2026-08-17) |
+|---|---|
+| Boundary Bay (`boundarybayweather.com`) | Permission requested; awaiting a response. Nothing is captured from this cam. |
+
+Two distinct permissions, and they are worth asking for separately — an
+operator may grant one and refuse the other:
+
+1. **Retain stills privately for training.** All this project needs. Images
+   never leave the server; model output is wave heights, not their content.
+2. **Display/mirror on the site.** Bigger ask, and unnecessary here.
+
+Aggregators are not a shortcut for (1). A cam listed on Windy can be *displayed*
+via their Webcams API, but the terms forbid storing or archiving the images, so
+that route can never feed this dataset — and an operator's blessing doesn't
+amend the agreement with Windy. If permission comes through, pull the archive
+from the operator's own server.
+
 Marine/met conditions (label side — candidates for pairing):
 
 - **Wave height** — primary target. Nearest buoys: Halibut Bank (`4600146`), English Bay (`4600304`) for the WR/BB cams; Tofino/Neah Bay buoys for Cox Bay.
