@@ -96,9 +96,32 @@ CONVERSIONS = {
     "wind_gust": lambda value: value * MS_TO_KMH,
 }
 
-# Buoys to extract at (ids from config/stations.json). Halibut Bank first;
-# add the other EC buoys once the validation run looks sane.
-BUOY_IDS = ["4600146"]
+# Points to extract at (ids from config/stations.json). Halibut Bank is the
+# reference station — it has an EC buoy reporting the same spot, which is what
+# the verification archive scores against.
+#
+# Crescent Beach Ocean (added 2026-08-18) is the second point for the same
+# reason: Surrey's CRPILE sensor sits there, so the forecast can be checked
+# against something measured.
+#
+# The bay is better resolved than first assumed. Boundary Bay is ~22 km across
+# the mouth (Point Roberts to White Rock) and ~10 km deep, and a W->E transect
+# at 49.00N on 2026-08-18 returned seven distinct wet cells with genuinely
+# varying values (0.055-0.066 m), not one cell repeated — so RDWPS has real
+# internal structure here. CRPILE is 6 km offshore of Crescent Beach, in open
+# water, not on the drying flats.
+#
+# What is still worth watching: the water is shallow and the fetch is short, so
+# the sea state is depth-limited chop (the model's own 1.7 s periods say as
+# much), and that is the regime a model tuned for offshore sea state is most
+# likely to get wrong. Having observations is how we find out.
+#
+# The remaining candidates (Hein Bank, Sombrio Beach, Long Beach) are open
+# water where the model has more to say, but none has a co-located sensor and
+# none is in stations.json — they are not instruments, so adding them under
+# `buoys` would put phantom stations on the map. They need a forecast-only
+# registry section first.
+BUOY_IDS = ["4600146", "CRPILE"]
 
 OUTPUT_DIR = EXPORT_DIR / "wave_forecast"
 LOCKFILE = Path("/tmp/wave_forecast_fetch.lock")
@@ -117,11 +140,14 @@ REQUEST_TIMEOUT = 60  # seconds
 # one WMS request buys one (variable, hour), so the time axis is what drives
 # our request count. Hourly detail matters for planning a day on the water;
 # past 24 h the model's skill is soft enough that 3-hourly is plenty.
-# 25 + 8 = 33 steps × 7 variables + 2 GetCapabilities = 233 requests/run,
-# 932/day at 4 runs — ~1.1% of MSC's 86,400/day guidance
+# 25 + 8 = 33 steps × 7 variables = 231 requests per station per run, plus 2
+# GetCapabilities shared across stations. At 2 stations that is 464/run and
+# 1,856/day — ~2.1% of MSC's 86,400/day guidance
 # (https://eccc-msc.github.io/open-data/usage-policy/). Note the guidance is a
-# *rate*: this leaves FETCH_DELAY untouched, so it lengthens the burst
-# (~4 → ~7.6 min) without raising the 0.51 req/s it runs at.
+# *rate*: each added station leaves FETCH_DELAY untouched, so it lengthens the
+# burst (~7.6 min per station) without raising the 0.51 req/s it runs at. The
+# run has ~6 h of headroom before the next one, so runtime is not the binding
+# constraint either — but the flock guard is what makes that safe to rely on.
 FINE_HORIZON_HOURS = 24  # hourly out to here
 COARSE_STEP_HOURS = 3  # then this spacing to the end of the run
 
@@ -134,7 +160,13 @@ def acquire_lock():
     """Simple file-based lock to prevent concurrent runs."""
     if LOCKFILE.exists():
         age = time.time() - LOCKFILE.stat().st_mtime
-        if age > 900:  # 15 minutes (a full fetch takes a few minutes)
+        # Must stay comfortably above the real runtime, which scales with
+        # BUOY_IDS: ~7.6 min per station, so two stations already exceed the
+        # old 15-minute threshold and a live fetch would be declared stale by
+        # anything that ran alongside it. An hour is still well inside the 6 h
+        # gap between runs, so a genuinely wedged process is cleared before the
+        # next one is due.
+        if age > 3600:
             logger.info("⚠️  Removing stale lock file")
             LOCKFILE.unlink()
         else:
@@ -632,6 +664,33 @@ def save_forecast(station_id, station_info, forecast, run_times):
     logger.info(f"    💾 Saved to {output_file}")
 
 
+def save_index(stations):
+    """Write the list of stations that have a forecast file.
+
+    The page needs to know which stations to offer before it can load one, and
+    hardcoding that list in JavaScript would make BUOY_IDS a second source of
+    truth for something this script already knows. Written from the stations
+    that actually produced data, so a station whose fetch failed is absent from
+    the picker rather than offered as a broken option.
+
+    Allowlisted fields only — site/data is served straight to the public.
+    """
+    output_data = {
+        "generated_utc": datetime.now(timezone.utc).isoformat(),
+        "stations": [
+            {
+                "station_id": station_id,
+                "name": info["name"],
+                "lat": info["lat"],
+                "lon": info["lon"],
+            }
+            for station_id, info in stations
+        ],
+    }
+    safe_json_write(OUTPUT_DIR / "index.json", output_data)
+    logger.info(f"💾 Saved station index ({len(stations)} stations)")
+
+
 def plan_time_steps():
     """Read each model's published time axis and taper it.
 
@@ -675,6 +734,7 @@ def main():
         )
 
         failures = 0
+        published = []  # (station_id, info) for stations that produced a file
         for buoy_id in BUOY_IDS:
             station_info = get_buoy(buoy_id)
             if not station_info:
@@ -701,8 +761,12 @@ def main():
 
             if merged:
                 save_forecast(buoy_id, station_info, merged, run_times)
+                published.append((buoy_id, station_info))
             else:
                 logger.info(f"    ❌ No data retrieved for {buoy_id}")
+
+        if published:
+            save_index(published)
 
         if failures:
             logger.info(f"\n⚠️  Completed with {failures} fetch failure(s)")

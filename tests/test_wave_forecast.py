@@ -23,6 +23,7 @@ writer is still to be built — docs/project/FORECAST_UPGRADE.md).
 """
 
 import logging
+import re
 import sqlite3
 import sys
 from datetime import datetime, timedelta, timezone
@@ -685,16 +686,37 @@ class TestConfiguration:
         assert set(wf.CONVERSIONS) == {"wind_speed", "wind_gust"}
 
     def test_request_budget_matches_the_documented_footprint(self):
-        """33 steps x 7 variables x 1 buoy = 231 point queries, plus one
-        GetCapabilities per model = 233/run, 932/day at 4 runs (~1.1% of the
-        86,400 guidance). Mirrors the table in docs/DATA_FEEDS.md."""
+        """33 steps x 7 variables = 231 point queries per station. At 2 stations
+        plus one GetCapabilities per model that is 464/run, 1,856/day at 4 runs
+        (~2.1% of the 86,400 guidance). Mirrors the table in docs/DATA_FEEDS.md,
+        which is maintained by hand — this test is what keeps it honest, so
+        update both together when BUOY_IDS or the step count changes."""
         published = [dt(RUN_ISO) + timedelta(hours=h) for h in range(49)]
         steps = taper_time_steps(published, wf.FINE_HORIZON_HOURS, wf.COARSE_STEP_HOURS)
-        per_run = len(steps) * len(wf.VARIABLES) * len(wf.BUOY_IDS) + len(wf.SOURCES)
+        per_station = len(steps) * len(wf.VARIABLES)
+        per_run = per_station * len(wf.BUOY_IDS) + len(wf.SOURCES)
         assert len(steps) == 33
-        assert per_run == 233
-        assert per_run * 4 == 932
-        assert per_run * 4 < 86_400 * 0.02  # MSC usage guidance
+        assert per_station == 231
+        assert len(wf.BUOY_IDS) == 2
+        assert per_run == 464
+        assert per_run * 4 == 1_856
+        assert per_run * 4 < 86_400 * 0.05  # MSC usage guidance
+
+    def test_stale_lock_threshold_exceeds_a_full_run(self):
+        """acquire_lock() removes a lock it judges stale. Runtime scales with
+        BUOY_IDS (~7.6 min each), so a threshold that does not scale with it
+        will eventually declare a live fetch dead and let two runs overlap."""
+        published = [dt(RUN_ISO) + timedelta(hours=h) for h in range(49)]
+        steps = taper_time_steps(published, wf.FINE_HORIZON_HOURS, wf.COARSE_STEP_HOURS)
+        per_run = len(steps) * len(wf.VARIABLES) * len(wf.BUOY_IDS)
+        runtime_s = per_run * (wf.FETCH_DELAY + 0.45)
+        source = Path(wf.__file__).read_text()
+        threshold = int(re.search(r"if age > (\d+):", source).group(1))
+        assert threshold > runtime_s * 1.5, (
+            f"stale-lock threshold {threshold}s is too close to the "
+            f"~{runtime_s / 60:.0f} min runtime of {len(wf.BUOY_IDS)} stations"
+        )
+        assert threshold < 6 * 3600  # cleared before the next scheduled run
 
     def test_burst_rate_is_unchanged_by_the_extra_variables(self):
         """The guidance is a rate; only FETCH_DELAY moves it, never step count."""

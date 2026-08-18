@@ -285,6 +285,33 @@
       height: 360px;
     }
 
+    .wave-forecast-station {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .wave-forecast-station:empty {
+      display: none;
+    }
+
+    .wave-forecast-station label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--color-text-muted);
+    }
+
+    .wave-forecast-station select {
+      padding: 0.35rem 0.6rem;
+      font-size: 0.9rem;
+      color: var(--color-text);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-light);
+      border-radius: 4px;
+    }
+
     #wave-forecast-metadata {
       margin-top: 1rem;
       padding-top: 1rem;
@@ -409,13 +436,17 @@
     </div>
 
     <div class="forecast-zone" id="wave-forecast-section" style="margin-top: 2rem;">
-      <h2>🌊 Wave Forecast — Halibut Bank</h2>
+      <h2 id="wave-forecast-heading">🌊 Wave Forecast — Halibut Bank</h2>
 
       <p class="dev-note">
         <span class="dev-badge">Experimental</span>
         <span>Use at your own risk. Modelled waves from Environment Canada's
         regional wave model (RDWPS), updated four times a day.</span>
       </p>
+
+      <!-- Populated by wave-forecast.js from /data/wave_forecast/index.json;
+           stays empty while only one station has a forecast. -->
+      <div class="wave-forecast-station" id="wave-forecast-station"></div>
 
       <div id="wave-forecast-chart"></div>
 
@@ -427,9 +458,9 @@
         <strong>About this model:</strong> RDWPS is Environment Canada's regional
         wave model. It works out the sea state on a 2.5 km grid and looks 48 hours
         ahead, re-running every six hours as new wind observations come in. These
-        numbers are the model's raw output at the Halibut Bank buoy — nothing here
+        numbers are the model's raw output at the selected point — nothing here
         is tuned to local knowledge, so treat it as a good read on wind-driven seas
-        and a rough one where the Strait's currents and channels dominate. The buoy
+        and a rough one where the Strait's currents and channels dominate. The
         readings on the home page are the check: same spot, actually measured.
       </p>
     </div>
@@ -500,8 +531,8 @@
   <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
-  <script type="module" src="/assets/js/forecasts.js?v=a7e86abd32"></script>
-  <script type="module" src="/assets/js/wave-forecast.js?v=051a167e58"></script>
+  <script type="module" src="/assets/js/forecasts.js?v=be0fc2b600"></script>
+  <script type="module" src="/assets/js/wave-forecast.js?v=68744c4951"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

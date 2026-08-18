@@ -25,7 +25,10 @@ function setSafeHTML(element, html) {
   }
 }
 
-const STATION_ID = "4600146"; // Halibut Bank
+// Halibut Bank is the default because it is the reference station: an EC buoy
+// reports the same spot, so it is the one forecast a reader can immediately
+// check against something measured.
+const DEFAULT_STATION_ID = "4600146";
 
 // Wave heights in the Strait rarely trouble a metre outside a winter
 // southeasterly, and the summer forecasts sit under 0.2 m. Auto-scaling to
@@ -33,12 +36,21 @@ const STATION_ID = "4600146"; // Halibut Bank
 // axis holds a fixed 0–1 m unless the forecast exceeds it.
 const MIN_HEIGHT_AXIS_MAX = 1.0;
 
-// Hours of the table shown before the reader asks for more.
-const DEFAULT_VISIBLE_HOURS = 12;
+// Hours of the table shown before the reader asks for more. The table runs at
+// 3-hourly spacing, so this is 8 rows rather than 24.
+const DEFAULT_VISIBLE_HOURS = 24;
+
+// Table cadence. The chart keeps every step the fetch stored.
+const TABLE_STEP_HOURS = 3;
 
 let waveChart = null;
 let detachWaveThemeListener = null;
 let visibleHours = DEFAULT_VISIBLE_HOURS;
+let currentStationId = DEFAULT_STATION_ID;
+// Held at module scope rather than closed over at load time: the theme
+// listener is registered once and outlives any number of station switches, so
+// a captured row set would redraw the previous station's chart on a theme flip.
+let currentRows = [];
 
 /**
  * Convert the forecast object into a sorted array of rows.
@@ -64,6 +76,38 @@ function toSortedRows(forecast) {
     }))
     .filter((row) => !isNaN(row.time))
     .sort((a, b) => a.time - b.time);
+}
+
+/**
+ * Thin rows to a 3-hourly cadence for the table.
+ *
+ * The fetch stores hourly steps out to 24 h, and the chart draws every one of
+ * them — a line can carry that density, a table of numbers cannot. Thinning
+ * here rather than at the fetch keeps the hourly series in the database and on
+ * the chart, and makes the table read at one cadence across the whole 48 h
+ * instead of changing gear at the 24-hour taper point.
+ *
+ * These are *sampled* steps, not averages. Only wave height would survive
+ * averaging: peak period is a modal value (the mean of a 4 s wind chop and an
+ * 11 s swell is 7.5 s, an interval that occurs in neither), direction is
+ * circular (a plain mean across 350° and 010° gives 180°, the exact opposite),
+ * and wind-wave height is absent wherever the model reports no wind sea, so a
+ * bucket mean would silently mix "calm" with "not applicable". Every number in
+ * the table is therefore a value the model actually produced.
+ *
+ * Measured off the first step's lead time rather than the wall-clock hour, so
+ * it lines up with the fetcher's own taper (see lib/forecast_steps.py).
+ *
+ * @param {Array<Object>} rows - Every forecast step, sorted by valid time
+ * @returns {Array<Object>} Rows at 3-hourly spacing
+ */
+function toThreeHourly(rows) {
+  if (rows.length === 0) return [];
+  const start = rows[0].time.getTime();
+  return rows.filter((row) => {
+    const lead = (row.time.getTime() - start) / (60 * 60 * 1000);
+    return Number.isInteger(lead) ? lead % TABLE_STEP_HOURS === 0 : false;
+  });
 }
 
 /**
@@ -323,21 +367,23 @@ function rowsWithin(rows, hours) {
 }
 
 /**
- * Render the tabular forecast, showing `visibleHours` of it.
+ * Render the tabular forecast at 3-hourly spacing, showing `visibleHours` of it.
  *
- * The full 48 hours is 33 rows, which buries the chart and the provenance
- * block below it. It previously lived in a fixed-height scrolling box, but
- * an inner scrollbar is easy to miss entirely — the table simply looks
- * shorter than the chart above it. Explicit expand controls say how much
- * more there is.
+ * Takes every step and thins it here rather than receiving a thinned set, so
+ * the caller keeps one row list and the chart keeps the hourly detail. The
+ * full 48 hours is 17 rows at this cadence, which still buries the chart and
+ * the provenance block below it, so the expand controls stay — an inner
+ * scrollbar is easy to miss entirely, and the table then just looks shorter
+ * than the chart above it.
  *
- * @param {Array<Object>} rows - Every forecast step
+ * @param {Array<Object>} allRows - Every forecast step
  * @returns {void}
  */
-function renderTable(rows) {
+function renderTable(allRows) {
   const container = document.getElementById("wave-forecast-table");
   if (!container) return;
 
+  const rows = toThreeHourly(allRows);
   const total = spanHours(rows);
   const shown = rowsWithin(rows, visibleHours);
   const atFullExtent = shown.length >= rows.length;
@@ -380,8 +426,7 @@ function renderTable(rows) {
           atFullExtent
             ? ""
             : `<button type="button" class="wave-forecast-btn" data-expand="12">+12 hours</button>
-               <button type="button" class="wave-forecast-btn" data-expand="24">+24 hours</button>
-               <button type="button" class="wave-forecast-btn" data-expand="all">Show all</button>`
+               <button type="button" class="wave-forecast-btn" data-expand="all">Show all 48 h</button>`
         }
         ${
           visibleHours > DEFAULT_VISIBLE_HOURS
@@ -396,7 +441,7 @@ function renderTable(rows) {
     button.addEventListener("click", () => {
       const step = button.dataset.expand;
       visibleHours = step === "all" ? total : visibleHours + Number(step);
-      renderTable(rows);
+      renderTable(allRows);
     });
   }
 
@@ -404,7 +449,7 @@ function renderTable(rows) {
   if (collapse) {
     collapse.addEventListener("click", () => {
       visibleHours = DEFAULT_VISIBLE_HOURS;
-      renderTable(rows);
+      renderTable(allRows);
     });
   }
 }
@@ -433,12 +478,93 @@ function renderMetadata(payload, rows) {
     ${runDisplay ? `<strong>Model Run:</strong> ${runDisplay}<br/>` : ""}
     <strong>Data Retrieved:</strong> ${formatMonthDayTimeTZ(new Date(payload.generated_utc))}<br/>
     <strong>Forecast Period:</strong> ${formatMonthDayTimeTZ(first)} to ${formatMonthDayTimeTZ(last)}<br/>
-    <strong>Resolution:</strong> ${rows.length} steps — hourly to 24 h, then 3-hourly`,
+    <strong>Resolution:</strong> ${rows.length} steps — hourly to 24 h, then 3-hourly;
+    the table below samples every ${TABLE_STEP_HOURS} h`,
   );
 }
 
 /**
- * Load the forecast and render every view.
+ * Build the station picker from the fetcher's index.
+ *
+ * Hidden when only one station has a forecast, so the control appears the
+ * moment a second point is added and not before. The list comes from
+ * index.json rather than being written out here — the fetcher already knows
+ * which stations it produced, and duplicating that list in JavaScript is how
+ * it goes stale.
+ *
+ * @param {Array<Object>} stations - `stations` from index.json
+ * @returns {void}
+ */
+function renderStationPicker(stations) {
+  const container = document.getElementById("wave-forecast-station");
+  if (!container) return;
+
+  if (stations.length < 2) {
+    setSafeHTML(container, "");
+    return;
+  }
+
+  const options = stations
+    .map(
+      (station) =>
+        `<option value="${station.station_id}"${
+          station.station_id === currentStationId ? " selected" : ""
+        }>${station.name}</option>`,
+    )
+    .join("");
+
+  setSafeHTML(
+    container,
+    `<label for="wave-forecast-station-select">Station</label>
+     <select id="wave-forecast-station-select">${options}</select>`,
+  );
+
+  container.querySelector("select").addEventListener("change", (event) => {
+    currentStationId = event.target.value;
+    // A fresh station starts collapsed: carrying an expanded table across a
+    // switch would show one station's window on another station's data.
+    visibleHours = DEFAULT_VISIBLE_HOURS;
+    loadWaveForecast();
+  });
+}
+
+/**
+ * Set the section heading to the station being shown.
+ *
+ * @param {string} stationName
+ * @returns {void}
+ */
+function renderHeading(stationName) {
+  const heading = document.getElementById("wave-forecast-heading");
+  if (heading) heading.textContent = `🌊 Wave Forecast — ${stationName}`;
+}
+
+/**
+ * Fetch the station index.
+ *
+ * Fetch only — it does not touch `currentStationId` or render anything, so it
+ * can run alongside the forecast load rather than in front of it.
+ *
+ * A missing or broken index is not fatal: the default station's forecast still
+ * renders, just without a picker. That keeps the page working if the index
+ * write is the thing that failed.
+ *
+ * @returns {Promise<Array<Object>>} The stations offered, empty if unavailable
+ */
+async function loadStationIndex() {
+  try {
+    const index = await fetchWithTimeout(`/data/wave_forecast/index.json?t=${Date.now()}`);
+    return index.stations || [];
+  } catch (err) {
+    // warn, not error: a missing index is a handled condition, and the
+    // console-error suite treats error as a page failure.
+    logger.warn("WaveForecast", "Station index unavailable, using default station", err);
+    return [];
+  }
+}
+
+/**
+ * Load the forecast for `currentStationId` and render every view.
  *
  * @returns {Promise<void>}
  */
@@ -448,18 +574,20 @@ async function loadWaveForecast() {
 
   try {
     const payload = await fetchWithTimeout(
-      `/data/wave_forecast/${STATION_ID}.json?t=${Date.now()}`,
+      `/data/wave_forecast/${currentStationId}.json?t=${Date.now()}`,
     );
 
     const rows = toSortedRows(payload.forecast || {});
     if (rows.length === 0) throw new Error("No forecast steps in payload");
 
+    currentRows = rows;
+    renderHeading(payload.station_name);
     renderChart(rows);
     renderTable(rows);
     renderMetadata(payload, rows);
 
     if (!detachWaveThemeListener) {
-      detachWaveThemeListener = registerChartThemeListener(() => renderChart(rows));
+      detachWaveThemeListener = registerChartThemeListener(() => renderChart(currentRows));
     }
   } catch (err) {
     logger.error("WaveForecast", "Error loading wave forecast", err);
@@ -473,7 +601,81 @@ async function loadWaveForecast() {
   }
 }
 
-loadWaveForecast();
+/**
+ * Station id requested by the URL hash, if any.
+ *
+ * `#wave-<id>` is what the buoy cards on the home page link to. Namespaced
+ * rather than a bare id so it cannot collide with an element id on the page —
+ * forecasts.html has several other anchors.
+ *
+ * @returns {string|null}
+ */
+function stationFromHash() {
+  const match = /^#wave-(.+)$/.exec(window.location.hash);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * Apply the hash, if it names a station we have a forecast for.
+ *
+ * Validated against the index rather than trusted: an unknown id would
+ * otherwise send the page to fetch a file that does not exist and render the
+ * error state, when falling back to the default station is the better answer.
+ *
+ * @param {Array<Object>} stations
+ * @returns {boolean} Whether the hash selected a station
+ */
+function applyHashStation(stations) {
+  const requested = stationFromHash();
+  if (!requested) return false;
+  if (!stations.some((station) => station.station_id === requested)) {
+    logger.warn("WaveForecast", `No forecast for station "${requested}" from URL hash`);
+    return false;
+  }
+  currentStationId = requested;
+  return true;
+}
+
+async function initWaveForecast() {
+  // Take the hash at its word and start the forecast fetch immediately. The
+  // index only decides which stations the *picker* offers — nothing the chart
+  // needs — so awaiting it first put a whole network round trip in front of
+  // the one thing the reader came for. Worse, `fetchWithTimeout` retries three
+  // times with backoff, so a missing index.json (before the fetcher had ever
+  // written one) delayed the chart by several seconds rather than failing fast.
+  const requested = stationFromHash();
+  if (requested) currentStationId = requested;
+
+  const forecastLoad = loadWaveForecast();
+  const stations = await loadStationIndex();
+
+  // Correct the optimistic guess only if it was actually wrong: an unknown
+  // station from the hash, or a default with no forecast this run.
+  const offered = (id) => stations.some((station) => station.station_id === id);
+  if (stations.length > 0 && !offered(currentStationId)) {
+    if (requested) {
+      logger.warn("WaveForecast", `No forecast for station "${requested}" from URL hash`);
+    }
+    currentStationId = stations[0].station_id;
+    await forecastLoad; // let the failing load settle before replacing its output
+    await loadWaveForecast();
+  } else {
+    await forecastLoad;
+  }
+
+  renderStationPicker(stations);
+
+  // Arriving at #wave-<id> from another page scrolls to the section, but a
+  // same-page hash change does not re-run any of the above.
+  window.addEventListener("hashchange", async () => {
+    if (!applyHashStation(stations)) return;
+    visibleHours = DEFAULT_VISIBLE_HOURS;
+    renderStationPicker(stations);
+    await loadWaveForecast();
+  });
+}
+
+initWaveForecast();
 
 // The fetch runs 4x/day; a refresh every 2 hours keeps a long-open tab current.
 setInterval(loadWaveForecast, 2 * 60 * 60 * 1000);

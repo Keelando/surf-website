@@ -55,6 +55,40 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+- [ ] **More marine text-forecast zones than north/south of Nanaimo**
+      (user 2026-08-18): we parse one file, `m0000028_en.xml`, which carries
+      both Strait of Georgia zones. Adjacent water — Juan de Fuca Strait,
+      Haro Strait, Howe Sound, the west coast of Vancouver Island — is
+      published as separate zone files we currently discard.
+      *Cost is not the obstacle:* this is an AMQP push feed, and
+      `config/sr3/marine_forecast.conf` already subscribes to the whole
+      `*.WXO-DD.marine_weather.pacific.#` subtopic. Every one of those files
+      is already being *announced* to us; the `accept .*m0000028_en\.xml.*`
+      line is the only thing stopping the download. So extra zones cost **zero
+      HTTP requests** against the 86,400 guidance — they are a parser and UI
+      question, not a policy one.
+      *Decided shape (user 2026-08-18): parse **all** the zones, and let the
+      reader select one* — the same pattern as the buoy and lightstation
+      pages, whose selectors group stations into region `<optgroup>`s
+      (`#lightstation-station-select` is the closest model). That answers the
+      wall-of-text problem: one zone rendered at a time, chosen deliberately,
+      rather than every zone stacked down the page.
+      *What it actually takes:* widen the `accept` regex, extend `ZONE_MAP`
+      in `scripts/parse/parse_marine_forecast.py` (keyed on the location name
+      in the XML, so each new zone needs its name learned), and restructure
+      `site/data/marine_forecast.json` — today it is one `area` with a
+      `locations` map inside it, which cannot hold Juan de Fuca and the Strait
+      of Georgia at once. Decide that shape before writing the parser: either
+      a file per area or a top-level `areas` map, and the selector groups by
+      area either way.
+      *Open question — the zone codes.* They are not in the sr3 log (rejected
+      files are not recorded at info level) and weather.gc.ca renders the
+      Georgia Basin zone list client-side, so neither gave them up. The clean
+      way to enumerate them is to widen `accept` on a throwaway subscription
+      for one cycle and read the filenames that arrive — the announcements are
+      already coming to us, so this needs no directory walking and no guessed
+      URLs (see the standing rule in `docs/DATA_FEEDS.md`).
+
 - [ ] **Revisit whether the repo should stay public** (user 2026-08-17):
       decide deliberately rather than by inertia. Audience today is one
       follower and one star (self-awarded), so the outward benefit is close

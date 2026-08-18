@@ -114,9 +114,89 @@ a 0.72 m overnight peak read as implausible until it was cross-checked against
 guidance, same 0.51 req/s burst rate. Backend only — `wave-forecast.js` still
 renders waves and ignores the new fields.
 
+**Second station, 2026-08-18 — Crescent Beach Ocean (`CRPILE`).** The selection
+rule: *a forecast point earns its place by having a co-located sensor to verify
+against.* CRPILE went first for that reason rather than because the model does
+well there — a 2.5 km cell over a bay that dries is exactly where RDWPS should
+struggle, and Surrey's sensor at the same spot is how we find out by how much.
+464 requests/run, 1,856/day, 4.0% of the guidance; burst rate unchanged.
+
+The page grew a station picker driven by `site/data/wave_forecast/index.json`,
+which the fetcher writes from the stations that actually produced a file — so a
+station added to `BUOY_IDS` appears in the picker and in the map popups with no
+frontend edit. Map popups link to `/forecasts.html#wave-<station>`, and the
+table thins to 3-hourly for display while the chart and database keep the hourly
+steps.
+
+**Remaining candidate points, in the user's priority order:** ① Boundary Bay /
+Crescent Beach *(done)* ② Hein Bank ③ Sombrio Beach ④ Long Beach, Tofino. All
+four were probed over WMS on 2026-08-18 and **none is land-masked** — every one
+returns real values. Hein Bank is the natural next one: NOAA `46088` is labelled
+"New Dungeness / Hein Bank" and is already fetched, so it comes with free
+verification. For Sombrio and Long Beach, site the point a few kilometres
+*offshore* — a shore cell is part land, and RDWPS solves offshore sea state, not
+breaking surf.
+
+**② Hein Bank is not blocked at all** — corrected 2026-08-18. Hein Bank is the
+old name for the New Dungeness buoy: `46088` is already in `stations.json` as
+`"name": "New Dungeness", "location": "Hein Bank"`, already fetched hourly, and
+already reporting. So it is the same one-line `BUOY_IDS` change CRPILE was.
+
+Use `get_buoy("46088")` and let the registry supply the coordinates —
+48.333, -123.167. A hand-picked "Hein Bank" point taken from the shoal's own
+position lands 48.35, -123.03, **10.3 km away** and on the wrong side of the
+eastern Strait of Juan de Fuca. That is the silent-wrong-station trap; the
+registry is the defence.
+
+It is also the *better* verification target of the two we have. `46088` reports
+spectral separation — `wind_wave_height`/`period`/`direction` and swell apart
+from each other — so it can score RDWPS's `WindWavesSignificantHeight` partition
+directly, which the EC buoy at Halibut Bank cannot. It reports wind and gust
+too, so it scores the HRDPS side in the same pass.
+
+A single spot-check on 2026-08-18 (model vs a 73-minute-old observation, one
+hour, one sample — not a validation): model wind-wave 0.203 m vs 0.2 m observed,
+Hs 0.212 m vs 0.3 m (the buoy quantises to 0.1 m), mean wave direction 252° vs
+232° observed average, wind 9.3 km/h vs 5.8 km/h. Encouraging, and nothing more
+than that until autumn.
+
+**Blocker for ③–④ only:** Sombrio Beach and Long Beach are not in
+`config/stations.json` and are not instruments — adding them under `buoys` would
+put phantom stations on the map and in the buoy cards. Those two need a
+forecast-only registry section first. Request budget is *not* the blocker (user
+confirmed 2026-08-18 that volume is fine).
+
+**Open design question — how wind arrives on the page** (user spitballing,
+2026-08-18): a selector bar spanning the main div with two buttons, Wind and
+Wave, showing one or the other.
+
+Two cautions worth weighing before building it. First, **"fixed" should probably
+mean sticky-within-the-section, not viewport-pinned** — the site already has a
+slim sticky nav bar with a hamburger drawer, and a second viewport-fixed bar
+stacked under it costs real estate exactly where there is least of it. Second,
+and more substantive: **RDWPS is WW3 forced by HRDPS winds**, so these two series
+are not peers, they are cause and effect. Wind was added precisely because the
+wave series could not be sanity-checked alone (the 0.72 m overnight peak that
+only made sense next to 17 kt of model wind). An exclusive either/or toggle
+works against the one thing the pairing buys.
+
+Suggested compromise: use the toggle for the **chart** only, where four axes
+would otherwise collide, and keep a single table carrying both sets of columns
+so the numbers stay side by side. On wide screens, consider stacking the two
+charts on a shared time axis instead of toggling — that is the classic
+meteogram, and it makes the causal link visible rather than something the reader
+has to hold in their head. Note also that gusts are masked at most hours, so the
+gust series will be sparse by nature; a gust existing at all is the signal.
+
+The axis floor stays at 1 m (user confirmed 2026-08-18), including at Crescent
+Beach where it will read as a near-flat line most of the year. That is the
+honest rendering — auto-scaling a flat calm into a mountain range is the failure
+mode being avoided.
+
 **Next:** put wind on the page (chart series + table columns), then the
 verification writer — which wind unblocks, since it varies enough to score this
-summer where the waves do not.
+summer where the waves do not. Then the forecast-only station registry, and
+Hein Bank behind it.
 
 **Implication — starting architecture:** clone the
 `fetch_storm_surge.py` GeoMet pattern (owslib `getfeatureinfo` per station

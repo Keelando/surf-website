@@ -40,16 +40,23 @@ subscription is for. Update this table when adding or rescheduling a feed.
 | Endpoint | Job | Schedule | Requests/day |
 |---|---|---|---|
 | `geo.weather.gc.ca` | `fetch_storm_surge.py` | 2×/day | 1,548 (6 stations × 129 of 241 steps + caps) |
-| `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 932 (33 of 49 steps × 7 vars + 2 caps) |
+| `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 1,856 (2 stations × 33 of 49 steps × 7 vars + 2 caps) |
 | `dd.weather.gc.ca` | `fetch_lightstation.py` | hourly | ~48 — **policy violation, see `TODO.md`** |
-| | | **Total** | **~2,528 (2.9%)** |
+| | | **Total** | **~3,452 (4.0%)** |
 
 `fetch_wave_forecast.py` covers two models: 4 RDWPS wave variables and 3 HRDPS
 wind variables (added 2026-08-17), one GetCapabilities each. It went 532 → 932
-requests/day, and the total 2.5% → 2.9%. The **rate** did not move — `FETCH_DELAY`
-is unchanged, so the burst is longer (~4 → ~7.6 min per run) at the same
-0.51 req/s. It does not overlap `fetch_storm_surge.py`, which runs 01:31/13:31
-for ~32 min against the same host.
+requests/day, and the total 2.5% → 2.9%. Adding Crescent Beach Ocean as a second
+extraction point (2026-08-18) doubled the per-run cost again, 932 → 1,856/day and
+the total to 4.0%. The **rate** has not moved through any of it — `FETCH_DELAY`
+is unchanged, so each addition lengthens the burst (~4 → ~7.6 → ~15 min per run)
+at the same 0.51 req/s. It does not overlap `fetch_storm_surge.py`, which runs
+01:31/13:31 for ~32 min against the same host.
+
+**Each further extraction point costs 231 requests/run, 924/day (~1.1%), and
+~7.6 min of runtime.** The binding constraint is not the guidance — it is the
+6 h gap to the next run, and the stale-lock threshold in `acquire_lock()`, which
+must stay above the real runtime (raised to 1 h when the second station landed).
 
 This table is maintained by hand, not instrumented — deliberately (decided
 2026-08-16). A project-wide request counter is more machinery than a number we
@@ -87,7 +94,7 @@ loops `request → sleep(FETCH_DELAY)`, and with ~0.45 s of network per request:
 | 2.0 s | 0.41 req/s |
 
 `fetch_storm_surge.py` uses 2.0 s (0.41 req/s over ~32 min, measured 2026-08-16)
-and `fetch_wave_forecast.py` uses 1.5 s (0.51 req/s over ~4 min). Both are the
+and `fetch_wave_forecast.py` uses 1.5 s (0.51 req/s over ~15 min). Both are the
 default for a new point-extraction feed: start at 1.5–2 s, and only argue the
 rate down if something downstream is actually time-critical.
 
@@ -207,8 +214,14 @@ See `TODO.md` for the measured interpolation error behind the taper.
 **Protocol:** WMS 1.3.0 GetFeatureInfo (JSON) via requests
 **Fetched by:** `scripts/fetch/fetch_wave_forecast.py`
 **Schedule:** 04:35, 10:35, 16:35, 22:35 UTC — run+4h35m (model runs 00/06/12/18Z, files land ~3h25m later)
-**Sampling:** 33 of 49 hourly steps — hourly to 24 h, then 3-hourly. 133
-requests/run, 532/day, at 1.5 s spacing (0.51 req/s, ~4 min/run).
+**Stations:** Halibut Bank (`4600146`) and Crescent Beach Ocean (`CRPILE`) —
+`BUOY_IDS` in the fetcher, ids from `config/stations.json`. Both were chosen for
+having a co-located sensor to verify against; see the fetcher's comment for why
+the other candidate points do not qualify yet.
+**Sampling:** 33 of 49 hourly steps — hourly to 24 h, then 3-hourly. 231
+requests per station per run, 464/run at 2 stations, 1,856/day, at 1.5 s spacing
+(0.51 req/s, ~15 min/run). The site's table thins this to 3-hourly for display;
+the hourly steps are kept in the database and on the chart.
 **Stored in:** `wave_forecast.sqlite` + exported JSON to `site/data/wave_forecast/`
 **Note:** masked cells (absent wind-wave/swell partition, land) come back as sentinel `9999.0` — the fetcher drops values ≥ 9000.
 

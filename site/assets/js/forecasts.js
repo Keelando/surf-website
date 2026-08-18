@@ -333,7 +333,12 @@ function scrollToZoneIfNeeded() {
   if (hash) {
     // Wait a bit for content to load
     setTimeout(() => {
-      const element = document.querySelector(hash);
+      // getElementById, not querySelector: the hash is arbitrary user input and
+      // querySelector *parses* it as a selector, so anything that isn't a valid
+      // one (`#wave-../etc`) throws a SyntaxError and kills the rest of this
+      // handler. Now that the map popups link here with `#wave-<station>`,
+      // the page receives hashes it did not author.
+      const element = document.getElementById(hash.slice(1));
       if (element) {
         element.scrollIntoView({ behavior: "smooth", block: "start" });
         // Add a subtle highlight effect

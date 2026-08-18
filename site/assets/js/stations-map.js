@@ -20,6 +20,12 @@ let latestWindData = null; // Cache for latest wind station data
 let stormSurgeData = null; // Cache for storm surge forecast data
 let lightstationMarkers = {}; // Store lightstation markers by ID for easy access
 let latestLightstationData = null; // Cache for latest lightstation observations
+// Station ids with an RDWPS wave forecast, from the fetcher's own index. Kept
+// as a set because the only question asked of it is membership: does this
+// marker's station get a "Wave Forecast" link? Reading the index rather than
+// listing the stations here means adding a forecast point to the fetcher lights
+// up its popup with no change on this side.
+let waveForecastStations = new Set();
 let webcamMarkers = {}; // Store webcam markers by ID for easy access
 let tideMarkers = {}; // Store tide station markers by ID for easy access
 
@@ -110,6 +116,17 @@ async function loadStationsAndMarkers() {
       logger.debug("StationsMap", "Loaded latest lightstation observations");
     } catch (err) {
       logger.warn("StationsMap", "Could not fetch latest lightstation data", err);
+    }
+
+    // Fetch the wave-forecast station index. Optional: without it the popups
+    // simply carry no forecast link, which is the same as before it existed.
+    try {
+      const waveIndex = await fetchWithTimeout("/data/wave_forecast/index.json");
+      waveForecastStations = new Set(
+        (waveIndex.stations || []).map((station) => station.station_id),
+      );
+    } catch (err) {
+      logger.warn("StationsMap", "Could not fetch wave forecast index", err);
     }
 
     // Fetch stations metadata
@@ -563,7 +580,17 @@ function addBuoyMarker(buoy) {
   const linkText = isWave ? "View Data →" : "View on Winds Page →";
 
   popupContent += `
-    <a href="${linkHref}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">${linkText}</a>
+    <a href="${linkHref}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">${linkText}</a>`;
+
+  // Only where RDWPS is actually extracted for this station. Secondary styling
+  // deliberately: the popup is showing measurements, and the forecast is a
+  // model's opinion — it should not compete with "View Data" for the eye.
+  if (waveForecastStations.has(buoy.id)) {
+    popupContent += `
+    <a href="/forecasts.html#wave-${buoy.id}" class="view-data-btn wave-forecast-link" style="display: inline-block; margin-top: 8px; margin-left: 6px; padding: 6px 12px; background: var(--color-surface-alt, #f5f5f5); color: var(--color-primary-dark, var(--color-primary)); text-decoration: none; border-radius: 4px; font-size: 0.9em; border: 1px solid var(--color-primary);">🌊 Wave Forecast →</a>`;
+  }
+
+  popupContent += `
   </div>`;
 
   marker.bindPopup(popupContent);
