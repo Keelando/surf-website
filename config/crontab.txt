@@ -204,15 +204,20 @@
 # 13:29 UTC / 06:29 PT. The minute matters: on survivor this job failed silently
 # for five days when it collided with the restic backup. 29 is clear of every
 # other minute pattern in this file, and 13:29 is well clear of restic at 10:33.
-# PARKED AGAIN 2026-08-09, container stopped. Second attempt that day: the
-# selkies server defaults WERE the reset Keelan kept hitting and they are now
-# pinned in projects/cookie_clicker/docker-compose.yml -- but pinning them did
-# not fix the lag, so the cause is still open. What the evening ruled out, by
-# measurement: CPU capacity, cgroup throttling, the encoder settings, the ads,
-# and Chromium itself (the game draws a full 30.7 fps internally). Remaining
-# suspect is the capture/encode/transport path. See
-# homelab hosts/surfserver/hat-5-cookie-clicker.md before trying again.
-#29 13 * * * /home/keelando/projects/cookie_clicker/daily-restart.sh >> /home/keelando/projects/cookie_clicker/cron.log 2>&1
+# UNPARKED 2026-08-17 -- the lag is SOLVED. The container had no GPU in it.
+# Passing /dev/dri/renderD128 through (plus group_add 993/44, the host render
+# and video gids) fixed it. Note this was a LATENCY fix, not a throughput one:
+# the GPU sits at its 300 MHz floor even while streaming, because all it had to
+# do was take compositing off the software path. That is why the 2026-08-09
+# measurements found the box 91% idle and lagging at the same time and could
+# not reconcile them.
+# Re-enabled only after the backup was proven END TO END on 2026-08-17: the
+# scraped save-20260817.txt was imported into a throwaway container and
+# restored 1271 buildings / 78 achievements / 586T cookies from a blank game.
+# The file is a plain Cookie Clicker export string -- restoring is pasting it
+# into Import Save.
+# See homelab hosts/surfserver/hat-5-cookie-clicker.md.
+29 13 * * * /home/keelando/projects/cookie_clicker/daily-restart.sh >> /home/keelando/projects/cookie_clicker/cron.log 2>&1
 
 # PSI sampler (added 2026-08-09). Appends kernel pressure avg10 to
 # /dev/shm/psi-samples.csv; sys_stats_mqtt.py reads it on its next 15-min push to
