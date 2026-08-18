@@ -133,12 +133,68 @@
     }
   }
 
+  // Keys that scroll the page, cancelled while the drawer holds the lock.
+  const SCROLL_KEYS = new Set([" ", "PageDown", "PageUp", "End", "Home", "ArrowDown", "ArrowUp"]);
+
+  // True while the scroll-cancelling listeners are attached.
+  let scrollLocked = false;
+
+  // Let a scroll gesture through if it started inside the drawer — the drawer
+  // has its own overflow-y and must stay scrollable when its list is long.
+  function insideDrawer(target) {
+    const drawer = document.querySelector(".main-nav.nav-open .nav-scroll");
+    return drawer !== null && target instanceof Node && drawer.contains(target);
+  }
+
+  function blockScrollEvent(event) {
+    if (insideDrawer(event.target)) return;
+    event.preventDefault();
+  }
+
+  function blockScrollKey(event) {
+    if (!SCROLL_KEYS.has(event.key)) return;
+    const target = event.target;
+    // Never swallow a key headed for a form control or the drawer's own list.
+    if (insideDrawer(target)) return;
+    if (target instanceof Element && target.closest("input, select, textarea")) return;
+    event.preventDefault();
+  }
+
+  /**
+   * Lock or unlock page scrolling to match whether any drawer is open.
+   *
+   * Driven by the DOM rather than by each call site: three separate paths
+   * clear `nav-open` (the toggle, the outside-click handler, Escape), and a
+   * lock that each one had to remember to release is a lock that eventually
+   * strands the page unscrollable.
+   *
+   * Implemented by cancelling scroll events rather than by CSS, because this
+   * nav is `position: sticky` and every CSS recipe for a scroll lock breaks it
+   * — see the note in nav-tide-styles-v4.css for the two that were measured
+   * doing so. Cancelling events changes no layout, so the bar stays exactly
+   * where it is stuck and the drawer stays on screen.
+   *
+   * `passive: false` is required: listeners for wheel and touchmove are
+   * passive by default, and a passive listener cannot preventDefault.
+   */
+  function syncScrollLock() {
+    const anyOpen = document.querySelector(".main-nav.nav-open") !== null;
+    if (anyOpen === scrollLocked) return;
+    scrollLocked = anyOpen;
+
+    const method = anyOpen ? "addEventListener" : "removeEventListener";
+    document[method]("wheel", blockScrollEvent, { passive: false });
+    document[method]("touchmove", blockScrollEvent, { passive: false });
+    document[method]("keydown", blockScrollKey);
+  }
+
   // Close every open drawer on the page and sync its button's aria state.
   function closeAllNavs() {
     document.querySelectorAll(".main-nav.nav-open").forEach((nav) => {
       nav.classList.remove("nav-open");
       nav.querySelector(".nav-toggle")?.setAttribute("aria-expanded", "false");
     });
+    syncScrollLock();
   }
 
   function initHamburger() {
@@ -156,6 +212,7 @@
       const setOpen = (open) => {
         nav.classList.toggle("nav-open", open);
         button.setAttribute("aria-expanded", open ? "true" : "false");
+        syncScrollLock();
       };
 
       button.addEventListener("click", (event) => {
@@ -186,6 +243,7 @@
             nav.querySelector(".nav-toggle")?.setAttribute("aria-expanded", "false");
           }
         });
+        syncScrollLock();
       });
 
       document.addEventListener("keydown", (event) => {

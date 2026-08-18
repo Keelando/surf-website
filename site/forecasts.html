@@ -21,7 +21,7 @@
 
   <link rel="canonical" href="https://halibutbank.ca/forecasts.html" />
   <link rel="stylesheet" href="/assets/css/style-v4.css?v=a1c341be43" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=ebdd052e14" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=0a8bfbc99e" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=32d9218449" />
 
   <style>
@@ -280,16 +280,75 @@
       white-space: nowrap;
     }
 
-    #wave-forecast-chart {
+    #wave-forecast-chart,
+    #wind-forecast-chart {
       width: 100%;
       height: 360px;
     }
 
+    /* Segmented control: one row of joined buttons, exactly one active. */
+    .forecast-mode-toggle {
+      display: flex;
+      /* 40% of the viewport on desktop, 75% on phones (see the media query
+         below) — 40vw is only ~156 px at 390 px wide, too cramped for two
+         labels. max-width keeps it inside the card in every case. */
+      width: 40vw;
+      max-width: 100%;
+      margin: 0.5rem auto 0.25rem;
+      padding: 2px;
+      background: var(--color-card-muted-bg);
+      border: 1px solid var(--color-border-light);
+      border-radius: 6px;
+    }
+
+    .forecast-mode-btn {
+      /* Equal halves, so the divider sits dead centre of the control. */
+      flex: 1;
+      padding: 0.4rem 1.25rem;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--color-text-muted);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .forecast-mode-btn:hover {
+      color: var(--color-text);
+    }
+
+    .forecast-mode-btn.active {
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+
+    .forecast-mode-btn.active:hover {
+      color: var(--color-on-primary);
+    }
+
+    .wave-forecast-subhead {
+      margin: 1.5rem 0 0.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-muted);
+    }
+
+    /* Centred and given the same 40vw box as the segmented control below it,
+       so the two line up on both edges. Centring the label+select *pair*
+       instead would push the select's right edge past the control's by the
+       width of the label. */
     .wave-forecast-station {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
+      gap: 0.6rem;
+      width: 40vw;
+      max-width: 100%;
+      margin: 0 auto 1rem;
     }
 
     .wave-forecast-station:empty {
@@ -297,15 +356,18 @@
     }
 
     .wave-forecast-station label {
-      font-size: 0.8rem;
+      font-size: 0.9rem;
       text-transform: uppercase;
       letter-spacing: 0.03em;
       color: var(--color-text-muted);
     }
 
     .wave-forecast-station select {
-      padding: 0.35rem 0.6rem;
-      font-size: 0.9rem;
+      /* Takes whatever the label leaves of the 40vw row. */
+      flex: 1;
+      min-width: 0;
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
       color: var(--color-text);
       background: var(--color-surface);
       border: 1px solid var(--color-border-light);
@@ -363,6 +425,29 @@
     .wave-forecast-table tbody th {
       font-weight: 400;
       color: var(--color-text);
+    }
+
+    /* Narrow screens: the wrapper scrolls either way, but the split into
+       waves/wind views brings the wind table close enough to fitting a phone
+       that trimming the cell padding gets it the rest of the way. The waves
+       view still overflows — five columns of numbers do not fit 356 px — and
+       that is what the wrapper's horizontal scroll is for. */
+    @media (max-width: 600px) {
+      /* Phones get proportionally wider controls: 40vw is a thumb-hostile
+         156 px at 390 px wide, where 75vw is a comfortable 292 px. */
+      .forecast-mode-toggle,
+      .wave-forecast-station {
+        width: 75vw;
+      }
+
+      .wave-forecast-table {
+        font-size: 0.8rem;
+      }
+
+      .wave-forecast-table th,
+      .wave-forecast-table td {
+        padding: 0.35rem 0.35rem;
+      }
     }
 
     .wave-forecast-controls {
@@ -436,32 +521,65 @@
     </div>
 
     <div class="forecast-zone" id="wave-forecast-section" style="margin-top: 2rem;">
-      <h2 id="wave-forecast-heading">🌊 Wave Forecast — Halibut Bank</h2>
+      <h2 id="wave-forecast-heading">🌊 Wave &amp; Wind Forecast — Halibut Bank</h2>
 
       <p class="dev-note">
         <span class="dev-badge">Experimental</span>
         <span>Use at your own risk. Modelled waves from Environment Canada's
-        regional wave model (RDWPS), updated four times a day.</span>
+        regional wave model (RDWPS) and modelled wind from its high-resolution
+        atmospheric model (HRDPS), both updated four times a day.</span>
       </p>
 
       <!-- Populated by wave-forecast.js from /data/wave_forecast/index.json;
            stays empty while only one station has a forecast. -->
       <div class="wave-forecast-station" id="wave-forecast-station"></div>
 
-      <div id="wave-forecast-chart"></div>
+      <!-- Two copies of one control, above the chart and below the table, so
+           the view can be switched without scrolling back up. Both are kept in
+           sync by setForecastMode() in wave-forecast.js — the same approach the
+           24h/48h toggle on winds.html uses. Plain buttons with aria-pressed
+           rather than tab roles: a tablist duplicated on the page would have
+           two tabs claiming aria-controls over one panel. -->
+      <div class="forecast-mode-toggle" role="group" aria-label="Forecast view (upper)">
+        <button type="button" class="forecast-mode-btn active" data-forecast-mode="waves" aria-pressed="true">Waves</button>
+        <button type="button" class="forecast-mode-btn" data-forecast-mode="wind" aria-pressed="false">Wind</button>
+      </div>
+
+      <div class="forecast-panel" data-panel="waves">
+        <h3 class="wave-forecast-subhead">Waves — RDWPS</h3>
+        <div id="wave-forecast-chart"></div>
+      </div>
+
+      <!-- Starts hidden, and stays in the DOM. ECharts sizes itself off the
+           container at init, so the hidden chart is not initialised until its
+           panel is shown (see renderForecastMode). -->
+      <div class="forecast-panel" data-panel="wind" hidden>
+        <h3 class="wave-forecast-subhead">Wind at 10 m — HRDPS</h3>
+        <div id="wind-forecast-chart"></div>
+      </div>
 
       <div class="wave-forecast-table-wrap" id="wave-forecast-table"></div>
+
+      <div class="forecast-mode-toggle" role="group" aria-label="Forecast view (lower)">
+        <button type="button" class="forecast-mode-btn active" data-forecast-mode="waves" aria-pressed="true">Waves</button>
+        <button type="button" class="forecast-mode-btn" data-forecast-mode="wind" aria-pressed="false">Wind</button>
+      </div>
 
       <div id="wave-forecast-metadata"></div>
 
       <p class="wave-forecast-about">
-        <strong>About this model:</strong> RDWPS is Environment Canada's regional
+        <strong>About these models:</strong> RDWPS is Environment Canada's regional
         wave model. It works out the sea state on a 2.5 km grid and looks 48 hours
-        ahead, re-running every six hours as new wind observations come in. These
-        numbers are the model's raw output at the selected point — nothing here
-        is tuned to local knowledge, so treat it as a good read on wind-driven seas
-        and a rough one where the Strait's currents and channels dominate. The
-        readings on the home page are the check: same spot, actually measured.
+        ahead, re-running every six hours as new wind observations come in. The wind
+        is a separate model — HRDPS, the 2.5 km atmospheric one — because RDWPS
+        publishes its own forcing wind only inside the raw model files, and HRDPS is
+        the better wind source anyway. Wind is the 10 m sustained speed; the gust
+        points appear only at the hours the model actually diagnoses a gust, so gaps
+        there mean "none forecast", not "no data". These numbers are raw model output
+        at the selected point — nothing here is tuned to local knowledge, so treat it
+        as a good read on wind-driven seas and a rough one where the Strait's currents
+        and channels dominate. The readings on the home page are the check: same spot,
+        actually measured.
       </p>
     </div>
 
@@ -532,7 +650,7 @@
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
   <script type="module" src="/assets/js/forecasts.js?v=be0fc2b600"></script>
-  <script type="module" src="/assets/js/wave-forecast.js?v=68744c4951"></script>
+  <script type="module" src="/assets/js/wave-forecast.js?v=ace557192e"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

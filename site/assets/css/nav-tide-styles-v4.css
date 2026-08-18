@@ -341,6 +341,25 @@
     visibility: visible;
   }
 
+  /* Page scroll lock while the drawer is open — the page *behind* the drawer
+     must not move. The lock itself lives in nav.js (it cancels scroll events),
+     NOT in CSS, and that is deliberate: this nav is `position: sticky`, and
+     both of the usual CSS recipes break it outright. Measured at a scroll
+     offset of 1400 px on a 390 px viewport:
+
+       - `position: fixed` on <body>: takes the body out of flow, stranding the
+         sticky bar and its drawer 1400 px above the viewport.
+       - `overflow: hidden` on <html>: removes the scrolling box the sticky bar
+         is stuck to, so it snaps back to its static position — same 1400 px
+         above the viewport, invisible and untappable.
+
+     Cancelling the events changes no layout at all, so the bar stays stuck
+     where it is. All that is left here is keeping a scroll chain inside the
+     drawer from reaching the page behind it. */
+  .main-nav.nav-open .nav-scroll {
+    overscroll-behavior: contain;
+  }
+
   /* Links stack vertically inside the drawer, each a full-width tap target. */
   .nav-links {
     display: flex;

@@ -1,5 +1,9 @@
 /* -----------------------------
-   RDWPS Wave Forecast (ES module entry point)
+   Wave and Wind Forecast (ES module entry point)
+
+   Waves are RDWPS, wind is HRDPS — the two arrive in one payload but they are
+   not one model, so each chart names its own source (see `models` in the
+   payload and the header of scripts/fetch/fetch_wave_forecast.py).
 
    UNDER DEVELOPMENT. Previewing at the bottom of forecasts.html — see
    docs/project/FORECAST_UPGRADE.md. Halibut Bank only while we get a feel
@@ -40,10 +44,24 @@ const MIN_HEIGHT_AXIS_MAX = 1.0;
 // 3-hourly spacing, so this is 8 rows rather than 24.
 const DEFAULT_VISIBLE_HOURS = 24;
 
+// Wind axis floor, knots. Same reasoning as the height floor: a calm summer
+// afternoon of 4 kt breezes should look calm, not like a working breeze.
+const MIN_WIND_AXIS_MAX = 15;
+
 // Table cadence. The chart keeps every step the fetch stored.
 const TABLE_STEP_HOURS = 3;
 
+// The fetch stores km/h (site-wide storage unit); every display is knots.
+const KMH_TO_KNOTS = 0.539957;
+
+// Which view the segmented control has selected. Waves is the default: it is
+// the forecast the page exists for, and the wind is the input behind it.
+const MODE_WAVES = "waves";
+const MODE_WIND = "wind";
+let currentMode = MODE_WAVES;
+
 let waveChart = null;
+let windChart = null;
 let detachWaveThemeListener = null;
 let visibleHours = DEFAULT_VISIBLE_HOURS;
 let currentStationId = DEFAULT_STATION_ID;
@@ -51,6 +69,16 @@ let currentStationId = DEFAULT_STATION_ID;
 // listener is registered once and outlives any number of station switches, so
 // a captured row set would redraw the previous station's chart on a theme flip.
 let currentRows = [];
+
+/**
+ * Convert a stored km/h wind value to the knots the site displays.
+ *
+ * @param {number|null|undefined} kmh
+ * @returns {number|null}
+ */
+function toKnots(kmh) {
+  return kmh === null || kmh === undefined ? null : kmh * KMH_TO_KNOTS;
+}
 
 /**
  * Convert the forecast object into a sorted array of rows.
@@ -73,6 +101,12 @@ function toSortedRows(forecast) {
       // dropped by the fetcher rather than written as zero, so a missing
       // value here means "no wind-wave partition", not "flat".
       windWaveHeight: values.wind_wave_height ?? null,
+      windSpeed: toKnots(values.wind_speed),
+      windDirection: values.wind_direction ?? null,
+      // Absent at most steps by design: HRDPS only diagnoses a gust where
+      // there is one, so a value being present is itself the signal rather
+      // than a gust of zero.
+      windGust: toKnots(values.wind_gust),
     }))
     .filter((row) => !isNaN(row.time))
     .sort((a, b) => a.time - b.time);
@@ -124,6 +158,23 @@ function heightAxisMax(rows) {
 }
 
 /**
+ * Upper bound for the wind-speed axis.
+ *
+ * Covers gusts as well as the sustained wind, since the gust scatter is drawn
+ * against the same axis, and leaves headroom for the direction arrows that
+ * ride near the top.
+ *
+ * @param {Array<Object>} rows
+ * @returns {number} Axis maximum in knots
+ */
+function windAxisMax(rows) {
+  const peak = rows.reduce((max, row) => Math.max(max, row.windSpeed ?? 0, row.windGust ?? 0), 0);
+  if (peak <= MIN_WIND_AXIS_MAX) return MIN_WIND_AXIS_MAX;
+  // Round up to the next 5 kt so the arrows clear the data.
+  return Math.ceil((peak * 1.15) / 5) * 5;
+}
+
+/**
  * Build the direction-arrow scatter points, as on the buoy wave chart.
  *
  * Sampled by elapsed time rather than by array index, which is where this
@@ -134,11 +185,12 @@ function heightAxisMax(rows) {
  * half of the forecast.
  *
  * @param {Array<Object>} rows
- * @param {number} axisMax - Height axis maximum, for vertical placement
+ * @param {number} axisMax - Axis maximum of the chart, for vertical placement
  * @param {Object} colors - Resolved theme palette
+ * @param {string} field - Row property holding the direction, in degrees
  * @returns {Array<Object>} ECharts scatter points carrying symbolRotate
  */
-function createDirectionArrows(rows, axisMax, colors) {
+function createDirectionArrows(rows, axisMax, colors, field = "waveDirection") {
   // Match the buoy chart's density: every 3 h, or 6 h where a narrow screen
   // would otherwise overlap them.
   const intervalMs = (window.innerWidth < 600 ? 6 : 3) * 60 * 60 * 1000;
@@ -152,16 +204,16 @@ function createDirectionArrows(rows, axisMax, colors) {
   let lastStamp = null;
 
   for (const row of rows) {
-    if (row.waveDirection === null) continue;
+    if (row[field] === null) continue;
 
     const stamp = row.time.getTime();
     if (lastStamp !== null && stamp - lastStamp < intervalMs) continue;
 
     arrows.push({
       value: [stamp, arrowY],
-      // Meteorological direction is where waves come FROM; the arrow points
-      // where they are going, hence the negation.
-      symbolRotate: calculateArrowRotation(row.waveDirection),
+      // Meteorological direction is where the waves or wind come FROM; the
+      // arrow points where they are going, which is what the helper handles.
+      symbolRotate: calculateArrowRotation(row[field]),
       itemStyle: { color: colors.marker, opacity: 0.75 },
     });
     lastStamp = stamp;
@@ -339,6 +391,122 @@ function renderChart(rows) {
 }
 
 /**
+ * Render the wind forecast chart.
+ *
+ * A chart of its own rather than a third and fourth series on the wave chart:
+ * the wind is a different model (HRDPS, not RDWPS), and stacking a knots axis
+ * onto a chart that already carries height, period and wave-direction arrows
+ * would leave neither readable. Same time axis and same furniture, so the two
+ * read as one forecast stacked vertically.
+ *
+ * @param {Array<Object>} rows
+ * @returns {void}
+ */
+function renderWindChart(rows) {
+  const el = document.getElementById("wind-forecast-chart");
+  if (!el || typeof echarts === "undefined") return;
+
+  const colors = getChartThemeColors();
+
+  if (!windChart) {
+    windChart = echarts.init(el);
+    window.addEventListener("resize", () => windChart.resize());
+  }
+
+  const speedSeries = rows.map((row) => [row.time.getTime(), row.windSpeed]);
+  // Gusts are masked at most hours, so this series is deliberately sparse —
+  // scatter rather than a line, which would draw a connecting segment across
+  // the hours the model reported no gust at all.
+  const gustSeries = rows
+    .filter((row) => row.windGust !== null)
+    .map((row) => [row.time.getTime(), row.windGust]);
+
+  const axisMax = windAxisMax(rows);
+  const arrows = createDirectionArrows(rows, axisMax, colors, "windDirection");
+
+  windChart.setOption(
+    {
+      backgroundColor: "transparent",
+      textStyle: { color: colors.text },
+      grid: getResponsiveGridConfig(false),
+      legend: {
+        data: ["Wind speed", "Gust", "Wind direction"],
+        bottom: getResponsiveLegendBottom(),
+        textStyle: { color: colors.mutedText },
+      },
+      tooltip: {
+        ...getMobileOptimizedTooltipConfig(),
+        formatter: (params) => {
+          const stamp = params[0]?.value?.[0];
+          const row = rows.find((r) => r.time.getTime() === stamp);
+          if (!row) return "";
+          return `<strong>${formatStepLabel(row.time)}</strong><br/>
+                  Wind: ${row.windSpeed?.toFixed(1) ?? "—"} kt<br/>
+                  Gust: ${row.windGust !== null ? `${row.windGust.toFixed(1)} kt` : "none forecast"}<br/>
+                  From: ${formatDirection(row.windDirection)}`;
+        },
+      },
+      xAxis: {
+        type: "time",
+        axisLabel: {
+          fontSize: window.innerWidth < 600 ? 9 : 10,
+          rotate: window.innerWidth < 600 ? 30 : 0,
+          formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
+          hideOverlap: true,
+          margin: 10,
+          color: colors.mutedText,
+        },
+        axisTick: { show: true },
+        axisLine: { lineStyle: { color: colors.axisLine } },
+        splitLine: { show: true, lineStyle: { color: colors.gridLine } },
+      },
+      yAxis: {
+        type: "value",
+        name: "Speed (kt)",
+        min: 0,
+        max: axisMax,
+        nameTextStyle: { color: colors.series.secondary },
+        axisLine: { lineStyle: { color: colors.series.secondary } },
+        axisLabel: { color: colors.mutedText },
+        splitLine: { lineStyle: { color: colors.gridLine } },
+      },
+      series: [
+        {
+          name: "Wind speed",
+          // Matches the buoy wind chart: orange line, red gust points.
+          type: "line",
+          data: speedSeries,
+          smooth: true,
+          showSymbol: false,
+          lineStyle: { width: 2.5, color: colors.series.secondary },
+          areaStyle: { opacity: colors.isDark ? 0 : 0.12, color: colors.series.secondary },
+        },
+        {
+          name: "Gust",
+          type: "scatter",
+          data: gustSeries,
+          symbol: "circle",
+          symbolSize: 6,
+          itemStyle: { color: colors.negative },
+        },
+        {
+          name: "Wind direction",
+          type: "scatter",
+          data: arrows,
+          symbol: DIRECTION_ARROW_PATH,
+          symbolSize: 14,
+          symbolRotate: (value, params) => arrows[params.dataIndex]?.symbolRotate ?? 0,
+          tooltip: { show: false },
+          silent: true,
+          z: 2,
+        },
+      ],
+    },
+    { notMerge: true },
+  );
+}
+
+/**
  * Hours of forecast covered by a row set.
  *
  * @param {Array<Object>} rows
@@ -379,6 +547,30 @@ function rowsWithin(rows, hours) {
  * @param {Array<Object>} allRows - Every forecast step
  * @returns {void}
  */
+/**
+ * Column definitions per mode: header text and the cell for a row.
+ *
+ * Held as data rather than two template literals so the table markup, its
+ * header, and its column count cannot drift apart — a header added without a
+ * matching cell is the classic way a table like this goes crooked.
+ *
+ * Wind wave height stays on the waves side: it is a wave partition (the part
+ * of the sea being raised by the local wind right now), not a wind reading.
+ */
+const TABLE_COLUMNS = {
+  [MODE_WAVES]: [
+    { header: "Height (m)", cell: (row) => row.waveHeight?.toFixed(2) ?? "—" },
+    { header: "Period (s)", cell: (row) => row.peakPeriod?.toFixed(1) ?? "—" },
+    { header: "From", cell: (row) => formatDirection(row.waveDirection) },
+    { header: "Wind wave (m)", cell: (row) => row.windWaveHeight?.toFixed(2) ?? "—" },
+  ],
+  [MODE_WIND]: [
+    { header: "Wind (kt)", cell: (row) => row.windSpeed?.toFixed(0) ?? "—" },
+    { header: "Gust (kt)", cell: (row) => (row.windGust !== null ? row.windGust.toFixed(0) : "—") },
+    { header: "From", cell: (row) => formatDirection(row.windDirection) },
+  ],
+};
+
 function renderTable(allRows) {
   const container = document.getElementById("wave-forecast-table");
   if (!container) return;
@@ -388,15 +580,13 @@ function renderTable(allRows) {
   const shown = rowsWithin(rows, visibleHours);
   const atFullExtent = shown.length >= rows.length;
 
+  const columns = TABLE_COLUMNS[currentMode];
   const body = shown
     .map(
       (row) => `
         <tr>
           <th scope="row">${formatStepLabel(row.time)}</th>
-          <td>${row.waveHeight?.toFixed(2) ?? "—"}</td>
-          <td>${row.peakPeriod?.toFixed(1) ?? "—"}</td>
-          <td>${formatDirection(row.waveDirection)}</td>
-          <td>${row.windWaveHeight?.toFixed(2) ?? "—"}</td>
+          ${columns.map((column) => `<td>${column.cell(row)}</td>`).join("")}
         </tr>`,
     )
     .join("");
@@ -408,10 +598,7 @@ function renderTable(allRows) {
       <thead>
         <tr>
           <th scope="col">Time (PT)</th>
-          <th scope="col">Height (m)</th>
-          <th scope="col">Period (s)</th>
-          <th scope="col">From</th>
-          <th scope="col">Wind wave (m)</th>
+          ${columns.map((column) => `<th scope="col">${column.header}</th>`).join("")}
         </tr>
       </thead>
       <tbody>${body}</tbody>
@@ -455,6 +642,71 @@ function renderTable(allRows) {
 }
 
 /**
+ * Draw whichever chart the active mode calls for.
+ *
+ * Only the visible one is drawn, and it is drawn every time it becomes
+ * visible. ECharts measures its container at init, so initialising a chart
+ * inside a `hidden` panel yields a zero-sized canvas that no later resize
+ * fully recovers — deferring the init until the panel is shown avoids that
+ * entirely. Redrawing on every switch also means a theme change while a chart
+ * was hidden cannot leave stale palette colours behind.
+ *
+ * @param {Array<Object>} rows
+ * @returns {void}
+ */
+function renderForecastMode(rows) {
+  if (rows.length === 0) return;
+  if (currentMode === MODE_WIND) {
+    renderWindChart(rows);
+    windChart?.resize();
+  } else {
+    renderChart(rows);
+    waveChart?.resize();
+  }
+}
+
+/**
+ * Switch the section between the waves and wind views.
+ *
+ * Every copy of the control is updated, not just the one that was clicked —
+ * there are two on the page (above the chart, below the table) and they must
+ * never disagree about what is being shown.
+ *
+ * @param {string} mode - MODE_WAVES or MODE_WIND
+ * @returns {void}
+ */
+function setForecastMode(mode) {
+  currentMode = mode === MODE_WIND ? MODE_WIND : MODE_WAVES;
+
+  for (const button of document.querySelectorAll(".forecast-mode-btn")) {
+    const isActive = button.dataset.forecastMode === currentMode;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  }
+
+  for (const panel of document.querySelectorAll(".forecast-panel")) {
+    panel.hidden = panel.dataset.panel !== currentMode;
+  }
+
+  renderForecastMode(currentRows);
+  renderTable(currentRows);
+}
+
+/**
+ * Wire both copies of the segmented control.
+ *
+ * Bound once at init rather than per render: the buttons are static markup in
+ * forecasts.html, so nothing here replaces them.
+ *
+ * @returns {void}
+ */
+function initModeToggle() {
+  for (const button of document.querySelectorAll(".forecast-mode-btn")) {
+    button.addEventListener("click", () => setForecastMode(button.dataset.forecastMode));
+  }
+}
+
+/**
  * Render the provenance block under the chart.
  *
  * @param {Object} payload
@@ -465,17 +717,29 @@ function renderMetadata(payload, rows) {
   const el = document.getElementById("wave-forecast-metadata");
   if (!el || rows.length === 0) return;
 
-  const runDisplay = formatModelRunTime(payload.model_run_time);
   const first = rows[0].time;
   const last = rows[rows.length - 1].time;
+
+  // One line per model rather than a single "Model Run": waves and wind come
+  // from different models on the same 00/06/12/18Z cadence, and a fetch can
+  // legitimately catch different runs of each. `models` is the payload's own
+  // provenance list; the top-level `model` fields describe the wave model only.
+  const models = Array.isArray(payload.models)
+    ? payload.models
+    : [{ name: payload.model, run_time: payload.model_run_time }];
+  const modelLines = models
+    .map((model) => {
+      const run = formatModelRunTime(model.run_time);
+      return `<strong>Model:</strong> ${model.name}${run ? ` — run ${run}` : ""}<br/>`;
+    })
+    .join("");
 
   setSafeHTML(
     el,
     `
     <strong>Station:</strong> ${payload.station_name} (${payload.station_id})<br/>
     <strong>Location:</strong> ${payload.location.lat.toFixed(3)}°N, ${Math.abs(payload.location.lon).toFixed(3)}°W<br/>
-    <strong>Model:</strong> ${payload.model}<br/>
-    ${runDisplay ? `<strong>Model Run:</strong> ${runDisplay}<br/>` : ""}
+    ${modelLines}
     <strong>Data Retrieved:</strong> ${formatMonthDayTimeTZ(new Date(payload.generated_utc))}<br/>
     <strong>Forecast Period:</strong> ${formatMonthDayTimeTZ(first)} to ${formatMonthDayTimeTZ(last)}<br/>
     <strong>Resolution:</strong> ${rows.length} steps — hourly to 24 h, then 3-hourly;
@@ -536,7 +800,7 @@ function renderStationPicker(stations) {
  */
 function renderHeading(stationName) {
   const heading = document.getElementById("wave-forecast-heading");
-  if (heading) heading.textContent = `🌊 Wave Forecast — ${stationName}`;
+  if (heading) heading.textContent = `🌊 Wave & Wind Forecast — ${stationName}`;
 }
 
 /**
@@ -582,12 +846,14 @@ async function loadWaveForecast() {
 
     currentRows = rows;
     renderHeading(payload.station_name);
-    renderChart(rows);
+    renderForecastMode(rows);
     renderTable(rows);
     renderMetadata(payload, rows);
 
     if (!detachWaveThemeListener) {
-      detachWaveThemeListener = registerChartThemeListener(() => renderChart(currentRows));
+      // Only the visible chart — the hidden one is redrawn from scratch the
+      // moment it is shown, so there is nothing stale to repaint.
+      detachWaveThemeListener = registerChartThemeListener(() => renderForecastMode(currentRows));
     }
   } catch (err) {
     logger.error("WaveForecast", "Error loading wave forecast", err);
@@ -645,6 +911,8 @@ async function initWaveForecast() {
   // written one) delayed the chart by several seconds rather than failing fast.
   const requested = stationFromHash();
   if (requested) currentStationId = requested;
+
+  initModeToggle();
 
   const forecastLoad = loadWaveForecast();
   const stations = await loadStationIndex();

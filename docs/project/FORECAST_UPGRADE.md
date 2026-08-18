@@ -111,8 +111,8 @@ publishes no wind WMS layer and the wave series alone cannot be sanity-checked:
 a 0.72 m overnight peak read as implausible until it was cross-checked against
 17 kt of model wind. Two models in one archive, so every row now carries a
 `model` and `wave_forecast_run` keys on it. 932 requests/day, 2.9% of the MSC
-guidance, same 0.51 req/s burst rate. Backend only — `wave-forecast.js` still
-renders waves and ignores the new fields.
+guidance, same 0.51 req/s burst rate. Backend only at the time; the page picked
+these fields up on 2026-08-18 (see "Wind on the page" below).
 
 **Second station, 2026-08-18 — Crescent Beach Ocean (`CRPILE`).** The selection
 rule: *a forecast point earns its place by having a co-located sensor to verify
@@ -166,36 +166,72 @@ put phantom stations on the map and in the buoy cards. Those two need a
 forecast-only registry section first. Request budget is *not* the blocker (user
 confirmed 2026-08-18 that volume is fine).
 
-**Open design question — how wind arrives on the page** (user spitballing,
-2026-08-18): a selector bar spanning the main div with two buttons, Wind and
-Wave, showing one or the other.
+**Wind on the page — built 2026-08-18.** The open design question this replaces
+was how wind should arrive on the page: the user had spitballed "a selector bar
+spanning the main div with two buttons, Wind and Wave, showing one or the
+other," and the counter-proposal here was to toggle the *chart* only while
+keeping one table carrying both sets of columns, on the grounds that RDWPS is
+WW3 forced by HRDPS wind — the two series are cause and effect, not peers, and
+an exclusive either/or works against the one thing the pairing buys. Settled by
+building it: a **segmented control** (a row of joined buttons, exactly one
+active) switching the section between **Waves** (default) and **Wind**. Two
+copies of the control, above the chart and below the table, kept in sync by
+`setForecastMode()` — the same duplicate-and-sync pattern as the 24h/48h toggle
+on `winds.html`.
 
-Two cautions worth weighing before building it. First, **"fixed" should probably
-mean sticky-within-the-section, not viewport-pinned** — the site already has a
-slim sticky nav bar with a hamburger drawer, and a second viewport-fixed bar
-stacked under it costs real estate exactly where there is least of it. Second,
-and more substantive: **RDWPS is WW3 forced by HRDPS winds**, so these two series
-are not peers, they are cause and effect. Wind was added precisely because the
-wave series could not be sanity-checked alone (the 0.72 m overnight peak that
-only made sense next to 17 kt of model wind). An exclusive either/or toggle
-works against the one thing the pairing buys.
+The toggle governs **both the chart and the table columns** — the user's call
+over that chart-only compromise, and the right one for two reasons:
 
-Suggested compromise: use the toggle for the **chart** only, where four axes
-would otherwise collide, and keep a single table carrying both sets of columns
-so the numbers stay side by side. On wide screens, consider stacking the two
-charts on a shared time axis instead of toggling — that is the classic
-meteogram, and it makes the causal link visible rather than something the reader
-has to hold in their head. Note also that gusts are masked at most hours, so the
-gust series will be sparse by nature; a gust existing at all is the signal.
+- **The 8-column table did not fit a phone.** Waves and wind together measured
+  ~800 px against 356 px of usable width. Split by mode, the wind view is 356 px
+  — it fits exactly, no sideways scroll — after trimming cell padding and font
+  size under 600 px. The waves view is 499 px and still scrolls inside its
+  wrapper, which is what that wrapper is for.
+- **A control duplicated below the table has to govern the table.** Otherwise
+  the lower copy silently drives a chart that is scrolled off-screen above it.
 
-The axis floor stays at 1 m (user confirmed 2026-08-18), including at Crescent
-Beach where it will read as a near-flat line most of the year. That is the
-honest rendering — auto-scaling a flat calm into a mountain range is the failure
-mode being avoided.
+The cause-and-effect caution still stands, and is answered in the page copy
+rather than in the layout: each panel names its own model (`Waves — RDWPS`,
+`Wind at 10 m — HRDPS`), and the provenance block prints one `Model: … — run …`
+line per model, from the payload's `models` array, so a run divergence between
+the two is visible rather than silent. The stacked-meteogram idea is *not* dead
+— it is the natural wide-screen upgrade, and nothing here forecloses it.
 
-**Next:** put wind on the page (chart series + table columns), then the
-verification writer — which wind unblocks, since it varies enough to score this
-summer where the waves do not. Then the forecast-only station registry, and
+**Combining the two tables is parked, not rejected** (user, 2026-08-18: "nearly!
+although the wind and wave directions dont completely add up"). That divergence
+is physics, not a data fault: wave direction tracks wind direction only in a
+pure wind-sea; any swell component pulls the two apart, which is precisely what
+the wind-wave-height partition column reports.
+
+Implementation notes worth keeping:
+
+- **ECharts cannot be initialised inside a hidden panel.** It measures its
+  container at init, so a chart built while `hidden` gets a zero-sized canvas
+  that a later `resize()` does not fully recover. The hidden chart is therefore
+  not initialised until its panel is shown, and each chart is redrawn every time
+  it becomes visible — which also means a theme change while a chart was hidden
+  cannot leave stale palette colours behind.
+- **Plain buttons with `aria-pressed`, not tab roles.** A `tablist` duplicated
+  on the page would have two tabs claiming `aria-controls` over one panel.
+  Panels use the `hidden` attribute. Verified against the axe suite in both
+  themes.
+- **Wind is stored km/h and displayed knots**, converted at parse time in
+  `toSortedRows()` — the site-wide convention, and the reason the JSON carries
+  km/h while every label says kt.
+- **Gusts are a scatter series, never a line.** HRDPS masks the gust at most
+  hours, and a line would draw segments across hours where no gust was
+  diagnosed. The tooltip says "none forecast" there rather than showing a gap.
+- **Control sizing** (user, 2026-08-18): the segmented control and the station
+  picker share one box — 40 vw centred on desktop, 75 vw under 600 px, matched
+  left and right edges. 40 vw is only ~156 px on a 390 px phone, too cramped for
+  two labels and a poor tap target.
+
+Pre-existing and unrelated: the page scrolls horizontally between roughly
+700–950 px viewport width, caused by `.nav-actions`/`.theme-toggle` in the
+shared nav reaching 912 px. Verified byte-identical before and after this work.
+
+**Next:** the verification writer — which wind unblocks, since it varies enough
+to score this summer where the waves do not. Then the forecast-only station registry, and
 Hein Bank behind it.
 
 **Implication — starting architecture:** clone the

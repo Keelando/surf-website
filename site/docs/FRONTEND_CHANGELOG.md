@@ -4,6 +4,88 @@ UI/UX enhancements and feature history for halibutbank.ca. Entries are newest-fi
 
 ---
 
+## 2026-08-18: Mobile Nav — Scroll Lock Behind the Drawer
+
+The page behind the open hamburger drawer scrolled freely on mobile. It now
+holds still.
+
+**The lock is JavaScript, not CSS, and that is the point.** This nav is
+`position: sticky`, and both standard CSS recipes break it outright — measured
+at a 1400 px scroll offset on a 390 px viewport, not theorised:
+
+| Recipe | What it does to a sticky nav |
+|---|---|
+| `position: fixed` + negative `top` on `<body>` | Takes the body out of flow; the sticky bar and its drawer strand 1400 px **above** the viewport — invisible and untappable. |
+| `overflow: hidden` on `<html>`/`<body>` | Removes the scrolling box the bar is stuck to, so it snaps back to its static position — same 1400 px above the viewport. Also drops the scroll offset to 0, dumping the reader at the top on close. |
+
+Both were tried and reverted. What ships instead: `syncScrollLock()` in `nav.js`
+attaches `wheel`, `touchmove` and `keydown` listeners that `preventDefault()`
+while any drawer is open (`passive: false` — the default passive listener cannot
+cancel). No layout changes at all, so the bar stays exactly where it is stuck.
+Gestures starting inside `.nav-scroll` are exempt so the drawer's own list still
+scrolls, and it carries `overscroll-behavior: contain` so a scroll chain cannot
+reach the page behind it. `SCROLL_KEYS` (space, PageUp/Down, Home/End, arrows)
+are cancelled too, but never when the target is a form control.
+
+The lock reads the DOM (`.main-nav.nav-open`) rather than being toggled by each
+call site — three paths clear `nav-open` (the button, outside-click, Escape),
+and a lock each one had to remember to release is one that eventually strands
+the page unscrollable.
+
+Verified in Chromium and Firefox at 390×800: with the drawer open, wheel and
+PageDown both leave `scrollY` at 700 and the bar at `top: 0`; after Escape,
+scrolling resumes normally.
+
+---
+
+## 2026-08-18: Forecast Page — Wind Views + Segmented Control
+
+`/forecasts.html` now renders the HRDPS wind that
+`scripts/fetch/fetch_wave_forecast.py` had been storing since 2026-08-17 but the
+page ignored. Waves stay the default view.
+
+**Segmented control** (`.forecast-mode-toggle`) switches the section between
+**Waves** and **Wind** — chart *and* table columns, not just the chart. Two
+copies, above the chart and below the table, kept in sync by `setForecastMode()`
+in `wave-forecast.js`; same duplicate-and-sync pattern as the 24h/48h toggle on
+`winds.html`. Plain buttons with `aria-pressed` inside a labelled `role="group"`,
+not tab roles — a duplicated `tablist` would have two tabs claiming
+`aria-controls` over one panel. Panels use the `hidden` attribute.
+
+**Wind chart:** speed line (orange), gusts as a sparse **scatter** series (HRDPS
+masks the gust at most hours — a line would draw segments across hours with no
+gust diagnosed; the tooltip says "none forecast"), direction arrows along the
+top. Knots on the axis, converted from the stored km/h at parse time. Axis floor
+15 kt, mirroring the wave chart's 1 m floor, so a calm day looks calm.
+
+**Table columns are per-mode:** waves → Height / Period / From / Wind wave;
+wind → Wind (kt) / Gust (kt) / From. Defined as data (`TABLE_COLUMNS`) so a
+header cannot drift from its cell.
+
+**Mobile:** the split fixed a real layout problem. The combined 8-column table
+needed ~800 px against 356 px of usable width at 390 px; the wind view now
+measures 356 px and fits with no sideways scroll (cell padding and font-size
+trimmed under 600 px). The waves view is 499 px and still scrolls inside its
+wrapper, by design.
+
+**Control sizing:** the segmented control and the station picker share one box —
+40 vw centred on desktop, **75 vw under 600 px**, matched on both edges. 40 vw is
+only ~156 px on a 390 px phone.
+
+Each panel names its own model (`Waves — RDWPS`, `Wind at 10 m — HRDPS`) and the
+provenance block prints one `Model: … — run …` line per model, because RDWPS is
+forced by HRDPS wind and a run divergence between the two should be visible, not
+silent.
+
+Verified in Chromium and Firefox, light and dark, at 1600/1280/900/600/390 px:
+zero console errors, axe clean in both themes.
+
+**Known, pre-existing, unrelated:** the page scrolls horizontally between roughly
+700–950 px — `.nav-actions`/`.theme-toggle` in the shared nav reach 912 px.
+Byte-identical before and after this work.
+
+---
+
 ## 2026-07-03: Accessibility — WCAG AA Contrast + Named Map Markers
 
 Full axe-core audit (9 pages × light/dark) — all serious/critical violations

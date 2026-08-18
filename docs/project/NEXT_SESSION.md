@@ -63,7 +63,14 @@ under an "Experimental — use at your own risk" badge. Decisions baked in:
 tides page already used 0.25 rem; this brings the rest in line rather than
 inventing a new value.
 
-## Where we're at (2026-08-15, still current)
+## Where we're at (2026-08-15, partly superseded)
+
+> **Since superseded — see [`FORECAST_UPGRADE.md`](FORECAST_UPGRADE.md) for the
+> current state.** HRDPS wind joined the same fetch (2026-08-17), Crescent Beach
+> Ocean (`CRPILE`) became a second point (2026-08-18) — so the counts below are
+> now 464 requests/run and 1,856/day, not 133 and 532 — and the page grew a
+> Waves/Wind segmented control (2026-08-18). Everything about the schema, the
+> taper, and the validation status below still holds.
 
 **RDWPS wave forecast — live in cron (`a621316`):**
 
