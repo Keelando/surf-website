@@ -18,6 +18,8 @@ Playwright across Chromium + Firefox).
 | `a1f840f` | Forecast verification writer + `lib/directions.circular_difference()` |
 | `ceff7e9` | Verification plot on `forecasts.html`; legend + mobile dev-note fixes |
 | `99b3a15` | Storm surge hindcast → verification rename; **fixed its dead archive** |
+| `34b62eb` | This plan |
+| `7d27dc2` | Dropped the redundant legend from the storm surge forecast chart |
 
 **The writer** (`scripts/monitoring/verify_wave_forecast.py`, daily 03:40 UTC)
 pairs each past forecast value with the buoy observation for that hour, plus
@@ -379,6 +381,11 @@ Backlog beyond this lives in `TODO.md`.
   it is listed.
 - **Verify visual changes in BOTH engines** — user's daily browser is Firefox;
   Playwright and screenshots default to Chromium. Pin timezones.
+- **A one-series chart does not need a legend.** The storm surge forecast chart
+  carried one that repeated its own title, plus a fake entry used as a text
+  label that repeated the peaks card above it — and `left: "center"` with
+  `right: 20` set together pushed the text into the axis labels. Reserving
+  `gridBottom: 25%` for it is where the empty band under the plot came from.
 - **ECharts draws the legend swatch from the series `itemStyle`** — not from
   `lineStyle`, and not from a per-*point* `itemStyle`. A series that colours only
   its line falls through to ECharts' default palette, so the legend disagrees
