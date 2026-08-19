@@ -230,9 +230,93 @@ Pre-existing and unrelated: the page scrolls horizontally between roughly
 700–950 px viewport width, caused by `.nav-actions`/`.theme-toggle` in the
 shared nav reaching 912 px. Verified byte-identical before and after this work.
 
-**Next:** the verification writer — which wind unblocks, since it varies enough
-to score this summer where the waves do not. Then the forecast-only station registry, and
-Hein Bank behind it.
+**Verification writer — built 2026-08-19.**
+`scripts/monitoring/verify_wave_forecast.py`, daily at 03:40 UTC. It reads the
+forecast archive, finds values whose valid time has passed and that aren't yet
+scored, and writes one `wave_forecast_verification` row per pair: what the
+model said, what the buoy measured, and what the buoy read at run time (the
+persistence baseline). Local SQLite only — no network.
+
+Both forecast stations turn out to share one observation source:
+`buoy_data.sqlite`'s `buoy_observation` holds 4600146 *and* CRPILE, because the
+Surrey fetch writes into the same table. So there is no cross-database join
+here at all.
+
+The design questions that mattered, and how they were settled:
+
+- **"The forecast changes" is not a problem to solve** — it is already solved
+  by `wave_forecast`'s primary key. Every run's prediction for a given valid
+  time is its own row, never overwritten, so `lead_hours` is just
+  `valid_time - forecast_run_time` and nothing needs reconciling.
+- **Score every lead, not a 24-hour window.** The user's opening instinct was
+  to look at hours 24–30 of each run. But the taper means each run yields
+  *exactly one* `lead_hours = 24` row per station/variable, not a range — so
+  "24 h skill" is `WHERE lead_hours = 24`, and the entire 0–48 h curve is
+  already in the archive for free. Restricting the writer would have thrown
+  away the lead-time decay curve, which is the more interesting result.
+- **Directions must use circular arithmetic.** New in
+  `lib/directions.py`: `circular_difference()`. A 010° forecast against a 350°
+  observation is a 20° error; plain subtraction scores it as −340°, and one
+  such pair dominates an RMSE. Northerlies straddle 0° here constantly. Two
+  tests guard the mapping in both directions, so a newly added bearing cannot
+  default to scalar arithmetic.
+- **The 0.5 m event gate is applied at read time, not write time** (user,
+  2026-08-19). Sub-threshold rows are still stored: a 0.7 m forecast that never
+  materialised is a *false alarm*, and dropping it at write time would make the
+  model look better the worse it got. The gate is
+  `forecast >= 0.5 OR observed >= 0.5` — `OR`, because gating on the
+  observation alone discards false alarms and gating on the forecast alone
+  discards misses, which are the two failures the score most needs to catch.
+  The summary prints gated and ungated side by side.
+- **`wind_wave_height` is unverifiable and says so.** The column exists in
+  `buoy_observation` but neither station has ever populated it (0 of 720 at
+  4600146, 0 of 4312 at CRPILE) — the wind-sea/swell partition is a model
+  diagnostic our instruments don't report. Mapping it to an always-NULL column
+  would read as a permanent data outage; `OBSERVATION_COLUMNS` maps it to
+  `None` instead. `wave_direction` is likewise absent at CRPILE, but that is
+  per-station and needs no special case: no observation simply means no pair.
+- **A written pair is never revised** (INSERT OR IGNORE), so a late buoy
+  backfill cannot rewrite a past score. A pair with no observation yet writes
+  *nothing* and is retried until it falls out of the 7-day lookback.
+
+**Peak timing is deliberately not handled here, and is the next metric.** Wind
+and wave events are peaky, and exact point matching penalises a phase-shifted
+forecast twice — once for the peak that didn't happen, once for the peak it
+missed. The fix is *not* a fuzzy valid-time join, which would reward a forecast
+that is wrong at every specific hour and defeat the question the 3-hourly rows
+past +24 h exist to answer. It is a separate metric over the same archive:
+model peak value and its time vs observed peak value and its time, recording
+`timing_error_hours` and `magnitude_error` **separately** — "does the model
+know how big" and "does it know when" are the two things point-RMSE fuses into
+one number. Parked until there are peaks: a peak-timing metric with an empty
+archive is untested code. With September close, that wait should be short.
+
+**First backfill, 2026-08-19:** 2,420 pairs from four days of archive (78
+awaiting observations, 329 skipped as unverifiable — all `wind_wave_height`).
+The headline number is a self-validation, not a result: **HRDPS wind bias at
+Halibut Bank is ≈0 at 0–12 h lead (−2 to +5 km/h at every hour of the day) and
+grows to +12.4 km/h at 25–48 h**, peaking near +23 km/h overnight. A units,
+timestamp, or station-matching bug would have shown up as error at *every*
+lead; near-zero short-lead bias is what says the pipeline is sound. The
+long-lead over-forecast is a real (tiny-sample, four-day, calm-season) signal
+to re-check after an actual event.
+
+Two caveats to carry into any published version of these numbers:
+
+- **Direction errors are noise at low wind.** Wave direction RMSE of 64–94° and
+  wind direction ~100° at 4600146 are mostly a calm-summer artefact — a bearing
+  is meaningless when the speed is near zero. A companion-variable gate (score
+  direction only above some speed) is the fix; not built, because it needs a
+  threshold picked for a reason rather than guessed.
+- **The `wind_gust` sample is self-selected.** HRDPS only diagnoses a gust where
+  there is one, so gust rows exist only at hours the model thought were windy —
+  precisely the hours it was most wrong. The +27 km/h gust bias is that
+  selection effect, not a conversion error: the forecast gust/sustained ratio is
+  a consistent 1.18–1.29, and the sustained wind is over-forecast by the same
+  margin at those hours.
+
+**Next:** the peak-timing metric once an event lands, then the forecast-only
+station registry, and Hein Bank behind it.
 
 **Implication — starting architecture:** clone the
 `fetch_storm_surge.py` GeoMet pattern (owslib `getfeatureinfo` per station

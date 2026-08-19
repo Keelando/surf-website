@@ -104,6 +104,12 @@
 # requests/run, 532/day — 0.6% of MSC's 86,400/day guidance.
 35 4,10,16,22 * * * /usr/bin/flock -n /tmp/envcan_wave_forecast.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_wave_forecast.py >> /home/keelando/envcan_wave/logs/wave_forecast.log 2>&1
 
+# Forecast verification — pairs past forecasts with what the buoys measured.
+# Local SQLite only, no network, seconds to run. Daily is enough: it re-scans a
+# 7-day window each time, so a pair whose observation arrives late is still
+# caught, and a missed run costs nothing. 03:40 sits clear of the 04:35 fetch.
+40 3 * * * /usr/bin/flock -n /tmp/envcan_wave_verify.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/monitoring/verify_wave_forecast.py >> /home/keelando/envcan_wave/logs/wave_forecast_verify.log 2>&1
+
 # ==================== STORM SURGE ====================
 # Fetch GeoMet storm surge (every 12 hours at :31). GDSPS publishes 241 hourly
 # steps; we fetch 129 (hourly to 72 h, then 3-hourly) x 6 stations = 774

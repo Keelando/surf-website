@@ -120,6 +120,44 @@ def cardinal_to_degrees(cardinal):
     return None
 
 
+def circular_difference(forecast_degrees, observed_degrees):
+    """
+    Signed smallest-arc difference between two compass bearings, in degrees.
+
+    Returns a value in (-180, 180]: positive means `forecast_degrees` is
+    clockwise of `observed_degrees`. Returns None if either input is missing
+    or non-numeric.
+
+    Directions are modular, so plain subtraction is wrong at the wrap point
+    and wrong in a way that never looks wrong: a forecast of 010° against an
+    observed 350° is a 20° error, but `10 - 350` scores it as -340°. One such
+    pair is enough to dominate an RMSE, and northerlies straddle 0° constantly
+    here — so every direction error must come through this function.
+
+    Examples:
+        >>> circular_difference(10, 350)
+        20.0
+        >>> circular_difference(350, 10)
+        -20.0
+        >>> circular_difference(180, 0)
+        180.0
+    """
+    if forecast_degrees is None or observed_degrees is None:
+        return None
+
+    try:
+        forecast_degrees = float(forecast_degrees)
+        observed_degrees = float(observed_degrees)
+    except (TypeError, ValueError):
+        return None
+
+    # (diff + 180) % 360 - 180 maps onto [-180, 180), which puts an exact
+    # reversal at -180. Shift it to +180 so the sign of a half-turn is stable
+    # rather than depending on which way the subtraction happened to go.
+    diff = (forecast_degrees - observed_degrees + 180) % 360 - 180
+    return 180.0 if diff == -180 else diff
+
+
 def is_offshore_wind(wind_direction_degrees, coast_bearing):
     """
     Determine if wind is blowing offshore based on wind direction and coast bearing.
