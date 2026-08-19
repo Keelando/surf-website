@@ -1,11 +1,63 @@
 # Next Session Plan
 
-**Last updated:** 2026-08-16
-**Status:** Forecast upgrade ACTIVE — RDWPS waves are in cron *and now
-rendering* on `forecasts.html` as an experimental preview. The next piece is
-the verification writer, and it is time-sensitive.
+**Last updated:** 2026-08-19
+**Status:** Forecast upgrade ACTIVE. Verification is now **built end to end** —
+the writer scores archived forecasts against the buoys, and `forecasts.html`
+draws the last 48 h. Everything remaining is either waiting on an autumn storm
+or is unrelated backlog.
 
 ---
+
+## Session of 2026-08-19 — what shipped
+
+Three commits on `main`, all suites green at each (444 pytest, 93 JS, 16
+Playwright across Chromium + Firefox).
+
+| Commit | What |
+|---|---|
+| `a1f840f` | Forecast verification writer + `lib/directions.circular_difference()` |
+| `ceff7e9` | Verification plot on `forecasts.html`; legend + mobile dev-note fixes |
+| `99b3a15` | Storm surge hindcast → verification rename; **fixed its dead archive** |
+
+**The writer** (`scripts/monitoring/verify_wave_forecast.py`, daily 03:40 UTC)
+pairs each past forecast value with the buoy observation for that hour, plus
+the observation at run time as a persistence baseline. Backfilled 2,420 pairs
+from four days.
+
+**The plot** (`scripts/export/export_forecast_verification.py`, every 10 min →
+`site/data/wave_forecast/verification/{station}.json`) draws observed against a
+stitched ~24 h-lead forecast for the last 48 h, under the existing Waves/Wind
+control.
+
+**First real result, and it is a self-validation:** HRDPS wind bias at Halibut
+Bank is ≈0 at 0–12 h lead (−2 to +5 km/h at every hour of the day) and grows to
++12.4 km/h at 25–48 h. A units, timestamp or station-matching bug would have
+shown error at *every* lead; near-zero short-lead bias is what says the pipeline
+is sound. Four calm days, so the long-lead number is a signal to re-check, not a
+conclusion.
+
+**The storm surge cruft.** Renaming turned up more than the name:
+
+- **Its archive had been dead since 2026-08-16.** `fetch_storm_surge.py` chose
+  the run to archive with `datetime.now(timezone.utc).hour == 13`, evaluated
+  *after* a ~32-minute fetch. As the job grew it began finishing at 14:03, the
+  branch stopped matching, and storage was skipped silently — "skipping" is a
+  normal outcome of that branch and the job still exits 0. Now decided from the
+  model's own run time (`should_archive_run()`, tested). **The three missing
+  days are unrecoverable** — GeoMet only serves current runs.
+- **Every published lead figure was wrong, three different ways.** The query has
+  always used `hours_ahead BETWEEN 56 AND 79`; the JSON declared "38-61" from an
+  "18Z run", the doc said "38-61 / 12Z / hours 50-73 from midnight", and the
+  page said "48 hours in advance" from "the 12Z model run". Truth: **00Z run,
+  56–79 h ahead**. `forecast_run_time` is stored as a bare date and the archived
+  run is 00Z, so midnight *is* the run instant and the arithmetic is a true lead.
+- **`skip_files` was a landmine** — `create_combined_forecast()` globs the
+  output directory, so the rename would have merged `verification.json` in as a
+  phantom station. Now pinned by a test against the exporter's own `OUTPUT_PATH`.
+
+Note: the "avoid the word hindcast" ruling in the decision tree below was made
+2026-08-16 and the wave work initially violated it anyway. The storm surge
+misnomer predated it.
 
 ## Session of 2026-08-16 — what shipped
 
@@ -171,56 +223,80 @@ data that cannot be recovered.
 
 ## Next session — pick up here
 
-Theme: start the verification writer; it is the time-sensitive one.
+Theme: **most of what's left is waiting on weather.** Verification is built and
+accumulating; the interesting questions can't be answered by four calm days in
+August. Two things to check first, then genuinely open work.
 
-0. **Verification writer** — promoted to the top (was item 2 below, detail
-   there). The reasoning is in the decision tree above: the user's forecast
-   browser and the skill score are the same build, and the pairs only
-   accumulate going forward. Nothing else here expires.
-1. **Storm-surge taper + delay** (`TODO.md`, has all the measured numbers):
-   our largest HTTP load at 2,894/day, and surge changes slowly enough that
-   it's waste — hour-to-hour change averages 1.55 cm. Chosen shape is hourly
-   to 72 h then 3-hourly to 240 h (129 of 241 steps, −47%). **Raise
-   `FETCH_DELAY` to ~2 s at the same time** — it currently runs at 1.05 req/s
-   for 23 minutes, which is the more important problem. Touches a live chart,
-   so look at the page before committing. Plot smoothing is a separate,
-   optional follow-up, with the overshoot caveat in `TODO.md`.
-2. **Verification writer** — a small script on a lag behind the observations,
-   pairing each past-valid forecast value with the nearest buoy observation
-   into `wave_forecast_verification`. This is what makes the winter data worth
-   having; the table exists and is empty. It has a `reference_value` column
-   for the buoy reading at the model run hour — fill it, because a **skill
-   score against persistence** ("do we beat 'conditions stay as they are'?")
-   is what decides how far out the forecast is worth displaying, and EC's own
-   verification won't answer it (see `RDWPS_PARAMETERS.md`).
-3. ~~**Unlisted `site/forecast-waves.html`**~~ — **DONE 2026-08-16, but not
-   as a separate page.** User's call: the preview lives at the bottom of the
-   existing `forecasts.html` under an "Under development" badge, which is
-   the dev environment. `site/assets/js/wave-forecast.js` renders chart +
-   table + provenance from `site/data/wave_forecast/4600146.json`; the old
-   "coming soon" callout and its page-local styles are gone, since the thing
-   it promoted is now on the same page.
-   - **Height axis floors at 0–1 m** and only grows past it. Summer
-     forecasts sit under 0.2 m and auto-scaling renders a flat calm as a
-     mountain range.
-   - **Time axis, not category.** The fetch tapers to 3-hourly after 24 h;
-     evenly spacing those steps would stretch the back half of the forecast
-     to look like the front half.
-   - **`wind_wave_height` is table-only, never plotted.** Where present it
-     equals total Hs within 1 mm in 88 of 96 DB rows — the Strait has no
-     swell at this fetch, so a second line would just hide under the first.
-   - Still to come here: the buoy-observation overlay, which is the
-     validation story made visible, and which wants item 2 first.
-4. **Policy cleanup** (`TODO.md`, quick): `fetch_lightstation.py` discovers
-   data by walking Datamart directory listings, which MSC's usage policy
-   explicitly forbids, and looks redundant with the sr3 subscription already
-   delivering FPCN61. Pairs with the duplicate-fetching audit.
-5. **CIOPS-SalishSea recon** (priority ②) — **does SSH include tidal
-   forcing?** Still open, and it decides the arithmetic: if tides are in the
-   field it *is* total water level and we stop adding the DFO prediction to
-   it; if not, it is a surge-like field we add as we do today. ECCC's layer
-   abstract does not say, so this needs the CIOPS technical note or a
-   comparison of the field against a known tide curve at a station.
+### Check these first (five minutes, both are new and unproven in cron)
+
+1. **Did the storm surge archive come back?** The fix has never actually fired
+   — the 13:31 UTC job is the one that fetches the 00Z run.
+   ```sql
+   -- expect a row for each day from 2026-08-20 onward
+   SELECT forecast_run_time, COUNT(*), MIN(created_at)
+   FROM forecast_archive GROUP BY forecast_run_time
+   ORDER BY forecast_run_time DESC LIMIT 5;
+   ```
+   Nothing should appear for 2026-08-17…19; those days are gone for good.
+   Also expect `🎯 00Z run — storing to the verification archive...` in
+   `logs/storm_surge.log`, and no phantom station in `combined_forecast.json`.
+2. **Did the wave verification writer run at 03:40?** `logs/wave_forecast_verify.log`
+   should show a small pair count (one day's worth, not another 2,420 backfill)
+   and print the skill table.
+
+### Open work
+
+1. **Peak-timing metric** — the one real gap in verification, and it needs an
+   event. Point matching penalises a phase-shifted forecast twice: once for the
+   peak that didn't happen, once for the peak it missed. The fix is **not** a
+   fuzzy valid-time join (that would reward a forecast wrong at every specific
+   hour, defeating what the 3-hourly rows past +24 h are for). It is a separate
+   metric over the same archive: model peak value and its time vs observed peak
+   value and its time, recording `timing_error_hours` and `magnitude_error`
+   **separately** — "does it know how big" and "does it know when" are the two
+   things point-RMSE fuses into one number. Gate at the same 0.5 m; a "peak"
+   under that isn't an event.
+2. **More lead bands on the verification plot** (user, 2026-08-19). The archive
+   holds every run, so this is purely a rendering decision. Likely shape: two
+   bands, ~6 h and ~24 h, against the solid observed line — that shows
+   *convergence*, whether the model walks toward the truth as the event nears.
+   Cost is another dashed line on a chart whose job is making one gap obvious.
+   Lead bands would become a list in the exporter rather than one constant,
+   which the payload's `lead_band` key already anticipates. **Decide after an
+   event** — on calm days every lead looks alike.
+3. **Text-forecast zone expansion** — the other half of the fork this session
+   opened with, deliberately deferred in favour of verification (which was
+   time-sensitive; zones are not). Nothing has been designed yet.
+4. **Forecast-only station registry** — still the blocker for Sombrio Beach,
+   Long Beach and Hein Bank. They are not instruments, so adding them under
+   `buoys` in `stations.json` would put phantom stations on the map and in the
+   buoy cards. Needs its own registry section first. Request budget is *not* the
+   blocker (confirmed 2026-08-18).
+5. **Two verification caveats worth closing before any of this is published as
+   a skill number:**
+   - **Direction errors are noise at low wind.** Wave-direction RMSE of 64–94°
+     and wind-direction ~100° at 4600146 are mostly a calm-summer artefact — a
+     bearing is meaningless near zero speed. Fix is a companion-speed gate
+     (score direction only above some threshold); not built, because the
+     threshold needs picking for a reason rather than guessing.
+   - **The `wind_gust` sample is self-selected.** HRDPS only diagnoses a gust
+     where it thinks there is one, so gust rows exist only at hours the model
+     called windy — precisely where it was most wrong. The +27 km/h gust bias is
+     that selection effect, not a conversion error (forecast gust/sustained
+     ratio is a consistent 1.18–1.29).
+6. **`docs/STORM_SURGE_SETUP.md` is stale beyond the rename.** Names and lead
+   figures were corrected 2026-08-19, but it still has pre-monorepo paths
+   (`~/site/data/…`, scripts invoked from the repo root) and at least one wrong
+   cron time. Not urgent; it is a setup doc nobody re-runs. Same for
+   `tests/NEXT_STEPS.md` and `tests/OFFLINE_TESTING_SUMMARY.md`, which reference
+   the now-deleted `storm_surge/hindcast.json` — left as historical record, but
+   they will mislead anyone who follows them literally.
+7. **CIOPS-SalishSea recon** (priority ②) — **does SSH include tidal forcing?**
+   Unchanged and still open; it decides the arithmetic. If tides are in the
+   field it *is* total water level and we stop adding the DFO prediction; if
+   not, it is surge-like and we add as today. ECCC's abstract doesn't say, so
+   this needs the CIOPS technical note or a comparison against a known tide
+   curve.
 
    Settled by GetCapabilities 2026-08-16, so don't re-derive:
    - Layer `CIOPS-SalishSea_500m_SeaSfcHeight`, **500 m**, title *"Sea
@@ -231,12 +307,19 @@ Theme: start the verification writer; it is the time-sensitive one.
      we carry.
    - 48 hourly steps (`PT1H`), two reference times online at once (06Z, 12Z
      when checked), 4 runs/day. So one station is 48 requests/run, 192/day;
-     six stations ~1,150/day untapered — affordable against the headroom the
-     storm-surge taper just freed, but not free.
-   - Atmospheric forcing is HRDPS, which is also our candidate wind upgrade.
+     six stations ~1,150/day untapered.
+   - Atmospheric forcing is HRDPS, which is also our wind source.
+8. **Policy cleanup** (`TODO.md`, quick): `fetch_lightstation.py` discovers data
+   by walking Datamart directory listings, which MSC's usage policy explicitly
+   forbids, and looks redundant with the sr3 subscription already delivering
+   FPCN61.
 
-Backlog beyond this lives in `TODO.md`; the four frontend-polish items from
-this morning's review are done (`c723f47`).
+**Done since the last plan:** the verification writer (was item 0/2) and the
+storm-surge taper + `FETCH_DELAY` raise (was item 1 — the 2 s delay and the
+hourly-to-72 h taper are both live; that taper is *why* the fetch now runs ~32
+minutes, which is what exposed the archive bug).
+
+Backlog beyond this lives in `TODO.md`.
 
 ## Decisions that shouldn't be relitigated
 
@@ -296,3 +379,22 @@ this morning's review are done (`c723f47`).
   it is listed.
 - **Verify visual changes in BOTH engines** — user's daily browser is Firefox;
   Playwright and screenshots default to Chromium. Pin timezones.
+- **ECharts draws the legend swatch from the series `itemStyle`** — not from
+  `lineStyle`, and not from a per-*point* `itemStyle`. A series that colours only
+  its line falls through to ECharts' default palette, so the legend disagrees
+  with the line it labels (index 1 is `#91cc75` green, index 2 `#fac858` yellow).
+  This sat unnoticed on the forecast charts until 2026-08-19. Set `itemStyle` on
+  every series that sets `lineStyle`.
+- **Never decide "which run is this?" from the wall clock at the end of a long
+  job.** `fetch_storm_surge.py` tested `datetime.now().hour == 13` after a fetch
+  that grew to ~32 minutes, drifted into hour 14, and silently stopped archiving
+  for three days. Read the run time off the data. The same trap applies to any
+  cron job whose runtime approaches its scheduling granularity.
+- **A branch whose "skip" path is normal cannot report its own failure.** The
+  storm surge archive died with a cheerful log line and exit 0. Where a job
+  conditionally writes, something should notice that it *hasn't* written lately —
+  `health_check.py` is the natural home.
+- **A flex row with a `flex-shrink: 0` badge crushes its text on a phone.**
+  `.dev-note` squeezed its copy into ~215 px of 356 and ran 250 px tall. Prefer
+  `flex-wrap: wrap` plus a `flex: 1 1 <threshold>` on the text over a media
+  query — the trigger is available width, not device class.
