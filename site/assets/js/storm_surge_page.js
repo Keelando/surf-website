@@ -426,7 +426,6 @@ function updateForecastChart(stationId) {
 
   const theme = getChartThemeColors();
   const colors = theme.series || {};
-  const textColor = theme.text;
   const mutedText = theme.mutedText;
   const gridColor = theme.gridLine;
   const gradientTop = theme.isDark ? "rgba(92, 198, 255, 0.35)" : "rgba(0, 119, 190, 0.3)";
@@ -464,9 +463,10 @@ function updateForecastChart(stationId) {
   // Prepare series array
   const series = [];
 
-  // Prepare markPoint data for peak surge values
+  // Peak markers on the line. The values themselves are read off the
+  // ⚡ Peak Forecasts card above the chart, which also carries their times —
+  // these dots just say *where* on the curve each one falls.
   const markPointData = [];
-  const peakLabels = []; // For legend
   if (peakData && peakData.length > 0) {
     peakData.forEach((peak) => {
       if (peak.time && peak.value !== null) {
@@ -478,9 +478,6 @@ function updateForecastChart(stationId) {
             borderWidth: 2,
           },
         });
-        // Collect labels for legend
-        const sign = peak.value >= 0 ? "+" : "";
-        peakLabels.push(`${peak.label}: ${sign}${peak.value.toFixed(2)}m`);
       }
     });
   }
@@ -546,35 +543,29 @@ function updateForecastChart(stationId) {
         subtext: "",
         mobileSubtext: "Surge Forecast",
         tooltipTime: formatMonthDayTimeTZ,
-        gridBottom: peakLabels.length > 0 ? "25%" : "15%", // More space when showing peak labels
+        gridBottom: "15%",
         mobileXRotate: 30,
         xHideOverlap: true,
         yDigits: 1,
         yRange: { min: yMin, max: yMax },
       }),
-      legend: {
-        show: peakLabels.length > 0,
-        data:
-          peakLabels.length > 0
-            ? [
-                {
-                  name: "Storm Surge Forecast",
-                  icon: "path://M0,0 L100,0", // Just a line, no marker
-                },
-                {
-                  name: `🔴 Peaks: ${peakLabels.join(" | ")}`,
-                  icon: "circle",
-                  itemStyle: { color: peakColor, borderColor: theme.background, borderWidth: 2 },
-                },
-              ]
-            : ["Storm Surge Forecast"],
-        bottom: 5,
-        left: "center",
-        right: 20,
-        textStyle: { fontSize: window.innerWidth < 600 ? 8 : 10, color: textColor },
-        itemGap: window.innerWidth < 600 ? 8 : 15,
-        padding: [5, 10],
-      },
+      // No legend on this chart. It carried one series and said nothing the
+      // page wasn't already saying twice over:
+      //
+      //   - "Storm Surge Forecast" repeated the chart title immediately above
+      //     it ("<station> - Surge Forecast"), on a chart with exactly one
+      //     series — so it could not disambiguate anything either.
+      //   - "🔴 Peaks: …" was a fake legend entry used as a text label, and it
+      //     repeated the ⚡ Peak Forecasts card directly above the chart, which
+      //     gives the same three figures *with their times*.
+      //
+      // It also laid out badly: `left: "center"` and `right: 20` are
+      // contradictory, so the text drifted into the x-axis labels, and
+      // gridBottom was pushed to 25% to reserve a band for it — which is where
+      // the empty gap under the chart came from. Removing it takes the gap with
+      // it. The verification chart below keeps its legend: two series there,
+      // and telling them apart is the whole point.
+      legend: { show: false },
       series: series,
     },
     true,
