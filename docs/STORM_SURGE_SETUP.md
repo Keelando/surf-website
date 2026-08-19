@@ -24,7 +24,7 @@ Complete guide for setting up Environment Canada's GDSPS (Global Deterministic S
 
 This system fetches storm surge forecasts from Environment Canada's GeoMet WMS service and:
 - Downloads hourly surge predictions for specific locations
-- Stores historical forecasts for accuracy analysis (hindcasting)
+- Archives each 00Z run for forecast verification
 - Exports data as JSON for frontend visualization
 - Runs automatically via cron twice daily (after 00Z and 12Z model runs)
 
@@ -123,12 +123,12 @@ python3 -c "import owslib; print(owslib.__version__)"
 ### Step 4: Verify Scripts Exist
 
 ```bash
-ls -lh fetch_storm_surge.py export_hindcast_json.py
+ls -lh fetch_storm_surge.py export_storm_surge_verification.py
 ```
 
 You should see:
 - `fetch_storm_surge.py` - Main fetcher (downloads forecasts from GeoMet)
-- `export_hindcast_json.py` - Hindcast exporter (creates +48h accuracy charts)
+- `export_storm_surge_verification.py` - Forecast verification exporter (56-79 h lead)
 
 ---
 
@@ -155,7 +155,7 @@ STATIONS = {
 # Output directory for JSON files
 OUTPUT_DIR = Path("site/data/storm_surge").expanduser()
 
-# Database for hindcast storage
+# Database for the verification archive
 DB_PATH = Path("~/.local/share/storm_surge_forecast.sqlite").expanduser()
 DB_RETENTION_DAYS = 11  # Keep 11 days of forecast history
 
@@ -172,7 +172,7 @@ To monitor additional locations:
    ```python
    "My_Station": {"lat": 49.123, "lon": -123.456, "name": "My Station Name"}
    ```
-3. Update `STATIONS` dict in `export_hindcast_json.py` (same format)
+3. Update `STATIONS` dict in `export_storm_surge_verification.py` (same format)
 
 **Important:** Use underscores in station IDs, not spaces.
 
@@ -211,7 +211,7 @@ You'll see detailed progress:
 ✅ Created combined forecast: /home/user/site/data/storm_surge/combined_forecast.json
 📊 Contains 2 stations
 
-🎯 This is the 12Z run - storing to database for hindcast...
+🎯 00Z run — storing to the verification archive...
 💾 Stored 482 forecast points to database
 ```
 
@@ -232,17 +232,17 @@ python3 fetch_storm_surge.py
 
 **Math:** 240 timesteps × 2 stations × 0.5s = 240 seconds (4 minutes)
 
-### Export Hindcast Data
+### Export Forecast Verification Data
 
 After collecting several days of forecasts (requires 12Z runs):
 
 ```bash
-python3 export_hindcast_json.py
+python3 export_storm_surge_verification.py
 ```
 
 Output:
 ```
-🌊 Storm Surge Hindcast Export (+48h)
+🌊 Storm Surge Forecast Verification Export (56-79 h ahead)
 ==================================================
 📊 Found 7 days of forecasts (2025-11-01 to 2025-11-07)
 
@@ -254,11 +254,11 @@ Output:
    ✅ 168 predictions
    📅 Range: 2025-11-03 to 2025-11-09
 
-💾 Wrote hindcast data to /home/user/site/data/storm_surge/hindcast.json
+💾 Wrote verification data to /home/user/site/data/storm_surge/verification.json
 📊 Total stations: 2
 ```
 
-**Note:** Hindcast export requires 2+ days of data (12Z runs only).
+**Note:** The verification export requires 2+ days of archived runs (00Z only).
 
 ---
 
@@ -299,7 +299,7 @@ Output:
 }
 ```
 
-**Hindcast data:** `site/data/storm_surge/hindcast.json`
+**Verification data:** `site/data/storm_surge/verification.json`
 
 ```json
 {
@@ -313,7 +313,7 @@ Output:
       "station_id": "Point_Atkinson",
       "station_name": "Point Atkinson",
       "location": { "lat": 49.337, "lon": -123.253 },
-      "hindcast": [
+      "verification": [
         {
           "time": "2025-11-03T12:00:00Z",
           "value": -0.045,
@@ -362,7 +362,8 @@ CREATE TABLE forecast_archive (
 );
 ```
 
-**Purpose:** Store one forecast per day (12Z run) for hindcast analysis
+**Purpose:** Archive one forecast per day (00Z run) for verification. Only one
+run per day can be stored: `forecast_archive` keys a run by its date alone.
 
 **Retention:** Automatically purges data older than 11 days
 
@@ -378,14 +379,14 @@ Add to crontab (`crontab -e`):
 # Storm surge: Fetch every 6 hours (aligned with GeoMet updates)
 0 1,7,13,19 * * * cd /home/user/surf-website && source .venv/bin/activate && python3 fetch_storm_surge.py >> ~/envcan_wave/storm_surge.log 2>&1
 
-# Hindcast export: Daily at 14:00 UTC (after 13:00 fetch)
-0 14 * * * cd /home/user/surf-website && source .venv/bin/activate && python3 export_hindcast_json.py >> ~/envcan_wave/hindcast_export.log 2>&1
+# Verification export: daily at 02:13 UTC
+0 14 * * * cd /home/user/surf-website && source .venv/bin/activate && python3 export_storm_surge_verification.py >> ~/envcan_wave/storm_surge_verification.log 2>&1
 ```
 
 **Why these times?**
 - GeoMet updates at 01Z, 07Z, 13Z, 19Z (approximately)
 - Fetching at these hours ensures fresh forecasts
-- 12Z run (13:00 UTC fetch) is stored for hindcast analysis
+- The 00Z run (fetched by the 13:31 UTC job) is archived for verification
 
 ### Log File Management
 
@@ -477,15 +478,15 @@ Point_Atkinson          2025-11-06
 Crescent_Beach_Channel  2025-11-06
 ```
 
-### Test Hindcast Export
+### Test the Verification Export
 
 ```bash
 # Requires 2+ days of data
-python3 export_hindcast_json.py
+python3 export_storm_surge_verification.py
 
-# Verify hindcast JSON
-cat site/data/storm_surge/hindcast.json | jq '.actual_days_available'
-cat site/data/storm_surge/hindcast.json | jq '.stations | keys'
+# Verify the exported JSON
+cat site/data/storm_surge/verification.json | jq '.actual_days_available'
+cat site/data/storm_surge/verification.json | jq '.stations | keys'
 ```
 
 ### Manual Testing Checklist
@@ -496,8 +497,8 @@ cat site/data/storm_surge/hindcast.json | jq '.stations | keys'
 - [ ] `combined_forecast.json` exists and contains all stations
 - [ ] Database created at `~/.local/share/storm_surge_forecast.sqlite`
 - [ ] Database contains records (after 13:00 UTC run)
-- [ ] `export_hindcast_json.py` runs (after 2+ days of data)
-- [ ] `hindcast.json` created (after hindcast export succeeds)
+- [ ] `export_storm_surge_verification.py` runs (after 2+ days of data)
+- [ ] `verification.json` created (after the verification export succeeds)
 - [ ] Log files created and contain expected output
 - [ ] Cron jobs scheduled and executing
 
@@ -563,13 +564,14 @@ ps aux | grep fetch_storm_surge.py
    - Default: 0.5 seconds
    - Minimum: 0.2 seconds (risk of rate limiting)
 
-### Missing Hindcast Data
+### Missing Verification Data
 
-**Symptoms:** `export_hindcast_json.py` shows "No forecast data in database"
+**Symptoms:** `export_storm_surge_verification.py` shows "No forecast data in database"
 
 **Causes:**
 1. **12Z run hasn't occurred yet**
-   - Hindcast only stores data from 13:00 UTC cron run
+   - Only the 00Z run is archived, and it is decided from the model's run
+     time rather than the wall clock (see ARCHIVED_RUN_HOUR)
    - Wait until after first 13:00 UTC execution
 
 2. **Database doesn't exist**
@@ -579,7 +581,7 @@ ps aux | grep fetch_storm_surge.py
    - If missing, run `fetch_storm_surge.py` at 13:00 UTC
 
 3. **Not enough days collected**
-   - Hindcast requires 2+ days
+   - Verification requires 2+ days
    - Check database:
      ```bash
      sqlite3 ~/.local/share/storm_surge_forecast.sqlite \
@@ -669,9 +671,11 @@ response = wms.getfeatureinfo(
 value_0 = '0.123'
 ```
 
-### Hindcast Analysis
+### Forecast Verification
 
-The hindcast feature answers: **"How accurate were predictions made 48 hours in advance?"**
+Verification answers: **"How accurate were the predictions you could actually
+have acted on, issued 56-79 hours ahead?"** Nothing is re-run — each forecast
+was archived at the time it was issued.
 
 **Use cases:**
 - Validate model performance
@@ -750,8 +754,8 @@ total_water_level = tide_prediction + surge_forecast
 # Fetch latest forecast
 python3 fetch_storm_surge.py
 
-# Export hindcast
-python3 export_hindcast_json.py
+# Export the verification data
+python3 export_storm_surge_verification.py
 
 # Check database
 sqlite3 ~/.local/share/storm_surge_forecast.sqlite "SELECT COUNT(*) FROM forecast_archive;"
@@ -768,11 +772,11 @@ tail -50 ~/envcan_wave/storm_surge.log
 | File/Directory | Purpose |
 |----------------|---------|
 | `fetch_storm_surge.py` | Main fetcher script |
-| `export_hindcast_json.py` | Hindcast exporter |
+| `export_storm_surge_verification.py` | Forecast verification exporter |
 | `site/data/storm_surge/` | JSON output directory |
 | `~/.local/share/storm_surge_forecast.sqlite` | Forecast database |
 | `~/envcan_wave/storm_surge.log` | Fetch log |
-| `~/envcan_wave/hindcast_export.log` | Hindcast export log |
+| `~/envcan_wave/logs/storm_surge_verification.log` | Verification export log |
 | `/tmp/storm_surge_fetch.lock` | Lock file (prevents concurrent runs) |
 
 ### Default Schedule
@@ -782,7 +786,7 @@ tail -50 ~/envcan_wave/storm_surge.log
 | 01:00 | `fetch_storm_surge.py` | Fetch 00Z run |
 | 07:00 | `fetch_storm_surge.py` | Fetch 06Z run |
 | 13:00 | `fetch_storm_surge.py` | Fetch 12Z run (stored to DB) |
-| 14:00 | `export_hindcast_json.py` | Export +48h hindcast |
+| 02:13 | `export_storm_surge_verification.py` | Export forecast verification |
 | 19:00 | `fetch_storm_surge.py` | Fetch 18Z run |
 
 ---

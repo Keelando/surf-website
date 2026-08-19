@@ -1,5 +1,5 @@
 /* ======================================
-   Storm Surge Page - Forecast & Hindcast (ES module)
+   Storm Surge Page - Forecast & Verification (ES module)
 
    Chart helpers (fetchWithTimeout, getChartThemeColors,
    getMobileOptimizedTooltipConfig, registerChartThemeListener, echarts)
@@ -12,10 +12,10 @@ import {
   formatMonthDayTimeTZ,
 } from "./shared/format-time.js";
 
-const charts = { forecast: null, hindcast: null };
-const themeListeners = { forecast: null, hindcast: null };
+const charts = { forecast: null, verification: null };
+const themeListeners = { forecast: null, verification: null };
 let forecastData = null;
-let hindcastData = null;
+let verificationData = null;
 let observedSurgeData = null;
 
 // Station display order
@@ -54,9 +54,9 @@ function setSafeHTML(element, html) {
   }
 }
 
-// Calculate minimum date for hindcast: 11 days back from today (12 days total including today)
+// Calculate minimum date for the verification window: 11 days back from today (12 days total including today)
 // Extended to match backend export range
-function getHindcastMinDate() {
+function getVerificationMinDate() {
   const now = new Date();
   const pacificNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Vancouver" }));
   // Start of today Pacific
@@ -130,7 +130,7 @@ function buildMidnightMarkLines(firstTime, lastTime, gridColor) {
 }
 
 /* ======================================
-   Shared chart scaffolding — everything the forecast and hindcast charts
+   Shared chart scaffolding — everything the forecast and verification charts
    do identically, with the real differences passed in as options.
    Series + legend construction stays per-chart.
    ====================================== */
@@ -645,42 +645,44 @@ async function loadObservedSurgeData() {
 }
 
 /* ======================================
-   Hindcast Section
+   Forecast Verification Section
 
    Displays 12 days of storm surge predictions (48h lead time) vs. 10 days of observations.
-   See /docs/HINDCAST_METHODOLOGY.md for detailed methodology.
+   See /docs/VERIFICATION_METHODOLOGY.md for detailed methodology.
    ====================================== */
 
-async function loadHindcastData() {
+async function loadVerificationData() {
   try {
-    hindcastData = await fetchWithTimeout(`/data/storm_surge/hindcast.json?t=${Date.now()}`);
+    verificationData = await fetchWithTimeout(
+      `/data/storm_surge/verification.json?t=${Date.now()}`,
+    );
 
     initStationSelector({
-      selectorId: "hindcast-station-select",
-      indicatorId: "hindcast-station-indicator",
-      data: hindcastData,
-      // Only show stations that have hindcast data
-      hasData: (station) => station.hindcast && station.hindcast.length > 0,
-      onChange: updateHindcastChart,
+      selectorId: "verification-station-select",
+      indicatorId: "verification-station-indicator",
+      data: verificationData,
+      // Only show stations that have verification data
+      hasData: (station) => station.verification && station.verification.length > 0,
+      onChange: updateVerificationChart,
     });
     const selectedStation =
-      document.getElementById("hindcast-station-select")?.value || "Point_Atkinson";
-    updateHindcastChart(selectedStation);
+      document.getElementById("verification-station-select")?.value || "Point_Atkinson";
+    updateVerificationChart(selectedStation);
   } catch (err) {
-    logger.error("StormSurge", "Error loading hindcast data", err);
-    showChartMessage("hindcast-chart", "⚠️ Hindcast data unavailable");
+    logger.error("StormSurge", "Error loading verification data", err);
+    showChartMessage("verification-chart", "⚠️ Verification data unavailable");
   }
 }
 
-function updateHindcastChart(stationId) {
-  const resolved = resolveStation(hindcastData, stationId, "hindcast");
+function updateVerificationChart(stationId) {
+  const resolved = resolveStation(verificationData, stationId, "verification");
   if (!resolved) return;
   const { station, displayStation } = resolved;
 
-  if (!station.hindcast || station.hindcast.length === 0) {
+  if (!station.verification || station.verification.length === 0) {
     showChartMessage(
-      "hindcast-chart",
-      "No hindcast data available for this station yet. Data accumulates over time.",
+      "verification-chart",
+      "No verification data available for this station yet. Data accumulates over time.",
     );
     return;
   }
@@ -692,7 +694,7 @@ function updateHindcastChart(stationId) {
 
   // Prepare data - group by forecast date
   // Filter out data before the minimum date (9 days back from today)
-  const minDate = getHindcastMinDate();
+  const minDate = getVerificationMinDate();
 
   // Calculate midnight tonight (Pacific time) - only show up to today
   const now = new Date();
@@ -703,7 +705,7 @@ function updateHindcastChart(stationId) {
 
   const forecastDates = {};
 
-  station.hindcast.forEach((point) => {
+  station.verification.forEach((point) => {
     const date = point.forecast_date;
     const pointTime = new Date(point.time);
 
@@ -733,8 +735,8 @@ function updateHindcastChart(stationId) {
   // Check if we have any data after filtering
   if (sortedDates.length === 0) {
     showChartMessage(
-      "hindcast-chart",
-      `No hindcast data available for this station from ${minDate} onwards. Data accumulates over time.`,
+      "verification-chart",
+      `No verification data available for this station from ${minDate} onwards. Data accumulates over time.`,
     );
     return;
   }
@@ -778,7 +780,7 @@ function updateHindcastChart(stationId) {
 
   // Get all unique times for x-axis (only from filtered data)
   const allTimes = [
-    ...new Set(station.hindcast.filter((p) => p.forecast_date >= minDate).map((p) => p.time)),
+    ...new Set(station.verification.filter((p) => p.forecast_date >= minDate).map((p) => p.time)),
   ].sort();
 
   // Calculate midnight boundaries in Pacific timezone for gridlines
@@ -792,11 +794,11 @@ function updateHindcastChart(stationId) {
       : [];
 
   // Set chart options (notMerge: true to replace all data when switching stations)
-  ensureChart("hindcast", "hindcast-chart").setOption(
+  ensureChart("verification", "verification-chart").setOption(
     {
       ...baseSurgeChartOption(theme, {
-        title: `${displayStation.station_name} - Hindcast Comparison (48h Predictions)`,
-        mobileTitle: `${displayStation.station_name} - Hindcast`,
+        title: `${displayStation.station_name} — forecasts issued 56-79 h ahead`,
+        mobileTitle: `${displayStation.station_name} — verification`,
         subtext: "Black line = Tide offset observations | Colored lines = Historical forecast runs",
         mobileSubtext: "Observed (black) vs Forecast runs (colored)",
         tooltipTime: formatMonthDayTime,
@@ -838,12 +840,12 @@ function updateHindcastChart(stationId) {
   ); // notMerge: true to prevent old data from persisting
 
   // Update metadata
-  updateHindcastMetadata(displayStation);
-  ensureThemeRefresh("hindcast", "hindcast-station-select", updateHindcastChart);
+  updateVerificationMetadata(displayStation);
+  ensureThemeRefresh("verification", "verification-station-select", updateVerificationChart);
 
   logger.info(
     "StormSurge",
-    `Loaded hindcast data for ${displayStation.station_name} (${sortedDates.length} forecast dates)`,
+    `Loaded verification data for ${displayStation.station_name} (${sortedDates.length} forecast dates)`,
   );
 }
 
@@ -876,15 +878,16 @@ function getColorForIndex(index, total, theme) {
   return palette[index % palette.length];
 }
 
-function updateHindcastMetadata(station) {
-  const metaEl = document.getElementById("hindcast-metadata");
+function updateVerificationMetadata(station) {
+  const metaEl = document.getElementById("verification-metadata");
   if (!metaEl) return;
 
-  const generatedTime = new Date(hindcastData.generated_utc);
-  const daysAvailable = hindcastData.actual_days_available || 0;
+  const generatedTime = new Date(verificationData.generated_utc);
+  const daysAvailable = verificationData.actual_days_available || 0;
 
-  // Model run time if available (hindcast data uses 12Z runs)
-  const modelRunDisplay = formatModelRunTime(hindcastData.model_run_time) || "12Z model run";
+  // The archived run is 00Z (ARCHIVED_RUN_HOUR in fetch_storm_surge.py).
+  // The old fallback here said 12Z, which was never the run being archived.
+  const modelRunDisplay = formatModelRunTime(verificationData.model_run_time) || "00Z model run";
 
   setSafeHTML(
     metaEl,
@@ -892,8 +895,8 @@ function updateHindcastMetadata(station) {
     <strong>Station:</strong> ${station.station_name}<br/>
     <strong>Location:</strong> ${station.location.lat.toFixed(4)}°N, ${Math.abs(station.location.lon).toFixed(4)}°W<br/>
     <strong>Data Retrieved:</strong> ${formatMonthDayTimeTZ(generatedTime)}<br/>
-    <strong>Forecast Horizon:</strong> ${hindcastData.forecast_horizon_hours || 48} hours ahead<br/>
-    <strong>Historical Days:</strong> ${daysAvailable} day${daysAvailable !== 1 ? "s" : ""} (max ${hindcastData.max_days_back || 10})<br/>
+    <strong>Forecast Horizon:</strong> ${verificationData.forecast_horizon_hours || "56-79"} hours ahead<br/>
+    <strong>Historical Days:</strong> ${daysAvailable} day${daysAvailable !== 1 ? "s" : ""} (max ${verificationData.max_days_back || 10})<br/>
     <strong>Collection Time:</strong> ${modelRunDisplay}
   `,
   );
@@ -907,7 +910,7 @@ function loadAllData() {
   // Load all datasets (observed surge first, then charts)
   loadObservedSurgeData().then(() => {
     loadForecastData();
-    loadHindcastData();
+    loadVerificationData();
   });
 }
 
@@ -943,4 +946,4 @@ function wireShowOnMapButton(buttonId, selectorId) {
 }
 
 wireShowOnMapButton("show-forecast-surge-on-map-btn", "forecast-station-select");
-wireShowOnMapButton("show-hindcast-surge-on-map-btn", "hindcast-station-select");
+wireShowOnMapButton("show-verification-surge-on-map-btn", "verification-station-select");

@@ -1,17 +1,49 @@
-# Storm Surge Hindcast Analysis Methodology
+# Storm Surge Forecast Verification Methodology
 
 ## Purpose
 
-Hindcast analysis evaluates forecast skill by comparing historical predictions against actual observations. For storm surge forecasting, this reveals model accuracy at the critical ~48-hour lead time when maritime operators, emergency managers, and coastal communities make operational decisions.
+Forecast verification evaluates model skill by comparing predictions that were
+issued ahead of time against what was later observed. For storm surge this
+reveals model accuracy at the two-to-three-day lead time when maritime
+operators, emergency managers, and coastal communities make operational
+decisions.
+
+## Verification, not hindcast (renamed 2026-08-19)
+
+This was called "hindcast analysis" until 2026-08-19. That was the wrong word,
+and the distinction matters:
+
+- A **hindcast** re-runs a model over past dates, usually with better forcing
+  (analysed winds and pressures) than any real forecast had. It answers "how
+  good is the model physics?"
+- **Verification** compares forecasts that were genuinely *issued in advance*
+  and archived at the time. It answers "how good was the forecast you could
+  actually have acted on?"
+
+Everything here is the second kind: `fetch_storm_surge.py` archives each 00Z
+run as it arrives, and nothing is ever re-run. "Backcast" is not a term of art
+in this field and is not used. The old name survives in historical documents
+(changelogs, worklogs), where it is a record of what the file used to be
+called, and in nothing that describes current behaviour.
 
 ## Data Windows
 
 ### Forecast Data: 12 days (today + 11 days back)
 
-**What it shows:** Storm surge predictions made 38-61 hours in advance
-- Based on Environment Canada's GDSPS 12Z model run
-- Corresponds to hours 50-73 from midnight UTC (the 38-61 hour window from the 12:00 UTC run)
+**What it shows:** Storm surge predictions as issued **56-79 hours ahead**
+- Based on Environment Canada's GDSPS **00Z** model run
+- `forecast_archive` stores `forecast_run_time` as a bare date, so
+  `valid_time - forecast_run_time` counts hours from midnight UTC. Because the
+  archived run is 00Z, midnight *is* the run instant and those hours are
+  genuine lead times — no offset to remember.
 - Includes forecast runs from ~14 days ago to capture predictions for the full 12-day valid time range
+
+> **Corrected 2026-08-19.** Three different lead figures were in circulation
+> and none matched the query, which has always used `hours_ahead BETWEEN 56 AND
+> 79`. This doc said "38-61 hours / 12Z run / hours 50-73 from midnight"; the
+> exported JSON declared `forecast_horizon_hours: "38-61"` and an 18Z run; the
+> page told readers "48 hours in advance" from "the 12Z model run". The 56-79 h
+> figure above is read off the code and confirmed against the exported data.
 
 **Example:** To display predictions FOR Nov 12-23, we include forecast runs FROM Nov 10-21. The ~2-day offset accounts for the forecast lead time.
 
@@ -79,5 +111,5 @@ This represents the actual water level anomaly caused by meteorological forcing 
 
 ---
 
-**Last updated:** 2025-11-23
-**Applies to:** Storm surge hindcast visualization (`storm_surge.html`, hindcast section)
+**Last updated:** 2026-08-19
+**Applies to:** Storm surge forecast verification (`storm_surge.html`, verification section)

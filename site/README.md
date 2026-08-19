@@ -35,4 +35,4 @@ Changes are immediately live — there is no staging step. The daily cron auto-c
 - `docs/FUTURE_ENHANCEMENTS.md` — planned features and dependency upgrades
 - `docs/FRONTEND_CHANGELOG.md` — feature history
 - `docs/BACKEND_CONNECTION.md` — backend/frontend data flow
-- `docs/HINDCAST_METHODOLOGY.md` — storm surge hindcast details
+- `docs/VERIFICATION_METHODOLOGY.md` — storm surge forecast verification details

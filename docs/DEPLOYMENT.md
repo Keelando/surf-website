@@ -82,11 +82,11 @@ Production system runs on cron. See `cron.txt` for the actual crontab file.
 
 ```bash
 # Twice daily at :30 (1:30, 13:30 UTC): Fetch storm surge forecast (GDWPS runs 00Z and 12Z only)
-# 13:30 run stores 12Z forecast to database for hindcast analysis
+# The 13:31 run fetches the 00Z forecast and archives it for verification
 30 1,13 * * * cd /home/keelando/envcan_wave && source .venv/bin/activate && python3 fetch_storm_surge.py >> ~/envcan_wave/storm_surge.log 2>&1
 
-# Daily 2 PM UTC: Export hindcast data (hours 38-61 / full Pacific calendar day 2 days ahead)
-0 14 * * * cd /home/keelando/envcan_wave && source .venv/bin/activate && python3 export_hindcast_json.py >> ~/envcan_wave/hindcast_export.log 2>&1
+# Daily 02:13 UTC: export forecast verification (predictions issued 56-79 h ahead)
+0 14 * * * cd /home/keelando/envcan_wave && source .venv/bin/activate && python3 export_storm_surge_verification.py >> ~/envcan_wave/storm_surge_verification.log 2>&1
 ```
 
 ### Webcam Capture

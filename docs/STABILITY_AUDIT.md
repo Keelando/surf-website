@@ -141,7 +141,7 @@ Specific items, in order of how much they actually need watching:
    *logger* (not console spill), and that `tide_obs.log` no longer collects all
    three modes.
 2. **Nine logging scripts not yet observed post-fix.** Six run every 10–15 min
-   and self-verify within the hour; `export_hindcast_json` (02:13) and
+   and self-verify within the hour; `export_storm_surge_verification` (02:13) and
    `fetch_storm_surge` (01:31) need overnight. Covered by the duplicate scan.
 3. **`.venv.old` (246 MB)** — delete once a full day of pipelines has run clean.
    This is the gate from `docs/project/VENV_PRUNE.md`.

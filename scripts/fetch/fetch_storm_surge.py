@@ -42,6 +42,13 @@ LAYER = "GDSPS_15km_StormSurge"
 # Database configuration
 DB_RETENTION_DAYS = STORM_SURGE_RETENTION_DAYS
 
+# Which model run goes into the verification archive. GDSPS runs at 00Z and
+# 12Z; `forecast_archive` keys a run by its date alone, so exactly one run per
+# day can be stored. 00Z is the one, which also makes the stored date *equal*
+# to the run instant — that is what lets the verification export read lead time
+# straight off `valid_time - forecast_run_time` with no offset to remember.
+ARCHIVED_RUN_HOUR = 0
+
 # Rate limiting. MSC's guidance is "about 1 request per second"; with ~0.45 s
 # of network per request, the old 0.5 s delay put a burst at 1.05 req/s — right
 # at that line, sustained for 23 minutes. 2 s gives 0.41 req/s over ~32 min,
@@ -103,8 +110,23 @@ def ensure_db_schema(conn):
     conn.commit()
 
 
+def should_archive_run(start_time):
+    """Whether this run belongs in the verification archive.
+
+    Decided from the model's own run time, never the wall clock. This check
+    used to be `datetime.now(timezone.utc).hour == 13`, on the reasoning that
+    the 13:31 cron job is the one that fetches the 00Z run — true, but the
+    fetch takes ~32 minutes, so as it grew it began finishing at 14:03 and the
+    check silently stopped matching. The archive died after 2026-08-16 and
+    nothing reported it, because "skip" is a normal outcome of this branch and
+    the job still exited 0. `start_time` is the run the data actually came
+    from, so it cannot drift no matter how long the fetch takes.
+    """
+    return start_time.hour == ARCHIVED_RUN_HOUR
+
+
 def store_forecast_to_db(forecast_run_time, all_station_data):
-    """Store complete forecast to database (18Z run only - closest to noon Pacific)."""
+    """Archive one complete run for verification (the 00Z one — see ARCHIVED_RUN_HOUR)."""
     try:
         STORM_SURGE_DATABASE.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(STORM_SURGE_DATABASE)
@@ -292,8 +314,11 @@ def create_combined_forecast():
     """Combine all station forecasts into single file."""
     combined = {"generated_utc": datetime.now(timezone.utc).isoformat(), "model_run_time": None, "stations": {}}
 
-    # Files to skip (not station forecasts)
-    skip_files = {"combined_forecast.json", "hindcast.json", "observed_surge.json"}
+    # Files to skip (not station forecasts). This directory is globbed, so any
+    # non-station JSON written here must be listed or it gets merged in as a
+    # phantom station — which is why the 2026-08-19 hindcast→verification
+    # rename had to touch this line.
+    skip_files = {"combined_forecast.json", "verification.json", "observed_surge.json"}
 
     for station_file in sorted(OUTPUT_DIR.glob("*.json")):
         if station_file.name in skip_files:
@@ -386,14 +411,14 @@ def main():
         # Create combined forecast
         create_combined_forecast()
 
-        # Store to database if this is the 12Z run (hour 13)
-        # GDWPS only runs twice daily at 00Z and 12Z
-        current_hour = datetime.now(timezone.utc).hour
-        if current_hour == 13:
-            logger.info("\n🎯 This is the 12Z run - storing to database for hindcast...")
+        if should_archive_run(start_time):
+            logger.info(f"\n🎯 {ARCHIVED_RUN_HOUR:02d}Z run — storing to the verification archive...")
             store_forecast_to_db(start_time, all_forecasts)
         else:
-            logger.info(f"\n⏭️  Skipping database storage (hour={current_hour}, not 12Z run)")
+            logger.info(
+                f"\n⏭️  Not archiving: this is the {start_time.hour:02d}Z run, "
+                f"the archive takes {ARCHIVED_RUN_HOUR:02d}Z"
+            )
 
         logger.info("\n✅ Storm surge forecast update complete!")
         return 0

@@ -8,13 +8,13 @@
 
   <title>Storm Surge Forecasts | Salish Sea Wave Conditions</title>
 
-  <meta name="description" content="10-day storm surge forecasts and hindcast analysis for the Salish Sea region from Environment Canada GDSPS model." />
+  <meta name="description" content="10-day storm surge forecasts and forecast verification for the Salish Sea region from the Environment Canada GDSPS model." />
   <meta name="keywords" content="storm surge, water level forecast, GDSPS, Salish Sea, tide forecast, Environment Canada, coastal flooding, storm surge prediction, total water level, surge forecast, coastal hazards, king tide, extreme water level, flood forecast, BC storm surge, Vancouver coastal flooding, atmospheric pressure, wind surge, ocean surge, marine hazards, coastal warning, 10-day forecast" />
   <meta name="author" content="Salish Sea Wave Conditions Project" />
   <meta name="robots" content="index, follow" />
 
   <meta property="og:title" content="Storm Surge Forecasts | Salish Sea Wave Conditions" />
-  <meta property="og:description" content="10-day storm surge forecasts and hindcast analysis for the Salish Sea region from the Environment Canada GDSPS model." />
+  <meta property="og:description" content="10-day storm surge forecasts and forecast verification for the Salish Sea region from the Environment Canada GDSPS model." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://halibutbank.ca/storm_surge.html" />
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
@@ -218,30 +218,37 @@
       <div id="forecast-metadata" class="metadata-display"></div>
     </section>
 
-    <!-- Hindcast Section -->
+    <!-- Forecast Verification Section.
+         Renamed from "hindcast" 2026-08-19: a hindcast re-runs a model over
+         past dates, whereas these are forecasts that were genuinely issued in
+         advance and archived at the time — which is verification. The lead
+         time and run hour in this copy were also wrong; see
+         site/docs/VERIFICATION_METHODOLOGY.md. -->
     <section class="section-container">
-      <h2>Forecast Accuracy Analysis (Hindcast)</h2>
+      <h2>Forecast Verification</h2>
 
       <div class="info-box">
-        <h3>About Hindcast Data</h3>
+        <h3>About this chart</h3>
         <p>
-          This chart shows storm surge predictions made <strong>48 hours in advance</strong> and compares them to more recent forecasts
-          or actual conditions. This helps evaluate forecast accuracy and identify patterns in model performance.
-          Data is collected daily from the 12Z model run.
+          This chart shows storm surge predictions as they were issued
+          <strong>56 to 79 hours ahead</strong> — between two and three days
+          before the fact — against what was later observed. It is a record of
+          how the model actually performed, not a re-run: each prediction was
+          archived at the time it was made, from the daily 00Z model run.
         </p>
       </div>
 
       <div class="station-selector">
-        <label for="hindcast-station-select">Select Station:</label>
-        <select id="hindcast-station-select">
+        <label for="verification-station-select">Select Station:</label>
+        <select id="verification-station-select">
           <!-- Options populated by JavaScript -->
         </select>
-        <a href="#" id="show-hindcast-surge-on-map-btn" style="margin-left: 1rem; padding: 0.5rem 1rem; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
-        <span id="hindcast-station-indicator" class="station-indicator"></span>
+        <a href="#" id="show-verification-surge-on-map-btn" style="margin-left: 1rem; padding: 0.5rem 1rem; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
+        <span id="verification-station-indicator" class="station-indicator"></span>
       </div>
 
-      <div id="hindcast-chart" class="chart-container"></div>
-      <div id="hindcast-metadata" class="metadata-display"></div>
+      <div id="verification-chart" class="chart-container"></div>
+      <div id="verification-metadata" class="metadata-display"></div>
     </section>
 
     <!-- Model Information -->
@@ -302,7 +309,7 @@
   <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
   <script src="/assets/js/warning-banner.js?v=7fa71bd458"></script>
   <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
-  <script type="module" src="/assets/js/storm_surge_page.js?v=60d6a88885"></script>
+  <script type="module" src="/assets/js/storm_surge_page.js?v=fbe176378b"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

@@ -609,7 +609,7 @@ Frontend will need to handle stations that have `observedSurgeData` but no `hind
 ### Files Affected
 - `lib/water_level_stations.py` (WATER_LEVEL_STATIONS tuple) - Add Surrey stations to mapping
 - `storm_surge_page.js` (lines 544-573, 575-590) - Handle stations with obs but no hindcast
-- `export_hindcast_json.py` - No changes needed (GDSPS doesn't cover these locations)
+- `export_storm_surge_verification.py` - No changes needed (GDSPS doesn't cover these locations)
 
 ---
 

@@ -170,7 +170,7 @@ def analyze_hindcast(json_path):
 
 def main():
     # Check both test and production data
-    test_file = Path("~/site/data/storm_surge/hindcast.json").expanduser()
+    test_file = Path("~/site/data/storm_surge/verification.json").expanduser()
 
     if not test_file.exists():
         print(f"❌ File not found: {test_file}")

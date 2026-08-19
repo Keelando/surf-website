@@ -1,17 +1,32 @@
 #!/usr/bin/env python3
 """
-Export Storm Surge Hindcast Data
+Export Storm Surge Forecast Verification Data
 
-Exports storm surge predictions made 38-61 hours in advance (18Z model run, hours 56-79 from midnight)
-for hindcast comparison against observed tide offset data.
+Storm surge predictions that were issued 56-79 hours ahead, exported for
+comparison against the observed tide offset.
+
+**Verification, not a hindcast** (renamed 2026-08-19). A hindcast re-runs a
+model over past dates, usually with better forcing than a live forecast had.
+These are forecasts that were genuinely issued in advance and archived at the
+time, which is forecast verification. The old name survives only in historical
+docs, where it is a record of what the file used to be called.
+
+The lead figure was wrong in three places before the rename, and is worth
+stating precisely because two different reference points were being conflated:
+`forecast_archive` stores `forecast_run_time` as a bare date, so
+`valid_time - forecast_run_time` counts hours from midnight UTC. The archived
+run is the 00Z one (see ARCHIVED_RUN_HOUR in scripts/fetch/fetch_storm_surge.py),
+so midnight *is* the run instant and those hours are genuine lead times. The
+window is 56-79 h, i.e. 2.3-3.3 days ahead — not the "38-61 h" the payload
+used to declare, nor the "48 hours" the page used to claim, nor an 18Z run.
 
 Data windows:
 - Forecast predictions: 12 days (today + 11 back) - shows predictions FOR these dates
-- Requires forecast runs from ~14 days back to capture full range due to ~48h lead time
+- Requires forecast runs from ~14 days back to capture the full range
 
-See ~/site/docs/HINDCAST_METHODOLOGY.md for detailed methodology and scientific rationale.
+See site/docs/VERIFICATION_METHODOLOGY.md for methodology and rationale.
 
-Output: ~/site/data/storm_surge/hindcast.json
+Output: site/data/storm_surge/verification.json
 """
 
 import json
@@ -24,11 +39,11 @@ from lib.config import EXPORT_DIR
 from lib.config import STORM_SURGE_DATABASE as DB_PATH
 from lib.logging_config import setup_logging
 
-logger = setup_logging("hindcast_export")
+logger = setup_logging("storm_surge_verification")
 
 # Configuration
 
-OUTPUT_PATH = EXPORT_DIR / "storm_surge" / "hindcast.json"
+OUTPUT_PATH = EXPORT_DIR / "storm_surge" / "verification.json"
 MAX_DAYS_BACK = 12  # Show predictions for last 12 days (today + 11 back)
 # Note: Forecast runs go back ~14 days to capture predictions for the full 12-day window
 
@@ -78,8 +93,8 @@ STATIONS = {
 }
 
 
-def export_hindcast():
-    """Export +48h hindcast predictions to JSON."""
+def export_verification():
+    """Export the 56-79 h-ahead predictions, with their observed counterparts, to JSON."""
 
     if not DB_PATH.exists():
         logger.error(f"Database not found: {DB_PATH}")
@@ -108,15 +123,20 @@ def export_hindcast():
 
         logger.info(f"Found {stats['days']} days of forecasts ({stats['oldest']} to {stats['newest']})")
 
-        hindcast_data = {
+        verification_data = {
             "generated_utc": datetime.now(timezone.utc).isoformat(),
             "description": (
-                "Storm surge predictions for full Pacific calendar days made 2 days in advance "
-                "(18Z run, hours 38-61 PST)"
+                "Storm surge predictions for full Pacific calendar days, as issued "
+                "56-79 hours ahead by the 00Z GDSPS run"
             ),
-            "forecast_horizon_hours": "38-61",
+            "forecast_horizon_hours": "56-79",
             "max_days_back": MAX_DAYS_BACK,
-            "actual_days_available": stats["days"],
+            # Filled in after the stations are built, from the runs actually
+            # exported. It used to be COUNT(DISTINCT forecast_run_time) over
+            # the whole archive, which spans DB_RETENTION_DAYS (30) rather than
+            # this 12-day window — so the page rendered the flatly
+            # self-contradictory "Historical Days: 28 days (max 12)".
+            "actual_days_available": 0,
             "stations": {},
         }
 
@@ -127,7 +147,9 @@ def export_hindcast():
             # Check if this station reuses another station's forecast
             query_station_id = station_info.get("reuses", station_id)
 
-            # Query: Get forecasts for hours 38-61 FROM 18Z RUN (hours 56-79 from midnight)
+            # Hours 56-79 ahead of the archived 00Z run. forecast_run_time is stored
+            # as a bare date, and the archived run is 00Z, so midnight is the run
+            # instant and this arithmetic is a true lead time.
             # Goal: Show predictions FOR the last 10 days (today + 9 days back)
             # Since forecasts are ~2 days ahead (38-62 hrs), to get predictions FOR day X,
             # we need forecast runs from ~2 days before day X
@@ -179,11 +201,11 @@ def export_hindcast():
             rows = cur.fetchall()
 
             if not rows:
-                logger.warning(f"No 38-61h predictions found for {station_info['name']}")
+                logger.warning(f"No 56-79h predictions found for {station_info['name']}")
                 continue
 
-            # Build hindcast series
-            hindcast_series = []
+            # Build the verification series
+            verification_series = []
             for row in rows:
                 # Normalize forecast_date to just date (no time) for consistency
                 run_time = row["forecast_run_time"]
@@ -193,7 +215,7 @@ def export_hindcast():
                 forecast_datetime = datetime.fromisoformat(normalized_run_time)
                 forecast_date_str = forecast_datetime.strftime("%Y-%m-%d")
 
-                hindcast_series.append(
+                verification_series.append(
                     {
                         "time": row["valid_time"],
                         "value": round(row["surge_value"], 3),
@@ -203,30 +225,40 @@ def export_hindcast():
                 )
 
             # Get time range
-            first_time = datetime.fromisoformat(hindcast_series[0]["time"].replace("Z", "+00:00"))
-            last_time = datetime.fromisoformat(hindcast_series[-1]["time"].replace("Z", "+00:00"))
+            first_time = datetime.fromisoformat(verification_series[0]["time"].replace("Z", "+00:00"))
+            last_time = datetime.fromisoformat(verification_series[-1]["time"].replace("Z", "+00:00"))
 
-            logger.info(f"  {len(hindcast_series)} predictions")
+            logger.info(f"  {len(verification_series)} predictions")
             logger.info(f"  Range: {first_time.strftime('%Y-%m-%d')} to {last_time.strftime('%Y-%m-%d')}")
 
             # Add to output
-            hindcast_data["stations"][station_id] = {
+            verification_data["stations"][station_id] = {
                 "station_id": station_id,
                 "station_name": station_info["name"],
                 "location": {"lat": station_info["lat"], "lon": station_info["lon"]},
-                "hindcast": hindcast_series,
+                "verification": verification_series,
             }
 
         conn.close()
 
+        # Distinct run dates actually exported, so the count and its "max"
+        # describe the same window.
+        verification_data["actual_days_available"] = len(
+            {
+                point["forecast_date"]
+                for station in verification_data["stations"].values()
+                for point in station["verification"]
+            }
+        )
+
         # Write to JSON (atomic)
         OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         tmp_file = OUTPUT_PATH.with_suffix(".json.tmp")
-        tmp_file.write_text(json.dumps(hindcast_data, indent=2))
+        tmp_file.write_text(json.dumps(verification_data, indent=2))
         tmp_file.replace(OUTPUT_PATH)
 
-        logger.info(f"Wrote hindcast data to {OUTPUT_PATH}")
-        logger.info(f"Total stations: {len(hindcast_data['stations'])}")
+        logger.info(f"Wrote verification data to {OUTPUT_PATH}")
+        logger.info(f"Total stations: {len(verification_data['stations'])}")
 
         return True
 
@@ -236,15 +268,15 @@ def export_hindcast():
 
 
 def main():
-    logger.info("Storm Surge Hindcast Export (38-61h / 2-day ahead Pacific)")
+    logger.info("Storm Surge Forecast Verification Export (56-79 h ahead)")
 
-    success = export_hindcast()
+    success = export_verification()
 
     if success:
-        logger.info("Hindcast export complete!")
+        logger.info("Verification export complete!")
         return 0
     else:
-        logger.error("Hindcast export failed")
+        logger.error("Verification export failed")
         return 1
 
 

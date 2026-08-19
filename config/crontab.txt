@@ -131,8 +131,8 @@
 */10 * * * * /usr/bin/flock -n /tmp/envcan_water_level.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/water_level_export.py >> /home/keelando/envcan_wave/logs/water_level_export.log 2>&1
 5 2,14 * * * /usr/bin/flock -n /tmp/envcan_water_level.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/water_level_export.py >> /home/keelando/envcan_wave/logs/water_level_export.log 2>&1
 
-# Export hindcast (daily at 02:00)
-13 2 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_hindcast_json.py >> /home/keelando/envcan_wave/logs/hindcast_export.log 2>&1
+# Export forecast verification (daily at 02:13). Reads the archive only.
+13 2 * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_storm_surge_verification.py >> /home/keelando/envcan_wave/logs/storm_surge_verification.log 2>&1
 
 # ==================== MARINE FORECAST ====================
 # Parse EC marine weather XMLs (hourly at :22; upstream updates infrequently)
