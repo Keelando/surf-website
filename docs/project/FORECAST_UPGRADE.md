@@ -315,8 +315,95 @@ Two caveats to carry into any published version of these numbers:
   a consistent 1.18–1.29, and the sustained wind is over-forecast by the same
   margin at those hours.
 
+**Forecast verification plot — built 2026-08-19.**
+`scripts/export/export_forecast_verification.py` →
+`site/data/wave_forecast/verification/{station}.json`, every 10 minutes; the
+**Forecast Verification** section at the bottom of `forecasts.html` draws it.
+Last 48 h, observed against what the model said about a day ahead.
+
+**Terminology, settled 2026-08-19.** This is *not* a hindcast, and "backcast"
+is not a real term of art. A hindcast re-runs a model over past dates, usually
+with better forcing than a live forecast had. What we are drawing is forecasts
+that were genuinely *issued in advance* and archived at the time, compared
+against observations — textbook **forecast verification**. The storm-surge
+"hindcast" on `storm_surge.html` is the same thing under the same wrong name;
+renaming it is a separate change (live page, public JSON path) and is not done
+here.
+
+**The model line is a 19–24 h lead band, not a flat 24 h.** For each past hour
+the export takes the largest available lead ≤ 24 h. It cycles 19→24 and drops
+back, because runs are 6-hourly *and* the fetch taper (hourly to +24 h, then
+3-hourly) means leads 25 and 26 do not exist in the archive at all — so one
+hour past a run boundary the next candidate down is 19 h, not 25 h. Capping at
+24 rather than taking the *nearest* lead to 24 is deliberate: it guarantees the
+curve never claims more notice than it had. Every point carries its own
+`lead_hours`, the payload publishes the band, and the page caption explains the
+six-hourly seams rather than smoothing them.
+
+Design notes:
+
+- **Nothing is paired here.** Two independent series on a shared time axis; the
+  chart aligns them. Pairing is the verification *writer's* job and answers a
+  different question — a plot wants every observation it can draw, including
+  the last few hours the writer's settle window holds back. Both read the same
+  `wave_forecast` archive, so chart and scores cannot disagree.
+- **The observation half was nearly free.** Both stations live in
+  `buoy_data.sqlite`'s `buoy_observation` (the Surrey fetch writes CRPILE
+  there), and `OBSERVATION_COLUMNS` is imported from the verification writer so
+  one place decides which instrument measures which variable.
+- **One comparison per view.** Significant wave height and sustained wind only.
+  Period and direction would put four lines on a chart whose whole job is to
+  make one gap obvious. Gusts are excluded for a stronger reason: HRDPS masks
+  the gust at most hours, so the forecast side would be a near-empty line
+  beside a continuous observed one — reading as "the model predicted calm"
+  rather than "the model was not asked".
+- **No new control.** The two panels reuse the existing `data-panel`
+  values, so the segmented control already drives them; a third copy of the
+  control sits directly above the plot (user, 2026-08-19) and needed no JS,
+  since `setForecastMode()` syncs every `.forecast-mode-btn` on the page.
+
+**Legend bug, fixed 2026-08-19** (user-reported, pre-existing on the forward
+charts): ECharts draws the legend swatch from the series `itemStyle`, not from
+`lineStyle` or from a per-*point* `itemStyle`. Every series here coloured only
+its line — or, for the direction arrows, only its individual points — so the
+swatch fell through to ECharts' default palette: series index 1 got `#91cc75`
+(the green circle on the dashed peak-period line) and index 2 got `#fac858`
+(the yellow direction marker that matched nothing on the chart). Fixed by
+setting a series-level `itemStyle` on all seven series across the three charts.
+
+**Mobile dev-note, fixed 2026-08-19** (user-reported): `.dev-note` was a
+non-wrapping flex row with a `flex-shrink: 0` badge, so on a 390 px phone the
+text was squeezed into a ~215 px column and the note ran 252 px tall. Now
+`flex-wrap: wrap` with `flex: 1 1 18rem` on the text — a width threshold rather
+than a media query, so it also covers a narrow desktop window. 252 px → 193 px,
+desktop layout unchanged.
+
 **Next:** the peak-timing metric once an event lands, then the forecast-only
-station registry, and Hein Bank behind it.
+station registry, and Hein Bank behind it. Open question from the user
+(2026-08-19): whether to put **more than one lead time** on the verification
+plot — see below.
+
+## Open: more forecast runs on the verification plot
+
+Today the plot draws one stitched lead band (19–24 h). The archive holds every
+run, so drawing several is only a rendering decision, not a data one. Worth
+weighing when we pick it up:
+
+- **What it buys.** A 6 h band beside the 24 h band beside the observation
+  shows *convergence* — whether the model walked toward the truth as the event
+  approached, which is the single most useful thing a reader can learn about
+  how far ahead to trust it. It also makes a timing error legible: three leads
+  all predicting the same peak three hours early is a very different story from
+  three leads disagreeing with each other.
+- **What it costs.** Each extra band is another dashed line on a chart that
+  currently makes one gap obvious. Three or four lines risks the storm-surge
+  hindcast's problem, where the eye cannot separate the runs.
+- **Likely shape.** Two bands, not four: ~6 h ("what you'd have seen that
+  morning") and ~24 h ("what you'd have seen the day before"), with observed
+  as the solid anchor. Lead bands would become a list in the exporter rather
+  than one constant, which the payload's `lead_band` key already anticipates.
+- **Decide after an event.** On four calm days every lead looks alike; the
+  question answers itself the first time a gale runs through the archive.
 
 **Implication — starting architecture:** clone the
 `fetch_storm_surge.py` GeoMet pattern (owslib `getfeatureinfo` per station

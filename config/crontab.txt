@@ -110,6 +110,13 @@
 # caught, and a missed run costs nothing. 03:40 sits clear of the 04:35 fetch.
 40 3 * * * /usr/bin/flock -n /tmp/envcan_wave_verify.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/monitoring/verify_wave_forecast.py >> /home/keelando/envcan_wave/logs/wave_forecast_verify.log 2>&1
 
+# Forecast verification export — last 48 h of observations against the ~24 h-lead
+# forecast, for the chart on forecasts.html. Local SQLite only. Every 10 min at
+# :07 so it lands just after the buoy pipeline (*/3) and the Surrey fetch
+# (*/20): the observed half moves with the instruments, the forecast half only
+# 4x/day.
+7-57/10 * * * * /usr/bin/flock -n /tmp/envcan_forecast_verification.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/export/export_forecast_verification.py >> /home/keelando/envcan_wave/logs/forecast_verification.log 2>&1
+
 # ==================== STORM SURGE ====================
 # Fetch GeoMet storm surge (every 12 hours at :31). GDSPS publishes 241 hourly
 # steps; we fetch 129 (hourly to 72 h, then 3-hourly) x 6 stations = 774

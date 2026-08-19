@@ -62,6 +62,8 @@ let currentMode = MODE_WAVES;
 
 let waveChart = null;
 let windChart = null;
+let verificationWaveChart = null;
+let verificationWindChart = null;
 let detachWaveThemeListener = null;
 let visibleHours = DEFAULT_VISIBLE_HOURS;
 let currentStationId = DEFAULT_STATION_ID;
@@ -69,6 +71,9 @@ let currentStationId = DEFAULT_STATION_ID;
 // listener is registered once and outlives any number of station switches, so
 // a captured row set would redraw the previous station's chart on a theme flip.
 let currentRows = [];
+// Same reasoning for the verification payload: one fetch per station switch, read
+// again on every mode switch and every theme flip.
+let currentVerification = null;
 
 /**
  * Convert a stored km/h wind value to the knots the site displays.
@@ -358,6 +363,10 @@ function renderChart(rows) {
           showSymbol: false,
           lineStyle: { width: 2.5, color: colors.series.primary },
           areaStyle: { opacity: 0.15, color: colors.series.primary },
+          // The legend swatch is drawn from itemStyle, not lineStyle. Without
+          // this it falls back to the default ECharts palette and the legend
+          // disagrees with the line it labels.
+          itemStyle: { color: colors.series.primary },
         },
         {
           name: "Peak period",
@@ -367,6 +376,7 @@ function renderChart(rows) {
           smooth: true,
           showSymbol: false,
           lineStyle: { width: 2, color: colors.series.secondary, type: "dashed" },
+          itemStyle: { color: colors.series.secondary },
         },
         {
           name: "Wave direction",
@@ -376,6 +386,9 @@ function renderChart(rows) {
           symbol: DIRECTION_ARROW_PATH,
           symbolSize: 14,
           symbolRotate: (value, params) => arrows[params.dataIndex]?.symbolRotate ?? 0,
+          // Per-point itemStyle (set in createDirectionArrows) styles the
+          // arrows; the legend reads only the series-level one.
+          itemStyle: { color: colors.marker, opacity: 0.75 },
           // The axis tooltip already reports direction on every step; letting
           // the arrows answer as well would double the line up.
           tooltip: { show: false },
@@ -480,6 +493,7 @@ function renderWindChart(rows) {
           showSymbol: false,
           lineStyle: { width: 2.5, color: colors.series.secondary },
           areaStyle: { opacity: colors.isDark ? 0 : 0.12, color: colors.series.secondary },
+          itemStyle: { color: colors.series.secondary },
         },
         {
           name: "Gust",
@@ -496,6 +510,9 @@ function renderWindChart(rows) {
           symbol: DIRECTION_ARROW_PATH,
           symbolSize: 14,
           symbolRotate: (value, params) => arrows[params.dataIndex]?.symbolRotate ?? 0,
+          // Per-point itemStyle (set in createDirectionArrows) styles the
+          // arrows; the legend reads only the series-level one.
+          itemStyle: { color: colors.marker, opacity: 0.75 },
           tooltip: { show: false },
           silent: true,
           z: 2,
@@ -690,6 +707,7 @@ function setForecastMode(mode) {
 
   renderForecastMode(currentRows);
   renderTable(currentRows);
+  renderVerificationMode();
 }
 
 /**
@@ -745,6 +763,308 @@ function renderMetadata(payload, rows) {
     <strong>Resolution:</strong> ${rows.length} steps — hourly to 24 h, then 3-hourly;
     the table below samples every ${TABLE_STEP_HOURS} h`,
   );
+}
+
+/* -----------------------------
+   Forecast verification — the last 48 h, forecast against observation.
+
+   The charts above look forward; these look back at the same station, so the
+   reader can judge the forecast on the only evidence that counts. The model
+   line is a stitched ~24 h-lead band (see
+   scripts/export/export_forecast_verification.py): for each past hour, the newest
+   run that was still at least ~19 h ahead. It is NOT one run's output, and it
+   is not a flat 24 h — leads cycle 19→24, so a small step at a six-hourly seam
+   is two runs disagreeing, which is the honest picture.
+   ----------------------------- */
+
+/**
+ * Pull one variable out of the verification payload as ECharts series data.
+ *
+ * @param {string} variable - Payload series key, e.g. "wave_height"
+ * @param {function(number): number|null} [convert] - Unit conversion per value
+ * @returns {{forecast: Array, observed: Array}} `[timestamp, value]` pairs,
+ *   with the forecast points carrying their own lead hours for the tooltip
+ */
+function verificationSeries(variable, convert) {
+  const series = currentVerification?.series?.[variable];
+  const scale = convert || ((value) => value);
+  const points = (list, extra) =>
+    (list || []).map((point) => {
+      const row = [new Date(point.time).getTime(), scale(point.value)];
+      return extra ? { value: row, leadHours: point.lead_hours } : row;
+    });
+  return {
+    forecast: points(series?.forecast, true),
+    observed: points(series?.observed, false),
+  };
+}
+
+/**
+ * Nearest point in a series to a timestamp, for the shared tooltip.
+ *
+ * The two series are deliberately not resampled onto a common axis — the buoy
+ * reports hourly and CRPILE every 10 minutes, and thinning either to match the
+ * other would throw away real detail. That leaves most hovered instants with a
+ * point in one series and not the other, so the tooltip looks each up itself
+ * rather than relying on what ECharts happens to have at that exact x.
+ *
+ * @param {Array} points
+ * @param {number} timestamp
+ * @param {number} toleranceMs
+ * @returns {{value: number, leadHours: number|undefined}|null}
+ */
+function nearestPoint(points, timestamp, toleranceMs) {
+  let best = null;
+  for (const point of points) {
+    const row = Array.isArray(point) ? point : point.value;
+    const gap = Math.abs(row[0] - timestamp);
+    if (row[1] === null || gap > toleranceMs) continue;
+    if (!best || gap < best.gap) {
+      best = { gap, value: row[1], leadHours: Array.isArray(point) ? undefined : point.leadHours };
+    }
+  }
+  return best;
+}
+
+/**
+ * Shared option set for both verification charts.
+ *
+ * Observed is a solid line, forecast a dashed one — the same visual grammar as
+ * the storm-surge verification chart, where dashed always means "this was a
+ * prediction".
+ *
+ * @param {Object} config
+ * @returns {Object} An ECharts option object
+ */
+function verificationOption({ label, unit, series, decimals, axisMax }) {
+  const colors = getChartThemeColors();
+  // Sentence case in the legend, title case on the axis: "Observed Wind speed"
+  // reads as a proper noun.
+  const observedName = `Observed ${label.toLowerCase()}`;
+  const forecastName = `Forecast (~24 h ahead)`;
+
+  return {
+    backgroundColor: "transparent",
+    textStyle: { color: colors.text },
+    grid: getResponsiveGridConfig(false),
+    legend: {
+      data: [observedName, forecastName],
+      bottom: getResponsiveLegendBottom(),
+      textStyle: { color: colors.mutedText },
+    },
+    tooltip: {
+      ...getMobileOptimizedTooltipConfig(),
+      formatter: (params) => {
+        const stamp = params[0]?.axisValue ?? params[0]?.value?.[0];
+        if (stamp === undefined) return "";
+        // 30 minutes: wide enough to catch the hourly buoy against an on-the-
+        // hour forecast, narrow enough that it can't reach the next step.
+        const observed = nearestPoint(series.observed, stamp, 30 * 60 * 1000);
+        const forecast = nearestPoint(series.forecast, stamp, 30 * 60 * 1000);
+        const show = (point) => (point ? `${point.value.toFixed(decimals)} ${unit}` : "—");
+
+        let error = "";
+        if (observed && forecast) {
+          const delta = forecast.value - observed.value;
+          const sign = delta >= 0 ? "+" : "−";
+          error = `<br/>Model error: ${sign}${Math.abs(delta).toFixed(decimals)} ${unit}`;
+        }
+        const lead = forecast?.leadHours ? `<br/>Lead time: ${forecast.leadHours} h` : "";
+
+        return `<strong>${formatStepLabel(new Date(stamp))}</strong><br/>
+                Observed: ${show(observed)}<br/>
+                Forecast: ${show(forecast)}${error}${lead}`;
+      },
+    },
+    xAxis: {
+      type: "time",
+      axisLabel: {
+        fontSize: window.innerWidth < 600 ? 9 : 10,
+        rotate: window.innerWidth < 600 ? 30 : 0,
+        formatter: (value) => formatCompactTimeLabel(new Date(value).toISOString()),
+        hideOverlap: true,
+        margin: 10,
+        color: colors.mutedText,
+      },
+      axisTick: { show: true },
+      axisLine: { lineStyle: { color: colors.axisLine } },
+      splitLine: { show: true, lineStyle: { color: colors.gridLine } },
+    },
+    yAxis: {
+      type: "value",
+      name: `${label} (${unit})`,
+      min: 0,
+      max: axisMax,
+      nameTextStyle: { color: colors.mutedText },
+      axisLine: { lineStyle: { color: colors.axisLine } },
+      axisLabel: { color: colors.mutedText },
+      splitLine: { lineStyle: { color: colors.gridLine } },
+    },
+    series: [
+      {
+        name: observedName,
+        type: "line",
+        data: series.observed,
+        smooth: true,
+        showSymbol: false,
+        lineStyle: { width: 2.5, color: colors.series.primary },
+        areaStyle: { opacity: 0.12, color: colors.series.primary },
+        itemStyle: { color: colors.series.primary },
+      },
+      {
+        name: forecastName,
+        type: "line",
+        data: series.forecast,
+        smooth: true,
+        showSymbol: false,
+        // Dashed and unfilled: a prediction, drawn over the record of what
+        // actually happened rather than competing with it.
+        lineStyle: { width: 2, color: colors.series.secondary, type: "dashed" },
+        itemStyle: { color: colors.series.secondary },
+      },
+    ],
+  };
+}
+
+/**
+ * Largest value across both verification series, floored so a calm spell stays calm.
+ *
+ * Rounded up to a whole `step` so the axis lands on a readable number — an
+ * auto-fitted max prints labels like "16.9 kt", which tells the reader nothing
+ * and makes two stations' charts hard to compare at a glance.
+ *
+ * @param {Object} series
+ * @param {number} floor - Minimum axis top, so flat calm looks flat
+ * @param {number} step - Round the top up to a multiple of this
+ * @returns {number}
+ */
+function verificationAxisMax(series, floor, step) {
+  const values = [...series.observed, ...series.forecast]
+    .map((point) => (Array.isArray(point) ? point[1] : point.value[1]))
+    .filter((value) => value !== null && value !== undefined);
+  const peak = values.length > 0 ? Math.max(...values) : 0;
+  const headroom = Math.ceil((peak * 1.15) / step) * step;
+  // Floating-point multiples of 0.5 need rounding back to a clean decimal.
+  return Math.round(Math.max(floor, headroom) * 100) / 100;
+}
+
+/**
+ * Draw the verification chart for the active mode.
+ *
+ * Only significant wave height and sustained wind are charted, one comparison
+ * per view. Adding period or direction would put four lines on a chart whose
+ * entire job is to make one gap easy to see. Gusts are left out for a stronger
+ * reason: HRDPS masks the gust at most hours, so the forecast side would be a
+ * near-empty line beside a continuous observed one, which reads as the model
+ * predicting calm rather than the model not being asked.
+ *
+ * Same deferred-init rule as the forecast charts: ECharts cannot size itself
+ * inside a `hidden` panel, so each chart is created only once its panel shows.
+ *
+ * @returns {void}
+ */
+function renderVerificationMode() {
+  if (!currentVerification || typeof echarts === "undefined") return;
+
+  if (currentMode === MODE_WIND) {
+    const el = document.getElementById("wind-verification-chart");
+    if (!el) return;
+    if (!verificationWindChart) {
+      verificationWindChart = echarts.init(el);
+      window.addEventListener("resize", () => verificationWindChart.resize());
+    }
+    const series = verificationSeries("wind_speed", toKnots);
+    verificationWindChart.setOption(
+      verificationOption({
+        label: "Wind speed",
+        unit: "kt",
+        series,
+        decimals: 1,
+        // 5 kt steps: the granularity anyone actually thinks in on the water.
+        axisMax: verificationAxisMax(series, MIN_WIND_AXIS_MAX, 5),
+      }),
+      { notMerge: true },
+    );
+    verificationWindChart.resize();
+    return;
+  }
+
+  const el = document.getElementById("wave-verification-chart");
+  if (!el) return;
+  if (!verificationWaveChart) {
+    verificationWaveChart = echarts.init(el);
+    window.addEventListener("resize", () => verificationWaveChart.resize());
+  }
+  const series = verificationSeries("wave_height");
+  verificationWaveChart.setOption(
+    verificationOption({
+      label: "Wave height",
+      unit: "m",
+      series,
+      decimals: 2,
+      // 0.5 m steps, matching how the forward wave chart scales.
+      axisMax: verificationAxisMax(series, MIN_HEIGHT_AXIS_MAX, 0.5),
+    }),
+    { notMerge: true },
+  );
+  verificationWaveChart.resize();
+}
+
+/**
+ * Caption the verification panel: what the dashed line actually is.
+ *
+ * The lead band comes from the payload rather than being written here — the
+ * exporter decides the policy, and a page that hardcoded "24 hours" would
+ * quietly start lying the moment the fetch cadence or taper changed.
+ *
+ * @returns {void}
+ */
+function renderVerificationMetadata() {
+  const el = document.getElementById("forecast-verification-metadata");
+  if (!el || !currentVerification) return;
+
+  const band = currentVerification.lead_band || {};
+  const min = band.min_hours ?? 19;
+  const max = band.max_hours ?? 24;
+
+  setSafeHTML(
+    el,
+    `<strong>How to read this:</strong> the dashed line is what the model said
+     about a day ahead — for each hour, the most recent run that was still
+     ${min}–${max} hours away. Because runs come every six hours, the lead time
+     sawtooths between ${min} and ${max} h, so a small step every six hours is
+     two runs disagreeing, not a data glitch. Hover any point for its exact lead
+     time and the model's error.<br/>
+     <strong>Window:</strong> last ${currentVerification.window_hours} h &nbsp;·&nbsp;
+     <strong>Updated:</strong> ${formatMonthDayTimeTZ(new Date(currentVerification.generated_utc))}`,
+  );
+}
+
+/**
+ * Load the verification series for `currentStationId`.
+ *
+ * Failure is a warning, not an error: the verification panel is an extra panel below the
+ * forecast, and a station whose archive is younger than the window legitimately
+ * has no file yet. The console-error suite treats `error` as a page failure.
+ *
+ * @returns {Promise<void>}
+ */
+async function loadVerification() {
+  const section = document.getElementById("forecast-verification");
+  if (!section) return;
+
+  try {
+    currentVerification = await fetchWithTimeout(
+      `/data/wave_forecast/verification/${currentStationId}.json?t=${Date.now()}`,
+    );
+    section.hidden = false;
+    renderVerificationMode();
+    renderVerificationMetadata();
+  } catch (err) {
+    logger.warn("WaveForecast", "Verification data unavailable for this station", err);
+    currentVerification = null;
+    section.hidden = true;
+  }
 }
 
 /**
@@ -853,7 +1173,10 @@ async function loadWaveForecast() {
     if (!detachWaveThemeListener) {
       // Only the visible chart — the hidden one is redrawn from scratch the
       // moment it is shown, so there is nothing stale to repaint.
-      detachWaveThemeListener = registerChartThemeListener(() => renderForecastMode(currentRows));
+      detachWaveThemeListener = registerChartThemeListener(() => {
+        renderForecastMode(currentRows);
+        renderVerificationMode();
+      });
     }
   } catch (err) {
     logger.error("WaveForecast", "Error loading wave forecast", err);
@@ -931,6 +1254,10 @@ async function initWaveForecast() {
     await forecastLoad;
   }
 
+  // Only once the station is settled: the verification panel is below the fold,
+  // so it is not worth fetching for a station the index is about to correct.
+  await loadVerification();
+
   renderStationPicker(stations);
 
   // Arriving at #wave-<id> from another page scrolls to the section, but a
@@ -940,6 +1267,7 @@ async function initWaveForecast() {
     visibleHours = DEFAULT_VISIBLE_HOURS;
     renderStationPicker(stations);
     await loadWaveForecast();
+    await loadVerification();
   });
 }
 
@@ -947,3 +1275,7 @@ initWaveForecast();
 
 // The fetch runs 4x/day; a refresh every 2 hours keeps a long-open tab current.
 setInterval(loadWaveForecast, 2 * 60 * 60 * 1000);
+
+// The verification panel moves with the instruments, not the model — its observed half is
+// re-exported every 10 minutes — so it refreshes on its own, faster clock.
+setInterval(loadVerification, 15 * 60 * 1000);

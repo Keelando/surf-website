@@ -255,6 +255,7 @@
        the markup. */
     .dev-note {
       display: flex;
+      flex-wrap: wrap;
       align-items: baseline;
       gap: 0.6rem;
       background: var(--color-callout-warning-bg);
@@ -280,10 +281,43 @@
       white-space: nowrap;
     }
 
+    /* Drop the text onto its own full-width line rather than letting it be
+       squeezed into a ~215 px column beside the badge, which on a 390 px phone
+       ran the note to 250 px tall. A flex-basis threshold rather than a media
+       query: the trigger is how much room the text actually has, so it also
+       covers a wide phone in landscape and a narrow desktop window. */
+    .dev-note .dev-note-text {
+      flex: 1 1 18rem;
+    }
+
     #wave-forecast-chart,
-    #wind-forecast-chart {
+    #wind-forecast-chart,
+    #wave-verification-chart,
+    #wind-verification-chart {
       width: 100%;
       height: 360px;
+    }
+
+    /* The verification panel is a distinct claim from the forecast above it — a rule and
+       a heading keep a reader from mistaking the dashed model line for more
+       forecast. */
+    .forecast-verification {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--color-border-light);
+    }
+
+    .forecast-verification h3 {
+      margin: 0 0 0.75rem;
+      font-size: 1.1rem;
+      color: var(--color-text);
+    }
+
+    #forecast-verification-metadata {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: var(--color-text-muted);
     }
 
     /* Segmented control: one row of joined buttons, exactly one active. */
@@ -525,7 +559,7 @@
 
       <p class="dev-note">
         <span class="dev-badge">Experimental</span>
-        <span>Use at your own risk. Modelled waves from Environment Canada's
+        <span class="dev-note-text">Use at your own risk. Modelled waves from Environment Canada's
         regional wave model (RDWPS) and modelled wind from its high-resolution
         atmospheric model (HRDPS), both updated four times a day.</span>
       </p>
@@ -566,6 +600,36 @@
       </div>
 
       <div id="wave-forecast-metadata"></div>
+
+      <!-- Verification: the same station, looking backward. Hidden until the fetch
+           succeeds, because a station whose archive is younger than the 48 h
+           window has no file yet. The two panels carry data-panel values that
+           the existing segmented control above already drives, so switching to
+           Wind switches this section too — no second control, and the forward
+           and backward views can never disagree about which variable is on
+           screen. -->
+      <section class="forecast-verification" id="forecast-verification" aria-labelledby="forecast-verification-heading" hidden>
+        <h3 id="forecast-verification-heading">Forecast Verification</h3>
+
+        <!-- Third copy of the same control. setForecastMode() syncs every
+             .forecast-mode-btn on the page and toggles every .forecast-panel,
+             so this needs no JavaScript of its own — and the reader never has
+             to scroll back up to the chart to change what this section shows. -->
+        <div class="forecast-mode-toggle" role="group" aria-label="Forecast view (verification)">
+          <button type="button" class="forecast-mode-btn active" data-forecast-mode="waves" aria-pressed="true">Waves</button>
+          <button type="button" class="forecast-mode-btn" data-forecast-mode="wind" aria-pressed="false">Wind</button>
+        </div>
+
+        <div class="forecast-panel" data-panel="waves">
+          <div id="wave-verification-chart"></div>
+        </div>
+
+        <div class="forecast-panel" data-panel="wind" hidden>
+          <div id="wind-verification-chart"></div>
+        </div>
+
+        <div id="forecast-verification-metadata"></div>
+      </section>
 
       <p class="wave-forecast-about">
         <strong>About these models:</strong> RDWPS is Environment Canada's regional
@@ -650,7 +714,7 @@
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
   <script type="module" src="/assets/js/forecasts.js?v=be0fc2b600"></script>
-  <script type="module" src="/assets/js/wave-forecast.js?v=ace557192e"></script>
+  <script type="module" src="/assets/js/wave-forecast.js?v=e7ce0b9f42"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>
