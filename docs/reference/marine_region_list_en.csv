@@ -1,0 +1,198 @@
+m0000001,Tuktoyaktuk,arctic
+m0000002,Northeast Gulf,atlantic
+m0000003,Lake of the Woods,great_lakes
+m0000004,Northwest Beaufort,arctic
+m0000005,Strait of Belle Isle,atlantic
+m0000006,North Channel,great_lakes
+m0000007,Baker,hudson
+m0000008,Baillie,arctic
+m0000009,Juan de Fuca Strait,pacific
+m0000010,Johnstone Strait,pacific
+m0000011,Lurcher,atlantic
+m0000012,Lake Winnipegosis,prairies
+m0000013,Anticosti,atlantic
+m0000014,Churchill,hudson
+m0000015,Browns Bank,atlantic
+m0000016,West Prince Alfred,arctic
+m0000017,Chaleur - Miscou,atlantic
+m0000018,Gulf - Magdalen,atlantic
+m0000019,Banks,arctic
+m0000020,Arviat,hudson
+m0000021,Northumberland Strait,atlantic
+m0000022,North Tuktoyaktuk,arctic
+m0000023,Northeast Coast,atlantic
+m0000024,Southwest Coast,atlantic
+m0000025,Lake St. Clair,great_lakes
+m0000026,York,hudson
+m0000027,East Baffin,arctic
+m0000028,Strait of Georgia,pacific
+m0000029,Prince Alfred,arctic
+m0000030,Grand Manan,atlantic
+m0000031,Holman,arctic
+m0000032,Amundsen,arctic
+m0000033,Mid Labrador Coast,atlantic
+m0000034,Fundy,atlantic
+m0000035,Georges Bank,atlantic
+m0000036,East Labrador Sea,atlantic
+m0000037,Lake Manitoba,prairies
+m0000038,Nottingham,arctic
+m0000039,Central,hudson
+m0000040,Igloolik,arctic
+m0000041,Prince Charles,arctic
+m0000042,East Foxe,arctic
+m0000043,West Coast Vancouver Island North,pacific
+m0000044,Fort Good Hope mile 684 to Point Separation mile 913,mackenzie
+m0000045,Point Separation mile 913 to Kittigazuit Bay mile 1081,mackenzie
+m0000046,Southwestern Shore,atlantic
+m0000047,Dolphin,arctic
+m0000048,Roes Welcome,hudson
+m0000049,Cornwall to Montréal,st_lawrence
+m0000050,Rankin,hudson
+m0000051,West Foxe,arctic
+m0000052,Lake Erie,great_lakes
+m0000053,Halifax Harbour and Approaches,atlantic
+m0000054,Coronation,arctic
+m0000055,McClure,arctic
+m0000056,Lake Saint-Jean,st_lawrence
+m0000057,South-central Hudson,hudson
+m0000058,Camsell Bend mile 290 to Tulita mile 512,mackenzie
+m0000059,South Hudson,hudson
+m0000060,LaHave Bank,atlantic
+m0000061,Tulita mile 512 to Fort Good Hope mile 684,mackenzie
+m0000062,East Coast,atlantic
+m0000063,Queen Charlotte Sound,pacific
+m0000064,Haro Strait,pacific
+m0000065,West Coast Vancouver Island South,pacific
+m0000066,Prince of Wales,arctic
+m0000067,Coats,hudson
+m0000068,Axe Point mile 91 to Camsell Bend mile 290,mackenzie
+m0000069,Georgian Bay,great_lakes
+m0000070,West Baffin,arctic
+m0000071,West Clyde,arctic
+m0000072,Lake Huron,great_lakes
+m0000073,Richelieu River and Northern Lake Champlain,st_lawrence
+m0000074,Bathurst,arctic
+m0000075,Trois-Rivières to Donnacona,st_lawrence
+m0000076,Funk Island Bank,atlantic
+m0000077,Montréal to Trois-Rivières,st_lawrence
+m0000078,Dease,arctic
+m0000079,West Coast Haida Gwaii,pacific
+m0000080,Lake Superior,great_lakes
+m0000081,Fourchu,atlantic
+m0000082,Cabot Strait,atlantic
+m0000083,Melville,arctic
+m0000084,South Labrador Sea,atlantic
+m0000085,Lake Melville,atlantic
+m0000086,Northwest Labrador Sea,atlantic
+m0000087,Explorer,pacific
+m0000088,Saguenay to Tadoussac,st_lawrence
+m0000089,Bras d'Or Lakes,atlantic
+m0000090,West Scotian Slope,atlantic
+m0000091,Beauport to L'Isle-aux-Coudres,st_lawrence
+m0000092,East Scotian Slope,atlantic
+m0000093,Eastern Shore,atlantic
+m0000094,Wrigley Harbour mile 0 to Axe Point mile 91,mackenzie
+m0000095,Southwestern Grand Banks,atlantic
+m0000096,South Coast,atlantic
+m0000097,Lake Nipigon,great_lakes
+m0000098,Dixon Entrance West,pacific
+m0000099,East Clyde,arctic
+m0000100,Cumberland,arctic
+m0000101,Lake Memphrémagog - northern half,st_lawrence
+m0000102,Howe Sound,pacific
+m0000103,Lake Nipissing,great_lakes
+m0000104,Northern Grand Banks,atlantic
+m0000105,Great Slave Lake,mackenzie
+m0000106,Hecate Strait,pacific
+m0000107,Frobisher Bay,arctic
+m0000108,Byam,arctic
+m0000109,Lake Winnipeg - south basin,prairies
+m0000110,L'Isle-aux-Coudres to Tadoussac,st_lawrence
+m0000111,Maud,arctic
+m0000112,Queen Charlotte Strait,pacific
+m0000113,McClintock,arctic
+m0000114,West Davis,arctic
+m0000115,Lake Winnipeg - north basin,prairies
+m0000116,Belcher,hudson
+m0000117,Puvirnituq,hudson
+m0000118,James Bay,hudson
+m0000120,Maclean,arctic
+m0000121,South Labrador Coast,atlantic
+m0000122,Sable,atlantic
+m0000123,East Davis,arctic
+m0000124,Dixon Entrance East,pacific
+m0000125,Lake Athabasca,mackenzie
+m0000126,Barrow,arctic
+m0000127,Rae,arctic
+m0000128,St. Roch,arctic
+m0000129,Yukon Coast,arctic
+m0000130,Southeastern Grand Banks,atlantic
+m0000131,Queens,arctic
+m0000132,West Brevoort,arctic
+m0000133,Central Brevoort,arctic
+m0000134,Peel,arctic
+m0000135,Lake Simcoe,great_lakes
+m0000136,Larsen,arctic
+m0000137,Norwegian,arctic
+m0000138,Resolution,arctic
+m0000139,Ungava,arctic
+m0000140,Central Coast from McInnes Island to Pine Island,pacific
+m0000141,Pointe-des-Monts to Anticosti - northern half,st_lawrence
+m0000142,Banquereau,atlantic
+m0000143,Eureka,arctic
+m0000144,Lake Ontario,great_lakes
+m0000145,Kingston to Cornwall,great_lakes
+m0000146,East Brevoort,arctic
+m0000147,Regent,arctic
+m0000148,Jones,arctic
+m0000149,Lancaster,arctic
+m0000150,Pointe-des-Monts to Anticosti - southern half,st_lawrence
+m0000151,Committee,arctic
+m0000152,Douglas Channel,pacific
+m0000153,Boothia,arctic
+m0000154,Laurentian Fan,atlantic
+m0000155,Admiralty,arctic
+m0000156,North Labrador Coast,atlantic
+m0000157,Navy Board,arctic
+m0000158,Kane,arctic
+m0000159,Robeson,arctic
+m0000160,Clarence,arctic
+m0000161,Whitefish Bay,great_lakes
+m0000162,Pond,arctic
+m0000163,Gulf - Port au Port,atlantic
+m0000164,Bowie,pacific
+m0000165,Belle Isle Bank,atlantic
+m0000166,North Mackenzie,arctic
+m0000167,Mackenzie,arctic
+m0000168,Donnacona to Beauport,st_lawrence
+m0000169,Alert,arctic
+m0000170,Axel Heiberg,arctic
+m0000171,Ballantyne,arctic
+m0000172,Bartlett,arctic
+m0000173,Borden,arctic
+m0000174,Brock,arctic
+m0000175,CU4,arctic
+m0000176,Ellef Ringnes,arctic
+m0000177,Ellesmere,arctic
+m0000178,Fitzwilliam,arctic
+m0000179,Greely,arctic
+m0000180,Griper,arctic
+m0000181,Gustaf,arctic
+m0000182,Hassel,arctic
+m0000183,Hazen,arctic
+m0000184,Liddon,arctic
+m0000185,Massey,arctic
+m0000186,Peary,arctic
+m0000187,Prince Patrick,arctic
+m0000188,South Axel Heiberg,arctic
+m0000189,South Ellef Ringnes,arctic
+m0000190,South Prince Patrick,arctic
+m0000191,South Sverdrup,arctic
+m0000192,Ward Hunt,arctic
+m0000193,Wilkins,arctic
+m0000194,CT4,arctic
+m0000195,Nansen,arctic
+m0000196,North Sverdrup,arctic
+m0000197,North Prince Patrick,arctic
+m0000198,Pointe à Michel to Pointe-des-Monts,st_lawrence
+m0000199,Tadoussac to Pointe à Michel,st_lawrence

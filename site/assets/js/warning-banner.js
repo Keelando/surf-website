@@ -1,6 +1,10 @@
 /**
- * Warning Banner Module - IMPROVED VERSION
+ * Warning Banner Module (ES module)
  * Displays marine weather warnings from Environment Canada
+ *
+ * DOM half only — zone selection, active-warning collection and severity
+ * classification live in shared/warning-zones.js so they can be unit-tested
+ * without a browser. See tests/js/warning-zones.test.mjs.
  *
  * Key Improvements:
  * - Variable dismiss durations based on warning severity
@@ -14,6 +18,13 @@
  *   2. Add a <div id="warning-banner-container"></div> element where you want warnings to appear
  *   3. Call displayWarningBanners() after page load
  */
+
+import {
+  collectActiveWarnings,
+  getWarningIcon,
+  getWarningId,
+  getWarningSeverityClass,
+} from "./shared/warning-zones.js";
 
 function setSafeHTML(element, html) {
   if (!element) return;
@@ -45,17 +56,6 @@ const STORAGE_KEY = "dismissed_marine_warnings";
 
 // Dismiss duration - all warnings dismissed for 24 hours
 const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-/**
- * Generate unique ID for a warning
- * @param {Object} warning - Warning object
- * @returns {string} Unique warning ID
- */
-function getWarningId(warning) {
-  // Use zone, type, and issued time to create unique ID
-  const issued = warning.issued_utc || "unknown";
-  return `${warning.zone_key}_${warning.type}_${issued}`;
-}
 
 /**
  * Check if warning has been dismissed
@@ -196,58 +196,6 @@ async function displayWarningBanners(containerId = "warning-banner-container") {
 }
 
 /**
- * Collect all active warnings from forecast data
- * @param {Object} data - Marine forecast data
- * @returns {Array} Array of warning objects
- */
-function collectActiveWarnings(data) {
-  const warnings = [];
-
-  if (!data.areas) return warnings;
-
-  // The banner is on every page and deliberately spans every area — the
-  // forecasts page shows one zone at a time, but a warning anywhere in the
-  // Salish Sea should still surface here.
-  for (const areaData of Object.values(data.areas)) {
-    for (const [zoneKey, zoneData] of Object.entries(areaData.locations || {})) {
-      if (zoneData.warnings && Array.isArray(zoneData.warnings)) {
-        zoneData.warnings.forEach((warning) => {
-          if (warning.status === "IN EFFECT") {
-            warnings.push({
-              ...warning,
-              zone_key: zoneKey,
-              zone_name: zoneData.zone_name || warning.location,
-              area_name: areaData.area || "",
-            });
-          }
-        });
-      }
-    }
-  }
-
-  // Sort by severity (Storm > Gale > Strong Wind)
-  warnings.sort((a, b) => {
-    const severityOrder = {
-      "Storm warning": 1,
-      Storm: 1,
-      "Gale warning": 2,
-      Gale: 2,
-      "Strong wind warning": 3,
-      "Strong wind": 3,
-      "Wind warning": 4,
-      Wind: 4,
-    };
-
-    const aSeverity = severityOrder[a.type] || 99;
-    const bSeverity = severityOrder[b.type] || 99;
-
-    return aSeverity - bSeverity;
-  });
-
-  return warnings;
-}
-
-/**
  * Create HTML for a combined warning banner showing all active warnings
  * @param {Array} warnings - Array of warning objects
  * @returns {string} HTML string
@@ -282,41 +230,6 @@ function createCombinedWarningBanner(warnings) {
       </div>
     </div>
   `;
-}
-
-/**
- * Get CSS class for warning severity
- * @param {string} type - Warning type
- * @returns {string} CSS class name
- */
-function getWarningSeverityClass(type) {
-  const typeLower = type.toLowerCase();
-
-  if (typeLower.includes("storm")) return "warning-storm";
-  if (typeLower.includes("gale")) return "warning-gale";
-  if (typeLower.includes("strong wind") || typeLower.includes("wind")) {
-    return "warning-strong-wind";
-  }
-  if (typeLower.includes("waterspout") || typeLower.includes("water spout")) {
-    return "warning-waterspout";
-  }
-
-  return "warning-default";
-}
-
-/**
- * Get icon for warning type
- * @param {string} type - Warning type
- * @returns {string} Icon emoji
- */
-function getWarningIcon(type) {
-  const typeLower = type.toLowerCase();
-
-  if (typeLower.includes("storm")) return "⚠️";
-  if (typeLower.includes("gale")) return "💨";
-  if (typeLower.includes("strong wind") || typeLower.includes("wind")) return "🌬️";
-
-  return "⚠️";
 }
 
 // Auto-initialize if container exists on page load

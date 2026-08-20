@@ -52,6 +52,16 @@ function getDirectionalArrow(degrees, arrowType = "wind") {
 // zoom 8 leaves the Salish Sea stations bunched in the middle. Narrow screens
 // stay at 8, where the extra level would push most stations off-screen.
 // 600px matches the nav's mobile breakpoint (nav-tide-styles-v4.css).
+// Every station popup binds with these, so a popup is the same width whichever
+// marker opened it. Left to Leaflet's defaults (minWidth 50, maxWidth 300) the
+// width came out of whatever the longest line happened to be — measured across
+// twelve popups it produced eight different widths between 286px and 349px,
+// and the ones that hit the cap looked as though they were reserving space for
+// the optional "Wave Forecast" button. Fixing both bounds to the same value
+// makes that impossible. Mobile stays narrower via the max-width in
+// stations-map-v4.css.
+const POPUP_OPTIONS = { minWidth: 280, maxWidth: 280 };
+
 const DESKTOP_BREAKPOINT_PX = 600;
 const STATIONS_MAP_ZOOM_DESKTOP = 9;
 const STATIONS_MAP_ZOOM_MOBILE = 8;
@@ -580,20 +590,22 @@ function addBuoyMarker(buoy) {
   const linkText = isWave ? "View Data →" : "View on Winds Page →";
 
   popupContent += `
-    <a href="${linkHref}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">${linkText}</a>`;
+    <div class="popup-actions">
+      <a href="${linkHref}" class="view-data-btn">${linkText}</a>`;
 
   // Only where RDWPS is actually extracted for this station. Secondary styling
   // deliberately: the popup is showing measurements, and the forecast is a
   // model's opinion — it should not compete with "View Data" for the eye.
   if (waveForecastStations.has(buoy.id)) {
     popupContent += `
-    <a href="/forecasts.html#wave-${buoy.id}" class="view-data-btn wave-forecast-link" style="display: inline-block; margin-top: 8px; margin-left: 6px; padding: 6px 12px; background: var(--color-surface-alt, #f5f5f5); color: var(--color-primary-dark, var(--color-primary)); text-decoration: none; border-radius: 4px; font-size: 0.9em; border: 1px solid var(--color-primary);">🌊 Wave Forecast →</a>`;
+      <a href="/forecasts.html#wave-${buoy.id}" class="view-data-btn wave-forecast-link">🌊 Wave Forecast →</a>`;
   }
 
   popupContent += `
+    </div>
   </div>`;
 
-  marker.bindPopup(popupContent);
+  marker.bindPopup(popupContent, POPUP_OPTIONS);
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
@@ -707,10 +719,12 @@ function addTideMarker(tide, stationKey) {
       <div><strong>Coordinates:</strong> ${tide.lat.toFixed(4)}, ${tide.lon.toFixed(4)}</div>
       ${tide.note ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${tide.note}</div>` : ""}
     </div>
-    <a href="/tides.html?station=${stationKey}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Data →</a>
+    <div class="popup-actions">
+      <a href="/tides.html?station=${stationKey}" class="view-data-btn">View Data →</a>
+    </div>
   </div>`;
 
-  marker.bindPopup(popupContent);
+  marker.bindPopup(popupContent, POPUP_OPTIONS);
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
@@ -810,10 +824,12 @@ function addLightstationMarker(lightstation) {
       ${lightstation.established ? `<div><strong>Established:</strong> ${lightstation.established}</div>` : ""}
       ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${lightstation.notes}</div>` : ""}
     </div>
-    <a href="/lightstations.html#lightstation-${lightstation.id}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Data →</a>
+    <div class="popup-actions">
+      <a href="/lightstations.html#lightstation-${lightstation.id}" class="view-data-btn">View Data →</a>
+    </div>
   </div>`;
 
-  marker.bindPopup(popupContent);
+  marker.bindPopup(popupContent, POPUP_OPTIONS);
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
@@ -855,10 +871,12 @@ function addWebcamMarker(webcam) {
       <div><strong>Type:</strong> Webcam</div>
       <div><strong>Coordinates:</strong> ${webcam.lat.toFixed(4)}, ${webcam.lon.toFixed(4)}</div>
     </div>
-    <a href="${webcam.page_url}" class="view-data-btn" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary-dark); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Webcam →</a>
+    <div class="popup-actions">
+      <a href="${webcam.page_url}" class="view-data-btn view-data-btn--alt">View Webcam →</a>
+    </div>
   </div>`;
 
-  marker.bindPopup(popupContent);
+  marker.bindPopup(popupContent, POPUP_OPTIONS);
   marker.addTo(markersLayer);
 
   // Store marker reference for later access

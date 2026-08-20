@@ -78,6 +78,10 @@ async function loadWindStationsAndMarkers() {
   }
 }
 
+// Same fixed bounds as the stations map (see stations-map.js POPUP_OPTIONS):
+// one width for every popup, rather than whatever the longest line produced.
+const POPUP_OPTIONS = { minWidth: 280, maxWidth: 280 };
+
 /**
  * Add a wind marker (station or buoy) to the map
  * @param {Object} station - Station/buoy metadata (id, name, lat, lon, location, source, type)
@@ -177,7 +181,7 @@ function addWindMarker(station, currentData, isBuoy = false) {
     <a href="#" class="view-data-btn" data-wind-station-id="${station.id}">View Wind Chart →</a>
   </div>`;
 
-  marker.bindPopup(popupContent);
+  marker.bindPopup(popupContent, POPUP_OPTIONS);
   marker.addTo(windMarkersLayer);
 
   // Store marker reference

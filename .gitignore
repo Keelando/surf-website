@@ -75,6 +75,9 @@ storm_surge/
 !package-lock.json
 !.eslintrc.json
 !config/webcams.example.json
+# Vendored MSC reference snapshots — dated lookup tables, not data files.
+# See docs/MSC_REFERENCE_TABLES.md.
+!docs/reference/*.json
 
 # Local webcam config — endpoints, referers, permission-gated feeds.
 # Schema lives in config/webcams.example.json.

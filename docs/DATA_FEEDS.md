@@ -74,7 +74,7 @@ job's steps stop being a fixed number known before the run.
 | `bc_buoys` (5 buoys) | 10,559 — 80% of it from two buoys, see `TODO.md` |
 | `bc_wind_stations` (15 stations) | 9,097 |
 | `bc_lightstation_obs` | 178 |
-| `marine_forecast` | a handful |
+| `marine_forecast` (6 bulletins) | a handful — 6× the pre-2026-08-20 rate, still trivial |
 
 4 AMQP connections of the 500-connection limit. Measured 2026-08-15 by counting
 distinct `source_file` values recorded in the last 24 h.
@@ -158,8 +158,14 @@ SWOB feed also carries `mslp`, which we store as `pressure_mslp_hpa`.
 
 ### Marine Weather Forecasts — XML
 
-**Zone:** `m0000028` — Strait of Georgia (covers both north and south of Nanaimo zones)
-**Config:** `config/sr3/marine_forecast.conf`
+**Bulletins:** 6 covering 9 zones — a bulletin is not a zone (`m0000028`
+carries both Strait of Georgia zones, `m0000009` all three Juan de Fuca
+sub-zones). `m0000028` Strait of Georgia, `m0000009` Juan de Fuca Strait,
+`m0000064` Haro Strait, `m0000102` Howe Sound, `m0000010` Johnstone Strait,
+`m0000065` West Coast Vancouver Island South. Codes from MSC's published
+region list — see `docs/MSC_REFERENCE_TABLES.md`.
+**Config:** `config/sr3/marine_forecast.conf` (the only source of truth for
+which zones we carry; the parser and UI need no edit to add one)
 **Parsed by:** `scripts/parse/parse_marine_forecast.py`
 **AMQP subtopic:** `*.WXO-DD.marine_weather.pacific.#`
 

@@ -134,6 +134,10 @@ async function loadLightstationsAndMarkers() {
 }
 
 // Add lightstation marker to map
+// Same fixed bounds as the stations map (see stations-map.js POPUP_OPTIONS):
+// one width for every popup, rather than whatever the longest line produced.
+const POPUP_OPTIONS = { minWidth: 280, maxWidth: 280 };
+
 function addLightstationMapMarker(lightstation) {
   // Check if this station has any current data
   const lookupName = lightstation.id.replace(/_/g, " ");
@@ -225,10 +229,12 @@ function addLightstationMapMarker(lightstation) {
       ${lightstation.established ? `<div><strong>Established:</strong> ${lightstation.established}</div>` : ""}
       ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${lightstation.notes}</div>` : ""}
     </div>
-    <a href="#lightstation-data-table-section" class="view-data-btn" data-lightstation-id="${lightstation.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9em;">View Data →</a>
+    <div class="popup-actions">
+      <a href="#lightstation-data-table-section" class="view-data-btn" data-lightstation-id="${lightstation.id}">View Data →</a>
+    </div>
   </div>`;
 
-  marker.bindPopup(popupContent);
+  marker.bindPopup(popupContent, POPUP_OPTIONS);
 
   // Add permanent label (station name) that shows/hides based on zoom
   marker.bindTooltip(lightstation.name, {

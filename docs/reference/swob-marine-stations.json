@@ -1,0 +1,1126 @@
+{
+  "features": [
+    {
+      "geometry": {
+        "coordinates": [
+          -132.4439,
+          54.3667,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100280",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100280",
+        "name_en": "CENTRAL DIXON ENTRANCE",
+        "name_fr": "CENTRAL DIXON ENTRANCE",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46145
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -129.9158,
+          50.8742,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100340",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100340",
+        "name_en": "EAST DELLWOOD",
+        "name_fr": "EAST DELLWOOD",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46207
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -123.7267,
+          49.34,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100552",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100552",
+        "name_en": "HALIBUT BANK",
+        "name_fr": "HALIBUT BANK",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46146
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -125.9983,
+          48.835,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100580",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100580",
+        "name_en": "LA PEROUSE BANK",
+        "name_fr": "LA PEROUSE BANK",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46206
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -131.105,
+          53.6167,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100585",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100585",
+        "name_en": "NORTH HECATE STRAIT",
+        "name_fr": "NORTH HECATE STRAIT",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46183
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -136.0953,
+          50.9305,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100600",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100600",
+        "name_en": "MIDDLE NOMAD",
+        "name_fr": "MIDDLE NOMAD",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46004
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -128.8317,
+          53.8333,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100610",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100610",
+        "name_en": "NANAKWA SHOAL",
+        "name_fr": "NANAKWA SHOAL",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46181
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -138.8508,
+          53.915,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100614",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100614",
+        "name_en": "NORTH NOMAD",
+        "name_fr": "NORTH NOMAD",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46184
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -124.9858,
+          49.9067,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100624",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100624",
+        "name_en": "SENTRY SHOAL",
+        "name_fr": "SENTRY SHOAL",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46131
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -129.7917,
+          52.425,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100631",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100631",
+        "name_en": "SOUTH HECATE STRAIT",
+        "name_fr": "SOUTH HECATE STRAIT",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46185
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -133.9383,
+          48.355,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100640",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100640",
+        "name_en": "SOUTH NOMAD",
+        "name_fr": "SOUTH NOMAD",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46036
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -134.323,
+          54.185,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100795",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100795",
+        "name_en": "WEST DIXON ENTRANCE",
+        "name_fr": "WEST DIXON ENTRANCE",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46205
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -132.6925,
+          52.515,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100818",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100818",
+        "name_en": "WEST MORESBY",
+        "name_fr": "WEST MORESBY",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46208
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -128.7668,
+          51.3835,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9100888",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9100888",
+        "name_en": "WEST SEA OTTER",
+        "name_fr": "WEST SEA OTTER",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46204
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -127.9317,
+          49.7383,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9101624",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9101624",
+        "name_en": "SOUTH BROOKS",
+        "name_fr": "SOUTH BROOKS",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 46132
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -123.43,
+          49.025,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9102000",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC) in support of Ocean Protection Plan.",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9102000",
+        "name_en": "Southern Georgia Strait",
+        "name_fr": "Southern Georgia Strait",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 4600303
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -123.35667,
+          49.301667,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9102001",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC) in support of Ocean Protection Plan.",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9102001",
+        "name_en": "Entrance to English Bay",
+        "name_fr": "Entrance to English Bay",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 4600304
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -57.1032,
+          44.2402,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9300243",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9300243",
+        "name_en": "BANQUEREAU BANK",
+        "name_fr": "BANQUEREAU BANK",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 44139
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -61.9985,
+          42.2613,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9300355",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9300355",
+        "name_en": "EAST SCOTIA SLOPE",
+        "name_fr": "EAST SCOTIA SLOPE",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 44137
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -63.4026,
+          44.5017,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9300400",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9300400",
+        "name_en": "HALIFAX HARBOUR",
+        "name_fr": "HALIFAX HARBOUR",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 44258
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -64.0718,
+          42.5047,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9300450",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9300450",
+        "name_en": "LA HAVE BANK",
+        "name_fr": "LA HAVE BANK",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 44150
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -60.95375,
+          45.445,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9302000",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC) in support of Ocean Protection Plan.",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9302000",
+        "name_en": "East Chedabucto Bay",
+        "name_fr": "East Chedabucto Bay",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 4400488
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -61.14103333,
+          45.48686667,
+          0.0
+        ],
+        "type": "Point"
+      },
+      "id": "9302001",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC) in support of Ocean Protection Plan.",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9302001",
+        "name_en": "West Chedabucto Bay",
+        "name_fr": "West Chedabucto Bay",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 4400489
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -115.3143,
+          61.1807,
+          156.0
+        ],
+        "type": "Point"
+      },
+      "id": "9400670",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9400670",
+        "name_en": "GREAT SLAVE LAKE",
+        "name_fr": "GREAT SLAVE LAKE",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45141
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -114.129,
+          61.975,
+          46.0
+        ],
+        "type": "Point"
+      },
+      "id": "9400671",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9400671",
+        "name_en": "GT. SLAVE LK N. ARM",
+        "name_fr": "GT. SLAVE LK N. ARM",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45150
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -79.7155,
+          46.233,
+          195.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401110",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401110",
+        "name_en": "LAKE NIPISSING",
+        "name_fr": "LAKE NIPISSING",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45152
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -94.5019,
+          49.6511,
+          323.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401120",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401120",
+        "name_en": "LAKE OF THE WOODS",
+        "name_fr": "LAKE OF THE WOODS",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45148
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -79.3667,
+          44.5004,
+          219.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401130",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401130",
+        "name_en": "LAKE SIMCOE",
+        "name_fr": "LAKE SIMCOE",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45151
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -82.6833,
+          42.43,
+          173.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401138",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401138",
+        "name_en": "LAKE ST. CLAIR",
+        "name_fr": "LAKE ST. CLAIR",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45147
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -98.29,
+          53.23,
+          217.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401175",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401175",
+        "name_en": "LAKE WINNIPEG N.",
+        "name_fr": "LAKE WINNIPEG N.",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45144
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -96.97,
+          51.87,
+          217.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401176",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401176",
+        "name_en": "LAKE WINNIPEG NARROWS",
+        "name_fr": "LAKE WINNIPEG NARROWS",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45145
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -96.7332,
+          50.7899,
+          217.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401177",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401177",
+        "name_en": "LAKE WINNIPEG S. BASIN",
+        "name_fr": "LAKE WINNIPEG S. BASIN",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45140
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -82.6373,
+          46.0507,
+          176.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401342",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401342",
+        "name_en": "NORTH CHANNEL EAST",
+        "name_fr": "NORTH CHANNEL EAST",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45154
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -78.9836,
+          43.7667,
+          74.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401347",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401347",
+        "name_en": "NW LAKE ONTARIO AJAX",
+        "name_fr": "NW LAKE ONTARIO AJAX",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45159
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -79.39,
+          43.5897,
+          74.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401510",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401510",
+        "name_en": "PAN AM GAMES",
+        "name_fr": "PAN AM GAMES",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45155
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -79.2899,
+          42.7367,
+          173.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401542",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401542",
+        "name_en": "PORT COLBORNE",
+        "name_fr": "PORT COLBORNE",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45142
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -81.2157,
+          42.4633,
+          173.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401548",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401548",
+        "name_en": "PORT STANLEY",
+        "name_fr": "PORT STANLEY",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45132
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -76.8678,
+          43.7844,
+          74.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401578",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401578",
+        "name_en": "PRINCE EDWARD PT",
+        "name_fr": "PRINCE EDWARD PT",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45135
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -86.9527,
+          48.535,
+          183.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401810",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401810",
+        "name_en": "SLATE ISLAND",
+        "name_fr": "SLATE ISLAND",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45136
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -80.6268,
+          44.9449,
+          176.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401846",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401846",
+        "name_en": "SOUTH GEORGIAN BAY",
+        "name_fr": "SOUTH GEORGIAN BAY",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45143
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -82.0749,
+          43.5417,
+          176.0
+        ],
+        "type": "Point"
+      },
+      "id": "9401849",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9401849",
+        "name_en": "SOUTHERN LAKE HURON (BAYFIELD)",
+        "name_fr": "SOUTHERN LAKE HURON (BAYFIELD)",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45149
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -79.5342,
+          43.2514,
+          74.0
+        ],
+        "type": "Point"
+      },
+      "id": "9402248",
+      "properties": {
+        "auto_man": "AUTO",
+        "data_attribution_notice": "Data provided by ECCC. All rights reserved.",
+        "data_provider": "Environment and Climate Change Canada (ECCC)",
+        "dst_time": "",
+        "iata_id": "",
+        "icao_id": "",
+        "msc_id": "9402248",
+        "name_en": "WEST LAKE ONTARIO",
+        "name_fr": "WEST LAKE ONTARIO",
+        "province_territory": "XX",
+        "std_time": "",
+        "wmo_id": 45139
+      },
+      "type": "Feature"
+    }
+  ],
+  "links": [
+    {
+      "href": "https://api.weather.gc.ca/collections/swob-marine-stations/items?f=json&limit=10000",
+      "rel": "self",
+      "title": "This document as GeoJSON",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "https://api.weather.gc.ca/collections/swob-marine-stations/items?f=jsonld&limit=10000",
+      "rel": "alternate",
+      "title": "This document as RDF (JSON-LD)",
+      "type": "application/ld+json"
+    },
+    {
+      "href": "https://api.weather.gc.ca/collections/swob-marine-stations/items?f=html&limit=10000",
+      "rel": "alternate",
+      "title": "This document as HTML",
+      "type": "text/html"
+    },
+    {
+      "href": "https://api.weather.gc.ca/collections/swob-marine-stations",
+      "rel": "collection",
+      "title": "SWOB - Stations for Marine",
+      "type": "application/json"
+    }
+  ],
+  "numberMatched": 42,
+  "numberReturned": 42,
+  "timeStamp": "2026-08-20T21:50:59.665833Z",
+  "type": "FeatureCollection"
+}

@@ -89,26 +89,90 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
         unknown zones, warning-only zones, newest-file-per-zone, area merge,
         and unparsable input.
 
-      *Still open — the zone codes.* Rejected files are not logged at info
-      level, and `sarracenia.flow.reject()` logs nothing at any level, so
-      widening `accept` is not the only route: `sarracenia/moth/amqp.py:579`
-      logs `new msg: <relPath>` for **every announced message** at debug,
-      before filtering. `logLevel debug` was set on `config/sr3/marine_forecast.conf`
-      on 2026-08-20 to enumerate the Pacific zone codes at the next issuance
-      with **zero downloads**. `~/marine_zone_watch.sh` runs detached (PPID 1,
-      no TTY, so it outlives the terminal) and **reverts `logLevel` to `info`
-      itself** — on success or on its 05:00 UTC deadline, which is deliberately
-      clear of the 07:17 cron commit. Results land in `~/marine_zone_codes.txt`,
-      progress in `~/marine_zone_watch.log`. Belt and braces: journald is
-      persistent here, so the codes stay recoverable from
-      `journalctl -u sr3-marine-forecast` even if the script dies. Delete the
-      script once the zone list is final. When the codes are in hand:
-      1. widen `accept` to the zones worth carrying,
+      *Resolved 2026-08-20 — the zone codes.* MSC publishes a lookup table
+      mapping every `m#######` code to its region name and domain:
+      <https://collaboration.cmc.ec.gc.ca/cmc/cmos/public_doc/msc-data/marine-weather/marine_region_list_en.csv>
+      (linked from the marine-weather datamart readme on eccc-msc.github.io;
+      ISO-8859 encoded, so read it as latin-1 — grep treats it as binary).
+      It confirms `m0000028` = Strait of Georgia, and lists **17 Pacific
+      regions total**. This retires the `logLevel debug` enumeration route
+      entirely: `logLevel` is back to `info`, the service is restarted, and
+      `~/marine_zone_watch.sh` is deleted. The debug-log trick is still the
+      right tool when no published table exists — see the note in the
+      marine-text-forecast-zones memory.
+
+      **A datamart file is a *bulletin*, not a zone**, and one bulletin can
+      carry several zones (`m0000028` carries both Strait of Georgia zones).
+      The weather.gc.ca per-zone RSS ids expose the grouping. The Georgia
+      Basin is **6 bulletins covering 9 zones**:
+
+      | Code | Region | Zones |
+      |------|--------|-------|
+      | `m0000028` | Strait of Georgia | north of Nanaimo, south of Nanaimo *(have)* |
+      | `m0000009` | Juan de Fuca Strait | east entrance, west entrance, central strait |
+      | `m0000064` | Haro Strait | Haro Strait |
+      | `m0000102` | Howe Sound | Howe Sound |
+      | `m0000010` | Johnstone Strait | Johnstone Strait |
+      | `m0000065` | West Coast Vancouver Island South | WCVI South |
+
+      Remaining steps:
+      1. widen `accept` to the five additional codes above,
       2. gate the new zones behind a shared vetted-zone allowlist imported by
          **both** `forecasts.js` and `warning-banner.js` — the banner is a
          sitewide surface, so widening `accept` without it would publish
          unvetted zones' warnings to every page,
       3. update the zone count in `docs/DATA_FEEDS.md`.
+
+      *Sizing, measured 2026-08-20 from the live per-zone RSS feeds:* the
+      seven zones we do not yet carry total **570 words**, so all nine lands
+      around **~720 words** — three entries per zone at roughly 40 words each.
+      West Coast Vancouver Island South carries an extra `Waves for…` entry
+      the Strait zones do not, which the renderer must not assume away.
+
+      **Shipped 2026-08-20 — the five extra bulletins.**
+      `config/sr3/marine_forecast.conf` now accepts all six Georgia Basin
+      bulletins (deployed + service restarted). First arrival expected at the
+      ~22:51Z issuance; AMQP is push-only, so nothing back-fills.
+
+      **Warning-banner scope (user decision 2026-08-20):** the banner fires for
+      **Strait of Georgia north + south of Nanaimo only**. All nine zones render
+      on the forecasts page; only home waters interrupt you sitewide. Lives in
+      `DEFAULT_BANNER_ZONES` in `site/assets/js/warning-banner.js`. This is
+      deliberately *not* a second copy of the carried-zone list — `accept` is
+      the only source of truth for what we carry.
+
+- [x] **Map popup layout cleanup** — DONE 2026-08-20. Two faults, both measured
+      rather than eyeballed: (1) on a 360x640 phone a full buoy popup was 450px
+      of content against a 384px budget, so it scrolled; (2) popup width came
+      from whatever the longest line happened to be — twelve popups produced
+      **eight** different widths (286-349px), and the ones hitting Leaflet's
+      300px cap looked as if they were reserving space for the optional
+      "Wave Forecast" button. Fixes: `POPUP_OPTIONS = {minWidth: 280,
+      maxWidth: 280}` on all three maps so every popup is one width; a
+      `.popup-actions` flex row so one button and two buttons measure the same;
+      and a mobile block trimming Leaflet's own `.leaflet-popup-content` margin
+      (13px/19px, the biggest single contributor) plus our paddings. Result:
+      one width everywhere (329 desktop / 317 mobile), nothing scrolls.
+      Also removed the `.view-data-btn` inline style that had been copy-pasted
+      five times across three files — CSS already defined all of it.
+
+- [ ] **Let users opt in to warning zones** (user 2026-08-20): the sitewide
+      banner currently fires for a hardcoded home-waters pair. Users should be
+      able to choose which of the zones we carry may interrupt them. The
+      backend for this already exists — `getBannerZones()` in
+      `warning-banner.js` is the single extension point; the available-zone
+      list comes from `marine_forecast.json` itself, not a hardcoded list.
+      Needs: a picker UI, `localStorage` persistence (match the
+      `selected_marine_zone` pattern in `forecasts.js`), and a sensible
+      default for first-time visitors (`DEFAULT_BANNER_ZONES`).
+
+- [x] **`warning-banner.js` test coverage** — DONE 2026-08-20. It was a classic
+      script with no exports, so the zone filter could not be unit-tested. The
+      pure logic moved to `site/assets/js/shared/warning-zones.js` (zone
+      selection, active-warning collection, severity/icon mapping) with 14
+      tests in `tests/js/warning-zones.test.mjs`; `warning-banner.js` kept the
+      DOM half and became an ES module to import it, so the seven pages that
+      load it now use `<script type="module">`. Playwright 16/16 still pass.
 
       *Still open — the layout, deferred by the user 2026-08-20.* Whether the
       page keeps the one-zone-at-a-time dropdown (winds-style) or moves to

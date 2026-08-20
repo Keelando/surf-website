@@ -1155,7 +1155,9 @@ function renderStationPicker(stations) {
  */
 function renderHeading(stationName, stationId) {
   const heading = document.getElementById("wave-forecast-heading");
-  if (heading) heading.textContent = `🌊 Wave & Wind Forecast — ${stationName}`;
+  // Just the station name: the "Point Forecast" <h2> above already says what
+  // kind of forecast this is, so repeating it here only added noise.
+  if (heading) heading.textContent = stationName;
 
   const mapLink = document.getElementById("wave-forecast-map-link");
   if (mapLink && stationId) {

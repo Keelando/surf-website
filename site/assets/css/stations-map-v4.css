@@ -56,11 +56,50 @@
   background: rgba(18, 29, 44, 0.95);
 }
 
-/* Smaller max-height for mobile devices */
+/* Smaller max-height for mobile devices.
+   Everything below is a fight for vertical pixels: a full buoy popup measured
+   450px of content against a 384px budget on a 360x640 phone, so it scrolled.
+   Leaflet's own .leaflet-popup-content margin (13px 19px) is the single
+   biggest contributor and has to be overridden here — trimming only our own
+   padding is not enough. */
 @media (max-width: 768px) {
   .leaflet-popup-content-wrapper {
-    max-height: 60vh;
-    max-width: 80vw;
+    max-height: 70vh;
+    max-width: 88vw;
+  }
+
+  .leaflet-popup-content {
+    margin: 0.5rem 0.7rem;
+  }
+
+  .station-popup {
+    padding: 0.25rem;
+  }
+
+  .station-popup h3 {
+    margin-bottom: 0.35rem;
+    font-size: 1rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .station-popup p {
+    margin: 0.15rem 0;
+  }
+
+  .data-types-list {
+    margin: 0.35rem 0 0.35rem 1.1rem;
+  }
+
+  /* Full-width stacked buttons: easier to hit with a thumb, and they stop the
+     action row from being what decides the popup's width. */
+  .popup-actions {
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+  }
+
+  .popup-actions .view-data-btn {
+    flex: 1 1 100%;
+    padding: 0.45rem 0.6rem;
   }
 }
 
@@ -128,6 +167,53 @@
 
 .view-data-btn:visited {
   color: var(--map-button-text) !important;
+}
+
+/* Action row at the foot of a popup. Flex rather than inline-block links so a
+   popup with one button is exactly as wide as a popup with two — inline-block
+   siblings were letting the optional wave-forecast link influence the width
+   Leaflet measured, which is why buoys without a forecast still looked as if
+   space had been reserved for one. */
+.popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+/* The row owns the spacing now. */
+.popup-actions .view-data-btn {
+  margin-top: 0;
+  margin-left: 0;
+}
+
+/* Webcam popups use the darker primary to set them apart from data links. */
+.view-data-btn--alt {
+  background: var(--color-primary-dark);
+}
+
+/* Secondary variant: the wave forecast link sitting beside "View Data".
+   It inverts the primary button — surface background, primary-coloured text —
+   so it reads as secondary. The `color` here MUST carry !important: the
+   .view-data-btn rules above set --map-button-text (white in light, near-black
+   in dark) with !important, which beats even an inline style. Without this the
+   link renders white-on-white in light mode and dark-on-dark in dark mode.
+   Both states are theme-aware on purpose; this is popup chrome, not a marker. */
+.view-data-btn.wave-forecast-link {
+  margin-left: 0.4rem;
+  background: var(--color-surface-alt);
+  color: var(--color-primary-dark) !important;
+  border: 1px solid var(--color-primary);
+}
+
+.view-data-btn.wave-forecast-link:hover {
+  background: var(--color-surface);
+  color: var(--color-primary-dark) !important;
+}
+
+.view-data-btn.wave-forecast-link:active,
+.view-data-btn.wave-forecast-link:visited {
+  color: var(--color-primary-dark) !important;
 }
 
 /* Station markers */

@@ -25,6 +25,12 @@ node can import these files in tests; browsers ignore it.
   (`waveHeightField`/`wavePeriodFields`/`pickWavePeriod`, shared by the card's
   compact line and the history table) — replaces inline station-ID checks;
   see `docs/project/BUOY_CARD_REFACTOR.md`
+- `warning-zones.js` — the pure half of the sitewide warning banner: which
+  zones may raise one (`DEFAULT_BANNER_ZONES`/`getBannerZones` — deliberately
+  narrower than the zones we carry), `collectActiveWarnings`, and the
+  severity/icon mapping. Extracted 2026-08-20 so the banner could be tested
+  at all; `warning-banner.js` keeps the DOM, dismissal and htmx wiring and
+  became an ES module to import this. Tests: `tests/js/warning-zones.test.mjs`
 
 Page-specific builders live beside their entry point rather than here:
 `buoy-card.js` and `buoy-history.js` are index-only, and both take
