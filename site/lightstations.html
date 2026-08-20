@@ -49,8 +49,12 @@
       display: none !important; /* Hide the default Leaflet tooltip arrow */
     }
 
+    /* Collapsed, these headers are a stack of toggle bars — 2rem sections
+       plus a 1.5rem header margin left them floating far apart. Tighter, and
+       the header's bottom margin goes away entirely when there is no station
+       list under it to separate from. */
     .region-section {
-      margin: 2rem 0;
+      margin: 0.75rem 0;
     }
 
     .region-header {
@@ -64,7 +68,11 @@
       user-select: none;
       transition: background 0.2s;
       box-shadow: 0 2px 6px rgba(0, 75, 124, 0.2);
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .region-section.collapsed .region-header {
+      margin-bottom: 0;
     }
 
     .region-header:hover {
@@ -477,7 +485,7 @@
   <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
-  <script src="/assets/js/warning-banner.js?v=7fa71bd458"></script>
+  <script src="/assets/js/warning-banner.js?v=cc4bfa68f6"></script>
   <script src="/assets/js/chart-utils-v4.js?v=401977606f"></script>
   <!-- Single module entry point: imports (and thereby runs) lightstation-charts.js
        and lightstation-map.js. They must NOT get their own script tags — the ?v=

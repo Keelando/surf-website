@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
 """
 Marine Forecast Parser for Environment Canada XML files
-Parses marine weather forecast XMLs and stores as JSON
+
+Parses every marine weather zone XML that sr3 has delivered and writes them
+as a single JSON document keyed by area. Zone and area keys are slugified
+straight from the names in the XML, so adding a new zone is purely a matter
+of widening the `accept` regex in `config/sr3/marine_forecast.conf` — this
+parser needs no edit.
 """
 
 import json
+import re
+from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,11 +28,17 @@ DATA_DIR = Path.home() / "envcan_wave" / "data" / "marine_forecast"
 
 OUTPUT_FILE = EXPORT_DIR / "marine_forecast.json"
 
-# Zone mapping - normalize location names to internal keys
-ZONE_MAP = {
-    "Strait of Georgia - north of Nanaimo": "strait_georgia_north",
-    "Strait of Georgia - south of Nanaimo": "strait_georgia_south",
-}
+# sr3 writes files as <timestamp>_MSC_MarineWeather_<zone>_en.xml
+FILENAME_RE = re.compile(r"_MSC_MarineWeather_(?P<zone>[^_]+)_en\.xml$")
+
+
+def slugify(name):
+    """Turn an XML area/location name into a stable snake_case key.
+
+    "Strait of Georgia - north of Nanaimo" -> strait_of_georgia_north_of_nanaimo
+    """
+    slug = re.sub(r"[^a-z0-9]+", "_", (name or "").lower())
+    return slug.strip("_")
 
 
 def parse_datetime(dt_element):
@@ -130,8 +143,8 @@ def parse_wave_forecast(wave_element):
     return wave_data if wave_data else None
 
 
-def parse_marine_xml(xml_file):
-    """Parse a single marine forecast XML file"""
+def parse_marine_xml(xml_file, zone_code):
+    """Parse a single marine forecast XML file into one area entry"""
     try:
         tree = ET.parse(xml_file)
         root = tree.getroot()
@@ -146,8 +159,13 @@ def parse_marine_xml(xml_file):
         sub_region = area.get("subRegion", "") if area is not None else ""
         area_name = area.text.strip() if area is not None and area.text else ""
 
+        if not area_name:
+            logger.warning(f"{xml_file.name}: no area name, skipping")
+            return None
+
         result = {
             "file": xml_file.name,
+            "zone_code": zone_code,
             "generated_utc": creation_time,
             "region": region,
             "sub_region": sub_region,
@@ -157,17 +175,16 @@ def parse_marine_xml(xml_file):
 
         # Parse warnings by location
         warnings_section = root.find("warnings")
-        location_warnings = {}
+        location_warnings = defaultdict(list)
         if warnings_section is not None:
             for location in warnings_section.findall("location"):
                 loc_name = location.get("name", "")
-                if loc_name in ZONE_MAP:
-                    zone_key = ZONE_MAP[loc_name]
-                    location_warnings[zone_key] = []
+                zone_key = slugify(loc_name)
+                if not zone_key:
+                    continue
 
-                    for event in location.findall("event"):
-                        warning = parse_warning(event, loc_name)
-                        location_warnings[zone_key].append(warning)
+                for event in location.findall("event"):
+                    location_warnings[zone_key].append(parse_warning(event, loc_name))
 
         # Parse regular forecast by location
         regular_forecast = root.find("regularForecast")
@@ -177,23 +194,32 @@ def parse_marine_xml(xml_file):
 
             for location in regular_forecast.findall(".//location"):
                 loc_name = location.get("name", "")
-                if loc_name in ZONE_MAP:
-                    zone_key = ZONE_MAP[loc_name]
+                zone_key = slugify(loc_name)
+                if not zone_key:
+                    continue
 
-                    if zone_key not in result["locations"]:
-                        result["locations"][zone_key] = {
-                            "zone_name": loc_name,
-                            "warnings": location_warnings.get(zone_key, []),
-                        }
+                if zone_key not in result["locations"]:
+                    result["locations"][zone_key] = {
+                        "zone_name": loc_name,
+                        "warnings": location_warnings.get(zone_key, []),
+                    }
 
-                    result["locations"][zone_key]["issued_utc"] = issued_time
+                result["locations"][zone_key]["issued_utc"] = issued_time
 
-                    # Parse weather conditions
-                    condition = location.find(".//weatherCondition")
-                    if condition is not None:
-                        result["locations"][zone_key]["forecast"] = parse_weather_condition(condition)
+                # Parse weather conditions
+                condition = location.find(".//weatherCondition")
+                if condition is not None:
+                    result["locations"][zone_key]["forecast"] = parse_weather_condition(condition)
 
-        # Parse extended forecast (applies to all locations)
+        # A zone can carry a warning without appearing in the regular forecast
+        for zone_key, warnings in location_warnings.items():
+            if zone_key not in result["locations"]:
+                result["locations"][zone_key] = {
+                    "zone_name": warnings[0]["location"],
+                    "warnings": warnings,
+                }
+
+        # Parse extended forecast (applies to all locations in the area)
         extended = root.find("extendedForecast")
         if extended is not None:
             extended_periods = parse_extended_forecast(extended)
@@ -217,38 +243,69 @@ def parse_marine_xml(xml_file):
         return None
 
 
-def get_latest_xml_for_zone(zone_code="m0000028"):
-    """Find the most recent XML file for a given zone"""
-    xml_files = list(DATA_DIR.glob(f"*_MSC_MarineWeather_{zone_code}_en.xml"))
+def latest_file_per_zone():
+    """Map each zone code to its most recently modified XML file"""
+    newest = {}
 
-    if not xml_files:
-        return None
+    for xml_file in DATA_DIR.glob("*_MSC_MarineWeather_*_en.xml"):
+        match = FILENAME_RE.search(xml_file.name)
+        if not match:
+            continue
 
-    # Sort by modification time, newest first
-    xml_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
-    return xml_files[0]
+        zone_code = match.group("zone")
+        current = newest.get(zone_code)
+        if current is None or xml_file.stat().st_mtime > current.stat().st_mtime:
+            newest[zone_code] = xml_file
+
+    return newest
+
+
+def build_document():
+    """Parse every zone on disk into the {generated_utc, areas} document"""
+    areas = {}
+
+    for zone_code, xml_file in sorted(latest_file_per_zone().items()):
+        parsed = parse_marine_xml(xml_file, zone_code)
+        if parsed is None:
+            continue
+
+        area_key = slugify(parsed["area"])
+        existing = areas.get(area_key)
+
+        if existing is None:
+            areas[area_key] = parsed
+            continue
+
+        # Two zone codes describing the same area: merge their locations and
+        # keep the metadata from whichever file is newer.
+        logger.info(f"Merging {zone_code} into existing area '{area_key}'")
+        if (parsed.get("generated_utc") or "") > (existing.get("generated_utc") or ""):
+            merged_locations = {**existing["locations"], **parsed["locations"]}
+            parsed["locations"] = merged_locations
+            areas[area_key] = parsed
+        else:
+            existing["locations"].update(parsed["locations"])
+
+    generated = [a["generated_utc"] for a in areas.values() if a.get("generated_utc")]
+
+    return {
+        "generated_utc": max(generated) if generated else None,
+        "areas": dict(sorted(areas.items(), key=lambda kv: kv[1]["area"])),
+    }
 
 
 def main():
-    """Parse latest marine forecast XML and save as JSON"""
+    """Parse every marine forecast XML on disk and save as JSON"""
     logger.info("Starting marine forecast parser")
 
     if not DATA_DIR.exists():
         logger.error(f"Data directory not found: {DATA_DIR}")
         return
 
-    # Get latest XML for Strait of Georgia (contains both north and south)
-    latest_xml = get_latest_xml_for_zone("m0000028")
+    document = build_document()
 
-    if latest_xml is None:
-        logger.warning(f"No XML files found in {DATA_DIR}")
-        return
-
-    logger.info(f"Parsing {latest_xml.name}")
-    data = parse_marine_xml(latest_xml)
-
-    if data is None:
-        logger.error("Failed to parse XML")
+    if not document["areas"]:
+        logger.warning(f"No parsable marine forecast XML files in {DATA_DIR}")
         return
 
     # Write JSON output
@@ -256,15 +313,15 @@ def main():
         OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
         with open(OUTPUT_FILE, "w") as f:
-            json.dump(data, f, indent=2)
+            json.dump(document, f, indent=2)
 
-        logger.info(f"Wrote forecast data to {OUTPUT_FILE}")
+        logger.info(f"Wrote {len(document['areas'])} area(s) to {OUTPUT_FILE}")
 
         # Log summary
-        if data.get("locations"):
-            for zone_key, zone_data in data["locations"].items():
+        for area_key, area_data in document["areas"].items():
+            for zone_key, zone_data in area_data["locations"].items():
                 warnings = zone_data.get("warnings", [])
-                logger.info(f"  {zone_key}: {len(warnings)} warning(s)")
+                logger.info(f"  {area_key}/{zone_key}: {len(warnings)} warning(s)")
 
     except Exception as e:
         logger.error(f"Error writing JSON: {e}")

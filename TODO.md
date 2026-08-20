@@ -67,27 +67,120 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       line is the only thing stopping the download. So extra zones cost **zero
       HTTP requests** against the 86,400 guidance — they are a parser and UI
       question, not a policy one.
-      *Decided shape (user 2026-08-18): parse **all** the zones, and let the
-      reader select one* — the same pattern as the buoy and lightstation
-      pages, whose selectors group stations into region `<optgroup>`s
-      (`#lightstation-station-select` is the closest model). That answers the
-      wall-of-text problem: one zone rendered at a time, chosen deliberately,
-      rather than every zone stacked down the page.
-      *What it actually takes:* widen the `accept` regex, extend `ZONE_MAP`
-      in `scripts/parse/parse_marine_forecast.py` (keyed on the location name
-      in the XML, so each new zone needs its name learned), and restructure
-      `site/data/marine_forecast.json` — today it is one `area` with a
-      `locations` map inside it, which cannot hold Juan de Fuca and the Strait
-      of Georgia at once. Decide that shape before writing the parser: either
-      a file per area or a top-level `areas` map, and the selector groups by
-      area either way.
-      *Open question — the zone codes.* They are not in the sr3 log (rejected
-      files are not recorded at info level) and weather.gc.ca renders the
-      Georgia Basin zone list client-side, so neither gave them up. The clean
-      way to enumerate them is to widen `accept` on a throwaway subscription
-      for one cycle and read the filenames that arrive — the announcements are
-      already coming to us, so this needs no directory walking and no guessed
-      URLs (see the standing rule in `docs/DATA_FEEDS.md`).
+
+      **Done 2026-08-20 — the parser and UI side.** The pipeline no longer
+      cares how many zones arrive:
+      - `scripts/parse/parse_marine_forecast.py` parses *every* zone XML on
+        disk, newest file per zone code, into a top-level `areas` map.
+        `ZONE_MAP` is gone: area and zone keys are slugified straight from the
+        XML (`"Strait of Georgia - north of Nanaimo"` →
+        `strait_of_georgia_north_of_nanaimo`), so **a new zone needs no parser
+        edit at all** — only the `accept` regex. Two zone codes naming the
+        same area merge rather than clobber.
+      - `site/data/marine_forecast.json` is now
+        `{generated_utc, areas: {<area>: {locations: {<zone>: …}}}}`.
+      - `site/assets/js/forecasts.js` renders one zone at a time, chosen from
+        an `<optgroup>`-by-area `<select>` (`#forecast-zone-select`), with the
+        choice persisted in `localStorage` and overridable by URL hash.
+      - `site/assets/js/warning-banner.js` walks every area, so a warning in a
+        zone you have *not* selected still surfaces sitewide. This is what
+        makes one-zone-at-a-time safe; do not regress it.
+      - `tests/test_marine_forecast_parse.py` (13 tests) covers slugify,
+        unknown zones, warning-only zones, newest-file-per-zone, area merge,
+        and unparsable input.
+
+      *Still open — the zone codes.* Rejected files are not logged at info
+      level, and `sarracenia.flow.reject()` logs nothing at any level, so
+      widening `accept` is not the only route: `sarracenia/moth/amqp.py:579`
+      logs `new msg: <relPath>` for **every announced message** at debug,
+      before filtering. `logLevel debug` was set on `config/sr3/marine_forecast.conf`
+      on 2026-08-20 to enumerate the Pacific zone codes at the next issuance
+      with **zero downloads**. `~/marine_zone_watch.sh` runs detached (PPID 1,
+      no TTY, so it outlives the terminal) and **reverts `logLevel` to `info`
+      itself** — on success or on its 05:00 UTC deadline, which is deliberately
+      clear of the 07:17 cron commit. Results land in `~/marine_zone_codes.txt`,
+      progress in `~/marine_zone_watch.log`. Belt and braces: journald is
+      persistent here, so the codes stay recoverable from
+      `journalctl -u sr3-marine-forecast` even if the script dies. Delete the
+      script once the zone list is final. When the codes are in hand:
+      1. widen `accept` to the zones worth carrying,
+      2. gate the new zones behind a shared vetted-zone allowlist imported by
+         **both** `forecasts.js` and `warning-banner.js` — the banner is a
+         sitewide surface, so widening `accept` without it would publish
+         unvetted zones' warnings to every page,
+      3. update the zone count in `docs/DATA_FEEDS.md`.
+
+      *Still open — the layout, deferred by the user 2026-08-20.* Whether the
+      page keeps the one-zone-at-a-time dropdown (winds-style) or moves to
+      collapsible per-area sections (buoys/lightstations-style) is deliberately
+      **not decided until every zone is actually flowing** — with two zones the
+      wall-of-text tradeoff is theoretical. The dropdown stays in the meantime.
+      Note the two pages differ less than they look: every data page on the
+      site already uses a `<select>`; what buoys and lightstations add is that
+      *all* stations are also on the page as scannable cards, which works
+      because cards are dense and differentiable. Prose is neither.
+
+- [ ] **Forecasts page needs more flow** (user 2026-08-20, deferred): the page
+      is a long single scroll with nothing to move between its stops. But the
+      framing the user gave is the useful part, and it is not "add jump links":
+
+      > the top is **zone forecast**, wind, *text*; the second is **point
+      > forecast**, wind + wave, *graphical/tabular*.
+
+      That is the page's real information architecture — two forecasts that
+      differ on two axes at once, **spatial scope** (an EC marine area vs a
+      single point at Halibut Bank) and **representation** (prose vs data) —
+      and the page currently says neither out loud.
+
+      *The root problem is a missing label, not missing navigation.* Section two
+      has `<h2>🌊 Wave &amp; Wind Forecast — Halibut Bank</h2>`. Section one has
+      **no section heading whatsoever** — tagline, then straight into
+      `#forecast-zone-selector` and `#forecast-container`, where the only `<h2>`
+      is the *zone name* rendered by `forecasts.js`. So `<h2>` does double duty:
+      a section label in one place, a data value in the other. A reader is left
+      to infer "point forecast" from the words "Halibut Bank" appearing in one
+      heading. Fixing that is also a heading-hierarchy fix — see
+      `site/docs/ACCESSIBILITY_AUDIT.md`.
+
+      *Likely shape:* name the two sections for what they are — "Zone Forecast"
+      (with the zone name demoted to `<h3>` or folded into the selector) and
+      "Point Forecast — Halibut Bank" — and the jump nav then writes itself,
+      because there is finally something to jump *between*. Do the labels first
+      and re-judge whether a nav strip is even wanted; on a two-stop page it may
+      not be.
+
+      *Sequence it AFTER the dropdown-vs-sections layout call*, not before: a
+      jump nav and the zone `<select>` compete for the same top-of-page strip,
+      and if the page moves to per-area collapsible sections the anchors change
+      shape entirely.
+
+      *Watch the hash.* `resolveInitialZone()` in `forecasts.js` reads
+      `location.hash` and treats it as a zone key. A `#wave-forecast-section`
+      hash simply is not a zone key, so it falls through to the stored/default
+      zone and the anchor scroll still works — but that is a *coincidence of
+      namespaces*, not a design. Any jump nav sharing the hash with zone deep
+      links needs that overlap made explicit (prefix the zone hashes, or route
+      both through one handler), or a future zone slug will collide with a
+      section id and silently change which zone the page opens on.
+
+- [ ] **Subscribable warning banners** (user 2026-08-20): let the reader choose
+      *which* zones' warnings raise the sitewide banner, instead of all of them.
+      This follows directly from carrying every Pacific zone. Today
+      `collectActiveWarnings` in `site/assets/js/warning-banner.js` walks every
+      area deliberately — that is what makes the forecasts page safe to show one
+      zone at a time, since a gale two zones over still surfaces. But once the
+      feed carries the west coast of Vancouver Island and Queen Charlotte Sound,
+      the same behaviour banners a boat in the Strait of Georgia about water it
+      will never see, and a banner that cries wolf is a banner people dismiss on
+      reflex — which costs exactly the warning that mattered.
+      *Shape:* the same `localStorage` pattern the banner already uses for
+      dismissals, and the forecasts page now uses for zone choice
+      (`selected_marine_zone`). Probably a checklist of zones, defaulting to
+      **all zones on** — opting *out* of a marine warning must be a deliberate
+      act, never a default. Severity is a possible second axis (storm always
+      banners regardless of zone), but zone is the one that matters first.
+      *Do not* start this before the zone list is final — the whole point is
+      tailoring a list that does not exist yet.
 
 - [ ] **Revisit whether the repo should stay public** (user 2026-08-17):
       decide deliberately rather than by inertia. Audience today is one

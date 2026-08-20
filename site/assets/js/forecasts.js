@@ -9,6 +9,118 @@
 import { formatForecastTimestamp } from "./shared/format-time.js";
 
 let forecastData = null;
+let selectedZoneKey = null;
+
+// Display-only metadata. The parser no longer keeps a zone map — keys are
+// slugified from the XML — so anything missing here simply renders without a
+// source link rather than dropping the zone.
+const ZONE_SITE_IDS = {
+  strait_of_georgia_north_of_nanaimo: 14301,
+  strait_of_georgia_south_of_nanaimo: 14305,
+};
+
+// Halibut Bank sits in this zone, so it is what the page opens on.
+const DEFAULT_ZONE_KEY = "strait_of_georgia_south_of_nanaimo";
+const ZONE_STORAGE_KEY = "selected_marine_zone";
+
+/**
+ * Flatten the {areas: {locations: {}}} document into a selectable zone list.
+ * @returns {Array<Object>} [{zoneKey, zoneName, areaKey, areaName, zoneData, areaData}]
+ */
+function listZones() {
+  if (!forecastData || !forecastData.areas) return [];
+
+  const zones = [];
+  for (const [areaKey, areaData] of Object.entries(forecastData.areas)) {
+    for (const [zoneKey, zoneData] of Object.entries(areaData.locations || {})) {
+      zones.push({
+        zoneKey,
+        zoneName: zoneData.zone_name || zoneKey.replace(/_/g, " "),
+        areaKey,
+        areaName: areaData.area || areaKey.replace(/_/g, " "),
+        zoneData,
+        areaData,
+      });
+    }
+  }
+  return zones;
+}
+
+/**
+ * Pick the zone to show: URL hash, then last choice, then the default.
+ * @param {Array<Object>} zones - Zone list from listZones()
+ * @returns {string|null} Zone key
+ */
+function resolveInitialZone(zones) {
+  const keys = zones.map((z) => z.zoneKey);
+  if (keys.length === 0) return null;
+
+  const hashKey = window.location.hash.slice(1);
+  if (keys.includes(hashKey)) return hashKey;
+
+  let stored = null;
+  try {
+    stored = localStorage.getItem(ZONE_STORAGE_KEY);
+  } catch (error) {
+    logger.warn("Forecasts", "Could not read stored zone", error);
+  }
+  if (stored && keys.includes(stored)) return stored;
+
+  return keys.includes(DEFAULT_ZONE_KEY) ? DEFAULT_ZONE_KEY : keys[0];
+}
+
+/**
+ * Populate the zone <select>, grouping zones into <optgroup>s by area.
+ * @param {Array<Object>} zones - Zone list from listZones()
+ */
+function buildZoneSelector(zones) {
+  const wrapper = document.getElementById("forecast-zone-selector");
+  const select = document.getElementById("forecast-zone-select");
+  if (!wrapper || !select) return;
+
+  // A single zone is not worth a picker.
+  if (zones.length < 2) {
+    wrapper.hidden = true;
+    return;
+  }
+
+  const byArea = new Map();
+  zones.forEach((zone) => {
+    if (!byArea.has(zone.areaName)) byArea.set(zone.areaName, []);
+    byArea.get(zone.areaName).push(zone);
+  });
+
+  select.textContent = "";
+  for (const [areaName, areaZones] of byArea) {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = areaName;
+
+    areaZones.forEach((zone) => {
+      const option = document.createElement("option");
+      option.value = zone.zoneKey;
+      option.textContent = zone.zoneName;
+      optgroup.appendChild(option);
+    });
+
+    select.appendChild(optgroup);
+  }
+
+  select.value = selectedZoneKey;
+  wrapper.hidden = false;
+
+  if (!select.dataset.listenerAttached) {
+    select.addEventListener("change", (event) => {
+      selectedZoneKey = event.target.value;
+      try {
+        localStorage.setItem(ZONE_STORAGE_KEY, selectedZoneKey);
+      } catch (error) {
+        logger.warn("Forecasts", "Could not store zone selection", error);
+      }
+      displayForecasts();
+    });
+    select.dataset.listenerAttached = "true";
+  }
+}
 
 function setSafeHTML(element, html) {
   if (!element) return;
@@ -77,10 +189,18 @@ function checkFreshness() {
 function displayForecasts() {
   const container = document.getElementById("forecast-container");
 
-  if (!forecastData || !forecastData.locations) {
+  const zones = listZones();
+  if (zones.length === 0) {
     container.innerHTML = '<div class="error-state"><p>No forecast data available.</p></div>';
     return;
   }
+
+  if (!zones.some((z) => z.zoneKey === selectedZoneKey)) {
+    selectedZoneKey = resolveInitialZone(zones);
+  }
+  buildZoneSelector(zones);
+
+  const zone = zones.find((z) => z.zoneKey === selectedZoneKey);
 
   let html = "";
 
@@ -94,22 +214,13 @@ function displayForecasts() {
     `;
   }
 
-  // Display each zone
-  const zones = [
-    { key: "strait_georgia_north", priority: 1 },
-    { key: "strait_georgia_south", priority: 2 },
-  ];
+  // Display the selected zone only
+  html += renderZoneForecast(zone.zoneKey, zone.zoneData, zone.areaData);
 
-  zones.forEach((zone) => {
-    const zoneData = forecastData.locations[zone.key];
-    if (zoneData) {
-      html += renderZoneForecast(zone.key, zoneData);
-    }
-  });
-
-  // Display extended forecast (shared across zones)
-  if (forecastData.extended_forecast && forecastData.extended_forecast.length > 0) {
-    html += renderExtendedForecast(forecastData.extended_forecast);
+  // Display extended forecast (shared across the zones of this area)
+  const extended = zone.areaData.extended_forecast;
+  if (extended && extended.length > 0) {
+    html += renderExtendedForecast(extended, zone.areaData);
   }
 
   setSafeHTML(container, html);
@@ -121,15 +232,14 @@ function displayForecasts() {
  * @param {Object} zoneData - Zone forecast data
  * @returns {string} HTML string
  */
-function renderZoneForecast(zoneKey, zoneData) {
+function renderZoneForecast(zoneKey, zoneData, areaData) {
   const zoneName = zoneData.zone_name || zoneKey.replace(/_/g, " ");
 
-  // Get source link for this zone
-  const sourceLinks = {
-    strait_georgia_north: "https://weather.gc.ca/marine/forecast_e.html?mapID=03&siteID=14301",
-    strait_georgia_south: "https://weather.gc.ca/marine/forecast_e.html?mapID=03&siteID=14305",
-  };
-  const sourceLink = sourceLinks[zoneKey];
+  // Get source link for this zone (omitted for zones we have no siteID for)
+  const siteId = ZONE_SITE_IDS[zoneKey];
+  const sourceLink = siteId
+    ? `https://weather.gc.ca/marine/forecast_e.html?mapID=03&siteID=${siteId}`
+    : null;
 
   let html = `
     <div class="forecast-zone" id="${zoneKey}">
@@ -181,19 +291,19 @@ function renderZoneForecast(zoneKey, zoneData) {
   }
 
   // Wave forecast (if present)
-  if (forecastData.wave_forecast) {
+  if (areaData.wave_forecast) {
     html += `
       <div class="forecast-section">
         <h3>🌊 Wave Forecast</h3>
         <div class="forecast-content">
     `;
 
-    if (forecastData.wave_forecast.period) {
-      html += `<div class="forecast-period"><strong>Period:</strong> ${forecastData.wave_forecast.period}</div>`;
+    if (areaData.wave_forecast.period) {
+      html += `<div class="forecast-period"><strong>Period:</strong> ${areaData.wave_forecast.period}</div>`;
     }
 
-    if (forecastData.wave_forecast.forecast) {
-      html += `<div class="forecast-period">${forecastData.wave_forecast.forecast}</div>`;
+    if (areaData.wave_forecast.forecast) {
+      html += `<div class="forecast-period">${areaData.wave_forecast.forecast}</div>`;
     }
 
     html += `
@@ -245,7 +355,7 @@ function renderWarningCard(warning) {
  * @param {Array} extendedForecast - Extended forecast periods
  * @returns {string} HTML string
  */
-function renderExtendedForecast(extendedForecast) {
+function renderExtendedForecast(extendedForecast, areaData) {
   let html = `
     <div class="forecast-zone">
       <h2>📆 Extended Forecast</h2>
@@ -266,8 +376,8 @@ function renderExtendedForecast(extendedForecast) {
   `;
 
   // Add issued timestamp if available
-  if (forecastData && forecastData.generated_utc) {
-    const issuedDate = new Date(forecastData.generated_utc);
+  if (areaData && areaData.generated_utc) {
+    const issuedDate = new Date(areaData.generated_utc);
     html += `
       <div class="forecast-metadata">
         <strong>Issued:</strong> ${formatForecastTimestamp(issuedDate)}

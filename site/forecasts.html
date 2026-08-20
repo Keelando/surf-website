@@ -38,6 +38,34 @@
     /* The text forecasts are a wall of prose — the whole page is words. The
        spacing below is deliberately tighter than the site default so a zone
        fits a phone screen instead of costing three scrolls of padding. */
+    /* One zone at a time, chosen deliberately — EC publishes every Pacific
+       zone and stacking them all down the page was the wall-of-text problem
+       this selector exists to solve. Grouped by area, same shape as the
+       lightstation station picker. */
+    .forecast-zone-selector {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .forecast-zone-selector label {
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .forecast-zone-selector select {
+      flex: 1 1 18rem;
+      max-width: 32rem;
+      padding: 0.45rem 0.6rem;
+      font-size: 1rem;
+      color: var(--color-text);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-light);
+      border-radius: 6px;
+    }
+
     .forecast-zone {
       background: var(--color-surface);
       border: 1px solid var(--color-border-light);
@@ -575,6 +603,13 @@
   <div hx-get="/components/tagline-forecasts.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
 
   <div class="forecast-main-content">
+    <div id="forecast-zone-selector" class="forecast-zone-selector" hidden>
+      <label for="forecast-zone-select">Marine zone:</label>
+      <select id="forecast-zone-select">
+        <option value="">Loading zones...</option>
+      </select>
+    </div>
+
     <div id="forecast-container">
       <div class="loading-state">
         <p>Loading marine forecasts...</p>
@@ -752,12 +787,12 @@
 
   <!-- Load logger first for global availability -->
   <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
-  <script src="/assets/js/warning-banner.js?v=7fa71bd458"></script>
+  <script src="/assets/js/warning-banner.js?v=cc4bfa68f6"></script>
   <script src="/assets/vendor/echarts.min.js?v=968b4d8c55"></script>
   <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/chart-utils-v4.js?v=401977606f"></script>
-  <script type="module" src="/assets/js/forecasts.js?v=be0fc2b600"></script>
+  <script type="module" src="/assets/js/forecasts.js?v=4041c252d4"></script>
   <script type="module" src="/assets/js/wave-forecast.js?v=f2b658db65"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>

@@ -203,19 +203,25 @@ async function displayWarningBanners(containerId = "warning-banner-container") {
 function collectActiveWarnings(data) {
   const warnings = [];
 
-  if (!data.locations) return warnings;
+  if (!data.areas) return warnings;
 
-  for (const [zoneKey, zoneData] of Object.entries(data.locations)) {
-    if (zoneData.warnings && Array.isArray(zoneData.warnings)) {
-      zoneData.warnings.forEach((warning) => {
-        if (warning.status === "IN EFFECT") {
-          warnings.push({
-            ...warning,
-            zone_key: zoneKey,
-            zone_name: zoneData.zone_name || warning.location,
-          });
-        }
-      });
+  // The banner is on every page and deliberately spans every area — the
+  // forecasts page shows one zone at a time, but a warning anywhere in the
+  // Salish Sea should still surface here.
+  for (const areaData of Object.values(data.areas)) {
+    for (const [zoneKey, zoneData] of Object.entries(areaData.locations || {})) {
+      if (zoneData.warnings && Array.isArray(zoneData.warnings)) {
+        zoneData.warnings.forEach((warning) => {
+          if (warning.status === "IN EFFECT") {
+            warnings.push({
+              ...warning,
+              zone_key: zoneKey,
+              zone_name: zoneData.zone_name || warning.location,
+              area_name: areaData.area || "",
+            });
+          }
+        });
+      }
     }
   }
 
