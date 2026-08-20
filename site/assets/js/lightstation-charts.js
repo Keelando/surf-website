@@ -225,6 +225,19 @@ function showNoDataMessage(stationName) {
 }
 
 /**
+ * Width available to a chart's title, in pixels.
+ *
+ * ECharts does not wrap title text on its own; it needs an explicit width, and
+ * the only honest source for that is the instance's current canvas.
+ *
+ * @param {Object} chart - ECharts instance
+ * @returns {number} Usable title width
+ */
+function chartWidth(chart) {
+  return Math.max(120, (chart?.getWidth?.() || 320) - 16);
+}
+
+/**
  * Select a station in the dropdown, render its charts, and scroll to the
  * data section. Called from page cards (by name) and map popups (by ID).
  * Moved here from lightstation-page.js/lightstation-map.js, which each
@@ -420,11 +433,15 @@ function renderWindSpeedChart(stationName, station) {
       },
     },
     grid: {
-      left: "15%",
-      right: "4%",
+      // containLabel reserves the tick labels; `left` then only has to leave
+      // room for the rotated axis name outside them (nameGap 40 below), and
+      // `right` comes from the site-wide gutter. The old 15%/4% pair spent
+      // 120 px of a 800 px chart on blank margin.
+      left: 30,
+      right: getChartSideGutters().right,
       bottom: "22%",
       top: "20%",
-      containLabel: false,
+      containLabel: true,
     },
     xAxis: {
       type: "time",
@@ -441,6 +458,10 @@ function renderWindSpeedChart(stationName, station) {
         formatter: (value) => formatNumericDayTime(new Date(value)).replace(" ", "\n"),
         fontSize: 12,
         color: mutedText,
+        // The wider plot area (see the grid above) fits more ticks, and a
+        // two-line date label runs into its neighbour long before ECharts'
+        // default single-line collision check notices.
+        hideOverlap: true,
       },
       axisLine: { lineStyle: { color: axisColor } },
     },
@@ -448,7 +469,7 @@ function renderWindSpeedChart(stationName, station) {
       type: "value",
       name: "Wind Speed (kt)",
       nameLocation: "middle",
-      nameGap: 35,
+      nameGap: 40,
       nameTextStyle: {
         fontSize: 13,
         fontWeight: 600,
@@ -571,6 +592,11 @@ function renderWaveHeightChart(stationName, station) {
         fontSize: 18,
         fontWeight: 600,
         color: textColor,
+        // A centred one-line title longer than the canvas is clipped at both
+        // ends — "MERRY ISLAND - Sea State (Wave Heig" — so let it wrap to the
+        // chart's own width instead.
+        width: chartWidth(waveHeightChart),
+        overflow: "break",
       },
     },
     tooltip: {
@@ -597,11 +623,15 @@ function renderWaveHeightChart(stationName, station) {
       },
     },
     grid: {
-      left: "15%",
-      right: "4%",
+      // containLabel reserves the tick labels; `left` then only has to leave
+      // room for the rotated axis name outside them (nameGap 40 below), and
+      // `right` comes from the site-wide gutter. The old 15%/4% pair spent
+      // 120 px of a 800 px chart on blank margin.
+      left: 30,
+      right: getChartSideGutters().right,
       bottom: "22%",
       top: "20%",
-      containLabel: false,
+      containLabel: true,
     },
     xAxis: {
       type: "time",
@@ -618,6 +648,10 @@ function renderWaveHeightChart(stationName, station) {
         formatter: (value) => formatNumericDayTime(new Date(value)).replace(" ", "\n"),
         fontSize: 12,
         color: mutedText,
+        // The wider plot area (see the grid above) fits more ticks, and a
+        // two-line date label runs into its neighbour long before ECharts'
+        // default single-line collision check notices.
+        hideOverlap: true,
       },
       axisLine: { lineStyle: { color: axisColor } },
     },
@@ -625,7 +659,7 @@ function renderWaveHeightChart(stationName, station) {
       type: "value",
       name: "Wave Height (ft)",
       nameLocation: "middle",
-      nameGap: 35,
+      nameGap: 40,
       nameTextStyle: {
         fontSize: 13,
         fontWeight: 600,
@@ -693,10 +727,13 @@ function renderWaveHeightChart(stationName, station) {
 // parsed; the "show on map" button listener lives in lightstation-page.js)
 loadLightstationTimeseries();
 
-// Handle window resize
+// Handle window resize. The wave chart's title wraps at a pixel width taken
+// from the canvas, so a resize has to re-render it, not just resize it —
+// otherwise a phone rotated to landscape keeps the narrow wrap point.
 window.addEventListener("resize", () => {
   if (windSpeedChart) windSpeedChart.resize();
   if (waveHeightChart) waveHeightChart.resize();
+  if (currentLightstationStation) renderLightstationCharts(currentLightstationStation);
 });
 
 function ensureLightstationThemeListener() {

@@ -12,13 +12,13 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://halibutbank.ca/guide.html" />
   <link rel="canonical" href="https://halibutbank.ca/guide.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=a1c341be43" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=0a8bfbc99e" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=4d9c167a33" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=bdc102248e" />
   <style>
     .guide-wrap {
       max-width: 800px;
       margin: 2rem auto;
-      padding: 0 1.5rem 3rem;
+      padding: 0 max(0.85rem, var(--page-gutter)) 3rem;
     }
 
     .guide-wrap h2 {
@@ -127,11 +127,6 @@
     }
 
     @media (max-width: 600px) {
-      /* Give the content area more room so tables fit the screen */
-      .guide-wrap {
-        padding: 0 0.85rem 3rem;
-      }
-
       /* Reflow data tables into stacked cards so descriptions get the
          full screen width instead of being squished into narrow columns */
       .table-scroll {
@@ -460,7 +455,7 @@
 
   <div hx-get="/components/footer.html?v=4" hx-trigger="load" hx-swap="outerHTML"></div>
 
-  <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=401977606f"></script>
   <script type="module" src="/assets/js/guide.js?v=c635da03e6"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>

@@ -548,8 +548,7 @@ export function displayTideChart(
       textStyle: { fontSize: 10, color: textColor },
     },
     grid: {
-      left: window.innerWidth < 600 ? "8%" : "8%",
-      right: window.innerWidth < 600 ? "4%" : "6%",
+      ...getChartSideGutters(),
       top: "10%",
       bottom: "22%",
       containLabel: true,

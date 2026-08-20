@@ -20,15 +20,15 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/storm_surge.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=a1c341be43" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=0a8bfbc99e" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=4d9c167a33" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=bdc102248e" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=32d9218449" />
 
   <style>
     .storm-surge-content {
       max-width: 1400px;
       margin: 2rem auto;
-      padding: 0 1rem;
+      padding: 0 var(--page-gutter);
     }
 
     .section-container {
@@ -110,6 +110,34 @@
       line-height: 1.6;
     }
 
+    /* Model information: summary in the open, the rest behind a disclosure.
+       Same idiom as the station caveat notes on winds.html. */
+    .model-summary {
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .model-details > summary {
+      cursor: pointer;
+      width: fit-content;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      color: var(--color-accent-blue);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .model-details > summary:hover,
+    .model-details > summary:focus-visible {
+      background: var(--color-callout-info-bg);
+    }
+
+    /* Indented under the summary so the open panel reads as its contents
+       rather than as more page. */
+    .model-details[open] > *:not(summary) {
+      margin-left: 0.5rem;
+    }
+
     .warning-box {
       background: var(--color-callout-warning-bg);
       border-left: 4px solid var(--color-callout-warning-border);
@@ -137,6 +165,19 @@
 
       .chart-container {
         height: 400px;
+      }
+    }
+
+    /* Phones: the card keeps a visible edge but stops spending a fifth of
+       the screen on padding — the chart inside gets that width instead. */
+    @media (max-width: 600px) {
+      .section-container {
+        padding: 1rem 0.5rem;
+      }
+
+      .info-box,
+      .warning-box {
+        padding: 0.75rem 0.85rem;
       }
     }
 
@@ -225,7 +266,9 @@
          time and run hour in this copy were also wrong; see
          site/docs/VERIFICATION_METHODOLOGY.md. -->
     <section class="section-container">
-      <h2>Forecast Verification</h2>
+      <!-- The window is appended by storm_surge_page.js once it knows how
+           many days of archive there actually are. -->
+      <h2 id="verification-heading">Forecast Verification</h2>
 
       <div class="info-box">
         <h3>About this chart</h3>
@@ -251,22 +294,19 @@
       <div id="verification-metadata" class="metadata-display"></div>
     </section>
 
-    <!-- Model Information -->
+    <!-- Model Information.
+         A two-sentence summary plus the wave-action caveat stay in the open;
+         the full description and the specifications sit behind a disclosure.
+         The caveat is deliberately *outside* it — it is the one thing here a
+         reader can be harmed by not seeing, so it must not be a click away. -->
     <section class="section-container">
       <h2>Model Information</h2>
 
-      <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 1.1rem;">About GDSPS</h3>
-      <p style="line-height: 1.6;">
-        The <strong>Global Deterministic Storm Surge Prediction System (GDSPS)</strong> is Environment Canada's operational
-        ocean model that forecasts storm surge conditions worldwide. The system generates 10-day (240-hour) predictions of water
-        level changes caused by atmospheric conditions including wind stress and barometric pressure. Running on a high-resolution
-        grid (approximately 3-9 km spacing), the model integrates atmospheric forcing data with ocean dynamics to predict how
-        weather patterns will affect coastal water levels.
-      </p>
-      <p style="line-height: 1.6; margin-top: 0.75rem;">
-        The model separates storm surge (weather-driven water level changes) from astronomical tides through harmonic analysis,
-        allowing forecasters and coastal communities to see how much higher or lower water will be compared to normal tide predictions.
-        This separation is crucial for coastal flood planning and marine safety.
+      <p class="model-summary">
+        These forecasts come from <strong>GDSPS</strong>, Environment Canada's global storm
+        surge model. It predicts how far wind and barometric pressure will push water
+        levels above or below the astronomical tide — 10 days ahead, on a 3–9 km grid,
+        re-run twice a day.
       </p>
 
       <div class="warning-box">
@@ -277,18 +317,35 @@
         </p>
       </div>
 
-      <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 1.1rem;">Technical Details</h3>
-      <p><strong>Provider:</strong> Environment and Climate Change Canada</p>
-      <p><strong>Resolution:</strong> 1/12° (3-9 km)</p>
-      <p><strong>Update Frequency:</strong> Twice daily (00Z and 12Z model runs)</p>
-      <p><strong>Data Availability:</strong> Forecasts typically published ~6 hours after model initialization</p>
-      <p><strong>Forecast Horizon:</strong> 10 days (240 hours)</p>
+      <details class="model-details">
+        <summary>How the model works, and its specifications</summary>
 
-      <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--color-text-muted);">
-        More information:
-        <a href="https://eccc-msc.github.io/open-data/msc-data/nwp_gdsps/readme_gdsps_en/" target="_blank" style="color: var(--color-accent-blue);">GDSPS Documentation</a> |
-        <a href="https://open.canada.ca/data/en/dataset/d244c9fa-776f-446f-9ccf-1d575cc21a5c" target="_blank" style="color: var(--color-accent-blue);">Open Canada Dataset</a>
-      </p>
+        <p style="line-height: 1.6;">
+          The <strong>Global Deterministic Storm Surge Prediction System (GDSPS)</strong> is Environment Canada's operational
+          ocean model that forecasts storm surge conditions worldwide. The system generates 10-day (240-hour) predictions of water
+          level changes caused by atmospheric conditions including wind stress and barometric pressure. Running on a high-resolution
+          grid (approximately 3-9 km spacing), the model integrates atmospheric forcing data with ocean dynamics to predict how
+          weather patterns will affect coastal water levels.
+        </p>
+        <p style="line-height: 1.6; margin-top: 0.75rem;">
+          The model separates storm surge (weather-driven water level changes) from astronomical tides through harmonic analysis,
+          allowing forecasters and coastal communities to see how much higher or lower water will be compared to normal tide predictions.
+          This separation is crucial for coastal flood planning and marine safety.
+        </p>
+
+        <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 1.1rem;">Technical Details</h3>
+        <p><strong>Provider:</strong> Environment and Climate Change Canada</p>
+        <p><strong>Resolution:</strong> 1/12° (3-9 km)</p>
+        <p><strong>Update Frequency:</strong> Twice daily (00Z and 12Z model runs)</p>
+        <p><strong>Data Availability:</strong> Forecasts typically published ~6 hours after model initialization</p>
+        <p><strong>Forecast Horizon:</strong> 10 days (240 hours)</p>
+
+        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--color-text-muted);">
+          More information:
+          <a href="https://eccc-msc.github.io/open-data/msc-data/nwp_gdsps/readme_gdsps_en/" target="_blank" style="color: var(--color-accent-blue);">GDSPS Documentation</a> |
+          <a href="https://open.canada.ca/data/en/dataset/d244c9fa-776f-446f-9ccf-1d575cc21a5c" target="_blank" style="color: var(--color-accent-blue);">Open Canada Dataset</a>
+        </p>
+      </details>
     </section>
   </div>
 
@@ -308,8 +365,8 @@
   <!-- Load logger first for global availability -->
   <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
   <script src="/assets/js/warning-banner.js?v=7fa71bd458"></script>
-  <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
-  <script type="module" src="/assets/js/storm_surge_page.js?v=d0c85938c6"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=401977606f"></script>
+  <script type="module" src="/assets/js/storm_surge_page.js?v=9bd22a6a68"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

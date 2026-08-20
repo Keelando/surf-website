@@ -296,32 +296,53 @@ function formatCompactTimeLabel(isoString) {
 }
 
 /**
+ * Horizontal gutters for a chart grid, in pixels — the single source of truth
+ * for how much width every chart on the site gives away at its left and right
+ * edges.
+ *
+ * Pixels, not percent, and deliberately small. These sit *outside* the axis
+ * labels (every caller pairs them with `containLabel: true`, which already
+ * reserves the label's own width), so they are pure margin. A percentage
+ * spends the most where there is the least to spend: 8% each side of a 360 px
+ * phone chart is 58 px of blank paper, while the same 8% on a 1200 px desktop
+ * chart is a gutter nobody minds. A fixed handful of pixels keeps the plot
+ * area as wide as the screen allows and still leaves room for the first and
+ * last x-axis label to overhang.
+ *
+ * @returns {{left: number, right: number}}
+ */
+function getChartSideGutters() {
+  return window.innerWidth < 600 ? { left: 4, right: 10 } : { left: 8, right: 16 };
+}
+
+/**
  * Get responsive grid configuration based on screen width
  * @param {boolean} isComparisonChart - Whether this is for the comparison chart (needs more bottom space)
  */
 function getResponsiveGridConfig(isComparisonChart = false) {
   const width = window.innerWidth;
+  const { left, right } = getChartSideGutters();
 
   if (width < 600) {
     return {
-      left: "8%",
-      right: "8%",
+      left,
+      right,
       top: "15%",
       bottom: isComparisonChart ? "28%" : "22%",
       containLabel: true,
     };
   } else if (width < 1000) {
     return {
-      left: "10%",
-      right: "10%",
+      left,
+      right,
       top: "12%",
       bottom: isComparisonChart ? "20%" : "16%",
       containLabel: true,
     };
   } else {
     return {
-      left: "8%",
-      right: "8%",
+      left,
+      right,
       top: "10%",
       bottom: isComparisonChart ? "16%" : "10%",
       containLabel: true,

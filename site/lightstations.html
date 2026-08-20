@@ -20,8 +20,8 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/lightstations.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=a1c341be43" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=0a8bfbc99e" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=4d9c167a33" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=bdc102248e" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=32d9218449" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=e3bcc6721f" />
 
@@ -232,6 +232,15 @@
       text-align: center;
     }
 
+    /* Page-level sections: same max width and the shared page gutter, so the
+       map and chart get the full screen width on a phone. Was an inline
+       style repeated on both sections. */
+    .ls-section {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 var(--page-gutter);
+    }
+
     /* Lightstation selector card */
     .ls-selector {
       background: var(--color-surface);
@@ -373,7 +382,7 @@
     </section>
 
     <!-- Lightstation Map Section -->
-    <section id="lightstation-map-section" style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem;">
+    <section id="lightstation-map-section" class="ls-section">
       <h2>Lightstation Locations</h2>
       <div class="map-legend" style="text-align: center; margin-bottom: 1rem;">
         <span class="legend-item">
@@ -431,7 +440,7 @@
     </section>
 
     <!-- Lightstation Charts Section (Optional - sparse data) -->
-    <section id="lightstation-chart-section" style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem;">
+    <section id="lightstation-chart-section" class="ls-section">
       <h2>24-Hour Trend Charts</h2>
       <p style="text-align: center; color: var(--color-text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; font-style: italic;">
         Note: Charts show limited data points due to 3-hour reporting intervals
@@ -469,7 +478,7 @@
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
   <script src="/assets/js/warning-banner.js?v=7fa71bd458"></script>
-  <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=401977606f"></script>
   <!-- Single module entry point: imports (and thereby runs) lightstation-charts.js
        and lightstation-map.js. They must NOT get their own script tags — the ?v=
        query would differ from the bare import specifier and the browser would

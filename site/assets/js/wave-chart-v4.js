@@ -216,8 +216,7 @@ function renderSpectralCharts(waveChart, buoy, ts, theme) {
         textStyle: { color: textColor },
       },
       grid: {
-        left: window.innerWidth < 600 ? "12%" : "10%",
-        right: window.innerWidth < 600 ? "12%" : "10%",
+        ...getChartSideGutters(),
         top: "15%",
         bottom: "22%",
         containLabel: true,
@@ -417,8 +416,7 @@ function renderSpectralCharts(waveChart, buoy, ts, theme) {
           textStyle: { color: textColor },
         },
         grid: {
-          left: window.innerWidth < 600 ? "12%" : "10%",
-          right: window.innerWidth < 600 ? "12%" : "10%",
+          ...getChartSideGutters(),
           top: "15%",
           bottom: "22%",
           containLabel: true,

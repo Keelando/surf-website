@@ -1011,6 +1011,33 @@ function renderVerificationMode() {
 }
 
 /**
+ * Name the window the verification panel covers, in the heading itself.
+ *
+ * The exporter owns the window length, so the heading reads it from the
+ * payload rather than restating 48 h in the markup — a heading that had to be
+ * hand-edited whenever the export changed is a heading that would eventually
+ * be wrong. Hours up to three days, days beyond that, because "last 168 hours"
+ * is not how anyone thinks about a week.
+ *
+ * @returns {void}
+ */
+function renderVerificationHeading() {
+  const heading = document.getElementById("forecast-verification-heading");
+  const hours = currentVerification?.window_hours;
+  if (!heading || !hours) return;
+
+  const span =
+    hours <= 72
+      ? `${hours} hour${hours === 1 ? "" : "s"}`
+      : (() => {
+          const days = Math.round(hours / 24);
+          return `${days} day${days === 1 ? "" : "s"}`;
+        })();
+
+  heading.textContent = `Forecast Verification — Last ${span}`;
+}
+
+/**
  * Caption the verification panel: what the dashed line actually is.
  *
  * The lead band comes from the payload rather than being written here — the
@@ -1022,6 +1049,8 @@ function renderVerificationMode() {
 function renderVerificationMetadata() {
   const el = document.getElementById("forecast-verification-metadata");
   if (!el || !currentVerification) return;
+
+  renderVerificationHeading();
 
   const band = currentVerification.lead_band || {};
   const min = band.min_hours ?? 19;
@@ -1113,14 +1142,25 @@ function renderStationPicker(stations) {
 }
 
 /**
- * Set the section heading to the station being shown.
+ * Set the section heading to the station being shown, and point the map link
+ * at it.
+ *
+ * The map link uses the same `/?station=<id>#map-section` form the webcam
+ * cards and buoy cards use — the home-page map keys its markers by the station
+ * id in stations.json, which is the id the forecast files are named for.
  *
  * @param {string} stationName
+ * @param {string} stationId
  * @returns {void}
  */
-function renderHeading(stationName) {
+function renderHeading(stationName, stationId) {
   const heading = document.getElementById("wave-forecast-heading");
   if (heading) heading.textContent = `🌊 Wave & Wind Forecast — ${stationName}`;
+
+  const mapLink = document.getElementById("wave-forecast-map-link");
+  if (mapLink && stationId) {
+    mapLink.href = `/?station=${encodeURIComponent(stationId)}#map-section`;
+  }
 }
 
 /**
@@ -1165,7 +1205,7 @@ async function loadWaveForecast() {
     if (rows.length === 0) throw new Error("No forecast steps in payload");
 
     currentRows = rows;
-    renderHeading(payload.station_name);
+    renderHeading(payload.station_name, payload.station_id || currentStationId);
     renderForecastMode(rows);
     renderTable(rows);
     renderMetadata(payload, rows);

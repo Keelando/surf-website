@@ -20,8 +20,8 @@
   <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
 
   <link rel="canonical" href="https://halibutbank.ca/forecasts.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=a1c341be43" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=0a8bfbc99e" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=4d9c167a33" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=bdc102248e" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=32d9218449" />
 
   <style>
@@ -32,34 +32,39 @@
     .forecast-main-content {
       max-width: 1200px;
       margin: 2rem auto;
-      padding: 0 1rem;
+      padding: 0 var(--page-gutter);
     }
 
+    /* The text forecasts are a wall of prose — the whole page is words. The
+       spacing below is deliberately tighter than the site default so a zone
+       fits a phone screen instead of costing three scrolls of padding. */
     .forecast-zone {
       background: var(--color-surface);
       border: 1px solid var(--color-border-light);
       border-radius: 8px;
-      padding: 2rem;
-      margin-bottom: 2rem;
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1.25rem;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     .forecast-zone h2 {
       margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-size: 1.3rem;
       color: var(--color-primary-dark);
       border-bottom: 3px solid var(--color-accent-blue);
-      padding-bottom: 0.5rem;
+      padding-bottom: 0.35rem;
     }
 
     .zone-warnings {
-      margin: 1.5rem 0;
+      margin: 0.75rem 0;
     }
 
     .warning-card {
       background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
       border-left: 4px solid #d97706;
-      padding: 1rem 1.5rem;
-      margin-bottom: 1rem;
+      padding: 0.6rem 0.9rem;
+      margin-bottom: 0.5rem;
       border-radius: 4px;
     }
 
@@ -74,9 +79,9 @@
     }
 
     .warning-card h3 {
-      margin: 0 0 0.5rem 0;
+      margin: 0 0 0.25rem 0;
       color: #78350f;
-      font-size: 1.1rem;
+      font-size: 1rem;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -89,17 +94,18 @@
 
     .warning-card p {
       margin: 0;
+      font-size: 0.9rem;
       color: #451a03;
     }
 
     .forecast-section {
-      margin: 1.5rem 0;
+      margin: 0.9rem 0;
     }
 
     .forecast-section h3 {
       color: var(--color-text);
-      margin-bottom: 0.75rem;
-      font-size: 1.1rem;
+      margin: 0 0 0.4rem;
+      font-size: 1rem;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -107,47 +113,52 @@
 
     .forecast-content {
       background: var(--color-surface-alt);
-      padding: 1rem 1.5rem;
+      padding: 0.6rem 0.9rem;
       border-radius: 4px;
       border-left: 3px solid var(--color-accent-blue);
-      line-height: 1.8;
+      font-size: 0.95rem;
+      line-height: 1.45;
     }
 
     .forecast-period {
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.4rem;
       color: var(--color-text);
+    }
+
+    .forecast-period:last-child {
+      margin-bottom: 0;
     }
 
     .extended-forecast {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
+      gap: 0.6rem;
+      margin-top: 0.75rem;
     }
 
     .extended-day {
       background: var(--color-surface);
       border: 1px solid var(--color-border-light);
       border-radius: 6px;
-      padding: 1rem;
+      padding: 0.65rem 0.8rem;
     }
 
     .extended-day h3 {
-      margin: 0 0 0.5rem 0;
+      margin: 0 0 0.25rem 0;
       color: var(--color-primary-dark);
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
 
     .extended-day p {
       margin: 0;
-      font-size: 0.95rem;
-      line-height: 1.6;
+      font-size: 0.9rem;
+      line-height: 1.45;
       color: var(--color-text-light);
     }
 
     .forecast-metadata {
-      margin-top: 2rem;
-      padding-top: 1rem;
+      margin-top: 1rem;
+      padding-top: 0.6rem;
       border-top: 1px solid var(--color-border-light);
       font-size: 0.9rem;
       color: var(--color-text-muted);
@@ -156,8 +167,9 @@
     .no-warnings {
       background: var(--color-callout-info-bg);
       border-left: 3px solid var(--color-accent-green);
-      padding: 1rem 1.5rem;
+      padding: 0.5rem 0.9rem;
       border-radius: 4px;
+      font-size: 0.9rem;
       color: var(--color-accent-green);
     }
 
@@ -179,7 +191,7 @@
     /* Mobile responsive */
     @media (max-width: 768px) {
       .forecast-zone {
-        padding: 1.5rem 1rem;
+        padding: 1rem 0.9rem;
       }
 
       .extended-forecast {
@@ -187,15 +199,16 @@
       }
     }
 
-    /* Narrow screens: give the tables and chart the width back. Matches the
-       gutter treatment in style-v4.css and the tides page. */
+    /* Narrow screens: give the tables and charts the width back. The page
+       gutter itself is --page-gutter, set once in style-v4.css. */
     @media (max-width: 600px) {
-      .forecast-main-content {
-        padding: 0 0.25rem;
+      .forecast-zone {
+        padding: 0.9rem 0.5rem;
       }
 
-      .forecast-zone {
-        padding: 1rem 0.75rem;
+      .forecast-content,
+      .extended-day p {
+        font-size: 0.9rem;
       }
     }
 
@@ -361,6 +374,20 @@
 
     .forecast-mode-btn.active:hover {
       color: var(--color-on-primary);
+    }
+
+    .wave-forecast-map-link {
+      margin: -0.25rem 0 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .wave-forecast-map-link a {
+      color: var(--color-accent-blue);
+      text-decoration: none;
+    }
+
+    .wave-forecast-map-link a:hover {
+      text-decoration: underline;
     }
 
     .wave-forecast-subhead {
@@ -557,6 +584,14 @@
     <div class="forecast-zone" id="wave-forecast-section" style="margin-top: 2rem;">
       <h2 id="wave-forecast-heading">🌊 Wave &amp; Wind Forecast — Halibut Bank</h2>
 
+      <!-- Points at the home-page map, zoomed to whichever station the
+           forecast is currently showing — wave-forecast.js rewrites the href
+           as soon as it knows the station. The stationless fallback below is
+           the same map, just not zoomed, so an early click is never wrong. -->
+      <p class="wave-forecast-map-link">
+        <a id="wave-forecast-map-link" href="/#map-section">📍 Show on map</a>
+      </p>
+
       <p class="dev-note">
         <span class="dev-badge">Experimental</span>
         <span class="dev-note-text">Use at your own risk. Modelled waves from Environment Canada's
@@ -712,9 +747,9 @@
   <script src="/assets/vendor/echarts.min.js?v=968b4d8c55"></script>
   <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
-  <script src="/assets/js/chart-utils-v4.js?v=db469378a4"></script>
+  <script src="/assets/js/chart-utils-v4.js?v=401977606f"></script>
   <script type="module" src="/assets/js/forecasts.js?v=be0fc2b600"></script>
-  <script type="module" src="/assets/js/wave-forecast.js?v=e7ce0b9f42"></script>
+  <script type="module" src="/assets/js/wave-forecast.js?v=f2b658db65"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

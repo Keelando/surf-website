@@ -241,8 +241,7 @@ function baseSurgeChartOption(theme, opts) {
       },
     },
     grid: {
-      left: "8%",
-      right: mobile ? "4%" : "6%",
+      ...getChartSideGutters(),
       bottom: opts.gridBottom,
       top: "15%",
       containLabel: true,
@@ -515,7 +514,9 @@ function updateForecastChart(stationId) {
           lineStyle: { type: "dashed", color: mutedText, width: 1 },
           label: {
             show: true,
-            position: "end",
+            // See storm_surge_chart-v4.js: an "end" label falls outside the
+            // now near-full-width grid and gets clipped.
+            position: "insideEndTop",
             formatter: "Sea Level",
             color: mutedText,
           },
@@ -869,12 +870,31 @@ function getColorForIndex(index, total, theme) {
   return palette[index % palette.length];
 }
 
+/**
+ * Say how far back the verification chart reaches, in the heading itself.
+ *
+ * The archive grows day by day until it hits the exporter's cap, so the span
+ * is read from the payload rather than written into the markup — the same
+ * number the metadata block below the chart reports, so the two cannot
+ * disagree on one screen.
+ *
+ * @param {number} days - Days of archive actually available
+ * @returns {void}
+ */
+function renderVerificationHeading(days) {
+  const heading = document.getElementById("verification-heading");
+  if (!heading || !days) return;
+  heading.textContent = `Forecast Verification — Last ${days} day${days === 1 ? "" : "s"}`;
+}
+
 function updateVerificationMetadata(station) {
   const metaEl = document.getElementById("verification-metadata");
   if (!metaEl) return;
 
   const generatedTime = new Date(verificationData.generated_utc);
   const daysAvailable = verificationData.actual_days_available || 0;
+
+  renderVerificationHeading(daysAvailable);
 
   // The archived run is 00Z (ARCHIVED_RUN_HOUR in fetch_storm_surge.py).
   // The old fallback here said 12Z, which was never the run being archived.

@@ -209,8 +209,9 @@ function updateSurgeChart(stationId) {
       },
     },
     grid: {
-      left: window.innerWidth < 600 ? "8%" : "10%",
-      right: window.innerWidth < 600 ? "8%" : "10%",
+      // Shared gutters (chart-utils-v4.js) so every chart on the site gives
+      // away the same — small — amount of width at its edges.
+      ...getChartSideGutters(),
       bottom: "22%",
       top: "15%",
       containLabel: true,
@@ -308,7 +309,10 @@ function updateSurgeChart(stationId) {
           lineStyle: { type: "dashed", color: mutedText, width: 1 },
           label: {
             show: true,
-            position: "end",
+            // Inside the plot, not past its right edge: the grid now runs
+            // within a few pixels of the container, so an "end" label had
+            // nowhere left to sit and was clipped.
+            position: "insideEndTop",
             formatter: "Sea Level",
             color: mutedText,
           },

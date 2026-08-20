@@ -446,7 +446,7 @@
 .tide-main-content {
   max-width: 1200px;
   margin: 2rem auto;
-  padding: 0 1rem;
+  padding: 0 var(--page-gutter);
 }
 
 .tide-selector-section {
@@ -629,12 +629,10 @@
 
 /* Mobile responsive */
 @media (max-width: 600px) {
-  .tide-main-content {
-    padding: 0 0.25rem;
-  }
-
   .tide-card {
-    padding: 1rem;
+    /* Trimmed sides only: the chart inside is what wants the width, while the
+       vertical padding still separates the cards. */
+    padding: 1rem 0.5rem;
   }
 
   .tide-card h2 {

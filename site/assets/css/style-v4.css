@@ -34,6 +34,12 @@
   --color-accent-teal: #00796b;
   --color-accent-purple: #9c27b0;
 
+  /* Horizontal page gutter — the single knob every page-level container
+     uses for its left/right padding. Phones drop it to a hairline (see the
+     600px media query) so charts and tables get the width back instead of
+     spending it on margin. */
+  --page-gutter: 1rem;
+
   /* Spacing Scale */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
@@ -391,7 +397,7 @@ footer .github-link:hover {
 #buoy-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1rem var(--page-gutter);
 }
 
 /* Last Updated header styling */
@@ -516,7 +522,7 @@ footer .github-link:hover {
   }
 
   #buoy-container {
-    padding: 0.75rem;
+    padding: 0.75rem var(--page-gutter);
   }
 
   .last-updated-header {
@@ -694,7 +700,7 @@ footer .github-link:hover {
 #charts-section {
   max-width: 1200px;
   margin: 2rem auto;
-  padding: 0 1rem;
+  padding: 0 var(--page-gutter);
 }
 
 #charts-section h2 {
@@ -758,7 +764,7 @@ footer .github-link:hover {
 #wave-height-table-section {
   max-width: 1200px;
   margin: 2rem auto;
-  padding: 0 1rem;
+  padding: 0 var(--page-gutter);
 }
 
 #wave-height-table-section h2 {
@@ -845,7 +851,7 @@ footer .github-link:hover {
 #storm-surge-section {
   max-width: 1200px;
   margin: 40px auto;
-  padding: 0 1rem;
+  padding: 0 var(--page-gutter);
 }
 
 #storm-surge-section h2 {
@@ -973,16 +979,25 @@ footer .github-link:hover {
    Responsive Design
 ----------------------------- */
 
-@media (max-width: 600px) {
-  #charts-section,
-  #storm-surge-section,
-  #wind-table-section,
-  #map-section,
-  #wind-chart-section,
-  #wind-data-table-section {
-    padding: 0 0.25rem !important;
+/* The page gutter shrinks with the viewport. Every page-level container
+   pads with var(--page-gutter), so these two rules are the only place the
+   site-wide horizontal margin is set — a phone spends its width on the
+   charts and tables, not on empty margin. */
+@media (max-width: 768px) {
+  :root {
+    --page-gutter: 0.5rem;
   }
-  
+}
+
+@media (max-width: 600px) {
+  :root {
+    --page-gutter: 0.25rem;
+  }
+
+  .about-section {
+    padding: 1.25rem 0.85rem;
+  }
+
   .buoy-metric.indent {
     margin-left: 1rem;
     font-size: 0.9em;
@@ -1006,7 +1021,7 @@ footer .github-link:hover {
   #temp-chart,
   #wave-comparison-chart,
   #surge-chart {
-    padding: 0.5rem;
+    padding: 0.25rem;
   }
 }
 
@@ -1281,7 +1296,7 @@ header h2 {
 #map-section {
   max-width: 1200px;
   margin: 2rem auto;
-  padding: 0 1rem;
+  padding: 0 var(--page-gutter);
 }
 
 #map-section h2 {
