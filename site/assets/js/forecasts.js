@@ -14,9 +14,19 @@ let selectedZoneKey = null;
 // Display-only metadata. The parser no longer keeps a zone map — keys are
 // slugified from the XML — so anything missing here simply renders without a
 // source link rather than dropping the zone.
+// weather.gc.ca siteID per zone, for the "View source" link. Strings, not
+// numbers — several carry a leading zero. Verified against the live pages
+// listed at https://weather.gc.ca/marine/region_e.html?mapID=03 (2026-08-21).
 const ZONE_SITE_IDS = {
-  strait_of_georgia_north_of_nanaimo: 14301,
-  strait_of_georgia_south_of_nanaimo: 14305,
+  haro_strait: "06100",
+  howe_sound: "06400",
+  johnstone_strait: "06800",
+  juan_de_fuca_strait_east_entrance: "07003",
+  juan_de_fuca_strait_west_entrance: "07007",
+  juan_de_fuca_strait_central_strait: "07010",
+  strait_of_georgia_north_of_nanaimo: "14301",
+  strait_of_georgia_south_of_nanaimo: "14305",
+  west_coast_vancouver_island_south: "16200",
 };
 
 // Halibut Bank sits in this zone, so it is what the page opens on.
@@ -217,8 +227,8 @@ function displayForecasts() {
   // Display the selected zone only
   html += renderZoneForecast(zone.zoneKey, zone.zoneData, zone.areaData);
 
-  // Display extended forecast (shared across the zones of this area)
-  const extended = zone.areaData.extended_forecast;
+  // Display extended forecast (per zone; area-level copy when zones agree)
+  const extended = zone.zoneData.extended_forecast || zone.areaData.extended_forecast;
   if (extended && extended.length > 0) {
     html += renderExtendedForecast(extended, zone.areaData);
   }
@@ -245,7 +255,7 @@ function renderZoneForecast(zoneKey, zoneData, areaData) {
     <div class="forecast-zone" id="${zoneKey}">
       <h2>
         ${zoneName}
-        ${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="font-size: 0.75em; margin-left: 0.5rem; color: var(--color-accent-blue); text-decoration: none;">📄 View Source</a>` : ""}
+        ${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="font-size: 0.75em; margin-left: 0.5rem; color: var(--color-accent-blue); text-decoration: none;">View source</a>` : ""}
       </h2>
   `;
 
@@ -268,7 +278,7 @@ function renderZoneForecast(zoneKey, zoneData, areaData) {
   if (zoneData.forecast) {
     html += `
       <div class="forecast-section">
-        <h3>🌊 Current Forecast</h3>
+        <h3>Current Forecast</h3>
         <div class="forecast-content">
     `;
 
@@ -294,7 +304,7 @@ function renderZoneForecast(zoneKey, zoneData, areaData) {
   if (areaData.wave_forecast) {
     html += `
       <div class="forecast-section">
-        <h3>🌊 Wave Forecast</h3>
+        <h3>Wave Forecast</h3>
         <div class="forecast-content">
     `;
 
@@ -334,7 +344,6 @@ function renderZoneForecast(zoneKey, zoneData, areaData) {
  */
 function renderWarningCard(warning) {
   const severityClass = getWarningSeverityClass(warning.type);
-  const icon = getWarningIcon(warning.type);
 
   let issuedText = "";
   if (warning.issued_utc) {
@@ -344,7 +353,7 @@ function renderWarningCard(warning) {
 
   return `
     <div class="warning-card ${severityClass}">
-      <h3>${icon} ${warning.type}</h3>
+      <h3>${warning.type}</h3>
       <p><strong>Status:</strong> ${warning.status}${issuedText}</p>
     </div>
   `;
@@ -358,7 +367,7 @@ function renderWarningCard(warning) {
 function renderExtendedForecast(extendedForecast, areaData) {
   let html = `
     <div class="forecast-zone">
-      <h2>📆 Extended Forecast</h2>
+      <h2>Extended Forecast</h2>
       <div class="extended-forecast">
   `;
 
@@ -405,21 +414,6 @@ function getWarningSeverityClass(type) {
   if (typeLower.includes("strong wind")) return "warning-strong-wind";
 
   return "";
-}
-
-/**
- * Get icon for warning type
- * @param {string} type - Warning type
- * @returns {string} Icon emoji
- */
-function getWarningIcon(type) {
-  const typeLower = type.toLowerCase();
-
-  if (typeLower.includes("storm")) return "⚠️";
-  if (typeLower.includes("gale")) return "💨";
-  if (typeLower.includes("strong wind")) return "🌬️";
-
-  return "⚠️";
 }
 
 /**

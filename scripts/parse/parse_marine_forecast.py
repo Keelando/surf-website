@@ -101,11 +101,24 @@ def parse_weather_condition(condition_element):
     return condition
 
 
-def parse_extended_forecast(forecast_element):
-    """Parse extended forecast periods (Thursday, Friday, etc.)"""
-    periods = []
+def parse_extended_forecast(forecast_element, area_name):
+    """Parse extended forecast periods (Thursday, Friday, etc.) per location.
+
+    A zone bulletin repeats the extended forecast once per location it covers,
+    so the periods have to stay keyed by location — flattening them yields the
+    same three days over and over for a multi-location zone like Juan de Fuca.
+
+    An unnamed location applies to the area as a whole and is keyed None.
+
+    Returns {location_key or None: {"name": ..., "periods": [...]}}.
+    """
+    by_location = {}
 
     for location in forecast_element.findall(".//location"):
+        loc_name = location.get("name")
+        zone_key = slugify(loc_name) if loc_name else None
+
+        periods = []
         for condition in location.findall(".//weatherCondition"):
             for period in condition.findall("forecastPeriod"):
                 period_name = period.get("name", "")
@@ -114,7 +127,10 @@ def parse_extended_forecast(forecast_element):
                 if period_name and period_text:
                     periods.append({"period": period_name, "forecast": period_text})
 
-    return periods
+        if periods:
+            by_location[zone_key] = {"name": loc_name, "periods": periods}
+
+    return by_location
 
 
 def parse_wave_forecast(wave_element):
@@ -178,7 +194,8 @@ def parse_marine_xml(xml_file, zone_code):
         location_warnings = defaultdict(list)
         if warnings_section is not None:
             for location in warnings_section.findall("location"):
-                loc_name = location.get("name", "")
+                # A zone with a single location omits the name attribute
+                loc_name = location.get("name") or area_name
                 zone_key = slugify(loc_name)
                 if not zone_key:
                     continue
@@ -193,7 +210,7 @@ def parse_marine_xml(xml_file, zone_code):
             issued_time = parse_datetime(issued_utc)
 
             for location in regular_forecast.findall(".//location"):
-                loc_name = location.get("name", "")
+                loc_name = location.get("name") or area_name
                 zone_key = slugify(loc_name)
                 if not zone_key:
                     continue
@@ -219,12 +236,30 @@ def parse_marine_xml(xml_file, zone_code):
                     "warnings": warnings,
                 }
 
-        # Parse extended forecast (applies to all locations in the area)
+        # Parse extended forecast (one block per location in the area)
         extended = root.find("extendedForecast")
         if extended is not None:
-            extended_periods = parse_extended_forecast(extended)
-            if extended_periods:
-                result["extended_forecast"] = extended_periods
+            extended_by_location = parse_extended_forecast(extended, area_name)
+
+            for zone_key, entry in extended_by_location.items():
+                if zone_key is None:
+                    continue
+                if zone_key not in result["locations"]:
+                    result["locations"][zone_key] = {
+                        "zone_name": entry["name"],
+                        "warnings": location_warnings.get(zone_key, []),
+                    }
+                result["locations"][zone_key]["extended_forecast"] = entry["periods"]
+
+            # Area-level copy: the unnamed block if there is one, otherwise the
+            # per-location text when every location agrees. Without this guard a
+            # multi-location zone concatenates the same days once per location.
+            if None in extended_by_location:
+                result["extended_forecast"] = extended_by_location[None]["periods"]
+            else:
+                distinct = [e["periods"] for e in extended_by_location.values()]
+                if distinct and all(periods == distinct[0] for periods in distinct):
+                    result["extended_forecast"] = distinct[0]
 
         # Parse wave forecast if present
         wave = root.find("waveForecast")

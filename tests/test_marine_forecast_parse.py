@@ -239,3 +239,96 @@ def test_empty_directory_yields_no_areas(zone_dir):
 
     assert doc["areas"] == {}
     assert doc["generated_utc"] is None
+
+
+# ── extended forecast, repeated per location ───────────────────
+
+# A zone bulletin repeats the extended forecast once per location it covers,
+# and a single-location zone omits the location's name attribute entirely.
+MULTI_LOCATION_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<marineData>
+  <dateTime name="xmlCreation" zone="UTC" UTCOffset="0">
+    <year>2026</year><month name="August">08</month><day name="Thursday">20</day>
+    <hour>22</hour><minute>57</minute>
+  </dateTime>
+  <area countryCode="CA" region="Pacific Coast" subRegion="Georgia Basin">Juan de Fuca Strait</area>
+  <regularForecast>
+    <dateTime name="Issued" zone="UTC" UTCOffset="0">
+      <year>2026</year><month name="August">08</month><day name="Thursday">20</day>
+      <hour>23</hour><minute>00</minute>
+    </dateTime>
+    <location name="Juan de Fuca Strait - east entrance">
+      <weatherCondition><wind>Wind light.</wind></weatherCondition>
+    </location>
+    <location name="Juan de Fuca Strait - west entrance">
+      <weatherCondition><wind>Wind west 5 to 15 knots.</wind></weatherCondition>
+    </location>
+  </regularForecast>
+  <extendedForecast>
+    <location name="Juan de Fuca Strait - east entrance">
+      <weatherCondition>
+        <forecastPeriod name="Saturday">Wind west 15 to 25 knots.</forecastPeriod>
+        <forecastPeriod name="Sunday">Wind west 5 to 15 knots.</forecastPeriod>
+      </weatherCondition>
+    </location>
+    <location name="Juan de Fuca Strait - west entrance">
+      <weatherCondition>
+        <forecastPeriod name="Saturday">Wind west 15 to 25 knots.</forecastPeriod>
+        <forecastPeriod name="Sunday">Wind west 5 to 15 knots.</forecastPeriod>
+      </weatherCondition>
+    </location>
+  </extendedForecast>
+</marineData>
+"""
+
+# A single-location zone: no name attribute anywhere.
+UNNAMED_LOCATION_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<marineData>
+  <dateTime name="xmlCreation" zone="UTC" UTCOffset="0">
+    <year>2026</year><month name="August">08</month><day name="Thursday">20</day>
+    <hour>22</hour><minute>57</minute>
+  </dateTime>
+  <area countryCode="CA" region="Pacific Coast" subRegion="Georgia Basin">Howe Sound</area>
+  <regularForecast>
+    <dateTime name="Issued" zone="UTC" UTCOffset="0">
+      <year>2026</year><month name="August">08</month><day name="Thursday">20</day>
+      <hour>23</hour><minute>00</minute>
+    </dateTime>
+    <location>
+      <weatherCondition><wind>Wind northerly outflow 5 to 10 knots.</wind></weatherCondition>
+    </location>
+  </regularForecast>
+  <extendedForecast>
+    <location>
+      <weatherCondition>
+        <forecastPeriod name="Saturday">Wind southerly inflow 10 to 20 knots.</forecastPeriod>
+      </weatherCondition>
+    </location>
+  </extendedForecast>
+</marineData>
+"""
+
+
+def test_extended_forecast_is_not_repeated_per_location(zone_dir):
+    """The bug: flattening every location's block gave 2 locations x 2 days."""
+    zone_dir("m0000009", "20260820T225315.849Z", MULTI_LOCATION_XML)
+
+    area = pmf.build_document()["areas"]["juan_de_fuca_strait"]
+
+    assert [e["period"] for e in area["extended_forecast"]] == ["Saturday", "Sunday"]
+    for zone_key in ("juan_de_fuca_strait_east_entrance", "juan_de_fuca_strait_west_entrance"):
+        periods = area["locations"][zone_key]["extended_forecast"]
+        assert [e["period"] for e in periods] == ["Saturday", "Sunday"]
+
+
+def test_single_location_zone_falls_back_to_the_area_name(zone_dir):
+    """Howe Sound and WCVI South omit the location name, so they had no zone."""
+    zone_dir("m0000102", "20260820T225751.252Z", UNNAMED_LOCATION_XML)
+
+    area = pmf.build_document()["areas"]["howe_sound"]
+
+    assert list(area["locations"]) == ["howe_sound"]
+    assert area["locations"]["howe_sound"]["zone_name"] == "Howe Sound"
+    assert area["locations"]["howe_sound"]["forecast"]["wind"].startswith("Wind northerly")
+    # An unnamed extended block covers the area; it must not mint a second zone.
+    assert [e["period"] for e in area["extended_forecast"]] == ["Saturday"]
