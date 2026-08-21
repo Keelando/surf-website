@@ -383,6 +383,49 @@ station registry, and Hein Bank behind it. Open question from the user
 (2026-08-19): whether to put **more than one lead time** on the verification
 plot — see below.
 
+## Next: add English Bay (4600304) as a third extraction point
+
+Decided 2026-08-21, to build next session. Wreck Beach was the original idea —
+it is the more interesting spot — but English Bay wins because it sits on a
+buoy, and a forecast point without an instrument under it cannot be scored.
+
+**Why this point**
+
+- `4600304` reported **711 significant-wave-height observations in the last 30
+  days**, the same cadence as Halibut Bank, so the verification writer scores
+  it from the first run rather than after a bring-up period.
+- It is **27 km from Halibut Bank** — a genuinely different sea state, not a
+  near-duplicate of a point we already carry.
+- Wreck Beach is only **8.3 km** away but sits behind Point Grey. A 2.5 km
+  regional model in a sheltered nearshore corner is exactly where it is least
+  trustworthy, and there is no instrument there to catch it being wrong.
+
+**Known cost** (the per-point figure in `docs/DATA_FEEDS.md`, unchanged)
+
+- +231 requests/run, +924/day. ECCC total goes 3,406 → 4,330/day, 3.9% → 5.0%
+  of the 86,400 guidance.
+- Run length ~15 → ~22.6 min. Still well inside both binding constraints: the
+  6 h gap to the next run, and the 1 h stale-lock threshold in
+  `acquire_lock()`. **Do not raise `FETCH_DELAY`** — the burst rate is what
+  matters and it stays at 0.51 req/s.
+
+**Steps**
+
+1. Add `"4600304"` to `BUOY_IDS` in `scripts/fetch/fetch_wave_forecast.py`.
+2. Confirm the RDWPS/HRDPS grids resolve at 49.30/-123.36 — a GetFeatureInfo
+   over open water there should return values, not nulls or a land mask.
+3. Update the `fetch_wave_forecast.py` row and the running total in
+   `docs/DATA_FEEDS.md` **in the same commit** (the table is hand-maintained
+   by decision; that is the whole discipline holding it together).
+4. Check the station picker on `forecasts.html` picks it up — it reads
+   `data/wave_forecast/index.json` and stays empty while only one station has
+   a forecast, so this is the first run with three.
+5. Let verification accumulate a few weeks before judging.
+
+**What it decides.** If RDWPS scores well at English Bay, that is the
+evidence-based case for a Wreck Beach point. If it scores badly at a *buoy*,
+that is also the answer about the sheltered spot — and cheaper to learn here.
+
 ## Open: more forecast runs on the verification plot
 
 Today the plot draws one stitched lead band (19–24 h). The archive holds every
