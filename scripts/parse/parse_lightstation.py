@@ -4,7 +4,7 @@ Parse BC Lightstation Reports (FPCN61 + SXCN) into SQLite.
 
 Extracts wind speed/direction, sea state, and swell information from
 text-based lightstation reports in two formats:
-  - FPCN61: verbose text format (every ~3 hours via HTTP polling)
+  - FPCN61: verbose text format (every ~3 hours via sr3/AMQP)
   - SXCN23/25/26: compact coded format (every 6 hours via sr3/AMQP)
 
 Usage:
@@ -14,6 +14,7 @@ Usage:
 import re
 import sqlite3
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from lib.config import LIGHTSTATION_DATABASE as DB_PATH
 from lib.config import LIGHTSTATION_RETENTION_DAYS, PROJECT_ROOT
@@ -22,9 +23,18 @@ from lib.logging_config import setup_logging
 # Disable console logging (runs from cron, file logging only)
 logger = setup_logging("lightstation_parse", console=False)
 
-# Configuration
-FPCN61_DATA_DIR = PROJECT_ROOT / "data" / "lightstation"
+# Configuration. Both bulletin families arrive by sr3/AMQP into one directory —
+# FPCN61 used to be HTTP-polled into data/lightstation, which meant walking
+# Datamart directory listings to find new files. MSC's usage policy forbids
+# that ("the AMQPS notification service must be used for this need"), and the
+# subscription was already delivering byte-identical FPCN61 files ~55 minutes
+# sooner than the hourly poller could notice them. The poller is gone.
+FPCN61_DATA_DIR = PROJECT_ROOT / "data" / "lightstation_bulletins"
 SXCN_DATA_DIR = PROJECT_ROOT / "data" / "lightstation_bulletins"
+
+# FPCN61/SXCN bulletins are issued by CWVR (Vancouver) and their observation
+# lines name a local day and hour, not a UTC one.
+BULLETIN_TZ = ZoneInfo("America/Vancouver")
 
 # Regional sections in the FPCN61 report
 REGIONS = [
@@ -106,6 +116,12 @@ def is_stale_retransmission(header_line, report_time_line, reference_time=None):
     Check if a report is a stale retransmission by comparing the
     day-of-week in the header date against the observation time line.
 
+    The header stamp is UTC (DDHHMM) but the observation line names a *local*
+    day ("5 PM Thursday"), so the two must be compared in local time. Comparing
+    the raw UTC day name rejected every bulletin issued between 00:00 and 07:00
+    UTC — the 00/03/06 UTC slots, which are 5/8/11 PM the previous day in
+    Pacific time. That silently discarded 3 of the 8 daily bulletins.
+
     Args:
         header_line: "FPCN61 CWVR 301510"
         report_time_line: "8 AM Monday"
@@ -120,39 +136,31 @@ def is_stale_retransmission(header_line, report_time_line, reference_time=None):
         return None
 
     ddhhmm = match.group(1)
-    day = int(ddhhmm[0:2])
+    day, hour, minute = int(ddhhmm[0:2]), int(ddhhmm[2:4]), int(ddhhmm[4:6])
 
     now_utc = reference_time or datetime.now(timezone.utc)
+
+    # The stamp carries no month or year, so try the current month first and
+    # walk back until the day exists and isn't in the future.
+    dt = None
     year, month = now_utc.year, now_utc.month
-
-    try:
-        dt = datetime(year, month, day, tzinfo=timezone.utc)
-    except ValueError:
-        # Day doesn't exist in current month — roll back
+    for _ in range(3):
+        try:
+            candidate = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
+        except ValueError:
+            candidate = None
+        if candidate is not None and candidate <= now_utc + timedelta(hours=1):
+            dt = candidate
+            break
         month -= 1
         if month == 0:
             month, year = 12, year - 1
-        try:
-            dt = datetime(year, month, day, tzinfo=timezone.utc)
-        except ValueError:
-            return None
+    if dt is None:
+        return None
 
-    if dt > now_utc + timedelta(hours=1):
-        month -= 1
-        if month == 0:
-            month, year = 12, year - 1
-        try:
-            dt = datetime(year, month, day, tzinfo=timezone.utc)
-        except ValueError:
-            month -= 1
-            if month == 0:
-                month, year = 12, year - 1
-            try:
-                dt = datetime(year, month, day, tzinfo=timezone.utc)
-            except ValueError:
-                return None
-
-    header_day_name = dt.strftime("%A")
+    # The bulletin's own clock: the UTC stamp, hour included, rendered in the
+    # zone its text names. Dropping the hour here would misdate every bulletin.
+    header_day_name = dt.astimezone(BULLETIN_TZ).strftime("%A")
     obs_day_name = extract_observation_day(report_time_line)
     if obs_day_name is None:
         return None

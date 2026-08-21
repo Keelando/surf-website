@@ -109,7 +109,6 @@ envcan_wave/
 | `scripts/parse/tide_to_sqlite.py` | Fetch DFO IWLS tide data |
 | `scripts/fetch/fetch_storm_surge.py` | Fetch GeoMet GDSPS storm surge |
 | `scripts/fetch/fetch_wave_forecast.py` | Fetch GeoMet RDWPS wave forecast |
-| `scripts/fetch/fetch_lightstation.py` | Fetch DFO lightstation bulletins |
 | `scripts/parse/parse_lightstation.py` | Parse lightstation text → SQLite |
 | `scripts/parse/parse_marine_forecast.py` | Parse EC marine forecast XMLs → JSON |
 | `scripts/fetch/fetch_webcam.py` | Capture webcam snapshots |

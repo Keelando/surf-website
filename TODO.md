@@ -381,23 +381,30 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       38 initially-visible stations (all of Haro Strait, Juan de Fuca and
       the west coast) in exchange for legible spacing. Solving this reopens
       that choice; see `initStationsMap` in `site/assets/js/stations-map.js`.
-- [ ] **Stop guessing timestamps to find EC data** (policy, do first): MSC's
-      usage policy says plainly "Do not request directory listings to assess
-      the availability of new data, the AMQPS notification service must be
-      used for this need". `scripts/fetch/fetch_lightstation.py` does exactly
-      that — it walks `dd.weather.gc.ca/today/bulletins/alphanumeric/.../FP/
-      CWVR/HH/` hourly, guessing the last two likely report hours. It is also
-      probably redundant: `config/sr3/bc_lightstation_obs.conf` already has
-      `accept .*FPCN61.*` and FPCN61 files are arriving in
-      `data/lightstation_bulletins/`. See the footprint section of
-      `docs/DATA_FEEDS.md`.
-- [ ] **Audit duplicate lightstation fetching** (medium): a manual backup
-      source was added while debugging why the Tofino-area lightstations
-      weren't populating, and it was never removed. Work out whether the HTTP
-      poller and the sr3 subscription are genuinely redundant paths we rely
-      on, or just duplicate work — and if the former, document *why* so it
-      doesn't get "cleaned up" later. Pairs with the item above; do them
-      together since they touch the same feed.
+- [x] **Stop guessing timestamps to find EC data** *(done 2026-08-21)*: the
+      FPCN61 poller was walking `dd.weather.gc.ca/.../FP/CWVR/HH/` hourly,
+      guessing the last two likely report hours — the one practice MSC's usage
+      policy names outright. `scripts/fetch/fetch_lightstation.py` is deleted
+      and `parse_lightstation.py` now reads FPCN61 from
+      `data/lightstation_bulletins/`, where sr3 was already putting it.
+- [x] **Audit duplicate lightstation fetching** *(done 2026-08-21, with the
+      above)*: the poller was a backup added while debugging the Tofino-area
+      stations, and it turned out to fill no gaps at all. Over three days sr3
+      and the poller received exactly the same set of FPCN61 bulletins, the
+      files were byte-identical, and sr3 had each one ~55 minutes sooner (it is
+      pushed on publication; the poller could only notice at the next hourly
+      tick). Neither path ever saw an 09xx UTC bulletin, so that slot simply is
+      not published — it was never a gap the poller could have filled.
+
+      The real gap was a parser bug the backup poller could never have fixed,
+      found while retiring it: `is_stale_retransmission()` compared the
+      bulletin's **UTC** header day against the **local** day its text names,
+      so every bulletin issued 00:00–07:00 UTC (the 00/03/06 slots, which are
+      5/8/11 PM the previous day in Pacific time) was discarded as a stale
+      retransmission. Measured over the log history: 31 rejections at each of
+      those three hours, 0 at the four working hours — 3 of the 8 daily
+      bulletins, every day. Fixed by comparing in `America/Vancouver`;
+      recovered 89 observations on the first run.
 - [ ] **Why are English Bay and Southern Georgia Strait so chatty?** (low):
       those two buoys publish ~4,300 and ~4,100 files/day against ~715/day for
       Halibut Bank, La Perouse and Sentry Shoal — 6× the others, and 80% of

@@ -134,12 +134,41 @@ class TestIsStaleRetransmission:
 
     def test_month_boundary(self):
         """Day 31 when reference is early in a month that doesn't have 31 days."""
-        # Reference: April 1, 2026 (Wednesday). Day 31 would be March 31 (Tuesday).
+        # Reference: April 1, 2026 (Wednesday). Day 31 is March 31, and 00:10
+        # UTC on it is 5 PM PDT on March 30 — a Monday.
         ref = datetime(2026, 4, 1, 2, 0, tzinfo=timezone.utc)
         result = is_stale_retransmission(
-            "FPCN61 CWVR 310010", "7 PM Tuesday", ref
+            "FPCN61 CWVR 310010", "5 PM Monday", ref
         )
-        assert result is False  # March 31 is indeed Tuesday
+        assert result is False
+
+    # The header stamp is UTC; the observation line names a local day. The
+    # 00/03/06 UTC bulletins are 5/8/11 PM the *previous* day in Pacific time,
+    # and comparing the raw UTC day name rejected all three of them, every day
+    # — 3 of the 8 daily bulletins, silently. Real pairings, taken from
+    # bulletins on disk 2026-08-20/21.
+    @pytest.mark.parametrize(
+        "header,report_time",
+        [
+            ("FPCN61 CWVR 200010", "5 PM Wednesday"),
+            ("FPCN61 CWVR 200310", "8 PM Wednesday"),
+            ("FPCN61 CWVR 200610", "11 PM Wednesday"),
+            ("FPCN61 CWVR 201210", "5 AM Thursday"),
+            ("FPCN61 CWVR 201510", "8 AM Thursday"),
+            ("FPCN61 CWVR 201810", "11 AM Thursday"),
+            ("FPCN61 CWVR 202110", "2 PM Thursday"),
+            ("FPCN61 CWVR 210010", "5 PM Thursday"),
+        ],
+    )
+    def test_every_daily_slot_is_accepted(self, header, report_time):
+        ref = datetime(2026, 8, 21, 1, 0, tzinfo=timezone.utc)
+        assert is_stale_retransmission(header, report_time, ref) is False
+
+    def test_evening_slot_still_catches_a_real_retransmission(self):
+        """The 03Z fix must not blind the guard: wrong local day is still stale."""
+        ref = datetime(2026, 8, 21, 1, 0, tzinfo=timezone.utc)
+        # 200310 is 8 PM Wednesday locally, so a Thursday line is a mismatch.
+        assert is_stale_retransmission("FPCN61 CWVR 200310", "8 PM Thursday", ref) is True
 
 
 # ── parse_station_entry ────────────────────────────────────────

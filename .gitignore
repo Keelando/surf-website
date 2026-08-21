@@ -104,3 +104,7 @@ a11y-results/
 # carried credentials. Canonical copy is config/crontab.txt.
 config/crontab.txt.bak-*
 config/crontab.txt.broken-*
+
+# Session scratch: useful locally, noise in a public repo
+docs/project/NEXT_SESSION.md
+docs/project/WORKLOG.md

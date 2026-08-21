@@ -39,10 +39,14 @@ subscription is for. Update this table when adding or rescheduling a feed.
 
 | Endpoint | Job | Schedule | Requests/day |
 |---|---|---|---|
-| `geo.weather.gc.ca` | `fetch_storm_surge.py` | 2×/day | 1,548 (6 stations × 129 of 241 steps + caps) |
+| `geo.weather.gc.ca` | `fetch_storm_surge.py` | 2×/day | 1,550 (6 stations × 129 of 241 steps + 1 cap) |
 | `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 1,856 (2 stations × 33 of 49 steps × 7 vars + 2 caps) |
-| `dd.weather.gc.ca` | `fetch_lightstation.py` | hourly | ~48 — **policy violation, see `TODO.md`** |
-| | | **Total** | **~3,452 (4.0%)** |
+| | | **Total** | **3,406 (3.9%)** |
+
+Nothing else here polls ECCC over HTTP. The lightstation FPCN61 poller used to
+add ~48/day by walking Datamart directory listings — the one thing the policy
+names outright — and was retired on 2026-08-21 once the sr3 subscription was
+shown to deliver the same bulletins (byte-identical, ~55 min sooner).
 
 `fetch_wave_forecast.py` covers two models: 4 RDWPS wave variables and 3 HRDPS
 wind variables (added 2026-08-17), one GetCapabilities each. It went 532 → 932
@@ -173,11 +177,9 @@ which zones we carry; the parser and UI need no edit to add one)
 
 Marine lightstation observations issued every 3 hours. Two bulletin families:
 
-**FPCN61 (current observations)** — HTTP polled (not yet on sr3)
-```
-https://dd.weather.gc.ca/today/bulletins/alphanumeric/YYYYMMDD/FP/CWVR/HH/
-```
-**Fetched by:** `scripts/fetch/fetch_lightstation.py` (cron, hourly)
+**FPCN61 (current observations)** — sr3 AMQP
+**Subscription:** `config/sr3/bc_lightstation_obs.conf` (`accept .*FPCN61.*`)
+**Delivered to:** `data/lightstation_bulletins/`
 **Parsed by:** `scripts/parse/parse_lightstation.py`
 **Stored in:** `lightstation_data.sqlite`
 **Covers:** 19 stations (Strait of Georgia, Central Coast, Hecate Strait, north WCVI)
