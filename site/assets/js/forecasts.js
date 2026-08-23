@@ -14,6 +14,11 @@ import {
   shortZoneLabel,
 } from "./shared/marine-zones.js";
 import { renderWarningZoneControls } from "./warning-zone-picker.js";
+import {
+  collectActiveWarnings,
+  getWarningIcon,
+  getWarningSeverityClass as bannerSeverityClass,
+} from "./shared/warning-zones.js";
 
 let forecastData = null;
 let selectedZoneKey = null;
@@ -36,6 +41,10 @@ const ZONE_SITE_IDS = {
   west_coast_vancouver_island_south: "16200",
 };
 
+// Session-scoped on purpose. Clicking through zones in one sitting should
+// stick, but a new visit should open on home waters rather than on wherever
+// curiosity left off weeks ago — the warning picker now covers the "keep me
+// posted about that zone" need, so the page no longer has to remember for it.
 const ZONE_STORAGE_KEY = "selected_marine_zone";
 
 /**
@@ -60,7 +69,11 @@ function resolveInitialZone(zones) {
 
   let stored = null;
   try {
-    stored = localStorage.getItem(ZONE_STORAGE_KEY);
+    stored = sessionStorage.getItem(ZONE_STORAGE_KEY);
+    // The same key used to live in localStorage, where it outlived the visit.
+    // Clear it on the way past so an old choice cannot keep overriding the
+    // default, and so the key does not linger unread in readers' browsers.
+    localStorage.removeItem(ZONE_STORAGE_KEY);
   } catch (error) {
     logger.warn("Forecasts", "Could not read stored zone", error);
   }
@@ -124,7 +137,7 @@ function buildZoneSelector(zones) {
     select.addEventListener("change", (event) => {
       selectedZoneKey = event.target.value;
       try {
-        localStorage.setItem(ZONE_STORAGE_KEY, selectedZoneKey);
+        sessionStorage.setItem(ZONE_STORAGE_KEY, selectedZoneKey);
       } catch (error) {
         logger.warn("Forecasts", "Could not store zone selection", error);
       }
@@ -240,6 +253,83 @@ function displayForecasts() {
   // After the card exists: the inline toggle mounts into it, and the card is
   // rebuilt wholesale on every render.
   renderWarningZoneControls(zones, selectedZoneKey);
+  renderWarningJumpStrip(zones);
+}
+
+/**
+ * Drop the redundant " warning" from a type, for a chip that already reads as
+ * one. "Strong wind warning" → "Strong wind".
+ *
+ * @param {string} type - Warning type from the forecast document
+ * @returns {string} Short label
+ */
+function shortWarningType(type) {
+  return String(type || "Warning").replace(/\s*warning$/i, "");
+}
+
+/**
+ * Render the jump-to-warning strip above both forecast kinds.
+ *
+ * Deliberately unfiltered: it is passed every zone the document carries, not
+ * the reader's banner subscription. The sitewide banner is narrow on purpose,
+ * and zone filtering creates a blind spot — this is the page where that blind
+ * spot gets closed, so a reader can see a gale two zones over even though they
+ * chose not to be interrupted by it.
+ *
+ * @param {Array<Object>} zones - Zone list from shared/marine-zones.js
+ * @returns {void}
+ */
+function renderWarningJumpStrip(zones) {
+  const strip = document.getElementById("warning-jump");
+  const list = document.getElementById("warning-jump-list");
+  if (!strip || !list) return;
+
+  const warnings = collectActiveWarnings(
+    forecastData,
+    zones.map((zone) => zone.zoneKey),
+  );
+
+  list.textContent = "";
+  strip.hidden = warnings.length === 0;
+  if (warnings.length === 0) return;
+
+  warnings.forEach((warning) => {
+    const item = document.createElement("li");
+
+    const link = document.createElement("a");
+    link.className = `warning-jump-item ${bannerSeverityClass(warning.type)}`;
+    link.href = `#${encodeURIComponent(warning.zone_key)}`;
+
+    const icon = document.createElement("span");
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = getWarningIcon(warning.type);
+
+    const type = document.createElement("span");
+    type.className = "warning-jump-type";
+    type.textContent = shortWarningType(warning.type);
+
+    const zoneName = document.createElement("span");
+    zoneName.textContent = warning.zone_name || warning.zone_key;
+
+    link.append(icon, type, zoneName);
+
+    // The href alone is not enough. Clicking the chip for the zone already on
+    // screen changes nothing about the hash, so no hashchange fires and the
+    // page appears to ignore the click; and following the hash normally skips
+    // the scroll-and-highlight the deep link gives you.
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (window.location.hash.slice(1) !== warning.zone_key) {
+        window.location.hash = warning.zone_key;
+      }
+      selectedZoneKey = warning.zone_key;
+      displayForecasts();
+      scrollToZoneIfNeeded();
+    });
+
+    item.appendChild(link);
+    list.appendChild(item);
+  });
 }
 
 /**
