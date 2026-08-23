@@ -56,6 +56,18 @@
   text-decoration-thickness: 2px;
 }
 
+/* The tail of a capped list: "+4 more". Deliberately quieter than the named
+   zones — it is a count, not a warning, and it must not compete with the
+   waters actually named beside it. */
+.warning-more-link {
+  color: inherit;
+  opacity: 0.85;
+  font-style: italic;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
 .warning-details-link {
   text-decoration: none;
   font-weight: 600;
@@ -191,14 +203,17 @@
   }
 }
 
-/* Storm Pulse Animation (more urgent) - for storm warnings only */
+/* Storm Pulse Animation (more urgent) - for storm warnings only.
+   Shadow only, no transform: the banner is 100% wide, so scaling it even to
+   1.002 pushed it ~3px past the viewport and put a horizontal scrollbar on
+   every page carrying a storm banner. Easy to miss before, because only two
+   zones could raise one; the storm severity floor made it reachable from any
+   zone we carry. The shadow alone still reads as urgent. */
 @keyframes stormPulse {
   0%, 100% {
-    transform: scale(1);
     box-shadow: 0 2px 8px rgba(153, 27, 27, 0.4);
   }
   50% {
-    transform: scale(1.002);
     box-shadow: 0 4px 16px rgba(153, 27, 27, 0.6);
   }
 }
@@ -245,7 +260,8 @@
      tappable either. Left as anchors rather than unwrapped: keyboard
      activation bypasses pointer-events, so a focused link still reaches its
      own zone, and the markup stays the same in both layouts. */
-  .warning-zone-link {
+  .warning-zone-link,
+  .warning-more-link {
     pointer-events: none;
     text-decoration: none;
   }
