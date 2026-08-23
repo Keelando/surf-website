@@ -3,6 +3,20 @@
 **Date:** 2025-11-04
 **Status:** ✅ Complete and Production Ready
 
+> **Still accurate as of 2026-08-23**, with two things it predates:
+>
+> - **Which zones reach the banner is now the reader's choice**, not a
+>   hardcoded pair. The examples below showing Strait of Georgia north/south
+>   are the *default*, not the ceiling — see
+>   `docs/project/WARNING_ZONE_OPT_IN.md`. Storm warnings raise a banner from
+>   any zone we carry regardless of that choice.
+> - **The × dismisses every warning currently in effect at once**, not one
+>   banner at a time; several zones are combined into a single banner. Still
+>   24 hours, still per-warning-id, so a re-issue reappears.
+>
+> Do not read the sibling `WARNING_BANNER_UPGRADE_SUMMARY.md` for dismiss
+> durations — it documents a per-severity scheme that was never implemented.
+
 ---
 
 ## 🎯 What Was Built

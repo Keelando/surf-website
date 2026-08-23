@@ -1,8 +1,34 @@
 # Warning Banner Upgrade - Completed 2025-11-05
 
+> ## ⚠️ Correction, 2026-08-23: the variable dismiss durations below never shipped
+>
+> This document describes per-severity dismissal (12 h storm, 12 h gale, 6 h
+> strong wind, 8 h default) as a completed change. **It is not in the code and
+> appears never to have been.** `warning-banner.js` has a single
+> `DISMISS_DURATION_MS` of 24 hours applied at every severity, and the ×
+> dismisses every warning currently in effect at once.
+>
+> The claim had also been copied into `warning-banner.js`'s own file header,
+> where it sat as fact until 2026-08-23 (`f10a76f`). Two sources agreeing does
+> not make something true when one was copied from the other.
+>
+> What actually keeps a flat 24 h safe is the **dismissal id**, which includes
+> the warning's issue time: a re-issued or newly issued warning is a different
+> id and raises the banner again. EC re-issues these roughly every six hours,
+> so a dismissal rarely lasts its nominal 24 h in practice. That is the real
+> backstop the "safety backstop" line below was reaching for.
+>
+> The rest of this document — the CSS severity hierarchy, the reasoning, the
+> alternatives weighed — is left as written. Read the sections on dismiss
+> durations as a **proposal**, not a description.
+>
+> Since superseded in other ways too: the banner's zone set is no longer
+> hardcoded (see `docs/project/WARNING_ZONE_OPT_IN.md`), and the CSS file it
+> names is now `warning-banner-v4.css`.
+
 ## What Was Changed
 
-### ✅ JavaScript: Variable Dismiss Durations
+### ⚠️ JavaScript: Variable Dismiss Durations — PROPOSED, NOT IMPLEMENTED
 **File:** `site/assets/js/warning-banner.js`
 
 **Before:** All warnings dismissed for 24 hours flat

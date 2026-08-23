@@ -4,6 +4,71 @@ UI/UX enhancements and feature history for halibutbank.ca. Entries are newest-fi
 
 ---
 
+## 2026-08-23: Per-Zone Warning Opt-In, and a Storm Floor Under It
+
+The sitewide banner fired for a hardcoded pair of zones while the feed carried
+nine. That pairing was the right *default* and the wrong *ceiling*: a Howe
+Sound boater got no banner for the water they were on, and the only way to
+change it was to edit a constant.
+
+**The reader now picks the zones**, from a collapsed `<details>` under the zone
+dropdown on `forecasts.html`, or from an inline "alert me sitewide about
+warnings here" checkbox inside the zone card. The inline one is the discovery
+mechanism, and the reason no footer link or settings page was needed: someone
+who cares about Howe Sound has to visit this page to read Howe Sound's forecast
+at all, which puts the control directly under their eyes.
+
+**Storm warnings ignore that choice.** 48+ knots raises a banner from any zone
+we carry, even for a reader who deliberately turned every zone off — a floor,
+not an override, living in `collectActiveWarnings()` where the picker cannot
+reach it. Precedent: US Wireless Emergency Alerts let you opt out of every
+category except national alerts. This is what makes the zero-zone state safe to
+allow silently, and it is why the default did **not** widen to all nine zones:
+a banner that cries wolf gets dismissed on reflex, which costs the warning that
+mattered.
+
+**Storage:** `warning_banner_zones`, a JSON array. The array shape is
+load-bearing — `[]` is a real choice and an absent key means "never chosen".
+Stored zones missing from the live document are dropped from the effective set
+but **left in storage**, so one missing bulletin cannot erase a preference.
+
+**When many zones warn at once** the banner names three and counts the rest,
+stating a shared type once ("STORM WARNING in effect for A, B, C") instead of
+repeating it. What the remainder is called follows the facts: "+6 more zones"
+only when the hidden ones share that type, "+6 more warnings" otherwise — a
+banner must never promote a gale by implication. Warnings in the reader's own
+zones sort first within a severity tie, so the three named are the three worth
+naming.
+
+**A jump strip** above both forecast kinds lists every active warning as a
+severity-coloured chip, each switching the page to that zone. Deliberately
+**unfiltered** — zone filtering buys a quiet banner at the cost of a blind
+spot, and this is the page where that blind spot gets closed.
+
+**`selected_marine_zone` moved to sessionStorage.** Clicking through zones in
+one sitting sticks; a new visit opens on home waters. The picker now covers the
+"keep me posted about that zone" need, so the dropdown no longer has to carry
+it by remembering forever.
+
+### Two bugs this surfaced
+
+- **The storm banner scrolled every page sideways.** `stormPulse` animated
+  `transform: scale(1.002)` on a 100%-wide element — about three pixels past
+  the viewport, at every width. Pre-existing, but only home waters could raise
+  a storm banner before; the severity floor made it reachable from any zone.
+  The keyframe is shadow-only now.
+- **A `display: block` `<button>` with `width: auto` shrink-wraps in Firefox.**
+  The picker's full-width collapse band was 10 px wide there and correct in
+  Chromium. State the width; do not leave it to `auto`.
+
+Also: white on the banner's gale orange (`#ea580c`) is 3.55:1, under the 4.5:1
+AA floor at chip text sizes — the chips use the dark end of each severity ramp
+instead.
+
+Full plan, decisions and follow-up: `docs/project/WARNING_ZONE_OPT_IN.md`.
+
+---
+
 ## 2026-08-18: Mobile Nav — Scroll Lock Behind the Drawer
 
 The page behind the open hamburger drawer scrolled freely on mobile. It now

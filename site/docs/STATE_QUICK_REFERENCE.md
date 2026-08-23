@@ -35,7 +35,32 @@ localStorage.removeItem('key');
 
 ---
 
-## 🗂️ Our Data Structure
+## 🗂️ Every key we store
+
+Five, and one of them is deliberately **not** localStorage. Each is owned by
+exactly one module — that module is the only place the key name appears.
+
+| Key | Store | Owner | Holds |
+|---|---|---|---|
+| `dismissed_marine_warnings` | local | `warning-banner.js` | Warning id → dismissal timestamp |
+| `warning_banner_zones` | local | `shared/warning-preferences.js` | JSON array of zone keys the reader wants banners for |
+| `waveThreshold` | local | `main.js` | Wave-height alert threshold |
+| `theme-preference` | local | `theme-manager.js` | `light` / `dark` |
+| `dismissed_site_notice` | local | `site-notice.js` | Notice dismissal |
+| `selected_marine_zone` | **session** | `forecasts.js` | Last zone read on the forecasts page |
+
+`selected_marine_zone` is session-scoped on purpose (changed 2026-08-23):
+clicking through zones in one sitting should stick, but a new visit should open
+on home waters rather than wherever curiosity left off weeks ago. Each browser
+tab is its own session, so a forecast link opened in a new tab starts at the
+default.
+
+`warning_banner_zones` stores a **JSON array, not a joined string**, because
+`[]` is a real choice ("alert me about no zones") and an absent key means "never
+chosen, use the default". A joined string cannot tell `""` from unset. See
+`docs/project/WARNING_ZONE_OPT_IN.md`.
+
+### The dismissal structure
 
 ```javascript
 // localStorage key
@@ -47,6 +72,11 @@ localStorage.removeItem('key');
   //              ↑ Warning ID                                    ↑ When dismissed
 }
 ```
+
+The warning id includes the **issue time**, which is what keeps a 24-hour
+dismissal safe: a re-issued or newly issued warning is a different id and
+raises the banner again rather than staying hidden. EC re-issues these roughly
+every six hours.
 
 ---
 

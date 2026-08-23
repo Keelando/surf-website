@@ -406,6 +406,14 @@ localStorage.setItem('dismissed_marine_warnings', JSON.stringify(dismissed));
 
 ## 📋 Our Implementation Summary
 
+> **Scope of this document.** Everything below describes the *dismissal*
+> mechanism, which is only one of the keys we store. For the full inventory —
+> including `warning_banner_zones` (which zones may raise a banner) and
+> `selected_marine_zone` (session-scoped since 2026-08-23, not localStorage) —
+> see `STATE_QUICK_REFERENCE.md`. The two interact: zone preferences decide
+> *whether* a warning reaches the banner, dismissal decides whether a reader
+> has already waved it away.
+
 ### Storage Schema
 
 ```javascript
