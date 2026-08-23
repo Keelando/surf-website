@@ -46,6 +46,7 @@
         "site/assets/js/storm_surge_chart-v4.js",
         "site/assets/js/wave-forecast.js",
         "site/assets/js/warning-banner.js",
+        "site/assets/js/warning-zone-picker.js",
         "tests/js/**/*.mjs"
       ],
       "parserOptions": {

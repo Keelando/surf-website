@@ -266,6 +266,19 @@ if (document.readyState === "loading") {
   }
 }
 
+/**
+ * Re-render when the reader changes their zone selection.
+ *
+ * The picker lives on the forecasts page, which carries this banner too, so a
+ * zone toggled there must take effect immediately rather than at the next page
+ * load — otherwise the control appears not to work.
+ */
+window.addEventListener("warning-zones:changed", () => {
+  if (document.getElementById("warning-banner-container")) {
+    displayWarningBanners();
+  }
+});
+
 // Track if warnings have been loaded to prevent duplicate calls
 let warningsLoaded = false;
 let loadingInProgress = false;

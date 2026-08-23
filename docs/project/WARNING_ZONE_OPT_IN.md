@@ -1,6 +1,7 @@
 # Per-Zone Warning Opt-In — Plan
 
-**Status:** Planned, ready to execute. Not started.
+**Status:** **Shipped 2026-08-23.** All seven steps landed; outcome notes at
+the bottom.
 **Decided:** 2026-08-23
 **Supersedes:** the two conflicting TODO.md entries ("Let users opt in to
 warning zones", "Subscribable warning banners"), which disagreed on the
@@ -227,3 +228,54 @@ Both engines, both themes, 390px and 1280px.
   and a future zone slug could collide with one. This feature does not make it
   worse, but if the picker gets a deep link (`#warning-zones`) that is a new
   reserved id, and the overlap should be made explicit then, not later.
+
+---
+
+## Outcome — 2026-08-23
+
+Shipped as designed. Seven commits, one per step. Two deviations, both
+deliberate:
+
+**Resolution lives in `warning-zones.js`, not `warning-preferences.js`.** The
+design listed both a `resolveBannerZones(stored, available)` in preferences and
+a `getBannerZones(stored, available)` in warning-zones — the same function
+under two names, in two files. Resolution stayed in `warning-zones.js` beside
+`DEFAULT_BANNER_ZONES` and the storm floor (one place to read to know what
+banners); `warning-preferences.js` was left owning storage alone, with the
+storage object injected rather than reached for. Nothing else changed.
+
+**Single-zone areas get no group heading in the picker.** A `<legend>` reading
+"HOWE SOUND" over a single row reading "Howe Sound" is the same redundancy the
+zone `<select>` already avoids by emitting single-zone areas as plain options
+rather than an `<optgroup>`. The picker now makes the same call, which is what
+"the vocabulary and ordering match the `<select>` exactly" actually required.
+
+**One addition:** toggling a zone dispatches a `warning-zones:changed` window
+event that `warning-banner.js` listens for. The picker sits on a page that
+carries the banner, so without it a reader would tick a zone with a live
+warning in it and see nothing happen until the next page load — the control
+would look broken. Ticking now raises or clears the banner immediately.
+
+### Verified in the browser
+
+Driven with Playwright against live `site/data/`, both engines, both themes,
+390 px and 1280 px, zero console errors, zero axe violations on the picker:
+
+- First visit (no stored key) → default pair, and the two live Juan de Fuca
+  strong-wind warnings in the feed correctly raise no banner.
+- Inline toggle on the Juan de Fuca card → banner appears immediately without a
+  reload, the picker checkbox and the summary line both update, and the
+  preference survives a reload.
+- Unticking in the picker → the inline toggle follows and the banner clears.
+- Zero zones stored → summary reads "Alerting on: storm warnings only,
+  anywhere", the strong-wind warnings stay suppressed, and a storm warning in
+  an unticked zone still collects.
+- Corrupt JSON in the key → falls back to the default without throwing.
+
+### Next
+
+The two deferred items are unchanged and still worth doing in this order: the
+quiet count of suppressed warnings on the forecasts page ("2 active warnings in
+zones you don't follow"), then the all-alerts index page. The hash-namespace
+open question is also unchanged — the picker did not get a deep link, so no
+new reserved id was introduced.

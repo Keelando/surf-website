@@ -26,11 +26,23 @@ node can import these files in tests; browsers ignore it.
   compact line and the history table) — replaces inline station-ID checks;
   see `docs/project/BUOY_CARD_REFACTOR.md`
 - `warning-zones.js` — the pure half of the sitewide warning banner: which
-  zones may raise one (`DEFAULT_BANNER_ZONES`/`getBannerZones` — deliberately
-  narrower than the zones we carry), `collectActiveWarnings`, and the
+  zones may raise one (`DEFAULT_BANNER_ZONES` + `getBannerZones(stored,
+  available)`, deliberately narrower than the zones we carry),
+  `collectActiveWarnings` including the storm severity floor, and the
   severity/icon mapping. Extracted 2026-08-20 so the banner could be tested
   at all; `warning-banner.js` keeps the DOM, dismissal and htmx wiring and
   became an ES module to import this. Tests: `tests/js/warning-zones.test.mjs`
+- `warning-preferences.js` — reads and writes the reader's banner zone choice
+  (`warning_banner_zones`, a JSON array so `[]` stays distinguishable from
+  "never chosen"). Storage is injected, never reached for, so this is testable
+  with a fake and `warning-zones.js` stays storage-free. Added 2026-08-23 with
+  the per-zone opt-in (`docs/project/WARNING_ZONE_OPT_IN.md`). Tests:
+  `tests/js/warning-preferences.test.mjs`
+- `marine-zones.js` — marine zone vocabulary and ordering: `listZones`,
+  `shortZoneLabel`, `orderZonesForDisplay` (home area first) and
+  `DEFAULT_ZONE_KEY`. Extracted from `forecasts.js` 2026-08-23 so the zone
+  `<select>` and the warning-zone picker beside it name and order zones
+  identically. Tests: `tests/js/marine-zones.test.mjs`
 
 Page-specific builders live beside their entry point rather than here:
 `buoy-card.js` and `buoy-history.js` are index-only, and both take

@@ -13,6 +13,7 @@ import {
   orderZonesForDisplay,
   shortZoneLabel,
 } from "./shared/marine-zones.js";
+import { renderWarningZoneControls } from "./warning-zone-picker.js";
 
 let forecastData = null;
 let selectedZoneKey = null;
@@ -235,6 +236,10 @@ function displayForecasts() {
   }
 
   setSafeHTML(container, html);
+
+  // After the card exists: the inline toggle mounts into it, and the card is
+  // rebuilt wholesale on every render.
+  renderWarningZoneControls(zones, selectedZoneKey);
 }
 
 /**
@@ -258,6 +263,7 @@ function renderZoneForecast(zoneKey, zoneData, areaData) {
         ${zoneName}
         ${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="font-size: 0.75em; margin-left: 0.5rem; color: var(--color-accent-blue); text-decoration: none;">View source</a>` : ""}
       </h2>
+      <div class="zone-alert-toggle" id="zone-alert-toggle"></div>
   `;
 
   // Warnings section

@@ -448,6 +448,110 @@
       padding: 0.6rem 0.7rem 0.7rem;
     }
 
+    /* --- Warning-zone opt-in (docs/project/WARNING_ZONE_OPT_IN.md) --- */
+
+    /* Borrows .verification-help's boxed-disclosure shape; only the spacing
+       above it differs, because this one sits under the zone <select> rather
+       than under a paragraph of metadata. */
+    .warning-zone-picker {
+      margin: -0.5rem 0 1.25rem;
+      max-width: 32rem;
+    }
+
+    /* The summary states the current selection, so it is a sentence rather
+       than a label and wraps on a phone instead of being clipped. */
+    .warning-zone-picker > summary {
+      font-weight: 500;
+      white-space: normal;
+    }
+
+    .warning-zone-picker-body {
+      padding: 0.7rem;
+    }
+
+    .warning-zone-group {
+      border: none;
+      margin: 0 0 0.75rem;
+      padding: 0;
+    }
+
+    .warning-zone-group:last-of-type {
+      margin-bottom: 0;
+    }
+
+    /* A bare checkbox for a single-zone area sits between two grouped
+       fieldsets, so it needs the same breathing room the groups have. */
+    #warning-zone-picker-list > .warning-zone-option {
+      margin-bottom: 0.75rem;
+    }
+
+    #warning-zone-picker-list > .warning-zone-option:last-child {
+      margin-bottom: 0;
+    }
+
+    .warning-zone-group > legend {
+      padding: 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-muted);
+    }
+
+    .warning-zone-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      /* A comfortable touch target — these are nine adjacent checkboxes on a
+         phone, where a tight list means mis-taps. */
+      padding: 0.35rem 0.15rem;
+      font-size: 0.95rem;
+      color: var(--color-text);
+      cursor: pointer;
+    }
+
+    .warning-zone-option input {
+      flex-shrink: 0;
+      width: 1rem;
+      height: 1rem;
+      accent-color: var(--color-accent-blue);
+    }
+
+    /* States the severity floor in plain words, so an unticked zone that
+       interrupts anyway is explained before it happens rather than after. */
+    .warning-zone-floor {
+      margin: 0.75rem 0 0;
+      padding-top: 0.6rem;
+      border-top: 1px solid var(--color-border-light);
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--color-text-muted);
+    }
+
+    /* The inline toggle in the zone card: the discovery path for a reader who
+       came to read one zone and did not know the picker existed. */
+    .zone-alert-toggle:empty {
+      display: none;
+    }
+
+    .zone-alert-toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: -0.25rem 0 0.75rem;
+      padding: 0.3rem 0;
+      font-size: 0.9rem;
+      color: var(--color-text-muted);
+      cursor: pointer;
+    }
+
+    .zone-alert-toggle-label input {
+      flex-shrink: 0;
+      width: 1rem;
+      height: 1rem;
+      accent-color: var(--color-accent-blue);
+    }
+
     /* Segmented control: one row of joined buttons, exactly one active. */
     .forecast-mode-toggle {
       display: flex;
@@ -709,6 +813,19 @@
         </select>
       </div>
 
+      <!-- Which zones may interrupt every page with a banner. Collapsed by
+           default: a settings control on a page whose job is forecasts should
+           not compete with them. Filled in by warning-zone-picker.js. -->
+      <details id="warning-zone-picker" class="verification-help warning-zone-picker" hidden>
+        <summary id="warning-zone-picker-summary">Warning alerts</summary>
+        <div class="warning-zone-picker-body">
+          <div id="warning-zone-picker-list"></div>
+          <p class="warning-zone-floor">
+            Storm warnings (48+ knots) always raise a banner, in any zone listed
+            here, whether or not you have ticked it.
+          </p>
+        </div>
+      </details>
 
       <div id="forecast-container">
         <div class="loading-state">
@@ -897,12 +1014,12 @@
 
   <!-- Load logger first for global availability -->
   <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
-  <script type="module" src="/assets/js/warning-banner.js?v=cfdee0b717"></script>
+  <script type="module" src="/assets/js/warning-banner.js?v=8b62bbf797"></script>
   <script src="/assets/vendor/echarts.min.js?v=968b4d8c55"></script>
   <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/chart-utils-v4.js?v=401977606f"></script>
-  <script type="module" src="/assets/js/forecasts.js?v=da2adef35e"></script>
+  <script type="module" src="/assets/js/forecasts.js?v=7fd66b4aa2"></script>
   <script type="module" src="/assets/js/wave-forecast.js?v=af174f2301"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>

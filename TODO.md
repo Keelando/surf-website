@@ -250,7 +250,7 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       default trades a miss for a dismiss-on-reflex habit, and the habit is
       worse. Severity carries the safety case instead: storm warnings banner
       from every carried zone regardless of the reader's selection. Full plan
-      in `docs/project/WARNING_ZONE_OPT_IN.md`.
+      in `docs/project/WARNING_ZONE_OPT_IN.md`; shipped the same day.
 
 - [ ] **Revisit whether the repo should stay public** (user 2026-08-17):
       decide deliberately rather than by inertia. Audience today is one
