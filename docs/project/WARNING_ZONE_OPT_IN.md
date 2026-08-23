@@ -1,6 +1,6 @@
 # Per-Zone Warning Opt-In — Plan
 
-**Status:** Planned, not started
+**Status:** Planned, ready to execute. Not started.
 **Decided:** 2026-08-23
 **Supersedes:** the two conflicting TODO.md entries ("Let users opt in to
 warning zones", "Subscribable warning banners"), which disagreed on the
@@ -10,63 +10,62 @@ default. This document is the decision.
 
 ## Problem
 
-The sitewide warning banner interrupts every page. It currently fires for a
-hardcoded pair — `DEFAULT_BANNER_ZONES` in
-`site/assets/js/shared/warning-zones.js` — while the feed carries nine zones
-and the forecasts page renders all of them.
+The sitewide warning banner interrupts every page. It fires for a hardcoded
+pair — `DEFAULT_BANNER_ZONES` in `site/assets/js/shared/warning-zones.js` —
+while the feed carries nine zones and the forecasts page renders all of them.
 
-That pairing was the right call on 2026-08-20 and it is still the right
-*default*, but it is the wrong *ceiling*. A Howe Sound boater gets no banner
-for the water they are actually on, and the only way to change that today is
-to edit a constant in a JavaScript file.
+That pairing is the right *default* and the wrong *ceiling*. A Howe Sound
+boater gets no banner for the water they are on, and the only way to change
+that today is to edit a constant in a JavaScript file.
 
-The failure mode that governs every choice below: **a banner that cries wolf
-is a banner people dismiss on reflex, which costs exactly the warning that
-mattered.** Widening the default to all nine zones trades a miss for a habit,
-and the habit is worse.
+The failure mode governing every choice below: **a banner that cries wolf is a
+banner people dismiss on reflex, which costs exactly the warning that
+mattered.** Widening the default to all nine zones trades one miss for a
+habit, and the habit is worse — it costs every future warning, not one.
 
-## Decisions (user, 2026-08-23)
+## Decisions
 
 | Question | Decision |
 |---|---|
-| First-visit default | Home waters (the current SoG pair) — **plus Storm warnings from any carried zone, always** |
-| Picker location | A section on `forecasts.html`, with sitewide entry points (see below) |
+| First-visit default | Strait of Georgia north + south, **plus storm warnings from any carried zone, always** |
+| Picker location | The forecasts page. Only there. |
 | Zero zones selected | Allowed, silently. No nag, no forced minimum. |
 
-### Why storm-always
+### The storm floor
 
-Severity is the second axis, and this is the one case where the default
-cannot be allowed to lose. A storm warning is 48+ kt; a reader who never
-found the picker should still be interrupted by one, wherever it is. Gale and
-strong-wind warnings stay zone-scoped, which is what keeps the banner quiet
-enough to be believed.
+Severity is the second axis and the one place the default cannot be allowed
+to lose. A storm warning is 48+ kt; a reader who never found the picker
+should still be interrupted by one, wherever it is. Gale and strong-wind
+warnings stay zone-scoped, which is what keeps the banner quiet enough to be
+believed.
 
-This is a *floor*, not an override: it applies to the resolved zone set
-whether that came from the default or from the reader's own choice. A reader
-who deliberately turns every zone off still sees storm warnings — the one
-place we do not honour "off", and the reason the zero-zone state can be
-allowed silently at all.
+Precedent: US Wireless Emergency Alerts let you opt out of most categories
+but never national alerts, and NWS's own site never lets you suppress its top
+tier in-page. This is a trodden pattern, not an invention.
 
-### Why the forecasts page, and why that is not sufficient
+It is a **floor, not an override**: it applies to the resolved zone set
+whether that came from the default or the reader's own choice. A reader who
+deliberately turns every zone off still sees storm warnings — the one place
+we do not honour "off", and the reason the zero-zone state can be allowed
+silently at all.
 
-The picker belongs next to the zone `<select>` it mirrors — same vocabulary,
-same list, one page owning the concept. But the reader who most needs it is
-precisely the one who never visits that page: they are outside the default
-zones, so they never see a banner, so a banner-borne link never appears.
-Discovery therefore cannot depend on either surface alone. Three entry
-points, in order of who they catch:
+### Why the forecasts page is enough
 
-1. **The banner itself** — a small "zones" affordance. Catches the reader
-   annoyed *right now*. Must not disturb the ≤768px layout, where the whole
-   banner is already a stretched overlay link (see
-   `warning-banner-v4.css`); most likely this control is desktop-only, or
-   sits above the stretched link in z-order with its own tap target the way
-   `.warning-dismiss-btn` already does.
-2. **The footer** — present on all seven pages via `components/footer.html`.
-   Catches the reader who has never had a banner fire. This is the entry
-   point that actually answers the objection above.
-3. **The forecasts page section** — the canonical home, where the control
-   lives and where both links point.
+The earlier worry was that a reader who never visits the forecasts page never
+finds the picker. The resolution is not more surfaces — it is **putting the
+control where that reader necessarily ends up.**
+
+- A reader who *sees* a banner and wants to change it already has a path: the
+  banner links to the forecasts page (shipped in `c559ab8`), and now lands on
+  the right zone.
+- A reader who cares about a non-default zone has to visit the forecasts page
+  to read that zone's forecast at all. The picker sits next to the zone
+  selector, and the zone card itself carries an inline "alert me about this
+  zone" toggle — so choosing to *read* Howe Sound puts the control to *be
+  alerted about* Howe Sound directly under their eyes.
+
+That inline toggle is the discovery mechanism. It is why no footer link,
+no banner gear, and no separate settings page are needed.
 
 ---
 
@@ -74,121 +73,157 @@ points, in order of who they catch:
 
 ### Storage
 
-One key, matching the `selected_marine_zone` pattern already in
-`forecasts.js`:
+One key, matching the `selected_marine_zone` pattern in `forecasts.js`:
 
 - Key: `warning_banner_zones`
 - Value: JSON array of zone keys, e.g. `["howe_sound","haro_strait"]`
 - Absent key = never chosen = use the default. **`[]` is a real choice and
-  must not be confused with absent** — this is the whole reason the value is
-  a JSON array rather than a comma-joined string, where `""` and "unset" are
+  must not be confused with absent** — the whole reason the value is a JSON
+  array rather than a comma-joined string, where `""` and "unset" are
   indistinguishable.
 
-Zone keys stored here may vanish from a later `marine_forecast.json` (an sr3
-`accept` change, an EC rename). Stored keys are therefore filtered against
-the live document at read time, never trusted as a list in their own right.
-A stored key that no longer appears is dropped from the effective set but
-**left in storage**, so a temporarily missing bulletin does not silently
-erase a preference the reader made.
+Stored zone keys may vanish from a later `marine_forecast.json` (an sr3
+`accept` change, an EC rename). They are filtered against the live document
+at read time, never trusted as a list in their own right. A stored key that
+no longer appears is dropped from the effective set but **left in storage**,
+so a temporarily missing bulletin does not silently erase a preference.
+
+All `localStorage` access wrapped in try/catch (private browsing, disabled
+site data), degrading to the default rather than throwing — the pattern
+`forecasts.js` already uses for `ZONE_STORAGE_KEY`.
 
 ### Module layout
 
-The existing split is the right one and should hold: `shared/warning-zones.js`
-is pure (data in, data out, unit-tested without a browser),
-`warning-banner.js` owns the DOM. Reading `localStorage` inside
-`getBannerZones()` would break that, so:
+The existing split holds: `shared/warning-zones.js` is pure (data in, data
+out, unit-tested without a browser), `warning-banner.js` owns the DOM.
+Reading `localStorage` inside `getBannerZones()` would break that.
 
-- **New** `site/assets/js/shared/warning-preferences.js` — pure, storage
-  injectable:
-  - `readBannerZones(storage)` → `string[] | null` (null = never chosen)
-  - `writeBannerZones(storage, zoneKeys)` → void
-  - `resolveBannerZones(stored, availableZoneKeys)` → the effective set,
-    applying the default and the availability filter
-  - `listAvailableZones(data)` → the pickable list from
-    `marine_forecast.json` (this already exists in spirit as `listZones()`
-    in `forecasts.js` — **extract and share it rather than write a second
-    copy**; two zone-flattening functions is exactly the two-sources-of-truth
-    trap this repo keeps stepping on)
-- **Changed** `shared/warning-zones.js`:
-  - `getBannerZones()` gains the stored selection as its input, keeping the
-    function pure
-  - `collectActiveWarnings(data, bannerZones)` gains the storm floor: a
-    warning whose severity is storm passes the zone filter regardless. The
-    floor lives here, next to `SEVERITY_ORDER`, not in the picker — the
-    picker must not be able to switch it off.
-- **New** `site/assets/js/warning-zone-picker.js` — the DOM half of the
-  picker, imported by `forecasts.js`.
+**New — `site/assets/js/shared/marine-zones.js`** (extracted, see Step 1):
+- `listZones(data)` — flatten `{areas:{locations:{}}}` into a zone list
+- `shortZoneLabel(zoneName, areaName)` — drop the area prefix
+- `orderZonesForDisplay(zones)` — home-area-first ordering, keyed off
+  `DEFAULT_ZONE_KEY`
 
-`localStorage` reads/writes are wrapped in try/catch throughout (private
-browsing, disabled site data), degrading to the default rather than throwing
-— the pattern `forecasts.js` already uses for `ZONE_STORAGE_KEY`.
+**New — `site/assets/js/shared/warning-preferences.js`** (pure, storage
+injected):
+- `readBannerZones(storage)` → `string[] | null` (null = never chosen)
+- `writeBannerZones(storage, zoneKeys)` → void
+- `resolveBannerZones(stored, availableZoneKeys)` → effective set, applying
+  the default and the availability filter
 
-### Picker UI
+**Changed — `shared/warning-zones.js`**:
+- `getBannerZones(stored, available)` takes the stored selection as input,
+  staying pure
+- `collectActiveWarnings(data, bannerZones)` gains the storm floor: a warning
+  classified storm passes the zone filter regardless. The floor lives here,
+  beside `SEVERITY_ORDER` — **the picker must not be able to switch it off.**
 
-A checklist, not a multi-select: nine checkboxes grouped by area, reusing the
-same shortened labels and the same Strait-of-Georgia-first ordering the zone
-`<select>` now uses (`shortZoneLabel()` and the `DEFAULT_ZONE_KEY`-derived
-pin in `forecasts.js` — extract both alongside `listZones()`).
+**Changed — `warning-banner.js`**: reads storage, passes the resolved set in.
 
-Inside a `<details>` styled like `.verification-help`, collapsed by default:
-this is a settings control on a page whose job is forecasts, and it should
-not compete with them.
+**New — `site/assets/js/warning-zone-picker.js`**: the DOM half, imported by
+`forecasts.js`.
 
-A standing line under the list states the storm floor in plain words, so the
-reader understands why they may still be interrupted by a zone they unchecked.
+### UI on forecasts.html
 
-### Copy that must change
+**A. The picker**, under the zone `<select>`. A `<details>` styled like
+`.verification-help` (border, muted background — shipped this session),
+collapsed by default: a settings control on a page whose job is forecasts
+should not compete with them.
 
-`components/footer.html` enumerates what the site stores: *"your wave-height
-alert threshold, dismissed warnings, and light/dark theme"*. Adding a key
-without adding it to that sentence makes the privacy note false. This is not
-a nicety — it is the same tracked-vs-served distinction that governs
-`site/data/`.
+- Summary line states the current set: *"Alerting on: Strait of Georgia
+  north, south — plus storms anywhere"*
+- Body: nine checkboxes grouped by area, reusing `shortZoneLabel()` and
+  `orderZonesForDisplay()` so the vocabulary and ordering match the
+  `<select>` exactly
+- A standing line under the list states the storm floor in plain words, so a
+  reader understands why an unchecked zone may still interrupt them
+
+**B. The inline toggle**, inside the rendered zone card, one line under the
+heading: *"☐ Alert me sitewide about warnings here."* Checked when the zone
+is in the effective set. Writes the same key; both controls re-render each
+other.
+
+Both are checkboxes, not a multi-select — nine is too many for a
+`<select multiple>` on a phone.
 
 ---
 
+## Sequence
+
+Each step is independently landable and verifiable.
+
+**Step 1 — Extract the shared zone helpers.** Pure refactor. Move
+`listZones`, `shortZoneLabel`, and the home-area pin out of `forecasts.js`
+into `shared/marine-zones.js`; `forecasts.js` imports them.
+*Done when:* the forecasts page DOM is byte-identical to `dc61db8` (capture
+`#forecast-container` innerHTML both sides per the `verify` skill's DOM-diff
+recipe), and the dropdown order is unchanged.
+
+**Step 2 — `shared/warning-preferences.js` + tests.** No UI, nothing wired
+up. *Done when:* `tests/js/warning-preferences.test.mjs` passes.
+
+**Step 3 — The storm floor.** Add it to `collectActiveWarnings()`, extend
+`tests/js/warning-zones.test.mjs`. **Ships a real behaviour change on its
+own** — storm warnings begin bannering sitewide — and depends on no UI. This
+is the safety improvement; land it before the picker exists.
+
+**Step 4 — Wire storage into the banner.** `warning-banner.js` reads the key
+and passes the resolved set to `collectActiveWarnings`. Still no UI, so the
+key is always absent and behaviour is unchanged — this step is pure
+plumbing, and that is the point: it can be verified to change nothing.
+
+**Step 5 — The picker UI.** `warning-zone-picker.js` + the `<details>` block
+on `forecasts.html`.
+
+**Step 6 — The inline per-zone toggle** in the zone card.
+
+**Step 7 — Update the footer privacy copy.** `components/footer.html`
+enumerates what the site stores: *"your wave-height alert threshold,
+dismissed warnings, and light/dark theme"*. Adding a key without adding it to
+that sentence makes the privacy note false. Not optional.
+
 ## Testing
 
-Node unit tests in `tests/js/warning-zones.test.mjs` (extend) and a new
-`tests/js/warning-preferences.test.mjs`, with a fake storage object:
+Node unit tests with a fake storage object — extend
+`tests/js/warning-zones.test.mjs`, add `tests/js/warning-preferences.test.mjs`:
 
 - absent key → default pair
-- `[]` → empty set, and *still* banners a storm warning
+- `[]` → empty set, and **still banners a storm warning**
+- corrupt JSON in the key → treated as absent, does not throw
+- storage that throws on read/write → treated as absent, does not throw
 - stored zone absent from the document → dropped from the effective set,
-  retained in storage
-- stored zone list round-trips through write/read
+  **retained in storage**
+- stored list round-trips through write/read
 - storm warning outside every selected zone → banners
 - gale warning outside every selected zone → does not banner
 - gale warning inside a selected zone → banners
-- corrupt JSON in the key → treated as absent, does not throw
 
-Browser-level, via the `verify` skill (not the console-error suite, which
-only catches errors): check the box for a non-default zone, reload, confirm a
-warning in that zone raises the banner and that the banner's zone deep link
-still lands correctly (the behaviour shipped in `c559ab8`).
+Browser-level via the `verify` skill (the console-error suite only catches
+errors, not behaviour): check a non-default zone, reload, confirm a warning
+in that zone raises the banner; confirm the banner's zone deep link still
+lands correctly; drive both controls and confirm they re-render each other.
+Both engines, both themes, 390px and 1280px.
 
-## Sequence
+## Deferred, with reasons
 
-1. Extract `listZones()` / `shortZoneLabel()` / the home-area pin out of
-   `forecasts.js` into a shared module. Pure refactor, DOM-diff verifiable —
-   land and confirm before anything else moves.
-2. `shared/warning-preferences.js` + its tests. No UI yet.
-3. Storm floor in `collectActiveWarnings()` + tests. Ships a real behaviour
-   change on its own: storm warnings start banners sitewide.
-4. The picker UI on `forecasts.html`, reading and writing the key.
-5. Footer link + banner affordance; update the footer privacy sentence.
-
-Steps 3 and 4 are each independently shippable, which matters: step 3 is the
-safety improvement and does not depend on any UI existing.
+- **All-alerts index page** (the NWS/weather.gc.ca pattern — one page listing
+  every active warning across all carried zones). Genuinely useful and the
+  standard escape hatch, but it is a new page, not part of this feature.
+- **A quiet count of suppressed warnings** on the forecasts page — *"2 active
+  warnings in zones you don't follow"*. Cheap (`collectActiveWarnings`
+  already walks every area, so the unfiltered set is in hand) and it closes
+  the blind spot that zone filtering creates. Worth doing right after Step 6;
+  held back only to keep this sequence shippable.
+- **Settings-link URL encoding** — the answer to `localStorage` being
+  per-device, and what account-less sites use instead of accounts. Collides
+  with the hash-namespace question below; revisit together.
+- **Footer link, banner gear, dedicated settings page.** Made unnecessary by
+  the inline toggle.
 
 ## Open questions
 
 - **Hash namespace.** TODO.md flags that zone deep links (`#<zone_key>`,
-  shipped in `c559ab8`) share the page's hash space with jump-nav section
-  ids, and a future zone slug could collide with one. The picker does not
-  make this worse, but if the picker gets its own deep link
-  (`#warning-zones`) that is a new reserved id and the overlap should be
-  made explicit then, not later.
-- **Does the banner affordance survive mobile?** Unresolved above; needs
-  measuring against the stretched-overlay layout before it is designed, the
-  way the popup widths were measured rather than eyeballed.
+  shipped in `c559ab8`) share the page's hash space with jump-nav section ids,
+  and a future zone slug could collide with one. This feature does not make it
+  worse, but if the picker gets a deep link (`#warning-zones`) that is a new
+  reserved id, and the overlap should be made explicit then, not later.

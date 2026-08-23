@@ -160,9 +160,10 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       2026-08-23 — see `docs/project/WARNING_ZONE_OPT_IN.md`.** That doc is the
       decision and supersedes both this entry and "Subscribable warning
       banners" below, which disagreed with each other about the default.
-      Settled: default stays the home-waters pair, *plus* storm warnings from
-      any carried zone always banner; picker lives on the forecasts page with
-      footer + banner entry points; zero zones selected is allowed silently.
+      Settled: default stays the Strait of Georgia pair, *plus* storm warnings
+      from any carried zone always banner; the picker lives on the forecasts
+      page and nowhere else, discovered via an inline "alert me about this
+      zone" toggle in the zone card; zero zones selected is allowed silently.
 
 - [x] **`warning-banner.js` test coverage** — DONE 2026-08-20. It was a classic
       script with no exports, so the zone filter could not be unit-tested. The
