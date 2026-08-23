@@ -230,7 +230,20 @@
 # The file is a plain Cookie Clicker export string -- restoring is pasting it
 # into Import Save.
 # See homelab hosts/surfserver/hat-5-cookie-clicker.md.
-29 13 * * * /home/keelando/projects/cookie_clicker/daily-restart.sh >> /home/keelando/projects/cookie_clicker/cron.log 2>&1
+#
+# TWICE DAILY from 2026-08-23. One restart no longer gets there first: Chromium
+# reaches its mem_limit ~10h in and then thrashes ~1GB through /swap.img on the
+# NVMe for the rest of the cycle (~300GiB/day of writes, NAND pinned near 90C).
+# Halving the cycle keeps peak usage inside the 4g cap. Raising the cap alone
+# does not fix a leak, it only moves the hour at which the leak wins.
+#
+# TIMES ARE UTC because this box runs Etc/UTC and Debian cron 3.0pl1 has NO
+# CRON_TZ support -- scheduling is always system time. 08:29/20:29 UTC is
+# 01:29/13:29 in Vancouver during PDT, and 00:29/12:29 during PST. The one-hour
+# winter drift is harmless: the two runs stay exactly 12h apart either way.
+# Minute :29 not :30 on purpose -- :30 already carries a job plus two */30 jobs.
+29 8  * * * /home/keelando/projects/cookie_clicker/daily-restart.sh >> /home/keelando/projects/cookie_clicker/cron.log 2>&1
+29 20 * * * /home/keelando/projects/cookie_clicker/daily-restart.sh >> /home/keelando/projects/cookie_clicker/cron.log 2>&1
 
 # PSI sampler (added 2026-08-09). Appends kernel pressure avg10 to
 # /dev/shm/psi-samples.csv; sys_stats_mqtt.py reads it on its next 15-min push to
