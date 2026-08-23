@@ -19,8 +19,11 @@
  *   3. Call displayWarningBanners() after page load
  */
 
+import { listZones } from "./shared/marine-zones.js";
+import { readBannerZones } from "./shared/warning-preferences.js";
 import {
   collectActiveWarnings,
+  getBannerZones,
   getWarningIcon,
   getWarningId,
   getWarningSeverityClass,
@@ -137,7 +140,15 @@ async function displayWarningBanners(containerId = "warning-banner-container") {
   try {
     const data = await fetchWithTimeout(`/data/marine_forecast.json?t=${Date.now()}`);
 
-    const warnings = collectActiveWarnings(data);
+    // The reader's zone choice, resolved against the zones this document
+    // actually carries. Storage is read here and nowhere else — the zone
+    // filtering itself stays pure in shared/warning-zones.js. A reader who has
+    // never opened the picker on the forecasts page has no stored key and gets
+    // the default pair; the storm floor applies either way.
+    const availableZoneKeys = listZones(data).map((zone) => zone.zoneKey);
+    const bannerZones = getBannerZones(readBannerZones(localStorage), availableZoneKeys);
+
+    const warnings = collectActiveWarnings(data, bannerZones);
 
     // Filter out dismissed warnings
     const activeWarnings = warnings.filter((warning) => {
