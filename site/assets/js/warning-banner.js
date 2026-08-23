@@ -6,12 +6,12 @@
  * classification live in shared/warning-zones.js so they can be unit-tested
  * without a browser. See tests/js/warning-zones.test.mjs.
  *
- * Key Improvements:
- * - Variable dismiss durations based on warning severity
- * - Storm warnings have 24h auto-restore (safety critical)
- * - Better visual hierarchy by severity
- * - Dismissal feedback messages
- * - Accessibility improvements
+ * Dismissal: the × hides every warning currently in effect for 24 hours, at
+ * every severity — there is no per-severity duration, despite what this
+ * comment claimed for a long time. What keeps that safe is the dismissal id
+ * (see getWarningId): it includes the issue time, so a re-issued or newly
+ * issued warning is a different id and breaks through a live dismissal.
+ * EC re-issues these roughly every six hours, which is the real backstop.
  *
  * Usage:
  *   1. Include this script in your HTML
