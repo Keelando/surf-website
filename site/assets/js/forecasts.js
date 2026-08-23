@@ -7,6 +7,12 @@
  */
 
 import { formatForecastTimestamp } from "./shared/format-time.js";
+import {
+  DEFAULT_ZONE_KEY,
+  listZones as listZonesIn,
+  orderZonesForDisplay,
+  shortZoneLabel,
+} from "./shared/marine-zones.js";
 
 let forecastData = null;
 let selectedZoneKey = null;
@@ -29,31 +35,14 @@ const ZONE_SITE_IDS = {
   west_coast_vancouver_island_south: "16200",
 };
 
-// Halibut Bank sits in this zone, so it is what the page opens on.
-const DEFAULT_ZONE_KEY = "strait_of_georgia_south_of_nanaimo";
 const ZONE_STORAGE_KEY = "selected_marine_zone";
 
 /**
- * Flatten the {areas: {locations: {}}} document into a selectable zone list.
- * @returns {Array<Object>} [{zoneKey, zoneName, areaKey, areaName, zoneData, areaData}]
+ * Flatten the loaded forecast document into a selectable zone list.
+ * @returns {Array<Object>} Zone list from shared/marine-zones.js
  */
 function listZones() {
-  if (!forecastData || !forecastData.areas) return [];
-
-  const zones = [];
-  for (const [areaKey, areaData] of Object.entries(forecastData.areas)) {
-    for (const [zoneKey, zoneData] of Object.entries(areaData.locations || {})) {
-      zones.push({
-        zoneKey,
-        zoneName: zoneData.zone_name || zoneKey.replace(/_/g, " "),
-        areaKey,
-        areaName: areaData.area || areaKey.replace(/_/g, " "),
-        zoneData,
-        areaData,
-      });
-    }
-  }
-  return zones;
+  return listZonesIn(forecastData);
 }
 
 /**
@@ -80,31 +69,6 @@ function resolveInitialZone(zones) {
 }
 
 /**
- * Shorten a zone name for display inside its area's <optgroup>.
- *
- * EC's zone_name repeats the area it belongs to ("Juan de Fuca Strait - west
- * entrance"), which inside an optgroup already labelled "Juan de Fuca Strait"
- * is three redundant words on every line — and on a phone it is what pushed
- * the <select> wider than the viewport. The optgroup carries the area, the
- * option carries only what distinguishes it.
- *
- * @param {string} zoneName - Full zone name from the forecast document
- * @param {string} areaName - Area name the zone sits under
- * @returns {string} Display label
- */
-function shortZoneLabel(zoneName, areaName) {
-  if (!areaName || zoneName === areaName) return zoneName;
-
-  // EC uses " - " as the separator; anything else is left alone rather than
-  // guessed at, so an unfamiliar naming shape degrades to the full name.
-  const prefix = `${areaName} - `;
-  if (!zoneName.startsWith(prefix)) return zoneName;
-
-  const rest = zoneName.slice(prefix.length);
-  return rest.charAt(0).toUpperCase() + rest.slice(1);
-}
-
-/**
  * Populate the zone <select>.
  *
  * Areas with several zones become an <optgroup> whose options drop the
@@ -112,9 +76,8 @@ function shortZoneLabel(zoneName, areaName) {
  * labelled identically to its one child, so those are emitted as plain
  * top-level options instead.
  *
- * Home waters are pinned to the top — the area DEFAULT_ZONE_KEY belongs to,
- * read from the data rather than named again here, so the pin follows the
- * default zone if that ever moves. Everything else keeps document order.
+ * Home waters are pinned to the top by orderZonesForDisplay(); everything
+ * else keeps document order.
  *
  * @param {Array<Object>} zones - Zone list from listZones()
  */
@@ -128,12 +91,6 @@ function buildZoneSelector(zones) {
     wrapper.hidden = true;
     return;
   }
-
-  const byArea = new Map();
-  zones.forEach((zone) => {
-    if (!byArea.has(zone.areaName)) byArea.set(zone.areaName, []);
-    byArea.get(zone.areaName).push(zone);
-  });
 
   const makeOption = (zone, label) => {
     const option = document.createElement("option");
@@ -157,15 +114,7 @@ function buildZoneSelector(zones) {
 
   select.textContent = "";
 
-  const homeArea = zones.find((z) => z.zoneKey === DEFAULT_ZONE_KEY)?.areaName;
-  if (homeArea && byArea.has(homeArea)) {
-    appendArea(homeArea, byArea.get(homeArea));
-  }
-
-  for (const [areaName, areaZones] of byArea) {
-    if (areaName === homeArea) continue;
-    appendArea(areaName, areaZones);
-  }
+  orderZonesForDisplay(zones).forEach((group) => appendArea(group.areaName, group.zones));
 
   select.value = selectedZoneKey;
   wrapper.hidden = false;
