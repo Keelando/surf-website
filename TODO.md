@@ -156,15 +156,13 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       Also removed the `.view-data-btn` inline style that had been copy-pasted
       five times across three files — CSS already defined all of it.
 
-- [ ] **Let users opt in to warning zones** (user 2026-08-20): the sitewide
-      banner currently fires for a hardcoded home-waters pair. Users should be
-      able to choose which of the zones we carry may interrupt them. The
-      backend for this already exists — `getBannerZones()` in
-      `warning-banner.js` is the single extension point; the available-zone
-      list comes from `marine_forecast.json` itself, not a hardcoded list.
-      Needs: a picker UI, `localStorage` persistence (match the
-      `selected_marine_zone` pattern in `forecasts.js`), and a sensible
-      default for first-time visitors (`DEFAULT_BANNER_ZONES`).
+- [ ] **Let users opt in to warning zones** (user 2026-08-20): **planned
+      2026-08-23 — see `docs/project/WARNING_ZONE_OPT_IN.md`.** That doc is the
+      decision and supersedes both this entry and "Subscribable warning
+      banners" below, which disagreed with each other about the default.
+      Settled: default stays the home-waters pair, *plus* storm warnings from
+      any carried zone always banner; picker lives on the forecasts page with
+      footer + banner entry points; zero zones selected is allowed silently.
 
 - [x] **`warning-banner.js` test coverage** — DONE 2026-08-20. It was a classic
       script with no exports, so the zone filter could not be unit-tested. The
@@ -245,6 +243,13 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       banners regardless of zone), but zone is the one that matters first.
       *Do not* start this before the zone list is final — the whole point is
       tailoring a list that does not exist yet.
+
+      **Resolved 2026-08-23:** the "default all zones on" instinct recorded
+      above lost to the cry-wolf argument in the same paragraph — widening the
+      default trades a miss for a dismiss-on-reflex habit, and the habit is
+      worse. Severity carries the safety case instead: storm warnings banner
+      from every carried zone regardless of the reader's selection. Full plan
+      in `docs/project/WARNING_ZONE_OPT_IN.md`.
 
 - [ ] **Revisit whether the repo should stay public** (user 2026-08-17):
       decide deliberately rather than by inertia. Audience today is one
