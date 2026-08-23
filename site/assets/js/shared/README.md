@@ -28,8 +28,9 @@ node can import these files in tests; browsers ignore it.
 - `warning-zones.js` — the pure half of the sitewide warning banner: which
   zones may raise one (`DEFAULT_BANNER_ZONES` + `getBannerZones(stored,
   available)`, deliberately narrower than the zones we carry),
-  `collectActiveWarnings` including the storm severity floor, and the
-  severity/icon mapping. Extracted 2026-08-20 so the banner could be tested
+  `collectActiveWarnings` including the storm severity floor,
+  `summarizeBannerWarnings` (how many zones the banner names and what it calls
+  the rest), and the severity/icon mapping. Extracted 2026-08-20 so the banner could be tested
   at all; `warning-banner.js` keeps the DOM, dismissal and htmx wiring and
   became an ES module to import this. Tests: `tests/js/warning-zones.test.mjs`
 - `warning-preferences.js` — reads and writes the reader's banner zone choice

@@ -142,14 +142,64 @@ export function collectActiveWarnings(data, bannerZones = getBannerZones()) {
           zone_key: zoneKey,
           zone_name: zoneData.zone_name || warning.location,
           area_name: areaData.area || "",
+          // Whether the reader asked for this zone, as opposed to the storm
+          // floor dragging it in. Used to order the banner, so a Pacific storm
+          // warning every zone at once still leads with the reader's own water.
+          in_selected_zone: zoneSelected,
         });
       });
     }
   }
 
-  warnings.sort((a, b) => (SEVERITY_ORDER[a.type] || 99) - (SEVERITY_ORDER[b.type] || 99));
+  // Severity first, then the reader's own zones. The second key only matters
+  // when a storm warns many zones at once and they all tie on severity: the
+  // banner shows a few and counts the rest, so which few must be the ones the
+  // reader chose to follow.
+  warnings.sort((a, b) => {
+    const bySeverity = (SEVERITY_ORDER[a.type] || 99) - (SEVERITY_ORDER[b.type] || 99);
+    if (bySeverity !== 0) return bySeverity;
+    return Number(b.in_selected_zone) - Number(a.in_selected_zone);
+  });
 
   return warnings;
+}
+
+/**
+ * Decide how many warnings a banner names and what it calls the rest.
+ *
+ * One Pacific system can warn every zone we carry at once, and the storm floor
+ * means all of them reach the banner whether or not the reader follows those
+ * waters. Nine entries is not a banner, it is a list — and on a phone the
+ * banner text is a single truncated line, so entries past the first few are
+ * invisible anyway while still pushing the ones that matter off the end.
+ *
+ * What the remainder is *called* matters as much as the count. When the named
+ * warnings collapse to a single type, "+6 more" sitting after "STORM WARNING
+ * in effect for A, B, C" reads as six more storms — true only if the hidden
+ * ones really are storms too. When they are not, the remainder is counted in
+ * warnings instead, so the banner can never quietly promote a gale.
+ *
+ * @param {Array<Object>} warnings - Active warnings, already severity-sorted
+ * @param {number} [maxNamed] - How many to name individually
+ * @returns {{shown: Array<Object>, hidden: number, sameType: boolean, moreLabel: string|null}}
+ */
+export function summarizeBannerWarnings(warnings, maxNamed = 3) {
+  const all = Array.isArray(warnings) ? warnings : [];
+  const shown = all.slice(0, Math.max(0, maxNamed));
+  const rest = all.slice(shown.length);
+
+  // Whether the *named* ones share a type decides whether the banner states
+  // that type once; whether the *hidden* ones share it decides the noun.
+  const sameType = shown.length > 0 && shown.every((w) => w.type === shown[0].type);
+  const restSameType = sameType && rest.every((w) => w.type === shown[0].type);
+
+  let moreLabel = null;
+  if (rest.length > 0) {
+    const noun = restSameType ? "zone" : "warning";
+    moreLabel = `${rest.length} more ${noun}${rest.length === 1 ? "" : "s"}`;
+  }
+
+  return { shown, hidden: rest.length, sameType, moreLabel };
 }
 
 /**

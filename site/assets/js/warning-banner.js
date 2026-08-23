@@ -24,6 +24,7 @@ import { readBannerZones } from "./shared/warning-preferences.js";
 import {
   collectActiveWarnings,
   getBannerZones,
+  summarizeBannerWarnings,
   getWarningIcon,
   getWarningId,
   getWarningSeverityClass,
@@ -207,6 +208,21 @@ async function displayWarningBanners(containerId = "warning-banner-container") {
 }
 
 /**
+ * How many warnings the banner names individually before it starts counting.
+ *
+ * A single Pacific storm can warn every zone we carry at once, and the storm
+ * floor means all of them reach the banner whether or not the reader follows
+ * those waters. Nine entries is not a banner, it is a list — and on a phone
+ * `.warning-text` is a single truncated line, so entries past the first few are
+ * invisible anyway while still pushing the ones that matter off the end.
+ * Three named zones plus an honest count beats nine silently clipped.
+ *
+ * The warnings are already sorted severity-first then the reader's own zones
+ * first, so the three shown are the three most worth showing.
+ */
+const MAX_NAMED_ZONES = 3;
+
+/**
  * Create HTML for a combined warning banner showing all active warnings
  * @param {Array} warnings - Array of warning objects
  * @returns {string} HTML string
@@ -222,20 +238,32 @@ function createCombinedWarningBanner(warnings) {
   // lands on the zone the warning is about — previously it honoured whatever
   // zone you happened to have picked last and the banner appeared to lie.
   const zoneHref = (warning) => `/forecasts.html#${encodeURIComponent(warning.zone_key)}`;
+  const zoneLink = (warning, text) =>
+    `<a class="warning-zone-link" href="${zoneHref(warning)}">${text}</a>`;
+
+  const { shown, sameType, moreLabel } = summarizeBannerWarnings(warnings, MAX_NAMED_ZONES);
+  const moreText = moreLabel
+    ? ` <a class="warning-more-link" href="/forecasts.html">+${moreLabel}</a>`
+    : "";
 
   // Build warning text
   let warningText = "";
   if (warnings.length === 1) {
     warningText = `<strong>${warnings[0].type.toUpperCase()}</strong> in effect for ${warnings[0].zone_name}`;
+  } else if (sameType) {
+    // The many-storms case: one system warning several zones produces the same
+    // type over and over, and repeating "STORM WARNING" three times buries the
+    // only thing that varies. State the type once, then list the waters.
+    const zoneList = shown.map((w) => zoneLink(w, w.zone_name)).join(", ");
+    warningText = `<strong>${shown[0].type.toUpperCase()}</strong> in effect for ${zoneList}${moreText}`;
   } else {
-    // Multiple warnings — each is its own link, so a two-zone banner can send
-    // you to either one rather than only to the most severe.
-    warningText = warnings
-      .map(
-        (w) =>
-          `<a class="warning-zone-link" href="${zoneHref(w)}"><strong>${w.type.toUpperCase()}</strong> for ${w.zone_name}</a>`,
-      )
-      .join(" • ");
+    // Mixed severities — each entry carries its own type, and each is its own
+    // link, so a two-zone banner can send you to either one rather than only to
+    // the most severe.
+    warningText =
+      shown
+        .map((w) => zoneLink(w, `<strong>${w.type.toUpperCase()}</strong> for ${w.zone_name}`))
+        .join(" • ") + moreText;
   }
 
   return `

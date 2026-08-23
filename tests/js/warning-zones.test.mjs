@@ -7,6 +7,7 @@ import {
   getWarningIcon,
   getWarningId,
   getWarningSeverityClass,
+  summarizeBannerWarnings,
 } from "../../site/assets/js/shared/warning-zones.js";
 
 const SOG_SOUTH = "strait_of_georgia_south_of_nanaimo";
@@ -258,6 +259,67 @@ test("getBannerZones returns a copy, never the shared default array", () => {
   assert.deepEqual(DEFAULT_BANNER_ZONES, [SOG_NORTH, SOG_SOUTH]);
 });
 
+test("a storm warning every zone at once leads with the reader's own waters", () => {
+  // One Pacific system can warn every zone we carry, and the storm floor drags
+  // all of them into the banner. They tie on severity, so the reader's own
+  // zones must sort first — the banner names only the first few.
+  const data = doc({
+    west_coast_vancouver_island_south: {
+      area: "WCVI South",
+      locations: { west_coast_vancouver_island_south: zone("WCVI South", [STORM]) },
+    },
+    juan_de_fuca_strait: {
+      area: "Juan de Fuca Strait",
+      locations: { juan_de_fuca_strait_east_entrance: zone("east entrance", [STORM]) },
+    },
+    strait_of_georgia: {
+      area: "Strait of Georgia",
+      locations: { [SOG_SOUTH]: zone("south of Nanaimo", [STORM]) },
+    },
+  });
+
+  const keys = collectActiveWarnings(data, [SOG_SOUTH]).map((w) => w.zone_key);
+  assert.equal(keys[0], SOG_SOUTH);
+  assert.equal(keys.length, 3);
+});
+
+test("severity still outranks the reader's selection", () => {
+  // A storm two zones over matters more than a gale at home, even though home
+  // is the zone that was chosen.
+  const data = doc({
+    strait_of_georgia: {
+      area: "Strait of Georgia",
+      locations: { [SOG_SOUTH]: zone("south of Nanaimo", [GALE]) },
+    },
+    west_coast_vancouver_island_south: {
+      area: "WCVI South",
+      locations: { west_coast_vancouver_island_south: zone("WCVI South", [STORM]) },
+    },
+  });
+
+  const types = collectActiveWarnings(data, [SOG_SOUTH]).map((w) => w.type);
+  assert.deepEqual(types, ["Storm warning", "Gale warning"]);
+});
+
+test("warnings record whether the reader actually follows the zone", () => {
+  const data = doc({
+    strait_of_georgia: {
+      area: "Strait of Georgia",
+      locations: { [SOG_SOUTH]: zone("south of Nanaimo", [STORM]) },
+    },
+    west_coast_vancouver_island_south: {
+      area: "WCVI South",
+      locations: { west_coast_vancouver_island_south: zone("WCVI South", [STORM]) },
+    },
+  });
+
+  const flags = Object.fromEntries(
+    collectActiveWarnings(data, [SOG_SOUTH]).map((w) => [w.zone_key, w.in_selected_zone]),
+  );
+  assert.equal(flags[SOG_SOUTH], true);
+  assert.equal(flags.west_coast_vancouver_island_south, false);
+});
+
 test("warning id includes issue time so a re-issue is not still dismissed", () => {
   const first = getWarningId({ zone_key: SOG_SOUTH, ...GALE });
   const reissued = getWarningId({
@@ -291,4 +353,83 @@ test("icons match warning types", () => {
   assert.equal(getWarningIcon("Gale warning"), "💨");
   assert.equal(getWarningIcon("Strong wind warning"), "🌬️");
   assert.equal(getWarningIcon("Anything else"), "⚠️");
+});
+
+const w = (type, zoneKey) => ({ type, zone_key: zoneKey, zone_name: zoneKey });
+
+test("a short warning list is named in full with nothing left over", () => {
+  const { shown, hidden, sameType, moreLabel } = summarizeBannerWarnings([
+    w("Storm warning", "a"),
+    w("Gale warning", "b"),
+  ]);
+  assert.equal(shown.length, 2);
+  assert.equal(hidden, 0);
+  assert.equal(sameType, false);
+  assert.equal(moreLabel, null);
+});
+
+test("one type across every warning counts the remainder in zones", () => {
+  // "STORM WARNING in effect for A, B, C +6 more zones" — the six really are
+  // six more storm-warned zones, so saying so is accurate.
+  const warnings = ["a", "b", "c", "d", "e", "f", "g", "h", "i"].map((k) =>
+    w("Storm warning", k),
+  );
+  const { shown, hidden, sameType, moreLabel } = summarizeBannerWarnings(warnings);
+  assert.equal(shown.length, 3);
+  assert.equal(hidden, 6);
+  assert.equal(sameType, true);
+  assert.equal(moreLabel, "6 more zones");
+});
+
+test("a mixed remainder is counted in warnings, never in zones", () => {
+  // The regression this guards: the named three are all storms, so the banner
+  // states "STORM WARNING" once. If the hidden ones were then counted as
+  // "zones", the sentence would promote three gales to storm warnings.
+  const warnings = [
+    w("Storm warning", "a"),
+    w("Storm warning", "b"),
+    w("Storm warning", "c"),
+    w("Gale warning", "d"),
+    w("Gale warning", "e"),
+  ];
+  const { sameType, moreLabel } = summarizeBannerWarnings(warnings);
+  assert.equal(sameType, true);
+  assert.equal(moreLabel, "2 more warnings");
+});
+
+test("the overflow count is singular when one warning is left over", () => {
+  const four = [
+    w("Storm warning", "a"),
+    w("Storm warning", "b"),
+    w("Storm warning", "c"),
+    w("Storm warning", "d"),
+  ];
+  assert.equal(summarizeBannerWarnings(four).moreLabel, "1 more zone");
+
+  const mixed = [...four.slice(0, 3), w("Gale warning", "d")];
+  assert.equal(summarizeBannerWarnings(mixed).moreLabel, "1 more warning");
+});
+
+test("mixed named types stop the banner from stating one type", () => {
+  const { sameType } = summarizeBannerWarnings([
+    w("Storm warning", "a"),
+    w("Gale warning", "b"),
+    w("Storm warning", "c"),
+  ]);
+  assert.equal(sameType, false);
+});
+
+test("summarising an empty or malformed list does not throw", () => {
+  assert.deepEqual(summarizeBannerWarnings([]), {
+    shown: [],
+    hidden: 0,
+    sameType: false,
+    moreLabel: null,
+  });
+  assert.equal(summarizeBannerWarnings(undefined).hidden, 0);
+});
+
+test("the named cap is adjustable", () => {
+  const warnings = [w("Gale warning", "a"), w("Gale warning", "b"), w("Gale warning", "c")];
+  assert.equal(summarizeBannerWarnings(warnings, 1).moreLabel, "2 more zones");
 });
