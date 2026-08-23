@@ -4,7 +4,9 @@
  * Two controls, one preference:
  *
  *   1. A collapsed `<details>` under the zone `<select>`, listing every zone
- *      we carry as a checkbox, grouped by area.
+ *      we carry as a checkbox, grouped by area. Its summary is static copy in
+ *      forecasts.html — it names the control and states the storm floor, which
+ *      is the one thing a reader needs before opening it.
  *   2. An inline "alert me about this zone" checkbox inside the rendered zone
  *      card — the discovery mechanism. A reader who cares about Howe Sound has
  *      to come here to read Howe Sound's forecast at all, which puts the
@@ -24,7 +26,7 @@ import { getBannerZones } from "./shared/warning-zones.js";
 
 const PICKER_ID = "warning-zone-picker";
 const PICKER_LIST_ID = "warning-zone-picker-list";
-const PICKER_SUMMARY_ID = "warning-zone-picker-summary";
+const PICKER_COLLAPSE_ID = "warning-zone-picker-collapse";
 const INLINE_TOGGLE_ID = "zone-alert-toggle";
 
 /** The zone list for the current document, set by renderWarningZoneControls(). */
@@ -80,36 +82,6 @@ function setZoneSelected(zoneKey, wanted) {
  */
 function zoneLabel(zone, areaHasSiblings) {
   return areaHasSiblings ? shortZoneLabel(zone.zoneName, zone.areaName) : zone.zoneName;
-}
-
-/**
- * One line stating the current selection, shown on the collapsed summary.
- *
- * Grouped by area so "Strait of Georgia north of Nanaimo, south of Nanaimo"
- * reads as one body of water rather than two orphaned fragments.
- *
- * @param {Array<string>} selected - Effective zone keys
- * @returns {string} Summary text
- */
-function summaryText(selected) {
-  const groups = orderZonesForDisplay(currentZones.filter((z) => selected.includes(z.zoneKey)));
-
-  const phrases = groups.map((group) => {
-    const areaZones = currentZones.filter((z) => z.areaName === group.areaName);
-    if (group.zones.length === 1 && areaZones.length === 1) {
-      return group.zones[0].zoneName;
-    }
-    const parts = group.zones.map((zone) => {
-      const short = shortZoneLabel(zone.zoneName, group.areaName);
-      return short === zone.zoneName ? short : short.charAt(0).toLowerCase() + short.slice(1);
-    });
-    return `${group.areaName} ${parts.join(", ")}`;
-  });
-
-  if (phrases.length === 0) {
-    return "Alerting on: storm warnings only, anywhere";
-  }
-  return `Alerting on: ${phrases.join("; ")} — plus storms anywhere`;
 }
 
 /**
@@ -203,9 +175,6 @@ function renderInlineToggle(selected) {
 function render() {
   const selected = effectiveZoneKeys();
 
-  const summary = document.getElementById(PICKER_SUMMARY_ID);
-  if (summary) summary.textContent = summaryText(selected);
-
   renderPickerList(selected);
   renderInlineToggle(selected);
 }
@@ -227,6 +196,18 @@ export function renderWarningZoneControls(zones, selectedZoneKey) {
   const picker = document.getElementById(PICKER_ID);
   // One zone is not worth a picker, matching the `<select>` next to it.
   if (picker) picker.hidden = currentZones.length < 2;
+
+  const collapse = document.getElementById(PICKER_COLLAPSE_ID);
+  if (picker && collapse && !collapse.dataset.listenerAttached) {
+    collapse.addEventListener("click", () => {
+      picker.open = false;
+      // Closing a tall control can leave it above the viewport, so the page
+      // appears to have jumped somewhere else. Bring it back only if it is
+      // already out of view.
+      picker.scrollIntoView({ block: "nearest" });
+    });
+    collapse.dataset.listenerAttached = "true";
+  }
 
   render();
 }

@@ -210,11 +210,16 @@ Both engines, both themes, 390px and 1280px.
 - **All-alerts index page** (the NWS/weather.gc.ca pattern — one page listing
   every active warning across all carried zones). Genuinely useful and the
   standard escape hatch, but it is a new page, not part of this feature.
+  **Largely answered 2026-08-23** by the jump strip on the forecasts page,
+  which is that list without the new page. A dedicated page would only add a
+  linkable URL for it.
 - **A quiet count of suppressed warnings** on the forecasts page — *"2 active
   warnings in zones you don't follow"*. Cheap (`collectActiveWarnings`
   already walks every area, so the unfiltered set is in hand) and it closes
   the blind spot that zone filtering creates. Worth doing right after Step 6;
   held back only to keep this sequence shippable.
+  **Superseded 2026-08-23** by the jump-to-warning strip, which names the
+  warnings rather than counting them — see the follow-up section below.
 - **Settings-link URL encoding** — the answer to `localStorage` being
   per-device, and what account-less sites use instead of accounts. Collides
   with the hash-namespace question below; revisit together.
@@ -279,3 +284,81 @@ quiet count of suppressed warnings on the forecasts page ("2 active warnings in
 zones you don't follow"), then the all-alerts index page. The hash-namespace
 open question is also unchanged — the picker did not get a deep link, so no
 new reserved id was introduced.
+
+---
+
+## Follow-up — 2026-08-23, same session
+
+User feedback after living with the shipped version, plus what testing it
+turned up.
+
+### Changed
+
+**The picker summary is static copy.** It read *"Alerting on: Strait of
+Georgia north of Nanaimo, south of Nanaimo — plus storms anywhere"*, which
+with all nine zones subscribed became a paragraph on a control that is
+supposed to be closed. It is now *"Customize alerts (storm warnings will
+always issue a warning banner)"* — it names the control and states the floor,
+which is the only thing a reader needs before opening it. The standing floor
+paragraph inside the body went with it; saying the same thing twice three
+inches apart is noise. The cost, accepted: the closed control no longer tells
+you which zones you follow. Opening it does.
+
+**A collapse control at the foot of the picker.** Nine zones make a list tall
+enough that the summary you opened is off-screen by the time you finish
+ticking. A full-width ▲ band closes it without scrolling back up. Two bugs
+found while building it: hovering only recoloured the glyph, so most of a
+100%-wide button felt dead (now the whole band lights up); and `width: auto`
+on a `display: block` `<button>` shrink-wraps in Firefox, collapsing the band
+to 10 px — Chromium filled it. Stated width now, not `auto`.
+
+**The zone dropdown remembers for the session, not forever.** `selected_marine_zone`
+moved from `localStorage` to `sessionStorage`, so clicking through zones in one
+sitting sticks but a new visit opens on home waters. The stale `localStorage`
+key is removed on read, so an old choice cannot keep overriding the default.
+
+**Many warnings at once.** The banner names at most three zones and counts the
+rest. When the named three share a type it states that type once — "STORM
+WARNING in effect for A, B, C" beats saying STORM WARNING three times. What the
+remainder is *called* is load-bearing: "+6 more zones" only when the hidden ones
+share that type, otherwise "+6 more warnings", so the banner can never promote
+three gales to storm warnings by implication. Within a severity tie, warnings in
+the reader's own zones sort first, so the three named are the three worth
+naming. The logic is `summarizeBannerWarnings()` in `shared/warning-zones.js`,
+pure and unit-tested; `warning-banner.js` only renders it.
+
+**A jump-to-warning strip at the top of the forecasts page** — severity-coloured
+chips, one per active warning, each switching the page to that zone. It is
+deliberately **unfiltered**: it lists every warning in every zone we carry,
+regardless of the reader's banner subscription. That closes the blind spot zone
+filtering creates, and supersedes the deferred "quiet count of suppressed
+warnings" with something better than a count.
+
+### Bugs this work surfaced
+
+- **The storm banner put a horizontal scrollbar on every page carrying one.**
+  `stormPulse` animated `transform: scale(1.002)` on a 100%-wide element, which
+  is ~3 px past the viewport at 1280. Pre-existing, but only two zones could
+  raise a storm banner before — the severity floor made it reachable from any
+  carried zone. The keyframe is shadow-only now; it still reads as urgent.
+- **The gale chip failed AA.** White on the banner's `#ea580c` is 3.55:1,
+  under the 4.5:1 floor for text that size. The chips use the dark end of each
+  severity ramp instead (5.2–9.0:1).
+
+### Known, not fixed
+
+`aria-prohibited-attr` on `#wave-forecast-chart` and `#wave-verification-chart`:
+ECharts' `aria.enabled` (turned on centrally in `chart-utils-v4.js`) writes an
+`aria-label` onto a bare `<div>`, which needs `role="img"` to be valid. This
+affects **every chart on every page**, is unrelated to warnings, and deserves
+its own pass with verification across all of them rather than a drive-by fix
+here.
+
+### Verified
+
+Both engines, both themes, 390/600/1280 px, zero console errors and — apart
+from the pre-existing ECharts issue above — zero axe violations. Scenarios
+driven: live feed, all nine zones storm-warned, nine zones with mixed
+severities, and no warnings at all. Worst-case strip height on a phone came
+down from ~500 px to 384 px by dropping the chip emoji under 600 px, the same
+call the banner already makes about its own icon.

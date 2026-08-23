@@ -156,14 +156,32 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       Also removed the `.view-data-btn` inline style that had been copy-pasted
       five times across three files — CSS already defined all of it.
 
-- [ ] **Let users opt in to warning zones** (user 2026-08-20): **planned
-      2026-08-23 — see `docs/project/WARNING_ZONE_OPT_IN.md`.** That doc is the
-      decision and supersedes both this entry and "Subscribable warning
-      banners" below, which disagreed with each other about the default.
-      Settled: default stays the Strait of Georgia pair, *plus* storm warnings
-      from any carried zone always banner; the picker lives on the forecasts
-      page and nowhere else, discovered via an inline "alert me about this
-      zone" toggle in the zone card; zero zones selected is allowed silently.
+- [x] **Let users opt in to warning zones** (user 2026-08-20): **DONE
+      2026-08-23 — plan and outcome in `docs/project/WARNING_ZONE_OPT_IN.md`.**
+      That doc superseded both this entry and "Subscribable warning banners"
+      below, which disagreed with each other about the default. Shipped as
+      planned: default stays the Strait of Georgia pair, *plus* storm warnings
+      from any carried zone always banner (`clearsSeverityFloor` in
+      `shared/warning-zones.js` — the picker cannot switch it off); the picker
+      lives on the forecasts page and nowhere else, discovered via an inline
+      "alert me about this zone" toggle in the zone card; zero zones selected
+      is allowed silently. Stored under `warning_banner_zones` as a JSON array,
+      so `[]` stays distinguishable from "never chosen".
+      Follow-up the same day, from using it: static picker summary, a collapse
+      control, session-scoped zone memory, a capped banner for the
+      many-warnings case, and an unfiltered jump-to-warning strip on the
+      forecasts page (which supersedes the deferred "quiet count of suppressed
+      warnings" and most of the all-alerts page). Two bugs fell out — the storm
+      banner's `scale()` pulse overflowed the viewport horizontally, and the
+      gale chip failed AA contrast.
+
+- [ ] **`aria-label` on bare chart `<div>`s** (found 2026-08-23): ECharts'
+      `aria.enabled`, turned on centrally in `chart-utils-v4.js`, writes an
+      `aria-label` onto the container div, which needs `role="img"` to be a
+      valid attribute there. axe reports `aria-prohibited-attr`; it affects
+      every chart on every page. One central fix in the `setOption` wrapper's
+      neighbourhood, but it wants verification across all chart pages rather
+      than a drive-by change.
 
 - [x] **`warning-banner.js` test coverage** — DONE 2026-08-20. It was a classic
       script with no exports, so the zone filter could not be unit-tested. The
@@ -226,7 +244,9 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       both through one handler), or a future zone slug will collide with a
       section id and silently change which zone the page opens on.
 
-- [ ] **Subscribable warning banners** (user 2026-08-20): let the reader choose
+- [x] **Subscribable warning banners** (user 2026-08-20): **superseded — see
+      "Let users opt in to warning zones" above, shipped 2026-08-23.** Kept for
+      the reasoning that produced the decision. Let the reader choose
       *which* zones' warnings raise the sitewide banner, instead of all of them.
       This follows directly from carrying every Pacific zone. Today
       `collectActiveWarnings` in `site/assets/js/warning-banner.js` walks every

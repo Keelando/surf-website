@@ -22,7 +22,7 @@
   <link rel="canonical" href="https://halibutbank.ca/forecasts.html" />
   <link rel="stylesheet" href="/assets/css/style-v4.css?v=bba861b406" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
-  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=d3d6b9e8d9" />
+  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=3e83e68729" />
 
   <style>
     html {
@@ -448,6 +448,114 @@
       padding: 0.6rem 0.7rem 0.7rem;
     }
 
+    /* --- Jump-to-warning strip ------------------------------------------
+       Sits above both forecast kinds because it is about the page, not about
+       either one. Chips rather than a list: a reader scanning for "is my water
+       warned?" is matching a name, and names in a row are faster to scan than
+       names down a column. */
+    .warning-jump {
+      margin: 0 0 1.5rem;
+      padding: 0.85rem 1rem;
+      background: var(--color-card-muted-bg);
+      border: 1px solid var(--color-border-light);
+      border-left: 4px solid var(--color-accent-orange);
+      border-radius: 8px;
+    }
+
+    .warning-jump[hidden] {
+      display: none;
+    }
+
+    .warning-jump-heading {
+      margin: 0 0 0.6rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+    }
+
+    .warning-jump-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .warning-jump-item {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.45rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      color: #fff;
+      text-decoration: none;
+      /* Chips carry their meaning in colour, so they must not also depend on
+         it: the type is spelled out on every one. */
+      background: var(--color-text-muted);
+    }
+
+    .warning-jump-item:hover,
+    .warning-jump-item:focus-visible {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .warning-jump-item:focus-visible {
+      outline: 2px solid var(--color-accent-blue);
+      outline-offset: 2px;
+    }
+
+    /* Same severity ramp as the banner, deliberately: a reader who has seen the
+       red banner should recognise the red chip as the same warning. Solid
+       rather than the banner's gradient — these are small. */
+    /* Each is the dark end of its banner ramp, not the mid tone: the chips
+       carry white text at 12-14px, and the banner's own gale orange (#ea580c)
+       only reaches 3.55:1 against white, under the 4.5:1 AA floor for text
+       this size. These clear it — 8.3, 5.2, 7.1, 9.0 and 8.7 respectively. */
+    .warning-jump-item.warning-storm { background: #991b1b; }
+    .warning-jump-item.warning-gale { background: #c2410c; }
+    .warning-jump-item.warning-strong-wind { background: #92400e; }
+    .warning-jump-item.warning-waterspout { background: #5b21b6; }
+    .warning-jump-item.warning-default { background: #1e40af; }
+
+    .warning-jump-type {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    /* Nine zones warned at once is the worst case, and on a phone it is the
+       case where the strip costs the most: every chip wraps to two lines and
+       the forecast itself is pushed a screen and a half down. The emoji is the
+       first thing to go — the severity is spelled out beside it and carried by
+       the colour, exactly as the warning banner already reasons when it drops
+       its own icon on mobile. */
+    @media (max-width: 600px) {
+      .warning-jump {
+        padding: 0.7rem 0.8rem;
+      }
+
+      .warning-jump-list {
+        gap: 0.4rem;
+      }
+
+      .warning-jump-item {
+        gap: 0.35rem;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
+      }
+
+      .warning-jump-item > [aria-hidden="true"] {
+        display: none;
+      }
+    }
+
     /* --- Warning-zone opt-in (docs/project/WARNING_ZONE_OPT_IN.md) --- */
 
     /* Borrows .verification-help's boxed-disclosure shape; only the spacing
@@ -458,8 +566,9 @@
       max-width: 32rem;
     }
 
-    /* The summary states the current selection, so it is a sentence rather
-       than a label and wraps on a phone instead of being clipped. */
+    /* The summary states the storm floor as well as naming the control, so it
+       is a sentence rather than a label and wraps on a phone instead of being
+       clipped. */
     .warning-zone-picker > summary {
       font-weight: 500;
       white-space: normal;
@@ -517,16 +626,54 @@
       accent-color: var(--color-accent-blue);
     }
 
-    /* States the severity floor in plain words, so an unticked zone that
-       interrupts anyway is explained before it happens rather than after. */
-    .warning-zone-floor {
-      margin: 0.75rem 0 0;
-      padding-top: 0.6rem;
+
+    /* Full-width so it is unmissable at the foot of a long list, and quiet
+       enough not to read as a second action beside the checkboxes. */
+    .warning-zone-collapse {
+      display: block;
+      /* Bled out to the panel's own edges (cancelling the body's 0.7rem
+         padding) so the hover band reads as the foot of the box rather than a
+         floating strip inside it. The width is stated rather than left to
+         `auto`: a <button> shrink-wraps its content in Firefox even at
+         display:block, which collapsed this to the width of the triangle. */
+      width: calc(100% + 1.4rem);
+      box-sizing: border-box;
+      margin: 0.75rem -0.7rem -0.7rem;
+      padding: 0.55rem 0;
+      border: none;
       border-top: 1px solid var(--color-border-light);
-      font-size: 0.85rem;
-      line-height: 1.5;
+      border-radius: 0 0 6px 6px;
+      background: none;
+      transition: background-color 0.15s ease, color 0.15s ease;
       color: var(--color-text-muted);
+      font-family: inherit;
+      font-size: 0.85rem;
+      line-height: 1;
+      text-align: center;
+      cursor: pointer;
     }
+
+    /* The whole row is the target, so the whole row has to react — a hover
+       effect on the glyph alone makes a 100%-wide button look like a tiny one
+       and leaves most of its own hit area feeling dead. --color-surface is the
+       panel's opposite in both themes (white against the muted panel in light,
+       darker than it in dark), so the band is visible either way without a
+       page-local colour of its own. */
+    .warning-zone-collapse:hover {
+      color: var(--color-accent-blue);
+      background: var(--color-surface);
+    }
+
+    .warning-zone-collapse:active {
+      background: var(--color-border-light);
+    }
+
+    .warning-zone-collapse:focus-visible {
+      outline: 2px solid var(--color-accent-blue);
+      outline-offset: -2px;
+    }
+
+
 
     /* The inline toggle in the zone card: the discovery path for a reader who
        came to read one zone and did not know the picker existed. */
@@ -794,6 +941,15 @@
   <div hx-get="/components/tagline-forecasts.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
 
   <div class="forecast-main-content">
+    <!-- Every warning in force anywhere we carry, unfiltered by the reader's
+         banner subscription. The sitewide banner is deliberately narrow; this
+         is the page where you see the whole picture, and it closes the blind
+         spot that zone filtering otherwise creates. Filled in by forecasts.js. -->
+    <nav id="warning-jump" class="warning-jump" aria-labelledby="warning-jump-heading" hidden>
+      <h2 id="warning-jump-heading" class="warning-jump-heading">Warnings in effect</h2>
+      <ul id="warning-jump-list" class="warning-jump-list"></ul>
+    </nav>
+
     <!-- Two different kinds of forecast live on this page and they are not
          interchangeable: a zone forecast is prose written by an EC forecaster
          covering a whole body of water, while the point forecast below is raw
@@ -817,13 +973,15 @@
            default: a settings control on a page whose job is forecasts should
            not compete with them. Filled in by warning-zone-picker.js. -->
       <details id="warning-zone-picker" class="verification-help warning-zone-picker" hidden>
-        <summary id="warning-zone-picker-summary">Warning alerts</summary>
+        <summary>Customize alerts (storm warnings will always issue a warning banner)</summary>
         <div class="warning-zone-picker-body">
           <div id="warning-zone-picker-list"></div>
-          <p class="warning-zone-floor">
-            Storm warnings (48+ knots) always raise a banner, in any zone listed
-            here, whether or not you have ticked it.
-          </p>
+          <!-- Nine zones make a tall list, so by the time you have finished
+               ticking, the summary you opened is well off the top of the
+               control. This closes it without scrolling back up for it. -->
+          <button type="button" id="warning-zone-picker-collapse" class="warning-zone-collapse" aria-label="Collapse alert options">
+            <span aria-hidden="true">▲</span>
+          </button>
         </div>
       </details>
 
@@ -1014,12 +1172,12 @@
 
   <!-- Load logger first for global availability -->
   <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
-  <script type="module" src="/assets/js/warning-banner.js?v=8b62bbf797"></script>
+  <script type="module" src="/assets/js/warning-banner.js?v=7ca1434078"></script>
   <script src="/assets/vendor/echarts.min.js?v=968b4d8c55"></script>
   <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/chart-utils-v4.js?v=401977606f"></script>
-  <script type="module" src="/assets/js/forecasts.js?v=7fd66b4aa2"></script>
+  <script type="module" src="/assets/js/forecasts.js?v=6e4c5534d2"></script>
   <script type="module" src="/assets/js/wave-forecast.js?v=af174f2301"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
