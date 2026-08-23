@@ -87,7 +87,13 @@
   /* z-index: 1000; */
   position: relative; /* Keep relative positioning */
   z-index: 100; /* Lower z-index to avoid overlapping map */
-  transition: all 0.3s ease;
+  /* Named properties, not `all`. On mobile this element is `position: sticky`,
+     and `transition: all` puts every recalculated property — including the
+     ones sticky repositioning touches — on a 300 ms animation, which is how a
+     sticky bar ends up trailing the scroll and showing a sliver of page
+     through its top edge on Firefox for Android. Only the two theme-swap
+     properties actually need to animate. */
+  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Wrapper around the links + actions. On desktop it's transparent to layout
@@ -316,8 +322,6 @@
     left: 0;
     right: 0;
     background: var(--nav-drawer-bg);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
     border-bottom: 3px solid var(--nav-border-color);
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
     padding: 0.4rem;
@@ -339,6 +343,13 @@
     overflow-y: auto;
     opacity: 1;
     visibility: visible;
+    /* Frosting is applied only while the drawer is actually open. A
+       backdrop-filter on a descendant promotes the whole sticky bar to its own
+       compositing layer permanently, and a promoted sticky layer is what
+       Firefox for Android repaints a frame behind the scroll. Closed, the
+       drawer is invisible anyway, so nothing is lost. */
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
   }
 
   /* Page scroll lock while the drawer is open — the page *behind* the drawer

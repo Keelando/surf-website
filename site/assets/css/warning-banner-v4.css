@@ -42,6 +42,20 @@
   margin-right: 0.5rem;
 }
 
+/* When several zones are warned at once each entry is its own link to that
+   zone's forecast. Inherits the banner's own text colour — the gradients are
+   dark and a default link blue is unreadable on them. */
+.warning-zone-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.warning-zone-link:hover,
+.warning-zone-link:focus-visible {
+  text-decoration-thickness: 2px;
+}
+
 .warning-details-link {
   text-decoration: none;
   font-weight: 600;
@@ -224,6 +238,16 @@
   .warning-text strong {
     display: inline;
     margin-right: 0.25rem;
+  }
+
+  /* The per-zone links cannot be tapped here — the stretched overlay below
+     covers the whole banner and owns every touch — so they must not look
+     tappable either. Left as anchors rather than unwrapped: keyboard
+     activation bypasses pointer-events, so a focused link still reaches its
+     own zone, and the markup stays the same in both layouts. */
+  .warning-zone-link {
+    pointer-events: none;
+    text-decoration: none;
   }
 
   /* Mobile: whole banner is the forecasts link (stretched overlay),

@@ -80,7 +80,42 @@ function resolveInitialZone(zones) {
 }
 
 /**
- * Populate the zone <select>, grouping zones into <optgroup>s by area.
+ * Shorten a zone name for display inside its area's <optgroup>.
+ *
+ * EC's zone_name repeats the area it belongs to ("Juan de Fuca Strait - west
+ * entrance"), which inside an optgroup already labelled "Juan de Fuca Strait"
+ * is three redundant words on every line — and on a phone it is what pushed
+ * the <select> wider than the viewport. The optgroup carries the area, the
+ * option carries only what distinguishes it.
+ *
+ * @param {string} zoneName - Full zone name from the forecast document
+ * @param {string} areaName - Area name the zone sits under
+ * @returns {string} Display label
+ */
+function shortZoneLabel(zoneName, areaName) {
+  if (!areaName || zoneName === areaName) return zoneName;
+
+  // EC uses " - " as the separator; anything else is left alone rather than
+  // guessed at, so an unfamiliar naming shape degrades to the full name.
+  const prefix = `${areaName} - `;
+  if (!zoneName.startsWith(prefix)) return zoneName;
+
+  const rest = zoneName.slice(prefix.length);
+  return rest.charAt(0).toUpperCase() + rest.slice(1);
+}
+
+/**
+ * Populate the zone <select>.
+ *
+ * Areas with several zones become an <optgroup> whose options drop the
+ * repeated area name; an area with a single zone would make an optgroup
+ * labelled identically to its one child, so those are emitted as plain
+ * top-level options instead.
+ *
+ * Home waters are pinned to the top — the area DEFAULT_ZONE_KEY belongs to,
+ * read from the data rather than named again here, so the pin follows the
+ * default zone if that ever moves. Everything else keeps document order.
+ *
  * @param {Array<Object>} zones - Zone list from listZones()
  */
 function buildZoneSelector(zones) {
@@ -100,19 +135,36 @@ function buildZoneSelector(zones) {
     byArea.get(zone.areaName).push(zone);
   });
 
-  select.textContent = "";
-  for (const [areaName, areaZones] of byArea) {
+  const makeOption = (zone, label) => {
+    const option = document.createElement("option");
+    option.value = zone.zoneKey;
+    option.textContent = label;
+    return option;
+  };
+
+  const appendArea = (areaName, areaZones) => {
+    if (areaZones.length === 1) {
+      select.appendChild(makeOption(areaZones[0], areaZones[0].zoneName));
+      return;
+    }
     const optgroup = document.createElement("optgroup");
     optgroup.label = areaName;
-
     areaZones.forEach((zone) => {
-      const option = document.createElement("option");
-      option.value = zone.zoneKey;
-      option.textContent = zone.zoneName;
-      optgroup.appendChild(option);
+      optgroup.appendChild(makeOption(zone, shortZoneLabel(zone.zoneName, areaName)));
     });
-
     select.appendChild(optgroup);
+  };
+
+  select.textContent = "";
+
+  const homeArea = zones.find((z) => z.zoneKey === DEFAULT_ZONE_KEY)?.areaName;
+  if (homeArea && byArea.has(homeArea)) {
+    appendArea(homeArea, byArea.get(homeArea));
+  }
+
+  for (const [areaName, areaZones] of byArea) {
+    if (areaName === homeArea) continue;
+    appendArea(areaName, areaZones);
   }
 
   select.value = selectedZoneKey;
@@ -455,6 +507,30 @@ function scrollToZoneIfNeeded() {
     }, 300);
   }
 }
+
+/**
+ * Follow a zone hash arriving while the page is already open.
+ *
+ * The sitewide warning banner links to `/forecasts.html#<zone_key>`. When the
+ * reader is already on this page that is a same-document navigation: no load,
+ * no `htmx:load`, so without this the page kept showing whatever zone was
+ * stored from last time and silently ignored the warning that was clicked.
+ *
+ * @returns {void}
+ */
+function handleZoneHashChange() {
+  const hashKey = window.location.hash.slice(1);
+  if (!hashKey || hashKey === selectedZoneKey) return;
+
+  const zones = listZones();
+  if (!zones.some((z) => z.zoneKey === hashKey)) return;
+
+  selectedZoneKey = hashKey;
+  displayForecasts();
+  scrollToZoneIfNeeded();
+}
+
+window.addEventListener("hashchange", handleZoneHashChange);
 
 // Initialize on page load - wait for HTMX to load footer with timestamp
 document.addEventListener(

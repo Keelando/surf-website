@@ -1056,16 +1056,25 @@ function renderVerificationMetadata() {
   const min = band.min_hours ?? 19;
   const max = band.max_hours ?? 24;
 
+  // Terse line first, the explanation folded away. The full note ran seven
+  // lines on a phone directly under two charts that were already asking for
+  // scroll patience — the one sentence a reader actually needs to not
+  // misread the dashed line stays visible, the rest is opt-in.
   setSafeHTML(
     el,
-    `<strong>How to read this:</strong> the dashed line is what the model said
-     about a day ahead — for each hour, the most recent run that was still
-     ${min}–${max} hours away. Because runs come every six hours, the lead time
-     sawtooths between ${min} and ${max} h, so a small step every six hours is
-     two runs disagreeing, not a data glitch. Hover any point for its exact lead
-     time and the model's error.<br/>
-     <strong>Window:</strong> last ${currentVerification.window_hours} h &nbsp;·&nbsp;
-     <strong>Updated:</strong> ${formatMonthDayTimeTZ(new Date(currentVerification.generated_utc))}`,
+    `<p class="verification-summary">Dashed = the model's ${min}–${max} h-ahead
+     forecast, solid = what was measured. Last
+     ${currentVerification.window_hours} h &nbsp;·&nbsp;
+     updated ${formatMonthDayTimeTZ(new Date(currentVerification.generated_utc))}.</p>
+     <details class="verification-help">
+       <summary>How to read this</summary>
+       <p>The dashed line is what the model said about a day ahead — for each
+       hour, the most recent run that was still ${min}–${max} hours away.
+       Because runs come every six hours, the lead time sawtooths between
+       ${min} and ${max} h, so a small step every six hours is two runs
+       disagreeing, not a data glitch. Hover any point for its exact lead time
+       and the model's error.</p>
+     </details>`,
   );
 }
 

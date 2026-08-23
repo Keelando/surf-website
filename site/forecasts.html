@@ -21,8 +21,8 @@
 
   <link rel="canonical" href="https://halibutbank.ca/forecasts.html" />
   <link rel="stylesheet" href="/assets/css/style-v4.css?v=bba861b406" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=bdc102248e" />
-  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=32d9218449" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
+  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=d3d6b9e8d9" />
 
   <style>
     html {
@@ -92,7 +92,13 @@
     }
 
     .forecast-zone-selector select {
-      flex: 1 1 18rem;
+      /* min-width:0 is load-bearing: a flex item defaults to min-width:auto,
+         and a <select>'s automatic minimum is the width of its widest
+         <option>. That is what pushed the whole page into horizontal overflow
+         on a phone — the control refused to shrink below its longest zone
+         name. */
+      flex: 1 1 14rem;
+      min-width: 0;
       max-width: 32rem;
       padding: 0.45rem 0.6rem;
       font-size: 1rem;
@@ -395,6 +401,51 @@
       font-size: 0.9rem;
       line-height: 1.7;
       color: var(--color-text-muted);
+    }
+
+    /* The one-line version, always on screen. */
+    .verification-summary {
+      margin: 0;
+    }
+
+    /* The long explanation, folded away — see renderVerificationMetadata()
+       in wave-forecast.js for why. Boxed so the collapsed row reads as a
+       control you can open rather than as a stray line of the summary above
+       it; the border stays on when open so the prose is visibly the thing the
+       control revealed. */
+    .verification-help {
+      margin-top: 0.6rem;
+      border: 1px solid var(--color-border-light);
+      border-radius: 6px;
+      background: var(--color-card-muted-bg);
+    }
+
+    .verification-help > summary {
+      cursor: pointer;
+      font-weight: 600;
+      padding: 0.5rem 0.7rem;
+      color: var(--color-accent-blue);
+      border-radius: 6px;
+      /* The default marker plus a bold label is enough affordance; the
+         list-item display keeps the disclosure triangle in both engines. */
+      list-style: revert;
+    }
+
+    .verification-help > summary:focus-visible {
+      outline: 2px solid var(--color-accent-blue);
+      outline-offset: -2px;
+    }
+
+    /* Only while open: a rule under the summary would otherwise draw a line
+       across a closed, single-row box. */
+    .verification-help[open] > summary {
+      border-bottom: 1px solid var(--color-border-light);
+      border-radius: 6px 6px 0 0;
+    }
+
+    .verification-help > p {
+      margin: 0;
+      padding: 0.6rem 0.7rem 0.7rem;
     }
 
     /* Segmented control: one row of joined buttons, exactly one active. */
@@ -845,13 +896,13 @@
 
   <!-- Load logger first for global availability -->
   <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
-  <script type="module" src="/assets/js/warning-banner.js?v=40215cb346"></script>
+  <script type="module" src="/assets/js/warning-banner.js?v=8e6e7c4e6c"></script>
   <script src="/assets/vendor/echarts.min.js?v=968b4d8c55"></script>
   <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/chart-utils-v4.js?v=401977606f"></script>
-  <script type="module" src="/assets/js/forecasts.js?v=bff9e375a2"></script>
-  <script type="module" src="/assets/js/wave-forecast.js?v=260ae3b29e"></script>
+  <script type="module" src="/assets/js/forecasts.js?v=5f640a8345"></script>
+  <script type="module" src="/assets/js/wave-forecast.js?v=af174f2301"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

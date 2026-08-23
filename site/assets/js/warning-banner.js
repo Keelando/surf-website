@@ -206,16 +206,25 @@ function createCombinedWarningBanner(warnings) {
   const severityClass = getWarningSeverityClass(highestSeverity.type);
   const icon = getWarningIcon(highestSeverity.type);
 
+  // Every route into the forecasts page carries the zone in the hash. The page
+  // resolves hash before its stored last-choice, so clicking a warning always
+  // lands on the zone the warning is about — previously it honoured whatever
+  // zone you happened to have picked last and the banner appeared to lie.
+  const zoneHref = (warning) => `/forecasts.html#${encodeURIComponent(warning.zone_key)}`;
+
   // Build warning text
   let warningText = "";
   if (warnings.length === 1) {
     warningText = `<strong>${warnings[0].type.toUpperCase()}</strong> in effect for ${warnings[0].zone_name}`;
   } else {
-    // Multiple warnings - list them
-    const warningsList = warnings
-      .map((w) => `<strong>${w.type.toUpperCase()}</strong> for ${w.zone_name}`)
+    // Multiple warnings — each is its own link, so a two-zone banner can send
+    // you to either one rather than only to the most severe.
+    warningText = warnings
+      .map(
+        (w) =>
+          `<a class="warning-zone-link" href="${zoneHref(w)}"><strong>${w.type.toUpperCase()}</strong> for ${w.zone_name}</a>`,
+      )
       .join(" • ");
-    warningText = warningsList;
   }
 
   return `
@@ -225,7 +234,7 @@ function createCombinedWarningBanner(warnings) {
         <div class="warning-text">
           ${warningText}
         </div>
-        <a href="/forecasts.html" class="warning-details-link">View Forecasts →</a>
+        <a href="${zoneHref(highestSeverity)}" class="warning-details-link">View Forecasts →</a>
         <button class="warning-dismiss-btn" aria-label="Dismiss for 24h" title="Dismiss for 24h">×</button>
       </div>
     </div>
