@@ -47,7 +47,7 @@ test("home-water zones raise warnings", () => {
   assert.equal(warnings[0].area_name, "Strait of Georgia");
 });
 
-test("zones outside the banner set are carried but never interrupt", () => {
+test("sub-storm warnings outside the banner set are carried but never interrupt", () => {
   // The regression this guards: widening the sr3 accept regex adds zones to
   // marine_forecast.json, and the banner is on every page. A WCVI South gale
   // must not pop a banner over the tide tables.
@@ -59,18 +59,67 @@ test("zones outside the banner set are carried but never interrupt", () => {
     west_coast_vancouver_island_south: {
       area: "West Coast Vancouver Island South",
       locations: {
-        west_coast_vancouver_island_south: zone("WCVI South", [STORM]),
+        west_coast_vancouver_island_south: zone("WCVI South", [GALE]),
       },
     },
     juan_de_fuca_strait: {
       area: "Juan de Fuca Strait",
       locations: {
-        juan_de_fuca_strait_east_entrance: zone("east entrance", [GALE]),
+        juan_de_fuca_strait_east_entrance: zone("east entrance", [
+          { ...GALE, type: "Strong wind warning" },
+        ]),
       },
     },
   });
 
   assert.deepEqual(collectActiveWarnings(data), []);
+});
+
+test("a storm warning banners from any carried zone, selected or not", () => {
+  // The severity floor. A reader who never found the picker still gets
+  // interrupted by 48+ kt, wherever it is.
+  const data = doc({
+    west_coast_vancouver_island_south: {
+      area: "West Coast Vancouver Island South",
+      locations: {
+        west_coast_vancouver_island_south: zone("WCVI South", [STORM]),
+      },
+    },
+  });
+
+  const warnings = collectActiveWarnings(data);
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0].zone_key, "west_coast_vancouver_island_south");
+});
+
+test("the storm floor survives a reader turning every zone off", () => {
+  // This is what makes the zero-zone state safe to allow silently.
+  const data = doc({
+    juan_de_fuca_strait: {
+      area: "Juan de Fuca Strait",
+      locations: {
+        juan_de_fuca_strait_east_entrance: zone("east entrance", [STORM, GALE]),
+      },
+    },
+  });
+
+  const types = collectActiveWarnings(data, []).map((w) => w.type);
+  assert.deepEqual(types, ["Storm warning"]);
+});
+
+test("the storm floor still respects IN EFFECT", () => {
+  const data = doc({
+    west_coast_vancouver_island_south: {
+      area: "WCVI South",
+      locations: {
+        west_coast_vancouver_island_south: zone("WCVI South", [
+          { ...STORM, status: "ENDED" },
+        ]),
+      },
+    },
+  });
+
+  assert.deepEqual(collectActiveWarnings(data, []), []);
 });
 
 test("only IN EFFECT warnings count", () => {
@@ -174,6 +223,38 @@ test("the banner zone set is overridable, ready for the per-user opt-in", () => 
 
 test("default banner zones are the two home waters", () => {
   assert.deepEqual(getBannerZones(), DEFAULT_BANNER_ZONES);
+  assert.deepEqual(DEFAULT_BANNER_ZONES, [SOG_NORTH, SOG_SOUTH]);
+});
+
+test("a never-chosen selection resolves to the default", () => {
+  assert.deepEqual(getBannerZones(null), DEFAULT_BANNER_ZONES);
+  assert.deepEqual(getBannerZones(undefined), DEFAULT_BANNER_ZONES);
+});
+
+test("a stored selection replaces the default outright", () => {
+  assert.deepEqual(getBannerZones(["howe_sound"]), ["howe_sound"]);
+});
+
+test("an empty stored selection is a real choice, not a fallback to the default", () => {
+  assert.deepEqual(getBannerZones([]), []);
+});
+
+test("stored zones missing from the document are dropped from the effective set", () => {
+  // An sr3 accept change or an EC rename can retire a zone out from under a
+  // stored preference. Dropped on the way out — never rewritten in storage,
+  // so a bulletin missing for one cycle does not erase the choice.
+  assert.deepEqual(getBannerZones(["howe_sound", "gone_zone"], ["howe_sound", SOG_SOUTH]), [
+    "howe_sound",
+  ]);
+});
+
+test("the default is filtered against the document too", () => {
+  assert.deepEqual(getBannerZones(null, [SOG_SOUTH]), [SOG_SOUTH]);
+});
+
+test("getBannerZones returns a copy, never the shared default array", () => {
+  const resolved = getBannerZones();
+  resolved.push("howe_sound");
   assert.deepEqual(DEFAULT_BANNER_ZONES, [SOG_NORTH, SOG_SOUTH]);
 });
 
