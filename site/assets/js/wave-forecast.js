@@ -17,7 +17,7 @@
    echarts, logger) come from classic scripts loaded before this entry point.
    ----------------------------- */
 
-import { formatModelRunTime, formatMonthDayTimeTZ } from "./shared/format-time.js";
+import { formatModelRunTimeLocal, formatMonthDayTimeTZ } from "./shared/format-time.js";
 import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
 
 function setSafeHTML(element, html) {
@@ -780,7 +780,7 @@ function renderMetadata(payload, rows) {
     : [{ name: payload.model, run_time: payload.model_run_time }];
   const modelLines = models
     .map((model) => {
-      const run = formatModelRunTime(model.run_time);
+      const run = formatModelRunTimeLocal(model.run_time);
       return `<strong>Model:</strong> ${model.name}${run ? ` — run ${run}` : ""}<br/>`;
     })
     .join("");
@@ -822,7 +822,7 @@ let currentRunInfo = null;
 let runClockTimer = null;
 
 /**
- * Parse a run time, tolerating the bare-UTC spelling formatModelRunTime takes.
+ * Parse a run time, tolerating the bare-UTC spelling formatModelRunTimeLocal takes.
  *
  * @param {string} value
  * @returns {Date|null}
@@ -914,9 +914,9 @@ function renderRunClock() {
   const runTimes = new Set(runs.map((entry) => entry.run.getTime()));
   const runText =
     runTimes.size === 1
-      ? `Model run ${formatModelRunTime(latest.toISOString())}`
+      ? `Model run ${formatModelRunTimeLocal(latest.toISOString())}`
       : `Model runs ${runs
-          .map((entry) => `${entry.label} ${formatModelRunTime(entry.run.toISOString())}`)
+          .map((entry) => `${entry.label} ${formatModelRunTimeLocal(entry.run.toISOString())}`)
           .join(", ")}`;
 
   const remaining = arrives.getTime() - Date.now();
@@ -925,7 +925,7 @@ function renderRunClock() {
   const waitText =
     remaining > 0 ? `on this page in ${formatCountdown(remaining)}` : "due on this page now";
 
-  el.textContent = `${runText} · next run ${formatModelRunTime(next.toISOString())}, ${waitText}`;
+  el.textContent = `${runText} · next run ${formatModelRunTimeLocal(next.toISOString())}, ${waitText}`;
   el.hidden = false;
 }
 

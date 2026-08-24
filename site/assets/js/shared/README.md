@@ -13,7 +13,12 @@ node can import these files in tests; browsers ignore it.
 
 ## Modules
 
-- `format-time.js` — Pacific-time formatters + `getAgeString`/`getShortAgeString`
+- `format-time.js` — Pacific-time formatters + `getAgeString`/`getShortAgeString`.
+  Model runs have **two** formatters, deliberately: `formatModelRunTime`
+  ("Jul 14 12Z", UTC — the storm-surge pages) and `formatModelRunTimeLocal`
+  ("Jul 14, 05:00 PDT (12Z)", Pacific-first — the wave forecast page). Same
+  instant, different lead: the Z hour is what model documentation and the
+  archive use, the local time is what a reader plans around.
 - `staleness.js` — stale-data presentation (marker opacity, popup theme,
   `formatDataAge`)
 - `markers.js` — directional map marker, angular spread vector, ECharts arrow path

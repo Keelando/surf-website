@@ -4,6 +4,7 @@ import {
   formatForecastTimestamp,
   formatFullTimestamp,
   formatModelRunTime,
+  formatModelRunTimeLocal,
   formatMonthDayTime,
   formatMonthDayTimeTZ,
   formatNumericDayTime,
@@ -49,6 +50,19 @@ test("formatModelRunTime renders UTC Z-hours", () => {
   assert.equal(formatModelRunTime("2026-07-14T12:00:00"), "Jul 14 12Z");
   assert.equal(formatModelRunTime(""), "");
   assert.equal(formatModelRunTime(undefined), "");
+});
+
+test("formatModelRunTimeLocal leads with Pacific time, Z hour in brackets", () => {
+  // Same instant, two names for it: 12Z is 05:00 PDT in summer.
+  assert.equal(formatModelRunTimeLocal("2026-07-14T12:00:00Z"), "Jul 14, 05:00 PDT (12Z)");
+  // Winter shifts the local hour but never the Z label.
+  assert.equal(formatModelRunTimeLocal("2026-01-15T12:00:00Z"), "Jan 15, 04:00 PST (12Z)");
+  // A 00Z run is the PREVIOUS local day — the case that looks wrong and is not.
+  assert.equal(formatModelRunTimeLocal("2026-07-14T00:00:00Z"), "Jul 13, 17:00 PDT (00Z)");
+  // Bare timestamp (no zone info) is treated as UTC, matching the backend.
+  assert.equal(formatModelRunTimeLocal("2026-07-14T12:00:00"), "Jul 14, 05:00 PDT (12Z)");
+  assert.equal(formatModelRunTimeLocal(""), "");
+  assert.equal(formatModelRunTimeLocal(undefined), "");
 });
 
 test("formatNumericDayTime strips the comma", () => {

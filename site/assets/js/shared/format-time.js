@@ -91,6 +91,38 @@ export function formatModelRunTime(runStr) {
   return `${dateStr} ${runTime.getUTCHours().toString().padStart(2, "0")}Z`;
 }
 
+/**
+ * "Jul 14, 05:00 PDT (12Z)" from a model-run timestamp string, or "" when
+ * absent.
+ *
+ * The Pacific-first sibling of formatModelRunTime(). A run labelled "12Z" is
+ * unambiguous to anyone who works with models and opaque to everyone else —
+ * the reader wants to know when the forecast was made in the time they live
+ * in, not which synoptic hour it belongs to. So the local time leads and the
+ * Z hour follows in brackets, keeping the label that the model documentation,
+ * the archive and the logs all use.
+ *
+ * Both halves describe the same instant; the bracket is a second name for it,
+ * not a second time. The zone abbreviation is kept because dropping it would
+ * leave two bare numbers on the line with nothing saying which is which.
+ *
+ * @param {string} runStr - ISO 8601, tolerating the bare-UTC backend spelling
+ * @returns {string}
+ */
+export function formatModelRunTimeLocal(runStr) {
+  if (!runStr) return "";
+  const runTime = new Date(runStr.endsWith("Z") || runStr.includes("+") ? runStr : `${runStr}Z`);
+  const local = fmt(runTime, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZoneName: "short",
+  });
+  return `${local} (${runTime.getUTCHours().toString().padStart(2, "0")}Z)`;
+}
+
 /** "Jul 14, 2026, 14:30 PDT" — replaces webcams-v4 formatTimestamp(). */
 export function formatFullTimestamp(input) {
   return fmt(input, {
