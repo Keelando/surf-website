@@ -292,12 +292,12 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
         every page's About section; that link would 404 for visitors.
       - The `forgejo` remote (survivor.local) already mirrors main+tags
         nightly, so backup is not a reason to stay on public GitHub.
-      - **Changed 2026-08-23: Forgejo now mirrors onward to Codeberg on
-        push.** That makes the code public in a second place, so flipping
-        GitHub to private no longer makes the repo private — it just moves
-        which public host serves it. Decide the Codeberg mirror in the same
-        breath as this, not after; otherwise "go private" is a change that
-        feels decisive and accomplishes nothing.
+      - **Changed 2026-08-23: Forgejo mirrors onward to a private Codeberg
+        repo on push.** This *helps* the case for going private rather than
+        complicating it — there is already an offsite, off-LAN, private home
+        for the code, so GitHub is no longer carrying the offsite-backup
+        argument on its own. GitHub remains the only public destination, so
+        flipping it private would genuinely make the repo private.
       - Reversible in one direction only: private→public later re-exposes
         the whole history, so a future flip back needs the same thinking.
 - [ ] **"Security cam" wall view for the webcam page** (idea, user

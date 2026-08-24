@@ -177,11 +177,9 @@
 # Forgejo (survivor.local) unconditionally — separated by ';' so a down Forgejo
 # never blocks the origin push, and vice versa.
 #
-# The forgejo push is NOT just a LAN backup any more: as of 2026-08-23 Forgejo
-# mirrors onward to Codeberg on push, so this line publishes to a second public
-# host. Both destinations are public, so both are gated by the same pre-commit
-# secret scan above — but know that "push to the local backup" now means
-# "publish".
+# As of 2026-08-23 Forgejo mirrors onward to a PRIVATE Codeberg repo on push,
+# so this line reaches two backups and no new public surface. GitHub (origin)
+# remains the only public destination.
 17 7 * * * cd /home/keelando/envcan_wave && { /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) ; /usr/bin/git push forgejo main --tags ; } >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
 
 # Sync venv with the pinned lock file (07:18 UTC / 12:18am PT, after git
