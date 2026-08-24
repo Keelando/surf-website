@@ -48,6 +48,23 @@ const DEFAULT_VISIBLE_HOURS = 24;
 // afternoon of 4 kt breezes should look calm, not like a working breeze.
 const MIN_WIND_AXIS_MAX = 15;
 
+// Peak-period axis floor, seconds. Same reasoning again, and the axis was the
+// last one still auto-scaling: a flat 1.7-3.9 s summer chop was being stretched
+// across the full height of the frame and read as real variation.
+//
+// 5 s is measured, not guessed. Across a month of buoy observations the Strait
+// of Georgia stations (Halibut Bank, English Bay, Sentry Shoal, Southern
+// Georgia Strait) peak at 6.9 s and average ~3 s, and NOT ONE reading in ~2,850
+// reached 8 s — the fetch is too short for swell to build.
+//
+// This is a FLOOR, not a clamp, and the distinction matters more than it looks:
+// the open-Pacific and Juan de Fuca stations live in a different regime
+// entirely (La Perouse averages 10.2 s and hits 22.2 s; New Dungeness hits
+// 26.7 s), and a live RDWPS probe read 17.8 s off Neah Bay. Clamping at 5 s
+// would erase a genuine swell event on any of them. Growing past the floor
+// keeps a calm Strait day flat without lying about a Pacific one.
+const MIN_PERIOD_AXIS_MAX = 5;
+
 // Table cadence. The chart keeps every step the fetch stored.
 const TABLE_STEP_HOURS = 3;
 
@@ -180,6 +197,20 @@ function windAxisMax(rows) {
 }
 
 /**
+ * Upper bound for the peak-period axis.
+ *
+ * @param {Array<Object>} rows
+ * @returns {number} Axis maximum in seconds
+ */
+function periodAxisMax(rows) {
+  const peak = rows.reduce((max, row) => Math.max(max, row.peakPeriod ?? 0), 0);
+  if (peak <= MIN_PERIOD_AXIS_MAX) return MIN_PERIOD_AXIS_MAX;
+  // Round up to the next 2 s. Swell is read in whole seconds, and an
+  // auto-fitted top prints labels like "17.8 s" that no one compares by eye.
+  return Math.ceil((peak * 1.1) / 2) * 2;
+}
+
+/**
  * Build the direction-arrow scatter points, as on the buoy wave chart.
  *
  * Sampled by elapsed time rather than by array index, which is where this
@@ -283,6 +314,7 @@ function renderChart(rows) {
   const periodSeries = rows.map((row) => [row.time.getTime(), row.peakPeriod]);
 
   const axisMax = heightAxisMax(rows);
+  const periodMax = periodAxisMax(rows);
   const arrows = createDirectionArrows(rows, axisMax, colors);
 
   waveChart.setOption(
@@ -347,6 +379,7 @@ function renderChart(rows) {
           name: "Period (s)",
           position: "right",
           min: 0,
+          max: periodMax,
           nameTextStyle: { color: colors.series.secondary },
           axisLine: { lineStyle: { color: colors.series.secondary } },
           axisLabel: { color: colors.mutedText },

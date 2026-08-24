@@ -66,6 +66,12 @@ Databases in `~/.local/share/` (never in the repo):
   at it — whatever an export or monitor writes there goes straight to
   halibutbank.ca unchecked. Never write an upstream API response into
   `site/data/` wholesale; copy an explicit allowlist of fields.
+- **The crontab is a third way in.** `scripts/backup_crontab.sh` dumps the
+  *whole* user crontab into the tracked `config/crontab.txt` nightly, and one
+  user has one crontab — so any job scheduled on this host publishes itself
+  here. Host jobs unrelated to this project belong in `/etc/cron.d/<name>`
+  (with a `keelando` user field), which `crontab -l` cannot see. The script
+  enforces this and keeps a small reasoned allowlist.
 
 ## Commands
 
