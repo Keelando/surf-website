@@ -747,7 +747,7 @@ class TestConfiguration:
 
     def test_burst_rate_is_unchanged_by_the_extra_variables(self):
         """The guidance is a rate; only FETCH_DELAY moves it, never step count."""
-        assert wf.FETCH_DELAY == 1.0
+        assert wf.FETCH_DELAY == 1.1
         assert 1 / (wf.FETCH_DELAY + 0.45) < 0.7  # req/s, measured network time
 
     def test_the_rate_stays_under_the_guidance_even_with_no_network_time(self):
@@ -755,11 +755,12 @@ class TestConfiguration:
 
         Our rate depends on server response time we do not control. A slower
         server only lowers it, so the worst case is instant responses — the
-        delay alone. That has to stay at or under MSC's ~1 req/s, which is the
-        real argument against dropping FETCH_DELAY further: at 0.5 s this
-        ceiling would be 2.0 req/s.
+        delay alone. That has to stay under MSC's ~1 req/s WITH HEADROOM, not
+        sit exactly on it: sizing to a best case is how you end up over a limit
+        on the day the server gets faster. At 0.5 s this ceiling would be
+        2.0 req/s; at 1.0 s it would be exactly 1.0.
         """
-        assert 1 / wf.FETCH_DELAY <= 1.0
+        assert 1 / wf.FETCH_DELAY <= 0.95
 
     def test_json_is_written_outside_the_repo_data_dir_allowlist(self, tmp_path, monkeypatch):
         """site/data is a public surface: only allowlisted fields may be written."""

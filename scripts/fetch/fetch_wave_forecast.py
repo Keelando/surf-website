@@ -142,8 +142,8 @@ CONVERSIONS = {
 # Cost, for the next person weighing a fifth point: 33 steps x 7 variables =
 # 231 requests per station per run, 924/day, or 132 and 528 without wind.
 # The total lands at 6,310 ECCC requests/day (7.3% of MSC's 86,400 guidance)
-# and ~29 min per run at 1.0 s spacing. Neither is the binding constraint —
-# the burst rate stays at 0.69 req/s, under the guidance — and what actually
+# and ~31 min per run at 1.1 s spacing. Neither is the binding constraint —
+# the burst rate stays at 0.65 req/s, under the guidance — and what actually
 # bites is runtime, both as publication lag and against the stale-lock
 # threshold. See docs/DATA_FEEDS.md.
 STATIONS = {
@@ -177,17 +177,25 @@ BBOX_OFFSET = 0.02  # degrees
 # of network per request, a 0.5 s delay puts a burst at 1.05 req/s — over that
 # line. Daily totals were never the risk here; the burst rate was.
 #
-# 1.0 s (2026-08-24, was 1.5 s) gives 0.69 req/s and a ~29 min run at six
-# stations, down from ~39 min. The extra 10 minutes stopped being free once the
+# 1.1 s (2026-08-24, was 1.5 s) gives 0.65 req/s and a ~31 min run at six
+# stations, down from ~39 min. The extra minutes stopped being free once the
 # station list grew: the fetch starts at model-run+4h35m, so runtime is
 # publication lag, and it also eats the margin under the stale-lock threshold.
 #
-# What makes 1.0 s safe rather than merely cheaper is the direction of the
-# error. Our rate depends on network time we do not control, and a SLOWER
-# server only lowers it — the ceiling is the delay alone, hit only if responses
-# returned instantly, which is exactly 1.00 req/s here. At 0.5 s that same
-# ceiling would be 2.0 req/s, which is why this is not simply "go faster".
-FETCH_DELAY = 1.0  # seconds between requests
+# SIZE THIS AGAINST THE CEILING, NOT THE TYPICAL RATE. The loop is
+# `fetch_point()` then `sleep(FETCH_DELAY)`, so an iteration costs
+# network + delay and the rate is 1/(network + delay). Network time is not ours
+# to control, and it can only ever ADD to that interval — so the worst case is
+# a server answering instantly, leaving the sleep as the only thing pacing us:
+# a ceiling of 1/FETCH_DELAY.
+#
+# 1.1 s puts that ceiling at 0.909 req/s, deliberately under MSC's ~1/s with
+# headroom rather than exactly at it (1.0 s would sit on the line, 0.5 s would
+# be 2.0 req/s). The typical case is 0.65 req/s. This is why the value is not
+# simply "as low as the measured rate allows" — the measured rate is the best
+# case, and sizing to a best case is how you end up over a limit on the day the
+# server gets faster.
+FETCH_DELAY = 1.1  # seconds between requests
 REQUEST_TIMEOUT = 60  # seconds
 
 # Both models publish 49 hourly steps (0–48 h), but we don't fetch them all:
@@ -215,8 +223,8 @@ def acquire_lock():
     if LOCKFILE.exists():
         age = time.time() - LOCKFILE.stat().st_mtime
         # Must stay comfortably above the real runtime, which scales with
-        # STATIONS: ~5.6 min per station with wind, ~3.2 min without, at the
-        # current 1.0 s spacing. Six stations is ~29 min, and the old 1 h
+        # STATIONS: ~6.0 min per station with wind, ~3.4 min without, at the
+        # current 1.1 s spacing. Six stations is ~31 min, and the old 1 h
         # threshold left too little margin for a slow run. 2 h restores the
         # headroom and is still well inside the 6 h gap between runs, so a
         # genuinely wedged process is cleared before the next one is due.

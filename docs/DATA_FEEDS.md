@@ -55,11 +55,11 @@ extraction point (2026-08-18) doubled the per-run cost again, 932 → 1,856/day 
 the total to 4.0%. The **rate** has not moved through any of it — `FETCH_DELAY`
 was unchanged through all of those, so each addition lengthened the burst
 (~4 → ~7.6 → ~15 min per run) at the same 0.51 req/s; the six-station step to
-~39 min is what finally moved it, to 1.0 s and ~29 min. It does not overlap `fetch_storm_surge.py`, which runs
+~39 min is what finally moved it, to 1.1 s and ~31 min. It does not overlap `fetch_storm_surge.py`, which runs
 01:31/13:31 for ~32 min against the same host.
 
 **Each further extraction point costs 231 requests/run, 924/day (~1.1%), and
-~5.6 min of runtime — or 132, 528/day and ~3.2 min without wind.** The binding
+~6.0 min of runtime — or 132, 528/day and ~3.4 min without wind.** The binding
 constraint is not the guidance — it is the 6 h gap to the next run, and the
 stale-lock threshold in `acquire_lock()`, which must stay above the real runtime
 (1 h when the second station landed, raised to 2 h at six stations, where a
@@ -103,7 +103,7 @@ loops `request → sleep(FETCH_DELAY)`, and with ~0.45 s of network per request:
 | 2.0 s | 0.41 req/s |
 
 `fetch_storm_surge.py` uses 2.0 s (0.41 req/s over ~32 min, measured 2026-08-16)
-and `fetch_wave_forecast.py` uses 1.0 s (0.69 req/s over ~29 min, lowered from
+and `fetch_wave_forecast.py` uses 1.1 s (0.65 req/s over ~31 min, lowered from
 1.5 s on 2026-08-24 when six stations made runtime a real cost). 1.5–2 s is
 still the default for a *new* point-extraction feed; argue it down only when
 runtime is buying something, as it is here — the fetch starts at
@@ -112,8 +112,11 @@ model-run+4h35m, so a longer run is a staler forecast on the page.
 **Judge the ceiling, not the typical rate.** The effective rate depends on
 server response time we do not control, and a slower server only lowers it, so
 the worst case is instant responses — the delay alone. At 1.0 s that ceiling is
-exactly 1.00 req/s, at the guidance; at 0.5 s it would be 2.0 req/s. That, not
-the typical figure, is the reason 0.5 s is out.
+0.909 req/s — deliberately under the guidance with headroom, rather than the
+exactly-1.00 that a 1.0 s delay would give; at 0.5 s it would be 2.0 req/s.
+That, not the typical figure, is the number to size against. Sizing to the
+measured rate means sizing to a best case, which is how you end up over a limit
+on the day the server gets faster.
 
 Note that thinning timesteps does **not** help the burst rate — it shortens the
 burst but leaves the rate unchanged. The two levers are independent: taper for
