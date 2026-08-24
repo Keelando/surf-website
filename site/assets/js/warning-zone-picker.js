@@ -7,11 +7,11 @@
  *      we carry as a checkbox, grouped by area. Its summary is static copy in
  *      forecasts.html — it names the control and states the storm floor, which
  *      is the one thing a reader needs before opening it.
- *   2. An inline "alert me about this zone" checkbox inside the rendered zone
- *      card — the discovery mechanism. A reader who cares about Howe Sound has
- *      to come here to read Howe Sound's forecast at all, which puts the
- *      control to *be alerted about* it directly under their eyes. That is why
- *      no footer link, banner gear, or settings page is needed.
+ *   2. An inline "display warning banners for this zone" checkbox inside the
+ *      rendered zone card — the discovery mechanism. A reader who cares about
+ *      Howe Sound has to come here to read Howe Sound's forecast at all, which
+ *      puts the control for banners about it directly under their eyes. That
+ *      is why no footer link, banner gear, or settings page is needed.
  *
  * Both write the same key and re-render each other, so the two never disagree.
  * Resolution and the storm floor live in `shared/warning-zones.js`; storage in
@@ -20,9 +20,9 @@
  * See docs/project/WARNING_ZONE_OPT_IN.md.
  */
 
-import { orderZonesForDisplay, shortZoneLabel } from "./shared/marine-zones.js";
+import { orderZonesForDisplay, pickerZoneLabel } from "./shared/marine-zones.js";
 import { readBannerZones, writeBannerZones } from "./shared/warning-preferences.js";
-import { getBannerZones } from "./shared/warning-zones.js";
+import { DEFAULT_BANNER_ZONES, getBannerZones } from "./shared/warning-zones.js";
 
 const PICKER_ID = "warning-zone-picker";
 const PICKER_LIST_ID = "warning-zone-picker-list";
@@ -33,6 +33,13 @@ const INLINE_TOGGLE_ID = "zone-alert-toggle";
 let currentZones = [];
 /** The zone the page is currently showing, for the inline toggle. */
 let currentZoneKey = null;
+/**
+ * The last non-empty selection, so unticking "no banners" is an undo rather
+ * than a reset. Session-scoped on purpose: it is a courtesy for the reader who
+ * ticked the box to see what it did, not a second preference to persist beside
+ * the real one. On a later visit the box unticks back to the default pair.
+ */
+let lastNonEmptySelection = null;
 
 /**
  * The zones currently allowed to raise the banner.
@@ -41,6 +48,30 @@ let currentZoneKey = null;
 function effectiveZoneKeys() {
   const available = currentZones.map((zone) => zone.zoneKey);
   return getBannerZones(readBannerZones(localStorage), available);
+}
+
+/**
+ * Persist a selection and bring both controls (and the banner) into line.
+ *
+ * @param {Iterable<string>} zoneKeys - Zones that may raise the banner
+ * @returns {void}
+ */
+function applySelection(zoneKeys) {
+  const next = Array.from(zoneKeys);
+
+  if (next.length > 0) {
+    lastNonEmptySelection = next;
+  }
+
+  if (!writeBannerZones(localStorage, next)) {
+    logger.warn("WarningZones", "Could not store warning zone selection");
+  }
+
+  render();
+  // The banner is on this page too; without this it would keep showing the
+  // previous selection until the next page load, and the control would look
+  // broken.
+  window.dispatchEvent(new CustomEvent("warning-zones:changed"));
 }
 
 /**
@@ -62,26 +93,85 @@ function setZoneSelected(zoneKey, wanted) {
     next.delete(zoneKey);
   }
 
-  if (!writeBannerZones(localStorage, next)) {
-    logger.warn("WarningZones", "Could not store warning zone selection");
+  applySelection(next);
+}
+
+/**
+ * Turn every zone off, or put a selection back.
+ *
+ * The empty set was always reachable — untick all nine — but only as the end
+ * of a chore, and nothing in the control said it was a supported state rather
+ * than a mistake. This names it and makes it one click. It is honest about
+ * what it cannot do: the storm floor in `shared/warning-zones.js` is not the
+ * picker's to switch off, so the row says so on its face.
+ *
+ * @param {boolean} wanted - True for no banners, false to restore
+ * @returns {void}
+ */
+function setNoBanners(wanted) {
+  if (wanted) {
+    // Captured *before* the write, so a reader with a hand-picked set of five
+    // zones gets those five back when they untick, not the default pair.
+    const current = effectiveZoneKeys();
+    if (current.length > 0) lastNonEmptySelection = current;
+    applySelection([]);
+    return;
   }
 
-  render();
-  // The banner is on this page too; without this it would keep showing the
-  // previous selection until the next page load, and the control would look
-  // broken.
-  window.dispatchEvent(new CustomEvent("warning-zones:changed"));
+  // Unticking is an undo, not a reset: the reader gets back the zones they had
+  // a moment ago, falling back to the default pair on a later visit when the
+  // in-memory copy is gone.
+  applySelection(lastNonEmptySelection || DEFAULT_BANNER_ZONES);
 }
 
 /**
  * Human-readable name for a zone, matching the `<select>`'s vocabulary.
+ *
+ * Delegated to `pickerZoneLabel()` rather than decided here: the two controls
+ * sit inches apart, and the moment they name the same water differently the
+ * checkbox list stops looking like the dropdown's twin.
  *
  * @param {Object} zone - Zone record from listZones()
  * @param {boolean} areaHasSiblings - Whether the zone shares its area
  * @returns {string} Display label
  */
 function zoneLabel(zone, areaHasSiblings) {
-  return areaHasSiblings ? shortZoneLabel(zone.zoneName, zone.areaName) : zone.zoneName;
+  return pickerZoneLabel(zone, areaHasSiblings);
+}
+
+/**
+ * Build the "no banners" row that heads the list.
+ *
+ * First, not last: it is the answer to "how do I make this stop", and a reader
+ * looking for that should not have to read nine zone names to find it.
+ *
+ * @param {Array<string>} selected - Effective zone keys
+ * @returns {HTMLLabelElement}
+ */
+function makeNoBannersOption(selected) {
+  const label = document.createElement("label");
+  label.className = "warning-zone-option warning-zone-none";
+
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = selected.length === 0;
+  input.addEventListener("change", (event) => {
+    setNoBanners(event.target.checked);
+  });
+
+  const text = document.createElement("span");
+  text.textContent = "No banners for any zone";
+
+  // The floor stated where the choice is made, not only in the summary above:
+  // a reader who ticks this and then sees a storm banner anyway must have been
+  // told here, or the control looks broken.
+  const note = document.createElement("span");
+  note.className = "warning-zone-note";
+  note.textContent = "Storm Warnings (50kn+) will still be displayed";
+
+  text.appendChild(note);
+  label.append(input, text);
+  return label;
 }
 
 /**
@@ -94,6 +184,8 @@ function renderPickerList(selected) {
   if (!list) return;
 
   list.textContent = "";
+
+  list.appendChild(makeNoBannersOption(selected));
 
   const makeOption = (zone, areaHasSiblings) => {
     const label = document.createElement("label");
@@ -165,7 +257,7 @@ function renderInlineToggle(selected) {
   });
 
   const text = document.createElement("span");
-  text.textContent = "Alert me sitewide about warnings here.";
+  text.textContent = "Display warning banners for this zone.";
 
   label.append(input, text);
   mount.appendChild(label);

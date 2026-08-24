@@ -11,7 +11,7 @@ import {
   DEFAULT_ZONE_KEY,
   listZones as listZonesIn,
   orderZonesForDisplay,
-  shortZoneLabel,
+  pickerZoneLabel,
 } from "./shared/marine-zones.js";
 import { renderWarningZoneControls } from "./warning-zone-picker.js";
 import {
@@ -115,13 +115,13 @@ function buildZoneSelector(zones) {
 
   const appendArea = (areaName, areaZones) => {
     if (areaZones.length === 1) {
-      select.appendChild(makeOption(areaZones[0], areaZones[0].zoneName));
+      select.appendChild(makeOption(areaZones[0], pickerZoneLabel(areaZones[0], false)));
       return;
     }
     const optgroup = document.createElement("optgroup");
     optgroup.label = areaName;
     areaZones.forEach((zone) => {
-      optgroup.appendChild(makeOption(zone, shortZoneLabel(zone.zoneName, areaName)));
+      optgroup.appendChild(makeOption(zone, pickerZoneLabel(zone, true)));
     });
     select.appendChild(optgroup);
   };
@@ -268,6 +268,35 @@ function shortWarningType(type) {
 }
 
 /**
+ * Collapse a warning list into one entry per type, keeping the order they
+ * arrived in.
+ *
+ * A single Pacific system warns several zones with the same words, so the
+ * ungrouped strip read "Strong wind — Howe Sound", "Strong wind — Haro
+ * Strait", "Strong wind — …" five times over: the type shouted, the zone
+ * whispered, and the zone is the only part that varies. Stating the type once
+ * and listing its waters after it puts the varying part in front.
+ *
+ * @param {Array<Object>} warnings - Active warnings, already sorted
+ * @returns {Array<{type: string, warnings: Array<Object>}>} One entry per type
+ */
+function groupWarningsByType(warnings) {
+  const groups = new Map();
+
+  warnings.forEach((warning) => {
+    // Keyed case-insensitively because the type is prose from the bulletin,
+    // and the same warning is not always capitalised the same way.
+    const key = String(warning.type || "Warning").toLowerCase();
+    if (!groups.has(key)) {
+      groups.set(key, { type: warning.type, warnings: [] });
+    }
+    groups.get(key).warnings.push(warning);
+  });
+
+  return Array.from(groups.values());
+}
+
+/**
  * Render the jump-to-warning strip above both forecast kinds.
  *
  * Deliberately unfiltered: it is passed every zone the document carries, not
@@ -275,6 +304,9 @@ function shortWarningType(type) {
  * and zone filtering creates a blind spot — this is the page where that blind
  * spot gets closed, so a reader can see a gale two zones over even though they
  * chose not to be interrupted by it.
+ *
+ * One row per warning type, the waters listed inside it. Each water is its own
+ * link, so the strip is still the way into any single zone's forecast.
  *
  * @param {Array<Object>} zones - Zone list from shared/marine-zones.js
  * @returns {void}
@@ -293,43 +325,61 @@ function renderWarningJumpStrip(zones) {
   strip.hidden = warnings.length === 0;
   if (warnings.length === 0) return;
 
-  warnings.forEach((warning) => {
+  groupWarningsByType(warnings).forEach((group) => {
     const item = document.createElement("li");
-
-    const link = document.createElement("a");
-    link.className = `warning-jump-item ${bannerSeverityClass(warning.type)}`;
-    link.href = `#${encodeURIComponent(warning.zone_key)}`;
+    item.className = `warning-jump-group ${bannerSeverityClass(group.type)}`;
 
     const icon = document.createElement("span");
     icon.setAttribute("aria-hidden", "true");
-    icon.textContent = getWarningIcon(warning.type);
+    icon.textContent = getWarningIcon(group.type);
 
     const type = document.createElement("span");
     type.className = "warning-jump-type";
-    type.textContent = shortWarningType(warning.type);
+    // Chips carry their meaning in colour, so they must not also depend on it:
+    // the type is spelled out on every row.
+    type.textContent = shortWarningType(group.type);
 
-    const zoneName = document.createElement("span");
-    zoneName.textContent = warning.zone_name || warning.zone_key;
+    item.append(icon, type);
 
-    link.append(icon, type, zoneName);
-
-    // The href alone is not enough. Clicking the chip for the zone already on
-    // screen changes nothing about the hash, so no hashchange fires and the
-    // page appears to ignore the click; and following the hash normally skips
-    // the scroll-and-highlight the deep link gives you.
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      if (window.location.hash.slice(1) !== warning.zone_key) {
-        window.location.hash = warning.zone_key;
-      }
-      selectedZoneKey = warning.zone_key;
-      displayForecasts();
-      scrollToZoneIfNeeded();
+    group.warnings.forEach((warning) => {
+      item.appendChild(warningJumpLink(warning));
     });
 
-    item.appendChild(link);
     list.appendChild(item);
   });
+}
+
+/**
+ * One zone link inside a grouped warning row.
+ *
+ * @param {Object} warning - Active warning
+ * @returns {HTMLAnchorElement}
+ */
+function warningJumpLink(warning) {
+  const link = document.createElement("a");
+  link.className = "warning-jump-item";
+  link.href = `#${encodeURIComponent(warning.zone_key)}`;
+  link.textContent = warning.zone_name || warning.zone_key;
+  // The type is named once by the row, so name it again for a reader who
+  // arrives at the link alone — a screen reader running the links list has no
+  // row heading beside it.
+  link.setAttribute("aria-label", `${warning.type} — ${warning.zone_name || warning.zone_key}`);
+
+  // The href alone is not enough. Clicking the chip for the zone already on
+  // screen changes nothing about the hash, so no hashchange fires and the
+  // page appears to ignore the click; and following the hash normally skips
+  // the scroll-and-highlight the deep link gives you.
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    if (window.location.hash.slice(1) !== warning.zone_key) {
+      window.location.hash = warning.zone_key;
+    }
+    selectedZoneKey = warning.zone_key;
+    displayForecasts();
+    scrollToZoneIfNeeded();
+  });
+
+  return link;
 }
 
 /**

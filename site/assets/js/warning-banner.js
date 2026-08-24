@@ -58,6 +58,26 @@ async function fetchWithTimeout(url, timeout = 5000) {
 // Configuration
 const STORAGE_KEY = "dismissed_marine_warnings";
 
+/**
+ * The viewport where warning-banner-v4.css collapses the banner into a single
+ * tap target: `.warning-details-link` is stretched over the whole banner and
+ * the per-zone links have `pointer-events: none`. Keep this in step with the
+ * 768px breakpoint there — if the two disagree, the one link a phone can tap
+ * goes somewhere the layout did not intend.
+ */
+const COMPACT_QUERY = "(max-width: 768px)";
+
+/** Every warning in effect, on the forecasts page. See #warning-jump there. */
+const ALL_WARNINGS_HREF = "/forecasts.html#warning-jump";
+
+/**
+ * Whether the banner is currently drawn as one tap target.
+ * @returns {boolean}
+ */
+function isCompactLayout() {
+  return typeof window.matchMedia === "function" && window.matchMedia(COMPACT_QUERY).matches;
+}
+
 // Dismiss duration - all warnings dismissed for 24 hours
 const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -238,6 +258,16 @@ function createCombinedWarningBanner(warnings) {
   // lands on the zone the warning is about — previously it honoured whatever
   // zone you happened to have picked last and the banner appeared to lie.
   const zoneHref = (warning) => `/forecasts.html#${encodeURIComponent(warning.zone_key)}`;
+
+  // On a phone the banner is one tap target covering everything, so its single
+  // destination cannot be one zone's forecast: whoever tapped it was told about
+  // several waters and picked none of them yet. Send them to the full list of
+  // warnings on the forecasts page and let them choose there. On a wider screen
+  // the per-zone links are live and this button is one control among them, so
+  // it still opens the most severe zone directly.
+  const compact = isCompactLayout();
+  const detailsHref = compact ? ALL_WARNINGS_HREF : zoneHref(highestSeverity);
+  const detailsText = compact ? "See all warnings \u2192" : "View Forecasts \u2192";
   const zoneLink = (warning, text) =>
     `<a class="warning-zone-link" href="${zoneHref(warning)}">${text}</a>`;
 
@@ -273,7 +303,7 @@ function createCombinedWarningBanner(warnings) {
         <div class="warning-text">
           ${warningText}
         </div>
-        <a href="${zoneHref(highestSeverity)}" class="warning-details-link">View Forecasts →</a>
+        <a href="${detailsHref}" class="warning-details-link">${detailsText}</a>
         <button class="warning-dismiss-btn" aria-label="Dismiss for 24h" title="Dismiss for 24h">×</button>
       </div>
     </div>
@@ -301,6 +331,28 @@ if (document.readyState === "loading") {
  * zone toggled there must take effect immediately rather than at the next page
  * load — otherwise the control appears not to work.
  */
+/**
+ * Re-render when the layout crosses the compact breakpoint.
+ *
+ * The banner picks its destination once, at render time, so a rotation from
+ * portrait to landscape would otherwise leave a phone-sized banner pointing at
+ * one zone (or a desktop one pointing at the list) until the next page load.
+ */
+if (typeof window.matchMedia === "function") {
+  const compactQuery = window.matchMedia(COMPACT_QUERY);
+  const onChange = () => {
+    if (document.getElementById("warning-banner-container")) {
+      displayWarningBanners();
+    }
+  };
+  // addListener is the Safari < 14 spelling; still worth the two lines.
+  if (typeof compactQuery.addEventListener === "function") {
+    compactQuery.addEventListener("change", onChange);
+  } else if (typeof compactQuery.addListener === "function") {
+    compactQuery.addListener(onChange);
+  }
+}
+
 window.addEventListener("warning-zones:changed", () => {
   if (document.getElementById("warning-banner-container")) {
     displayWarningBanners();

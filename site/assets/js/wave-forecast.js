@@ -766,6 +766,154 @@ function renderMetadata(payload, rows) {
 }
 
 /* -----------------------------
+   Model run clock — under the station heading.
+
+   The chart looks 48 h ahead, but it is a snapshot of one model run, and a run
+   from this morning is a different thing to trust than one from twenty minutes
+   ago. The heading says which run it is, when the next one is, and how long
+   that is away, so the reader can decide whether to act on it now or wait.
+   ----------------------------- */
+
+/**
+ * Hours between model runs. RDWPS and HRDPS both run at 00/06/12/18Z, which is
+ * a property of the models, not of our schedule — `config/crontab.txt` fetches
+ * on the same cadence *because* of this, not the other way round.
+ */
+const RUN_INTERVAL_HOURS = 6;
+
+/** How often the countdown redraws while the page stays open. */
+const RUN_CLOCK_TICK_MS = 60 * 1000;
+
+/** The payload the run clock is counting from, and its timer. */
+let currentRunInfo = null;
+let runClockTimer = null;
+
+/**
+ * Parse a run time, tolerating the bare-UTC spelling formatModelRunTime takes.
+ *
+ * @param {string} value
+ * @returns {Date|null}
+ */
+function parseRunTime(value) {
+  if (!value) return null;
+  const date = new Date(value.endsWith("Z") || value.includes("+") ? value : `${value}Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * "3 h 12 m", "45 m", "12 h" — a gap stated the way a reader waits it out.
+ *
+ * @param {number} ms - Milliseconds ahead
+ * @returns {string}
+ */
+function formatCountdown(ms) {
+  const totalMinutes = Math.round(ms / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes} m`;
+  if (minutes === 0) return `${hours} h`;
+  return `${hours} h ${minutes} m`;
+}
+
+/**
+ * The run clock's facts, pulled out of the payload.
+ *
+ * The wait is measured to when the *next run reaches this page*, not to the
+ * run hour itself: Datamart publishes hours after the model runs, so a bare
+ * "next run 18Z" would promise fresh numbers at 18Z that do not arrive until
+ * well after. The delay is read from this payload — `generated_utc` minus the
+ * run it carries — rather than restated from the crontab, so it stays honest
+ * if the fetch schedule ever moves.
+ *
+ * @param {Object} payload - Wave forecast payload
+ * @returns {{runs: Array<{label: string, run: Date}>, latest: Date,
+ *   next: Date, arrives: Date}|null}
+ */
+function runClockFacts(payload) {
+  const models =
+    Array.isArray(payload.models) && payload.models.length
+      ? payload.models
+      : [{ name: payload.model, run_time: payload.model_run_time }];
+
+  const runs = models
+    .map((model) => ({
+      // "RDWPS national 2.5km" → "RDWPS": the full name is spelled out in the
+      // provenance block under the chart; here it is a label on a clock.
+      label: String(model.name || "Model").split(" ")[0],
+      run: parseRunTime(model.run_time),
+    }))
+    .filter((entry) => entry.run);
+
+  if (runs.length === 0) return null;
+
+  const latest = new Date(Math.max(...runs.map((entry) => entry.run.getTime())));
+  const next = new Date(latest.getTime() + RUN_INTERVAL_HOURS * 3600 * 1000);
+
+  const generated = payload.generated_utc ? new Date(payload.generated_utc) : null;
+  const lagMs =
+    generated && !Number.isNaN(generated.getTime())
+      ? Math.max(0, generated.getTime() - latest.getTime())
+      : 0;
+
+  return { runs, latest, next, arrives: new Date(next.getTime() + lagMs) };
+}
+
+/**
+ * Draw the run clock from `currentRunInfo`.
+ *
+ * @returns {void}
+ */
+function renderRunClock() {
+  const el = document.getElementById("wave-forecast-run");
+  if (!el) return;
+
+  if (!currentRunInfo) {
+    el.hidden = true;
+    el.textContent = "";
+    return;
+  }
+
+  const { runs, latest, next, arrives } = currentRunInfo;
+
+  // Both models normally come from the same run hour, and saying so twice is
+  // noise. They can legitimately differ — a fetch can catch one model's new run
+  // before the other's — and that is worth naming when it happens.
+  const runTimes = new Set(runs.map((entry) => entry.run.getTime()));
+  const runText =
+    runTimes.size === 1
+      ? `Model run ${formatModelRunTime(latest.toISOString())}`
+      : `Model runs ${runs
+          .map((entry) => `${entry.label} ${formatModelRunTime(entry.run.toISOString())}`)
+          .join(", ")}`;
+
+  const remaining = arrives.getTime() - Date.now();
+  // Past due rather than negative: the fetch runs on a cron minute and the
+  // upstream file can be late, so the honest reading is "any time now".
+  const waitText =
+    remaining > 0 ? `on this page in ${formatCountdown(remaining)}` : "due on this page now";
+
+  el.textContent = `${runText} · next run ${formatModelRunTime(next.toISOString())}, ${waitText}`;
+  el.hidden = false;
+}
+
+/**
+ * Start the run clock for a freshly loaded payload.
+ *
+ * @param {Object} payload - Wave forecast payload
+ * @returns {void}
+ */
+function renderRunStatus(payload) {
+  currentRunInfo = runClockFacts(payload);
+  renderRunClock();
+
+  // A page left open on a phone all afternoon would otherwise keep showing the
+  // wait it had when it loaded.
+  if (!runClockTimer) {
+    runClockTimer = setInterval(renderRunClock, RUN_CLOCK_TICK_MS);
+  }
+}
+
+/* -----------------------------
    Forecast verification — the last 48 h, forecast against observation.
 
    The charts above look forward; these look back at the same station, so the
@@ -1220,6 +1368,7 @@ async function loadWaveForecast() {
     renderForecastMode(rows);
     renderTable(rows);
     renderMetadata(payload, rows);
+    renderRunStatus(payload);
 
     if (!detachWaveThemeListener) {
       // Only the visible chart — the hidden one is redrawn from scratch the

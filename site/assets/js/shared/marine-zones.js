@@ -70,6 +70,41 @@ export function shortZoneLabel(zoneName, areaName) {
 }
 
 /**
+ * Zones whose EC name is too long for a picker row.
+ *
+ * Display only, and deliberately narrow: `marine_forecast.json` keeps EC's
+ * name and so does everywhere a warning is actually *read* — the banner, the
+ * jump strip, the zone card heading. This shortens the two controls where the
+ * full name costs the most: a `<select>` that a long option widens past a
+ * phone's viewport, and a checkbox list read as a column of names.
+ *
+ * Keyed by zone key rather than by matching on the name, so an EC rewording
+ * degrades to the full name instead of silently mislabelling a zone.
+ */
+export const PICKER_SHORT_NAMES = {
+  west_coast_vancouver_island_south: "West Coast Van Island",
+};
+
+/**
+ * The label both pickers show for a zone.
+ *
+ * The one place that decision is made: the `<select>` and the warning-zone
+ * checkbox list beside it must show the same words for the same water, or a
+ * reader who picks a zone from one cannot find it in the other.
+ *
+ * @param {Object} zone - Zone record from listZones()
+ * @param {boolean} [areaHasSiblings] - Whether the zone shares its area, in
+ *   which case the area name is already carried by the group heading
+ * @returns {string} Display label
+ */
+export function pickerZoneLabel(zone, areaHasSiblings = false) {
+  const short = PICKER_SHORT_NAMES[zone.zoneKey];
+  if (short) return short;
+
+  return areaHasSiblings ? shortZoneLabel(zone.zoneName, zone.areaName) : zone.zoneName;
+}
+
+/**
  * Group zones by area, home waters first.
  *
  * The home area is the one DEFAULT_ZONE_KEY belongs to, read from the data

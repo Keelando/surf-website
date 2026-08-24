@@ -110,6 +110,16 @@ function scrollToZoneIfNeeded() {
 3. **Smoothly scrolls to "Strait of Georgia - north" section**
 4. **Section briefly highlighted with blue glow** (2 seconds)
 
+#### Superseded on mobile (2026-08-24)
+
+The zone deep link is still what the banner uses on a wide screen, where each
+warned zone is its own link and "View Forecasts →" is one control among them.
+Below the 768px breakpoint the banner is a *single* tap target stretched over
+the whole thing, so it cannot commit to one zone — several waters are named and
+the reader has picked none of them. There it links to `#warning-jump`, the
+"Warnings in effect" list at the top of the forecasts page, and they choose from
+there. The scroll-and-highlight above works the same way for that anchor.
+
 ---
 
 ## 📂 Files Modified

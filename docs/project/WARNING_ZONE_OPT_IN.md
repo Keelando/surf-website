@@ -140,7 +140,7 @@ should not compete with them.
   reader understands why an unchecked zone may still interrupt them
 
 **B. The inline toggle**, inside the rendered zone card, one line under the
-heading: *"☐ Alert me sitewide about warnings here."* Checked when the zone
+heading: *"☐ Display warning banners for this zone."* Checked when the zone
 is in the effective set. Writes the same key; both controls re-render each
 other.
 
@@ -225,6 +225,46 @@ Both engines, both themes, 390px and 1280px.
   with the hash-namespace question below; revisit together.
 - **Footer link, banner gear, dedicated settings page.** Made unnecessary by
   the inline toggle.
+
+- **The picker has an explicit "off" and a way to say "done".** A
+  *"No banners for any zone"* checkbox heads the list — the empty set was
+  always reachable by unticking all nine, but nothing said it was a supported
+  state rather than an unfinished chore, and the reader looking for "make this
+  stop" had to read nine zone names to find it. Its second line states the
+  floor where the choice is made: *"Storm Warnings (50kn+) will still be
+  displayed"*. Unticking it is an **undo**, not a reset — the zones held a
+  moment ago come back, falling to the default pair on a later visit, since
+  that memory is session-scoped and deliberately not a second stored
+  preference. The floor itself is unchanged and still not the picker's to
+  switch off.
+- **The list shows its hierarchy.** Zones inside an area group are indented
+  under its heading and the gap below a group is wider than the gap inside it.
+  Before, a single-zone area rendered as a bare row (a heading identical to its
+  one child is noise) sat flush under the previous group's heading and read as
+  a member of it — Haro Strait, Howe Sound and Johnstone Strait appeared to be
+  parts of the Strait of Georgia, and West Coast Van Island a fourth Juan de
+  Fuca zone. They are four separate EC areas. The `<select>` never had the
+  problem; `optgroup` indents natively.
+- **`West Coast Vancouver Island South` is shortened to "West Coast Van
+  Island"** in the two pickers only, via `PICKER_SHORT_NAMES` in
+  `shared/marine-zones.js`. Everywhere a warning is read — banner, jump strip,
+  zone card heading — keeps EC's full name.
+- **The collapse control is labelled "Apply".** Every tick has already saved
+  itself, but a list of checkboxes with no way to say "done" reads as
+  unfinished and the reader hunts for the button that commits it. The `title`
+  says what it really does: closes the list.
+
+## Follow-ups shipped 2026-08-24
+
+- **The mobile banner goes to the list, not to one zone.** Below 768px the
+  banner is a single stretched tap target, so its one destination now is
+  `#warning-jump` — the strip below — rather than the most severe zone's
+  forecast. Naming several waters and then choosing one for the reader was the
+  wrong call on the layout where they cannot choose for themselves.
+- **The strip groups by type**, as described above.
+- **The inline toggle reads "Display warning banners for this zone."** The old
+  "Alert me sitewide about warnings here" put the mechanism (sitewide) and the
+  place (here) in one breath and read as a riddle.
 
 ## Open questions
 
@@ -328,7 +368,10 @@ naming. The logic is `summarizeBannerWarnings()` in `shared/warning-zones.js`,
 pure and unit-tested; `warning-banner.js` only renders it.
 
 **A jump-to-warning strip at the top of the forecasts page** — severity-coloured
-chips, one per active warning, each switching the page to that zone. It is
+rows, one per *warning type*, listing the warned waters inside it, each water
+switching the page to that zone (2026-08-24; it was one chip per warning until
+then, which printed "STRONG WIND" five times over for a single system and left
+the only varying part — the water — whispering after it). It is
 deliberately **unfiltered**: it lists every warning in every zone we carry,
 regardless of the reader's banner subscription. That closes the blind spot zone
 filtering creates, and supersedes the deferred "quiet count of suppressed

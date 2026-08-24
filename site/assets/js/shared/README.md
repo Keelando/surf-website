@@ -40,10 +40,11 @@ node can import these files in tests; browsers ignore it.
   the per-zone opt-in (`docs/project/WARNING_ZONE_OPT_IN.md`). Tests:
   `tests/js/warning-preferences.test.mjs`
 - `marine-zones.js` — marine zone vocabulary and ordering: `listZones`,
-  `shortZoneLabel`, `orderZonesForDisplay` (home area first) and
-  `DEFAULT_ZONE_KEY`. Extracted from `forecasts.js` 2026-08-23 so the zone
-  `<select>` and the warning-zone picker beside it name and order zones
-  identically. Tests: `tests/js/marine-zones.test.mjs`
+  `shortZoneLabel`, `pickerZoneLabel` (+ `PICKER_SHORT_NAMES`, display-only
+  overrides for names too long for a picker row), `orderZonesForDisplay` (home
+  area first) and `DEFAULT_ZONE_KEY`. Extracted from `forecasts.js` 2026-08-23
+  so the zone `<select>` and the warning-zone picker beside it name and order
+  zones identically. Tests: `tests/js/marine-zones.test.mjs`
 
 Page-specific builders live beside their entry point rather than here:
 `buoy-card.js` and `buoy-history.js` are index-only, and both take

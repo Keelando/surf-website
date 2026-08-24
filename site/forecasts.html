@@ -71,6 +71,19 @@
       padding-bottom: 0.35rem;
     }
 
+    /* The run clock under the station name. Muted and small: it qualifies the
+       chart rather than announcing it, and it must not compete with the
+       station name above it. */
+    .wave-forecast-run {
+      margin: 0.15rem 0 0.5rem;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+
+    .wave-forecast-run[hidden] {
+      display: none;
+    }
+
     /* The text forecasts are a wall of prose — the whole page is words. The
        spacing below is deliberately tighter than the site default so a zone
        fits a phone screen instead of costing three scrolls of padding. */
@@ -450,9 +463,9 @@
 
     /* --- Jump-to-warning strip ------------------------------------------
        Sits above both forecast kinds because it is about the page, not about
-       either one. Chips rather than a list: a reader scanning for "is my water
-       warned?" is matching a name, and names in a row are faster to scan than
-       names down a column. */
+       either one. One row per warning type, the warned waters listed inside
+       it: a reader scanning for "is my water warned?" is matching a name, and
+       repeating the type in front of every name buries the names. */
     .warning-jump {
       margin: 0 0 1.5rem;
       padding: 0.85rem 1rem;
@@ -475,52 +488,42 @@
       color: var(--color-text-muted);
     }
 
+    /* A column of type rows, each of which wraps its own waters. */
     .warning-jump-list {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 0.5rem;
       margin: 0;
       padding: 0;
       list-style: none;
     }
 
-    .warning-jump-item {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 0.45rem;
-      padding: 0.35rem 0.7rem;
-      border-radius: 999px;
+    .warning-jump-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.7rem;
+      /* Not a 999px pill: a row with six waters wraps to two lines on a phone,
+         and a fully rounded end on a two-line box reads as a mistake. */
+      border-radius: 10px;
       font-size: 0.85rem;
       color: #fff;
-      text-decoration: none;
-      /* Chips carry their meaning in colour, so they must not also depend on
-         it: the type is spelled out on every one. */
       background: var(--color-text-muted);
     }
 
-    .warning-jump-item:hover,
-    .warning-jump-item:focus-visible {
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-
-    .warning-jump-item:focus-visible {
-      outline: 2px solid var(--color-accent-blue);
-      outline-offset: 2px;
-    }
-
     /* Same severity ramp as the banner, deliberately: a reader who has seen the
-       red banner should recognise the red chip as the same warning. Solid
+       red banner should recognise the red row as the same warning. Solid
        rather than the banner's gradient — these are small. */
-    /* Each is the dark end of its banner ramp, not the mid tone: the chips
+    /* Each is the dark end of its banner ramp, not the mid tone: the rows
        carry white text at 12-14px, and the banner's own gale orange (#ea580c)
        only reaches 3.55:1 against white, under the 4.5:1 AA floor for text
        this size. These clear it — 8.3, 5.2, 7.1, 9.0 and 8.7 respectively. */
-    .warning-jump-item.warning-storm { background: #991b1b; }
-    .warning-jump-item.warning-gale { background: #c2410c; }
-    .warning-jump-item.warning-strong-wind { background: #92400e; }
-    .warning-jump-item.warning-waterspout { background: #5b21b6; }
-    .warning-jump-item.warning-default { background: #1e40af; }
+    .warning-jump-group.warning-storm { background: #991b1b; }
+    .warning-jump-group.warning-gale { background: #c2410c; }
+    .warning-jump-group.warning-strong-wind { background: #92400e; }
+    .warning-jump-group.warning-waterspout { background: #5b21b6; }
+    .warning-jump-group.warning-default { background: #1e40af; }
 
     .warning-jump-type {
       font-weight: 700;
@@ -528,14 +531,43 @@
       letter-spacing: 0.03em;
       font-size: 0.75rem;
       white-space: nowrap;
+      margin-right: 0.15rem;
+    }
+
+    /* Each warned water, inside its row. The tinted background is what keeps
+       two adjacent zone names from reading as one — a gap alone left "Howe
+       Sound Haro Strait". 15% white over the darkest ramp colour still clears
+       AA for this text size. */
+    .warning-jump-item {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      color: inherit;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .warning-jump-item:hover,
+    .warning-jump-item:focus-visible {
+      background: rgba(255, 255, 255, 0.3);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    /* White, not the page's accent blue: the outline sits on a dark red or
+       amber row, where the accent all but disappears. */
+    .warning-jump-item:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
     }
 
     /* Nine zones warned at once is the worst case, and on a phone it is the
-       case where the strip costs the most: every chip wraps to two lines and
-       the forecast itself is pushed a screen and a half down. The emoji is the
-       first thing to go — the severity is spelled out beside it and carried by
-       the colour, exactly as the warning banner already reasons when it drops
-       its own icon on mobile. */
+       case where the strip costs the most: rows wrap and the forecast itself
+       is pushed a screen and a half down. The emoji is the first thing to go —
+       the severity is spelled out beside it and carried by the colour, exactly
+       as the warning banner already reasons when it drops its own icon on
+       mobile. */
     @media (max-width: 600px) {
       .warning-jump {
         padding: 0.7rem 0.8rem;
@@ -545,13 +577,13 @@
         gap: 0.4rem;
       }
 
-      .warning-jump-item {
+      .warning-jump-group {
         gap: 0.35rem;
-        padding: 0.3rem 0.6rem;
+        padding: 0.35rem 0.6rem;
         font-size: 0.8rem;
       }
 
-      .warning-jump-item > [aria-hidden="true"] {
+      .warning-jump-group > [aria-hidden="true"] {
         display: none;
       }
     }
@@ -580,11 +612,21 @@
 
     .warning-zone-group {
       border: none;
-      margin: 0 0 0.75rem;
+      /* Roomier below than the 0.75rem rhythm inside the list: this margin is
+         the only thing separating a group's last member from the standalone
+         zone under it, and at 0.75rem the two read as one list. */
+      margin: 0 0 1.1rem;
       padding: 0;
     }
 
-    .warning-zone-group:last-of-type {
+    /* `:last-child`, not `:last-of-type`. The point is to drop the trailing
+       gap when a group really does end the list — but West Coast Vancouver
+       Island South is a single-zone area, so it renders as a bare checkbox
+       *after* the last fieldset. `:last-of-type` zeroed that fieldset's margin
+       anyway, and the loose row underneath closed right up against the Juan de
+       Fuca group and read as a fourth member of it. It is a separate EC area
+       (South Coast, m0000065), and the list must not say otherwise. */
+    .warning-zone-group:last-child {
       margin-bottom: 0;
     }
 
@@ -607,6 +649,18 @@
       color: var(--color-text-muted);
     }
 
+    /* Indent the members of a group under their heading. Spacing alone could
+       not carry the hierarchy: Haro Strait, Howe Sound, Johnstone Strait and
+       West Coast Van Island are each their own EC area, rendered as bare rows
+       because a heading identical to its single child is noise — but sitting
+       flush under "STRAIT OF GEORGIA" they read as part of it, which is wrong
+       on every count (Johnstone Strait is north of the Strait of Georgia past
+       Discovery Passage, Haro Strait is east of Victoria). The <select> beside
+       this gets the same hierarchy free, from optgroup's native indent. */
+    .warning-zone-group > .warning-zone-option {
+      padding-left: 0.9rem;
+    }
+
     .warning-zone-option {
       display: flex;
       align-items: center;
@@ -624,6 +678,32 @@
       width: 1rem;
       height: 1rem;
       accent-color: var(--color-accent-blue);
+    }
+
+    /* "No banners for any zone" heads the list and is not one of the zones, so
+       it is ruled off from them rather than sitting as a tenth peer. */
+    .warning-zone-none {
+      margin-bottom: 0.6rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--color-border-light);
+      align-items: flex-start;
+      font-weight: 600;
+    }
+
+    .warning-zone-none input {
+      /* The label is two lines here; a centre-aligned box would float beside
+         the gap between them. */
+      margin-top: 0.15rem;
+    }
+
+    /* The storm floor, under the choice it qualifies. Its own line: run inline
+       it reads as part of the label and the label stops being scannable. */
+    .warning-zone-note {
+      display: block;
+      margin-top: 0.1rem;
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--color-text-muted);
     }
 
 
@@ -648,6 +728,7 @@
       color: var(--color-text-muted);
       font-family: inherit;
       font-size: 0.85rem;
+      font-weight: 600;
       line-height: 1;
       text-align: center;
       cursor: pointer;
@@ -978,9 +1059,14 @@
           <div id="warning-zone-picker-list"></div>
           <!-- Nine zones make a tall list, so by the time you have finished
                ticking, the summary you opened is well off the top of the
-               control. This closes it without scrolling back up for it. -->
-          <button type="button" id="warning-zone-picker-collapse" class="warning-zone-collapse" aria-label="Collapse alert options">
-            <span aria-hidden="true">▲</span>
+               control. This closes it without scrolling back up for it.
+               Labelled "Apply" rather than left as a bare ▲: every tick has
+               already saved itself, but a list of checkboxes with no way to
+               say "done" reads as unfinished, and the reader was left hunting
+               for the button that committed it. The title says what it
+               actually does. -->
+          <button type="button" id="warning-zone-picker-collapse" class="warning-zone-collapse" title="Your choices are saved as you tick them — this just closes the list">
+            Apply <span aria-hidden="true">▲</span>
           </button>
         </div>
       </details>
@@ -1003,6 +1089,12 @@
 
     <div class="forecast-zone" id="wave-forecast-section">
       <h3 id="wave-forecast-heading" class="wave-forecast-station-heading">Halibut Bank</h3>
+
+      <!-- Which run the chart below is, when the next one is, and how long
+           that is away — filled in by wave-forecast.js, which reads the run
+           times out of the forecast payload. Hidden until it has them, so a
+           failed load never leaves a stale clock under the heading. -->
+      <p id="wave-forecast-run" class="wave-forecast-run" hidden></p>
 
       <!-- Points at the home-page map, zoomed to whichever station the
            forecast is currently showing — wave-forecast.js rewrites the href
@@ -1172,13 +1264,13 @@
 
   <!-- Load logger first for global availability -->
   <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
-  <script type="module" src="/assets/js/warning-banner.js?v=cf9da1be49"></script>
+  <script type="module" src="/assets/js/warning-banner.js?v=4273171ea4"></script>
   <script src="/assets/vendor/echarts.min.js?v=968b4d8c55"></script>
   <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/chart-utils-v4.js?v=401977606f"></script>
-  <script type="module" src="/assets/js/forecasts.js?v=6e4c5534d2"></script>
-  <script type="module" src="/assets/js/wave-forecast.js?v=af174f2301"></script>
+  <script type="module" src="/assets/js/forecasts.js?v=18b1af6772"></script>
+  <script type="module" src="/assets/js/wave-forecast.js?v=221e714944"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>
