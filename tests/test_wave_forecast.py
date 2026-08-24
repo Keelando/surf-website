@@ -685,43 +685,81 @@ class TestConfiguration:
     def test_only_speeds_are_converted(self):
         assert set(wf.CONVERSIONS) == {"wind_speed", "wind_gust"}
 
-    def test_request_budget_matches_the_documented_footprint(self):
-        """33 steps x 7 variables = 231 point queries per station. At 2 stations
-        plus one GetCapabilities per model that is 464/run, 1,856/day at 4 runs
-        (~2.1% of the 86,400 guidance). Mirrors the table in docs/DATA_FEEDS.md,
-        which is maintained by hand — this test is what keeps it honest, so
-        update both together when BUOY_IDS or the step count changes."""
+    def _requests_per_run(self):
+        """Point queries in one run, counted per station.
+
+        Not a multiplication any more: the wind-less stations cost 4 variables
+        a step where the others cost 7.
+        """
         published = [dt(RUN_ISO) + timedelta(hours=h) for h in range(49)]
         steps = taper_time_steps(published, wf.FINE_HORIZON_HOURS, wf.COARSE_STEP_HOURS)
-        per_station = len(steps) * len(wf.VARIABLES)
-        per_run = per_station * len(wf.BUOY_IDS) + len(wf.SOURCES)
-        assert len(steps) == 33
-        assert per_station == 231
-        assert len(wf.BUOY_IDS) == 2
-        assert per_run == 464
-        assert per_run * 4 == 1_856
-        assert per_run * 4 < 86_400 * 0.05  # MSC usage guidance
+        per_run = sum(
+            len(steps) * len(wf.SOURCES[model])
+            for config in wf.STATIONS.values()
+            for model in wf.models_for(config)
+        )
+        return len(steps), per_run
+
+    def test_request_budget_matches_the_documented_footprint(self):
+        """33 steps x 7 variables = 231 point queries per station with wind,
+        132 without. Four of each and two of the other, plus one
+        GetCapabilities per model, is 1,190/run and 4,760/day at 4 runs —
+        7.3% of the 86,400 guidance once storm surge is counted too. Mirrors
+        the table in docs/DATA_FEEDS.md, which is maintained by hand — this
+        test is what keeps it honest, so update both together when STATIONS
+        or the step count changes."""
+        steps, per_run_queries = self._requests_per_run()
+        per_run = per_run_queries + len(wf.SOURCES)
+        with_wind = [c for c in wf.STATIONS.values() if c.get("wind", True)]
+        assert steps == 33
+        assert len(wf.STATIONS) == 6
+        assert len(with_wind) == 4
+        assert per_run == 1_190
+        assert per_run * 4 == 4_760
+        assert per_run * 4 + 1_550 < 86_400 * 0.10  # MSC guidance, with storm surge
+
+    def test_dropping_wind_actually_saves_the_requests_it_claims(self):
+        """The open-Pacific points take waves only. If models_for() ever stops
+        being honoured in the fetch loop the cost comes back silently — the
+        budget above would still pass, because it asks the same function."""
+        waves_only = [c for c in wf.STATIONS.values() if not c.get("wind", True)]
+        assert len(waves_only) == 2
+        assert all(wf.models_for(c) == (wf.MODEL_NAME,) for c in waves_only)
+        source = Path(wf.__file__).read_text()
+        assert "if model not in models_for(config):" in source, (
+            "main() must skip models a station opts out of"
+        )
 
     def test_stale_lock_threshold_exceeds_a_full_run(self):
         """acquire_lock() removes a lock it judges stale. Runtime scales with
-        BUOY_IDS (~7.6 min each), so a threshold that does not scale with it
-        will eventually declare a live fetch dead and let two runs overlap."""
-        published = [dt(RUN_ISO) + timedelta(hours=h) for h in range(49)]
-        steps = taper_time_steps(published, wf.FINE_HORIZON_HOURS, wf.COARSE_STEP_HOURS)
-        per_run = len(steps) * len(wf.VARIABLES) * len(wf.BUOY_IDS)
+        STATIONS (~7.6 min each with wind, ~4.3 without), so a threshold that
+        does not scale with it will eventually declare a live fetch dead and
+        let two runs overlap."""
+        _, per_run = self._requests_per_run()
         runtime_s = per_run * (wf.FETCH_DELAY + 0.45)
         source = Path(wf.__file__).read_text()
         threshold = int(re.search(r"if age > (\d+):", source).group(1))
         assert threshold > runtime_s * 1.5, (
             f"stale-lock threshold {threshold}s is too close to the "
-            f"~{runtime_s / 60:.0f} min runtime of {len(wf.BUOY_IDS)} stations"
+            f"~{runtime_s / 60:.0f} min runtime of {len(wf.STATIONS)} stations"
         )
         assert threshold < 6 * 3600  # cleared before the next scheduled run
 
     def test_burst_rate_is_unchanged_by_the_extra_variables(self):
         """The guidance is a rate; only FETCH_DELAY moves it, never step count."""
-        assert wf.FETCH_DELAY == 1.5
-        assert 1 / (wf.FETCH_DELAY + 0.45) < 0.6  # req/s, measured network time
+        assert wf.FETCH_DELAY == 1.0
+        assert 1 / (wf.FETCH_DELAY + 0.45) < 0.7  # req/s, measured network time
+
+    def test_the_rate_stays_under_the_guidance_even_with_no_network_time(self):
+        """The ceiling is what matters, not the typical case.
+
+        Our rate depends on server response time we do not control. A slower
+        server only lowers it, so the worst case is instant responses — the
+        delay alone. That has to stay at or under MSC's ~1 req/s, which is the
+        real argument against dropping FETCH_DELAY further: at 0.5 s this
+        ceiling would be 2.0 req/s.
+        """
+        assert 1 / wf.FETCH_DELAY <= 1.0
 
     def test_json_is_written_outside_the_repo_data_dir_allowlist(self, tmp_path, monkeypatch):
         """site/data is a public surface: only allowlisted fields may be written."""

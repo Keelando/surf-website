@@ -42,7 +42,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from lib.config import BUOY_DATABASE, EXPORT_DIR, WAVE_FORECAST_DATABASE, safe_json_write  # noqa: E402
 from lib.logging_config import setup_logging  # noqa: E402
 from lib.stations import get_buoy  # noqa: E402
-from scripts.fetch.fetch_wave_forecast import BUOY_IDS, UNITS  # noqa: E402
+from scripts.fetch.fetch_wave_forecast import STATIONS, UNITS  # noqa: E402
 from scripts.monitoring.verify_wave_forecast import OBSERVATION_COLUMNS  # noqa: E402
 
 logger = setup_logging("forecast_verification")
@@ -194,7 +194,7 @@ def export_verification(now=None):
 
     written = 0
     with sqlite3.connect(f"file:{WAVE_FORECAST_DATABASE}?mode=ro", uri=True) as conn:
-        for station_id in BUOY_IDS:
+        for station_id in STATIONS:
             station_info = get_buoy(station_id)
             if not station_info:
                 logger.info(f"❌ Station {station_id} not found in stations.json")

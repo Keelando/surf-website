@@ -121,7 +121,51 @@ CONVERSIONS = {
 # none is in stations.json — they are not instruments, so adding them under
 # `buoys` would put phantom stations on the map. They need a forecast-only
 # registry section first.
-BUOY_IDS = ["4600146", "CRPILE"]
+#
+# Four points added 2026-08-24, each with a co-located buoy so the verification
+# archive can score them. They deliberately span two wave regimes: a month of
+# observations puts the Strait stations under 7 s peak period with a ~3 s
+# average, while the outer stations average 9-10.5 s and reach 20-26.7 s.
+# Forecasting only the sheltered regime was hiding the case the model is most
+# likely to get interestingly wrong. All four were probed against the live WMS
+# before being added — every one returns real data, so none sits outside the
+# RDWPS domain.
+#
+# WIND IS NOT FETCHED EVERYWHERE, which is why this is a dict and not a list.
+# One WMS request buys one (variable, hour), so HRDPS wind is 3 of the 7
+# variables and 43% of the cost of a station. At Neah Bay and La Perouse Bank
+# — 48.5N 124.7W and 48.8N 126.0W, out on the open Pacific — the local wind is
+# not something anyone plans a Salish Sea day on; those points earn their place
+# as swell-arrival indicators, and the waves are the whole signal. Fetching
+# wind there would add 1,584 requests/day to buy a number nobody reads.
+#
+# Cost, for the next person weighing a fifth point: 33 steps x 7 variables =
+# 231 requests per station per run, 924/day, or 132 and 528 without wind.
+# The total lands at 6,310 ECCC requests/day (7.3% of MSC's 86,400 guidance)
+# and ~29 min per run at 1.0 s spacing. Neither is the binding constraint —
+# the burst rate stays at 0.69 req/s, under the guidance — and what actually
+# bites is runtime, both as publication lag and against the stale-lock
+# threshold. See docs/DATA_FEEDS.md.
+STATIONS = {
+    "4600146": {"wind": True},   # Halibut Bank — reference, has an EC buoy
+    "CRPILE": {"wind": True},    # Crescent Beach Ocean — Surrey sensor
+    "4600304": {"wind": True},   # English Bay — EC buoy, local and sheltered
+    "46088": {"wind": True},     # New Dungeness — NOAA, Juan de Fuca mouth
+    "46087": {"wind": False},    # Neah Bay — NOAA, open Pacific swell
+    "4600206": {"wind": False},  # La Perouse Bank — EC buoy, open Pacific
+}
+
+
+
+def models_for(config):
+    """Which models to fetch for a station.
+
+    Waves are the point of the page, so RDWPS is unconditional; HRDPS wind is
+    opt-out per station (see the STATIONS comment on why the outer coast opts
+    out).
+    """
+    return (MODEL_NAME, WIND_MODEL_NAME) if config.get("wind", True) else (MODEL_NAME,)
+
 
 OUTPUT_DIR = EXPORT_DIR / "wave_forecast"
 LOCKFILE = Path("/tmp/wave_forecast_fetch.lock")
@@ -130,10 +174,20 @@ LOCKFILE = Path("/tmp/wave_forecast_fetch.lock")
 # centred on the buoy and query the centre pixel.
 BBOX_OFFSET = 0.02  # degrees
 # Rate limiting. MSC's guidance is "about 1 request per second"; with ~0.45 s
-# of network per request, a 0.5 s delay puts a burst at 1.05 req/s — right at
-# that line. 1.5 s gives 0.51 req/s, and a 4-minute run is nothing for a job
-# that goes 4x/day. Daily totals were never the risk here; the burst rate was.
-FETCH_DELAY = 1.5  # seconds between requests
+# of network per request, a 0.5 s delay puts a burst at 1.05 req/s — over that
+# line. Daily totals were never the risk here; the burst rate was.
+#
+# 1.0 s (2026-08-24, was 1.5 s) gives 0.69 req/s and a ~29 min run at six
+# stations, down from ~39 min. The extra 10 minutes stopped being free once the
+# station list grew: the fetch starts at model-run+4h35m, so runtime is
+# publication lag, and it also eats the margin under the stale-lock threshold.
+#
+# What makes 1.0 s safe rather than merely cheaper is the direction of the
+# error. Our rate depends on network time we do not control, and a SLOWER
+# server only lowers it — the ceiling is the delay alone, hit only if responses
+# returned instantly, which is exactly 1.00 req/s here. At 0.5 s that same
+# ceiling would be 2.0 req/s, which is why this is not simply "go faster".
+FETCH_DELAY = 1.0  # seconds between requests
 REQUEST_TIMEOUT = 60  # seconds
 
 # Both models publish 49 hourly steps (0–48 h), but we don't fetch them all:
@@ -161,12 +215,12 @@ def acquire_lock():
     if LOCKFILE.exists():
         age = time.time() - LOCKFILE.stat().st_mtime
         # Must stay comfortably above the real runtime, which scales with
-        # BUOY_IDS: ~7.6 min per station, so two stations already exceed the
-        # old 15-minute threshold and a live fetch would be declared stale by
-        # anything that ran alongside it. An hour is still well inside the 6 h
-        # gap between runs, so a genuinely wedged process is cleared before the
-        # next one is due.
-        if age > 3600:
+        # STATIONS: ~5.6 min per station with wind, ~3.2 min without, at the
+        # current 1.0 s spacing. Six stations is ~29 min, and the old 1 h
+        # threshold left too little margin for a slow run. 2 h restores the
+        # headroom and is still well inside the 6 h gap between runs, so a
+        # genuinely wedged process is cleared before the next one is due.
+        if age > 7200:
             logger.info("⚠️  Removing stale lock file")
             LOCKFILE.unlink()
         else:
@@ -668,7 +722,7 @@ def save_index(stations):
     """Write the list of stations that have a forecast file.
 
     The page needs to know which stations to offer before it can load one, and
-    hardcoding that list in JavaScript would make BUOY_IDS a second source of
+    hardcoding that list in JavaScript would make STATIONS a second source of
     truth for something this script already knows. Written from the stations
     that actually produced data, so a station whose fetch failed is absent from
     the picker rather than offered as a broken option.
@@ -722,9 +776,14 @@ def main():
     try:
         steps_by_model = plan_time_steps()
 
+        # Counted per station rather than multiplied out, since the
+        # wind-less stations cost 4 variables a step instead of 7.
         requests_planned = sum(
-            len(steps) * len(SOURCES[model]) for model, steps in steps_by_model.items()
-        ) * len(BUOY_IDS)
+            len(steps) * len(SOURCES[model])
+            for config in STATIONS.values()
+            for model, steps in steps_by_model.items()
+            if models_for(config) and model in models_for(config)
+        )
         # ~0.45 s of network per request on top of our own delay (measured
         # 2026-08-15); the old estimate counted only the sleep and came in at
         # half the real runtime.
@@ -735,7 +794,7 @@ def main():
 
         failures = 0
         published = []  # (station_id, info) for stations that produced a file
-        for buoy_id in BUOY_IDS:
+        for buoy_id, config in STATIONS.items():
             station_info = get_buoy(buoy_id)
             if not station_info:
                 logger.info(f"❌ Buoy {buoy_id} not found in stations.json")
@@ -747,6 +806,8 @@ def main():
             merged = {}
             run_times = {}
             for model, layers in SOURCES.items():
+                if model not in models_for(config):
+                    continue
                 forecast, readings, counts, run_time = fetch_station_forecast(
                     buoy_id, station_info, layers, steps_by_model[model]
                 )

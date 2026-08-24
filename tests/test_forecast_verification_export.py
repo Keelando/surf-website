@@ -287,7 +287,7 @@ class TestBuildStationPayload:
 
 class TestExportHindcast:
     def test_writes_one_file_per_station(self, forecast_db, buoy_db, output_dir, monkeypatch):
-        monkeypatch.setattr(hx, "BUOY_IDS", [STATION])
+        monkeypatch.setattr(hx, "STATIONS", {STATION: {"wind": True}})
         valid = NOW - 5 * HOUR
         add_forecast(forecast_db, valid, valid - 24 * HOUR, 0.3)
 
@@ -298,7 +298,7 @@ class TestExportHindcast:
 
     def test_station_with_no_data_writes_no_file(self, forecast_db, buoy_db, output_dir,
                                                  monkeypatch):
-        monkeypatch.setattr(hx, "BUOY_IDS", [STATION])
+        monkeypatch.setattr(hx, "STATIONS", {STATION: {"wind": True}})
         assert hx.export_verification(now=NOW) == 0
         assert not output_dir.exists() or list(output_dir.iterdir()) == []
 
@@ -308,7 +308,7 @@ class TestExportHindcast:
 
     def test_timestamps_are_iso_utc(self, forecast_db, buoy_db, output_dir, monkeypatch):
         """A naive datetime here would put every point 7-8 hours out."""
-        monkeypatch.setattr(hx, "BUOY_IDS", [STATION])
+        monkeypatch.setattr(hx, "STATIONS", {STATION: {"wind": True}})
         valid = NOW - 5 * HOUR
         add_forecast(forecast_db, valid, valid - 24 * HOUR, 0.3)
         hx.export_verification(now=NOW)
@@ -320,8 +320,12 @@ class TestExportHindcast:
 
 class TestStationCoverage:
     def test_every_forecast_station_is_exported(self):
-        """The exporter reads BUOY_IDS rather than keeping its own station list."""
-        assert hx.BUOY_IDS is wf.BUOY_IDS
+        """The exporter reads STATIONS rather than keeping its own station list.
+
+        Identity, not equality: a copy would drift the moment a station is
+        added to the fetcher and not here.
+        """
+        assert hx.STATIONS is wf.STATIONS
 
     def test_column_map_is_shared_with_the_verifier(self):
         """One place decides which instrument measures which forecast variable."""

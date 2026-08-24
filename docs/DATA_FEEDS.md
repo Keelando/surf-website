@@ -40,8 +40,8 @@ subscription is for. Update this table when adding or rescheduling a feed.
 | Endpoint | Job | Schedule | Requests/day |
 |---|---|---|---|
 | `geo.weather.gc.ca` | `fetch_storm_surge.py` | 2×/day | 1,550 (6 stations × 129 of 241 steps + 1 cap) |
-| `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 1,856 (2 stations × 33 of 49 steps × 7 vars + 2 caps) |
-| | | **Total** | **3,406 (3.9%)** |
+| `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 4,760 (4 stations × 7 vars + 2 stations × 4 vars, × 33 of 49 steps, + 2 caps) |
+| | | **Total** | **6,310 (7.3%)** |
 
 Nothing else here polls ECCC over HTTP. The lightstation FPCN61 poller used to
 add ~48/day by walking Datamart directory listings — the one thing the policy
@@ -53,18 +53,23 @@ wind variables (added 2026-08-17), one GetCapabilities each. It went 532 → 932
 requests/day, and the total 2.5% → 2.9%. Adding Crescent Beach Ocean as a second
 extraction point (2026-08-18) doubled the per-run cost again, 932 → 1,856/day and
 the total to 4.0%. The **rate** has not moved through any of it — `FETCH_DELAY`
-is unchanged, so each addition lengthens the burst (~4 → ~7.6 → ~15 min per run)
-at the same 0.51 req/s. It does not overlap `fetch_storm_surge.py`, which runs
+was unchanged through all of those, so each addition lengthened the burst
+(~4 → ~7.6 → ~15 min per run) at the same 0.51 req/s; the six-station step to
+~39 min is what finally moved it, to 1.0 s and ~29 min. It does not overlap `fetch_storm_surge.py`, which runs
 01:31/13:31 for ~32 min against the same host.
 
 **Each further extraction point costs 231 requests/run, 924/day (~1.1%), and
-~7.6 min of runtime.** The binding constraint is not the guidance — it is the
-6 h gap to the next run, and the stale-lock threshold in `acquire_lock()`, which
-must stay above the real runtime (raised to 1 h when the second station landed).
+~5.6 min of runtime — or 132, 528/day and ~3.2 min without wind.** The binding
+constraint is not the guidance — it is the 6 h gap to the next run, and the
+stale-lock threshold in `acquire_lock()`, which must stay above the real runtime
+(1 h when the second station landed, raised to 2 h at six stations, where a
+~39 min run left only 21 min of margin). Publication lag is the other cost the
+totals hide: the fetch starts at run+4h35m, so a longer run means a staler
+forecast on the page, not just a longer job.
 
 This table is maintained by hand, not instrumented — deliberately (decided
 2026-08-16). A project-wide request counter is more machinery than a number we
-are 2.9% of deserves. **Keep it honest by updating the row in the same commit
+are 7.3% of deserves. **Keep it honest by updating the row in the same commit
 that changes a fetcher's schedule, station count, or step count** — all three
 are visible in the source constants, so the count is derivable, never measured.
 Revisit the decision if a new point-extraction feed lands (a gridded water-level
@@ -98,9 +103,17 @@ loops `request → sleep(FETCH_DELAY)`, and with ~0.45 s of network per request:
 | 2.0 s | 0.41 req/s |
 
 `fetch_storm_surge.py` uses 2.0 s (0.41 req/s over ~32 min, measured 2026-08-16)
-and `fetch_wave_forecast.py` uses 1.5 s (0.51 req/s over ~15 min). Both are the
-default for a new point-extraction feed: start at 1.5–2 s, and only argue the
-rate down if something downstream is actually time-critical.
+and `fetch_wave_forecast.py` uses 1.0 s (0.69 req/s over ~29 min, lowered from
+1.5 s on 2026-08-24 when six stations made runtime a real cost). 1.5–2 s is
+still the default for a *new* point-extraction feed; argue it down only when
+runtime is buying something, as it is here — the fetch starts at
+model-run+4h35m, so a longer run is a staler forecast on the page.
+
+**Judge the ceiling, not the typical rate.** The effective rate depends on
+server response time we do not control, and a slower server only lowers it, so
+the worst case is instant responses — the delay alone. At 1.0 s that ceiling is
+exactly 1.00 req/s, at the guidance; at 0.5 s it would be 2.0 req/s. That, not
+the typical figure, is the reason 0.5 s is out.
 
 Note that thinning timesteps does **not** help the burst rate — it shortens the
 burst but leaves the rate unchanged. The two levers are independent: taper for
@@ -222,14 +235,19 @@ See `TODO.md` for the measured interpolation error behind the taper.
 **Protocol:** WMS 1.3.0 GetFeatureInfo (JSON) via requests
 **Fetched by:** `scripts/fetch/fetch_wave_forecast.py`
 **Schedule:** 04:35, 10:35, 16:35, 22:35 UTC — run+4h35m (model runs 00/06/12/18Z, files land ~3h25m later)
-**Stations:** Halibut Bank (`4600146`) and Crescent Beach Ocean (`CRPILE`) —
-`BUOY_IDS` in the fetcher, ids from `config/stations.json`. Both were chosen for
-having a co-located sensor to verify against; see the fetcher's comment for why
-the other candidate points do not qualify yet.
+**Stations:** six, as `STATIONS` in the fetcher, ids from
+`config/stations.json`. Halibut Bank (`4600146`), Crescent Beach Ocean
+(`CRPILE`), English Bay (`4600304`) and New Dungeness (`46088`) take waves and
+wind; Neah Bay (`46087`) and La Perouse Bank (`4600206`) take **waves only** —
+out on the open Pacific the local wind is not something anyone plans a Salish
+Sea day on, and skipping it saves 1,584 requests/day. Every one has a
+co-located sensor to verify against; see the fetcher's comment for why the
+other candidate points do not qualify yet.
 **Sampling:** 33 of 49 hourly steps — hourly to 24 h, then 3-hourly. 231
-requests per station per run, 464/run at 2 stations, 1,856/day, at 1.5 s spacing
-(0.51 req/s, ~15 min/run). The site's table thins this to 3-hourly for display;
-the hourly steps are kept in the database and on the chart.
+requests per station per run with wind, 132 without: 1,190/run, 4,760/day, at
+1.5 s spacing (0.51 req/s, ~39 min/run). The site's table thins this to
+3-hourly for display; the hourly steps are kept in the database and on the
+chart.
 **Stored in:** `wave_forecast.sqlite` + exported JSON to `site/data/wave_forecast/`
 **Note:** masked cells (absent wind-wave/swell partition, land) come back as sentinel `9999.0` — the fetcher drops values ≥ 9000.
 
