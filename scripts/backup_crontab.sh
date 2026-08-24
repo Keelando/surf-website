@@ -32,6 +32,44 @@ if grep -qE '^\s*[A-Z0-9_]*(API_KEY|APIKEY|PASSWORD|PASSWD|SECRET|TOKEN|CREDENTI
   exit 1
 fi
 
+# Refuse to write jobs that belong to other projects on this host.
+#
+# `crontab -l` returns the WHOLE crontab for this user, and this script dumps it
+# into a tracked file in a public repo. That is how an unrelated project's jobs
+# — and ~56 lines of homelab notes describing them — ended up published on
+# halibutbank.ca's GitHub (removed 2026-08-24). One user gets one crontab, so
+# the fix is not to filter here but to keep foreign jobs OUT of the user
+# crontab entirely: put them in /etc/cron.d/<name> with a `keelando` user field,
+# which `crontab -l` cannot see. See system-issues/deployed/ for that pattern.
+#
+# Anything referencing a path outside the repo must be listed below, with a
+# reason. If this fires on a job you just added, move it to /etc/cron.d instead
+# of widening the allowlist.
+FOREIGN_ALLOWED=(
+  /home/keelando/backup_surf.sh        # restic; logs into envcan_wave/logs/
+  /home/keelando/psi_sample.sh         # host telemetry, tracked in ~/system-issues
+  /home/keelando/sys_stats_mqtt.py     # host telemetry, tracked in ~/system-issues
+)
+
+foreign=()
+while IFS= read -r path; do
+  [[ "$path" == "$REPO_ROOT"/* ]] && continue
+  allowed=0
+  for ok in "${FOREIGN_ALLOWED[@]}"; do
+    [[ "$path" == "$ok" ]] && { allowed=1; break; }
+  done
+  (( allowed )) || foreign+=("$path")
+done < <(grep -vE '^\s*#|^\s*$' "$TMP" | grep -oE '/\S+\.(py|sh)' | sort -u)
+
+if (( ${#foreign[@]} > 0 )); then
+  echo "ERROR: live crontab runs ${#foreign[@]} script(s) from outside this repo:" >&2
+  printf '  %s\n' "${foreign[@]}" >&2
+  echo "This file is tracked and the repo is public. Move the job to" >&2
+  echo "/etc/cron.d/<name> (user field: keelando), or add it to FOREIGN_ALLOWED" >&2
+  echo "in $0 with a reason. $CANONICAL left untouched." >&2
+  exit 1
+fi
+
 # Validate: every absolute /path/to/script.{py,sh} referenced must exist.
 missing=()
 while IFS= read -r path; do

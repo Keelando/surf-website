@@ -7,6 +7,11 @@
 #   scripts/install_crontab.sh --diff-only   # preview diff
 #   scripts/install_crontab.sh               # apply
 # See also: docs/DEPLOYMENT.md § Crontab Management
+#
+# THIS FILE IS A DUMP OF THE WHOLE USER CRONTAB and it is tracked in a public
+# repo. Host jobs that are not part of this project belong in /etc/cron.d/<name>
+# (with a `keelando` user field), which `crontab -l` cannot see. Adding one here
+# publishes it. scripts/backup_crontab.sh enforces this.
 # ==============================================================================
 
 # ==================== ENVIRONMENT VARIABLES ====================
@@ -205,49 +210,6 @@
 # MaxMind releases GeoLite2 every Tuesday; update Wed + Sat at 03:30 UTC
 # Feeds IP→location lookups for site/scripts/generate_analytics.sh
 30 3 * * 3,6 sudo geoipupdate --config-file /home/keelando/.config/GeoIP.conf >> /home/keelando/envcan_wave/logs/geoipupdate.log 2>&1
-
-# ==================== COOKIE CLICKER ====================
-# Moved here from survivor 2026-08-08 (survivor was under load); the survivor
-# crontab line is commented out there, not deleted.
-#
-# The container leaks memory. daily-restart.sh is GUARDED: it takes a save via
-# backup.sh FIRST and restarts only if the save succeeded, because a restart is
-# exactly when an unflushed save is lost. On a failed save it logs SKIP and
-# leaves the container running.
-#   => A persistently broken backup.sh silently disables the restart.
-#      projects/cookie_clicker/restart.log is where that shows up, and it is the
-#      file to check if memory starts climbing again.
-#
-# 13:29 UTC / 06:29 PT. The minute matters: on survivor this job failed silently
-# for five days when it collided with the restic backup. 29 is clear of every
-# other minute pattern in this file, and 13:29 is well clear of restic at 10:33.
-# UNPARKED 2026-08-17 -- the lag is SOLVED. The container had no GPU in it.
-# Passing /dev/dri/renderD128 through (plus group_add 993/44, the host render
-# and video gids) fixed it. Note this was a LATENCY fix, not a throughput one:
-# the GPU sits at its 300 MHz floor even while streaming, because all it had to
-# do was take compositing off the software path. That is why the 2026-08-09
-# measurements found the box 91% idle and lagging at the same time and could
-# not reconcile them.
-# Re-enabled only after the backup was proven END TO END on 2026-08-17: the
-# scraped save-20260817.txt was imported into a throwaway container and
-# restored 1271 buildings / 78 achievements / 586T cookies from a blank game.
-# The file is a plain Cookie Clicker export string -- restoring is pasting it
-# into Import Save.
-# See homelab hosts/surfserver/hat-5-cookie-clicker.md.
-#
-# TWICE DAILY from 2026-08-23. One restart no longer gets there first: Chromium
-# reaches its mem_limit ~10h in and then thrashes ~1GB through /swap.img on the
-# NVMe for the rest of the cycle (~300GiB/day of writes, NAND pinned near 90C).
-# Halving the cycle keeps peak usage inside the 4g cap. Raising the cap alone
-# does not fix a leak, it only moves the hour at which the leak wins.
-#
-# TIMES ARE UTC because this box runs Etc/UTC and Debian cron 3.0pl1 has NO
-# CRON_TZ support -- scheduling is always system time. 08:29/20:29 UTC is
-# 01:29/13:29 in Vancouver during PDT, and 00:29/12:29 during PST. The one-hour
-# winter drift is harmless: the two runs stay exactly 12h apart either way.
-# Minute :29 not :30 on purpose -- :30 already carries a job plus two */30 jobs.
-29 8  * * * /home/keelando/projects/cookie_clicker/daily-restart.sh >> /home/keelando/projects/cookie_clicker/cron.log 2>&1
-29 20 * * * /home/keelando/projects/cookie_clicker/daily-restart.sh >> /home/keelando/projects/cookie_clicker/cron.log 2>&1
 
 # PSI sampler (added 2026-08-09). Appends kernel pressure avg10 to
 # /dev/shm/psi-samples.csv; sys_stats_mqtt.py reads it on its next 15-min push to
