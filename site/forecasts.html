@@ -1157,6 +1157,14 @@
       <section class="forecast-verification" id="forecast-verification" aria-labelledby="forecast-verification-heading" hidden>
         <h3 id="forecast-verification-heading">Forecast Verification</h3>
 
+        <!-- Second copy of the station picker, in the same order as the upper
+             block: station first, then the view toggle. The verification panel
+             is a long scroll below the forecast, and comparing two stations
+             here should not mean scrolling back up. renderStationPicker() fills
+             every .wave-forecast-station container and selectStation() keeps
+             them in sync, so this needs no JavaScript of its own. -->
+        <div class="wave-forecast-station" id="wave-forecast-station-verification"></div>
+
         <!-- Third copy of the same control. setForecastMode() syncs every
              .forecast-mode-btn on the page and toggles every .forecast-panel,
              so this needs no JavaScript of its own — and the reader never has
@@ -1270,7 +1278,7 @@
   <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
   <script src="/assets/js/chart-utils-v4.js?v=401977606f"></script>
   <script type="module" src="/assets/js/forecasts.js?v=e3dd2eb230"></script>
-  <script type="module" src="/assets/js/wave-forecast.js?v=1401f29ec0"></script>
+  <script type="module" src="/assets/js/wave-forecast.js?v=b79efe466d"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

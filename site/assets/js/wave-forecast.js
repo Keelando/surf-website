@@ -5,10 +5,19 @@
    not one model, so each chart names its own source (see `models` in the
    payload and the header of scripts/fetch/fetch_wave_forecast.py).
 
-   UNDER DEVELOPMENT. Previewing at the bottom of forecasts.html — see
-   docs/project/FORECAST_UPGRADE.md. Halibut Bank only while we get a feel
-   for how the model behaves; validation against the buoy is inconclusive
-   until autumn, so nothing here is promoted or linked yet.
+   Six stations as of 2026-08-24, listed in index.json by the fetcher and
+   offered through the station picker — the module never carries a station
+   list of its own. Four of them were added to span two wave regimes: the
+   Strait points sit under 7 s peak period, the open-Pacific ones average
+   9-10.5 s. See docs/project/FORECAST_UPGRADE.md.
+
+   Still labelled experimental on the page: validation against the buoys is
+   inconclusive until autumn, which is what the verification panel below the
+   charts exists to make visible rather than assert.
+
+   NOT EVERY STATION HAS WIND. Neah Bay and La Perouse Bank opt out of the
+   HRDPS fetch (see STATIONS in scripts/fetch/fetch_wave_forecast.py), so
+   their payloads carry waves only and `models` names one model, not two.
 
    Data: /data/wave_forecast/<station>.json, from
    scripts/fetch/fetch_wave_forecast.py (Environment Canada GeoMet WMS).
@@ -1279,7 +1288,15 @@ async function loadVerification() {
 }
 
 /**
- * Build the station picker from the fetcher's index.
+ * Build every copy of the station picker from the fetcher's index.
+ *
+ * There are two containers on the page — one above the forecast chart, one at
+ * the head of the verification panel — for the same reason the mode toggle has
+ * three: the verification panel is a long scroll below the forecast, and a
+ * reader comparing two stations should not have to scroll back up. Every
+ * `.wave-forecast-station` container is filled here, and a change to any one
+ * of them updates the others, so they can never disagree about which station
+ * is on screen.
  *
  * Hidden when only one station has a forecast, so the control appears the
  * moment a second point is added and not before. The list comes from
@@ -1291,36 +1308,67 @@ async function loadVerification() {
  * @returns {void}
  */
 function renderStationPicker(stations) {
-  const container = document.getElementById("wave-forecast-station");
-  if (!container) return;
+  const containers = document.querySelectorAll(".wave-forecast-station");
 
-  if (stations.length < 2) {
-    setSafeHTML(container, "");
-    return;
+  for (const container of containers) {
+    if (stations.length < 2) {
+      setSafeHTML(container, "");
+      continue;
+    }
+
+    const options = stations
+      .map(
+        (station) =>
+          `<option value="${station.station_id}"${
+            station.station_id === currentStationId ? " selected" : ""
+          }>${station.name}</option>`,
+      )
+      .join("");
+
+    // Each copy needs its own select id so the <label for> points at the one
+    // beside it — two elements sharing an id would send both labels to the
+    // first, which is the classic duplicated-control accessibility bug.
+    const selectId = `${container.id}-select`;
+
+    setSafeHTML(
+      container,
+      `<label for="${selectId}">Station</label>
+       <select id="${selectId}">${options}</select>`,
+    );
+
+    container.querySelector("select").addEventListener("change", (event) => {
+      selectStation(event.target.value);
+    });
+  }
+}
+
+/**
+ * Switch to a station: reload the forecast AND the verification panel.
+ *
+ * Both, always. The verification panel used to be left behind here while the
+ * hashchange path reloaded it, so switching by dropdown showed one station's
+ * forecast above another station's verification — and the 15-minute
+ * verification refresh would then quietly swap it to the right station some
+ * minutes later, which reads as a glitch rather than a stale panel.
+ *
+ * @param {string} stationId
+ * @returns {Promise<void>}
+ */
+async function selectStation(stationId) {
+  currentStationId = stationId;
+
+  // Keep every copy of the picker in agreement, including the one that was
+  // just used (harmless) and any that were not.
+  for (const select of document.querySelectorAll(".wave-forecast-station select")) {
+    if (select.value !== stationId) select.value = stationId;
   }
 
-  const options = stations
-    .map(
-      (station) =>
-        `<option value="${station.station_id}"${
-          station.station_id === currentStationId ? " selected" : ""
-        }>${station.name}</option>`,
-    )
-    .join("");
+  // A fresh station starts collapsed: carrying an expanded table across a
+  // switch would show one station's window on another station's data.
+  visibleHours = DEFAULT_VISIBLE_HOURS;
 
-  setSafeHTML(
-    container,
-    `<label for="wave-forecast-station-select">Station</label>
-     <select id="wave-forecast-station-select">${options}</select>`,
-  );
-
-  container.querySelector("select").addEventListener("change", (event) => {
-    currentStationId = event.target.value;
-    // A fresh station starts collapsed: carrying an expanded table across a
-    // switch would show one station's window on another station's data.
-    visibleHours = DEFAULT_VISIBLE_HOURS;
-    loadWaveForecast();
-  });
+  await loadWaveForecast();
+  await loadVerification();
 }
 
 /**
