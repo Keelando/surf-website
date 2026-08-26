@@ -13,6 +13,7 @@ import { applyWaveThreshold, clearWaveThreshold, setTimeRange } from "./charts-v
 import { formatNumericDayTime } from "./shared/format-time.js";
 import { formatDataAge } from "./shared/staleness.js";
 import { centerMapOnBuoy, showSelectedBuoyOnMap, showSelectedSurgeOnMap } from "./stations-map.js";
+import { setSafeHTML } from "./shared/safe-html.js";
 
 // Station metadata from stations.json (single source of truth for
 // per-station behavior — see docs/project/BUOY_CARD_REFACTOR.md).
@@ -81,16 +82,6 @@ function renderHeroConditions(buoy) {
     </div>
     <div class="hero-updated${buoy.stale ? " stale" : ""}">${updatedText}</div>
   `;
-}
-
-function setSafeHTML(element, html) {
-  if (!element) return;
-
-  if (typeof window.setSanitizedHTML === "function") {
-    window.setSanitizedHTML(element, html);
-  } else {
-    element.innerHTML = html;
-  }
 }
 
 // Show the scroll affordances only while the content actually overflows: the

@@ -4,6 +4,7 @@
 
 import { formatFullTimestamp, formatMonthDayTime } from "./shared/format-time.js";
 import { createAngularSpreadVectorElement } from "./shared/markers.js";
+import { setSafeHTML } from "./shared/safe-html.js";
 
 // ==========================================================================
 // Configuration
@@ -143,15 +144,6 @@ const webcams = [
 
 let cachedMarineData = null;
 const slideshowState = {};
-
-function setSafeHTML(element, html) {
-  if (!element) return;
-  if (typeof window.setSanitizedHTML === "function") {
-    window.setSanitizedHTML(element, html);
-  } else {
-    element.innerHTML = html;
-  }
-}
 
 // ==========================================================================
 // Utility Functions

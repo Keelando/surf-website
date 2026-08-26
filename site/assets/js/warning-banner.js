@@ -19,6 +19,7 @@
  *   3. Call displayWarningBanners() after page load
  */
 
+import { setSafeHTML } from "./shared/safe-html.js";
 import { listZones } from "./shared/marine-zones.js";
 import { readBannerZones } from "./shared/warning-preferences.js";
 import {
@@ -29,15 +30,6 @@ import {
   getWarningId,
   getWarningSeverityClass,
 } from "./shared/warning-zones.js";
-
-function setSafeHTML(element, html) {
-  if (!element) return;
-  if (typeof window.setSanitizedHTML === "function") {
-    window.setSanitizedHTML(element, html);
-  } else {
-    element.innerHTML = html;
-  }
-}
 
 // Helper: Fetch with timeout
 async function fetchWithTimeout(url, timeout = 5000) {

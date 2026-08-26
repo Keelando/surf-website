@@ -3,14 +3,7 @@
  * Handles loading and displaying sunrise/sunset data
  */
 
-function setSafeHTML(element, html) {
-  if (!element) return;
-  if (typeof window.setSanitizedHTML === "function") {
-    window.setSanitizedHTML(element, html);
-  } else {
-    element.innerHTML = html;
-  }
-}
+import { setSafeHTML } from "../shared/safe-html.js";
 
 /**
  * Build the YYYY-MM-DD key used by sunlight_times.json from a Date.

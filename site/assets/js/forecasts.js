@@ -6,6 +6,7 @@
  * loaded before this one (chart-utils-v4.js, logger.js).
  */
 
+import { setSafeHTML } from "./shared/safe-html.js";
 import { formatForecastTimestamp } from "./shared/format-time.js";
 import {
   DEFAULT_ZONE_KEY,
@@ -144,15 +145,6 @@ function buildZoneSelector(zones) {
       displayForecasts();
     });
     select.dataset.listenerAttached = "true";
-  }
-}
-
-function setSafeHTML(element, html) {
-  if (!element) return;
-  if (typeof window.setSanitizedHTML === "function") {
-    window.setSanitizedHTML(element, html);
-  } else {
-    element.innerHTML = html;
   }
 }
 

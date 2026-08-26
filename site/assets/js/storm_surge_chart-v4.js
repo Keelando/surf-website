@@ -6,20 +6,12 @@
    still come from classic scripts loaded before the entry point.
    ----------------------------- */
 
+import { setSafeHTML } from "./shared/safe-html.js";
 import {
   formatModelRunTime,
   formatMonthDayTime,
   formatMonthDayTimeTZ,
 } from "./shared/format-time.js";
-
-function setSafeHTML(element, html) {
-  if (!element) return;
-  if (typeof window.setSanitizedHTML === "function") {
-    window.setSanitizedHTML(element, html);
-  } else {
-    element.innerHTML = html;
-  }
-}
 
 let surgeChart = null;
 let surgeData = null;

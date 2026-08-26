@@ -6,6 +6,7 @@
    still come from classic scripts loaded before this one.
    ====================================== */
 
+import { setSafeHTML } from "./shared/safe-html.js";
 import {
   formatModelRunTime,
   formatMonthDayTime,
@@ -42,16 +43,6 @@ function getForecastStationId(stationId) {
 
 function getDisplayName(stationId, fallback) {
   return SURREY_DISPLAY_NAMES[stationId] || fallback;
-}
-
-function setSafeHTML(element, html) {
-  if (!element) return;
-
-  if (typeof window.setSanitizedHTML === "function") {
-    window.setSanitizedHTML(element, html);
-  } else {
-    element.innerHTML = html;
-  }
 }
 
 // Calculate minimum date for the verification window: 11 days back from today (12 days total including today)

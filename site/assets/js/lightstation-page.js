@@ -6,20 +6,11 @@
 import { viewLightstationChart } from "./lightstation-charts.js";
 import { centerMapOnLightstation } from "./lightstation-map.js";
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
+import { setSafeHTML } from "./shared/safe-html.js";
 
 // Lightstation metadata keyed by several name/ID formats (module-local;
 // was window.stationMetadata before the ES-module conversion)
 let stationMetadata = {};
-
-function setSafeHTML(element, html) {
-  if (!element) return;
-
-  if (typeof window.setSanitizedHTML === "function") {
-    window.setSanitizedHTML(element, html);
-  } else {
-    element.innerHTML = html;
-  }
-}
 
 // Load and display lightstation data
 async function loadLightstationData() {

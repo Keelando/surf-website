@@ -19,15 +19,7 @@
 
 import { formatModelRunTimeLocal, formatMonthDayTimeTZ } from "./shared/format-time.js";
 import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
-
-function setSafeHTML(element, html) {
-  if (!element) return;
-  if (typeof window.setSanitizedHTML === "function") {
-    window.setSanitizedHTML(element, html);
-  } else {
-    element.innerHTML = html;
-  }
-}
+import { setSafeHTML } from "./shared/safe-html.js";
 
 // Halibut Bank is the default because it is the reference station: an EC buoy
 // reports the same spot, so it is the one forecast a reader can immediately

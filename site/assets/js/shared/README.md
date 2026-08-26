@@ -44,6 +44,17 @@ node can import these files in tests; browsers ignore it.
   with a fake and `warning-zones.js` stays storage-free. Added 2026-08-23 with
   the per-zone opt-in (`docs/project/WARNING_ZONE_OPT_IN.md`). Tests:
   `tests/js/warning-preferences.test.mjs`
+- `safe-html.js` — `setSafeHTML(element, html)`: sanitized `innerHTML` via the
+  `setSanitizedHTML` global that the classic `sanitize-html.js` publishes.
+  Extracted 2026-08-26 from **thirteen** copies that had already split into two
+  variants. The global is the seam on purpose — modules cannot import a classic
+  script and there is no build step to bundle DOMPurify. Note the fallback
+  *renders* unsanitized markup rather than blanking the element when DOMPurify
+  is absent; that is the copies' historical behaviour, kept because every
+  caller passes markup built from this repo's own JSON exports. Anything
+  rendering third-party text must sanitize at its own call site.
+  Tests: `tests/js/safe-html.test.mjs`
+
 - `marine-zones.js` — marine zone vocabulary and ordering: `listZones`,
   `shortZoneLabel`, `pickerZoneLabel` (+ `PICKER_SHORT_NAMES`, display-only
   overrides for names too long for a picker row), `orderZonesForDisplay` (home
@@ -85,3 +96,4 @@ globals bare. **All legacy dupes are gone as of 2026-07-18.**
 | model-run "Jul 14 12Z" block (inline ×2) | `storm_surge_page.js` | `format-time.js` (`formatModelRunTime`) | **done 2026-07-17**; `storm_surge_chart-v4.js` copy **done 2026-07-18** |
 | stale popup colours/header (inline ×3) | `stations-map.js` ×2, `lightstation-map.js` | `staleness.js` | lightstation-map **done 2026-07-16**; stations-map ×2 **done 2026-07-18** |
 | buoy-card `updated` timestamp (inline ×2) | `main.js` | `format-time.js` (`formatNumericDayTime`) | **done 2026-07-18** |
+| `setSafeHTML` (inline ×13) | `forecasts.js`, `main.js`, `webcams-v4.js`, `wind-stations.js`, `warning-banner.js`, `wave-forecast.js`, `lightstation-page.js`, `lightstation-charts.js`, `storm_surge_page.js`, `storm_surge_chart-v4.js`, `tides-modules/display.js`, `tides-modules/sunlight.js` | `safe-html.js` | **done 2026-08-26** — twelve module copies deleted; `footer.js` keeps its own (classic IIFE injected by htmx, cannot import) |

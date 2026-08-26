@@ -10,15 +10,7 @@
 import { formatMonthDayTime, formatTimeHM, formatTimeWithDate } from "./shared/format-time.js";
 import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
 import { windData } from "./wind-data.js";
-
-function setSafeHTML(element, html) {
-  if (!element) return;
-  if (typeof window.setSanitizedHTML === "function") {
-    window.setSanitizedHTML(element, html);
-  } else {
-    element.innerHTML = html;
-  }
-}
+import { setSafeHTML } from "./shared/safe-html.js";
 
 /** Escape a string for safe interpolation into an HTML attribute. */
 function escapeAttr(value) {
