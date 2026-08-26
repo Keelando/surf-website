@@ -1,0 +1,993 @@
+/* Marine Forecasts page (forecasts.html)
+ *
+ * Page-specific styling only — the shared look lives in style-v4.css,
+ * nav-tide-styles-v4.css and warning-banner-v4.css, which this page also
+ * links. Extracted from an inline <style> block 2026-08-26: at 981 lines it
+ * was three quarters of forecasts.html and the only page stylesheet outside
+ * the ?v= content-hash cache busting, so it was re-sent uncached with every
+ * page load. Same pattern as winds-v4.css and webcams-v4.css.
+ *
+ * Dark mode follows the repo rule: colours are CSS variables declared in
+ * style-v4.css and overridden there under [data-theme="dark"] — this file
+ * uses the vars and defines no palette of its own.
+ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+.forecast-main-content {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 var(--page-gutter);
+}
+
+/* Two kinds of forecast share this page — prose for a whole zone, model
+   output for one point. The rule above each heading is the visual break
+   that stops the first reading as an untitled preamble to the second. */
+.forecast-kind + .forecast-kind {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 3px solid var(--color-border-light);
+}
+
+/* These sit outside .forecast-zone, so they do not inherit the card
+   heading style — they are page-level section headings, deliberately
+   larger than the card headings nested beneath them. */
+.forecast-kind > h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.55rem;
+  color: var(--color-primary-dark);
+}
+
+.forecast-kind-sub {
+  margin: 0 0 1.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+/* The station name, under the "Point Forecast" heading. It is rewritten at
+   runtime by wave-forecast.js as the selected station changes. Styled to
+   match the .forecast-zone h2 it replaced, so the card still reads as
+   having a titled header. */
+.wave-forecast-station-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1.3rem;
+  color: var(--color-primary-dark);
+  border-bottom: 3px solid var(--color-accent-blue);
+  padding-bottom: 0.35rem;
+}
+
+/* The run clock under the station name. Muted and small: it qualifies the
+   chart rather than announcing it, and it must not compete with the
+   station name above it. */
+.wave-forecast-run {
+  margin: 0.15rem 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.wave-forecast-run[hidden] {
+  display: none;
+}
+
+/* The text forecasts are a wall of prose — the whole page is words. The
+   spacing below is deliberately tighter than the site default so a zone
+   fits a phone screen instead of costing three scrolls of padding. */
+/* One zone at a time, chosen deliberately — EC publishes every Pacific
+   zone and stacking them all down the page was the wall-of-text problem
+   this selector exists to solve. Grouped by area, same shape as the
+   lightstation station picker. */
+.forecast-zone-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.forecast-zone-selector label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.forecast-zone-selector select {
+  /* min-width:0 is load-bearing: a flex item defaults to min-width:auto,
+     and a <select>'s automatic minimum is the width of its widest
+     <option>. That is what pushed the whole page into horizontal overflow
+     on a phone — the control refused to shrink below its longest zone
+     name. */
+  flex: 1 1 14rem;
+  min-width: 0;
+  max-width: 32rem;
+  padding: 0.45rem 0.6rem;
+  font-size: 1rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+}
+
+.forecast-zone {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.forecast-zone h2 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.3rem;
+  color: var(--color-primary-dark);
+  border-bottom: 3px solid var(--color-accent-blue);
+  padding-bottom: 0.35rem;
+}
+
+.zone-warnings {
+  margin: 0.75rem 0;
+}
+
+.warning-card {
+  background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+  border-left: 4px solid #d97706;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+}
+
+.warning-card.warning-storm {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  border-left-color: #b91c1c;
+}
+
+.warning-card.warning-gale {
+  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+  border-left-color: #ea580c;
+}
+
+.warning-card h3 {
+  margin: 0 0 0.25rem 0;
+  color: #78350f;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.warning-card.warning-storm h3,
+.warning-card.warning-gale h3 {
+  color: #7c2d12;
+}
+
+.warning-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #451a03;
+}
+
+.forecast-section {
+  margin: 0.9rem 0;
+}
+
+.forecast-section h3 {
+  color: var(--color-text);
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.forecast-content {
+  background: var(--color-surface-alt);
+  padding: 0.6rem 0.9rem;
+  border-radius: 4px;
+  border-left: 3px solid var(--color-accent-blue);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.forecast-period {
+  margin-bottom: 0.4rem;
+  color: var(--color-text);
+}
+
+.forecast-period:last-child {
+  margin-bottom: 0;
+}
+
+.extended-forecast {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.extended-day {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+  padding: 0.65rem 0.8rem;
+}
+
+.extended-day h3 {
+  margin: 0 0 0.25rem 0;
+  color: var(--color-primary-dark);
+  font-size: 0.95rem;
+}
+
+.extended-day p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--color-text-light);
+}
+
+.forecast-metadata {
+  margin-top: 1rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border-light);
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.no-warnings {
+  background: var(--color-callout-info-bg);
+  border-left: 3px solid var(--color-accent-green);
+  padding: 0.5rem 0.9rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--color-accent-green);
+}
+
+.loading-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-muted);
+}
+
+.error-state {
+  background: var(--color-callout-danger-bg);
+  border: 1px solid var(--color-accent-red);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-error-text);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .forecast-zone {
+    padding: 1rem 0.9rem;
+  }
+
+  .extended-forecast {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Narrow screens: give the tables and charts the width back. The page
+   gutter itself is --page-gutter, set once in style-v4.css. */
+@media (max-width: 600px) {
+  .forecast-zone {
+    padding: 0.9rem 0.5rem;
+  }
+
+  .forecast-content,
+  .extended-day p {
+    font-size: 0.9rem;
+  }
+}
+
+header {
+  margin-bottom: 0;
+}
+
+/* Resource links styling */
+.resource-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.resource-item {
+  color: var(--color-text);
+  line-height: 1.8;
+}
+
+.resource-item strong {
+  color: var(--color-primary-dark);
+  display: inline-block;
+  min-width: 200px;
+}
+
+.resource-links a {
+  color: var(--color-accent-blue);
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.resource-links a:hover {
+  background-color: var(--color-callout-info-bg);
+  text-decoration: underline;
+}
+
+.resource-links a::after {
+  content: " ↗";
+  font-size: 0.8em;
+  opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+  .resource-item strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    min-width: auto;
+  }
+}
+
+/* --- RDWPS wave forecast preview (UNDER DEVELOPMENT) ---
+   Page-local on purpose: docs/project/FORECAST_UPGRADE.md. When this
+   feature is promoted, these move into a shared stylesheet along with
+   the markup. */
+.dev-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+  background: var(--color-callout-warning-bg);
+  border-left: 4px solid var(--color-accent-orange);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.dev-note .dev-badge {
+  flex-shrink: 0;
+  background: var(--color-accent-orange);
+  color: var(--color-surface);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Drop the text onto its own full-width line rather than letting it be
+   squeezed into a ~215 px column beside the badge, which on a 390 px phone
+   ran the note to 250 px tall. A flex-basis threshold rather than a media
+   query: the trigger is how much room the text actually has, so it also
+   covers a wide phone in landscape and a narrow desktop window. */
+.dev-note .dev-note-text {
+  flex: 1 1 18rem;
+}
+
+#wave-forecast-chart,
+#wind-forecast-chart,
+#wave-verification-chart,
+#wind-verification-chart {
+  width: 100%;
+  height: 360px;
+}
+
+/* The verification panel is a distinct claim from the forecast above it — a rule and
+   a heading keep a reader from mistaking the dashed model line for more
+   forecast. */
+.forecast-verification {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.forecast-verification h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  color: var(--color-text);
+}
+
+#forecast-verification-metadata {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--color-text-muted);
+}
+
+/* The one-line version, always on screen. */
+.verification-summary {
+  margin: 0;
+}
+
+/* The long explanation, folded away — see renderVerificationMetadata()
+   in wave-forecast.js for why. Boxed so the collapsed row reads as a
+   control you can open rather than as a stray line of the summary above
+   it; the border stays on when open so the prose is visibly the thing the
+   control revealed. */
+.verification-help {
+  margin-top: 0.6rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+  background: var(--color-card-muted-bg);
+}
+
+.verification-help > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.5rem 0.7rem;
+  color: var(--color-accent-blue);
+  border-radius: 6px;
+  /* The default marker plus a bold label is enough affordance; the
+     list-item display keeps the disclosure triangle in both engines. */
+  list-style: revert;
+}
+
+.verification-help > summary:focus-visible {
+  outline: 2px solid var(--color-accent-blue);
+  outline-offset: -2px;
+}
+
+/* Only while open: a rule under the summary would otherwise draw a line
+   across a closed, single-row box. */
+.verification-help[open] > summary {
+  border-bottom: 1px solid var(--color-border-light);
+  border-radius: 6px 6px 0 0;
+}
+
+.verification-help > p {
+  margin: 0;
+  padding: 0.6rem 0.7rem 0.7rem;
+}
+
+/* --- Jump-to-warning strip ------------------------------------------
+   Sits above both forecast kinds because it is about the page, not about
+   either one. One row per warning type, the warned waters listed inside
+   it: a reader scanning for "is my water warned?" is matching a name, and
+   repeating the type in front of every name buries the names. */
+.warning-jump {
+  margin: 0 0 1.5rem;
+  padding: 0.85rem 1rem;
+  background: var(--color-card-muted-bg);
+  border: 1px solid var(--color-border-light);
+  border-left: 4px solid var(--color-accent-orange);
+  border-radius: 8px;
+}
+
+.warning-jump[hidden] {
+  display: none;
+}
+
+.warning-jump-heading {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+/* A column of type rows, each of which wraps its own waters. */
+.warning-jump-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.warning-jump-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  /* Not a 999px pill: a row with six waters wraps to two lines on a phone,
+     and a fully rounded end on a two-line box reads as a mistake. */
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: #fff;
+  background: var(--color-text-muted);
+}
+
+/* Same severity ramp as the banner, deliberately: a reader who has seen the
+   red banner should recognise the red row as the same warning. Solid
+   rather than the banner's gradient — these are small. */
+/* Each is the dark end of its banner ramp, not the mid tone: the rows
+   carry white text at 12-14px, and the banner's own gale orange (#ea580c)
+   only reaches 3.55:1 against white, under the 4.5:1 AA floor for text
+   this size. These clear it — 8.3, 5.2, 7.1, 9.0 and 8.7 respectively. */
+.warning-jump-group.warning-storm { background: #991b1b; }
+.warning-jump-group.warning-gale { background: #c2410c; }
+.warning-jump-group.warning-strong-wind { background: #92400e; }
+.warning-jump-group.warning-waterspout { background: #5b21b6; }
+.warning-jump-group.warning-default { background: #1e40af; }
+
+.warning-jump-type {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  margin-right: 0.15rem;
+}
+
+/* Each warned water, inside its row. The tinted background is what keeps
+   two adjacent zone names from reading as one — a gap alone left "Howe
+   Sound Haro Strait". 15% white over the darkest ramp colour still clears
+   AA for this text size. */
+.warning-jump-item {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.warning-jump-item:hover,
+.warning-jump-item:focus-visible {
+  background: rgba(255, 255, 255, 0.3);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* White, not the page's accent blue: the outline sits on a dark red or
+   amber row, where the accent all but disappears. */
+.warning-jump-item:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Nine zones warned at once is the worst case, and on a phone it is the
+   case where the strip costs the most: rows wrap and the forecast itself
+   is pushed a screen and a half down. The emoji is the first thing to go —
+   the severity is spelled out beside it and carried by the colour, exactly
+   as the warning banner already reasons when it drops its own icon on
+   mobile. */
+@media (max-width: 600px) {
+  .warning-jump {
+    padding: 0.7rem 0.8rem;
+  }
+
+  .warning-jump-list {
+    gap: 0.4rem;
+  }
+
+  .warning-jump-group {
+    gap: 0.35rem;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .warning-jump-group > [aria-hidden="true"] {
+    display: none;
+  }
+}
+
+/* --- Warning-zone opt-in (docs/project/WARNING_ZONE_OPT_IN.md) --- */
+
+/* Borrows .verification-help's boxed-disclosure shape; only the spacing
+   above it differs, because this one sits under the zone <select> rather
+   than under a paragraph of metadata. */
+.warning-zone-picker {
+  margin: -0.5rem 0 1.25rem;
+  max-width: 32rem;
+}
+
+/* The summary states the storm floor as well as naming the control, so it
+   is a sentence rather than a label and wraps on a phone instead of being
+   clipped. */
+.warning-zone-picker > summary {
+  font-weight: 500;
+  white-space: normal;
+}
+
+.warning-zone-picker-body {
+  padding: 0.7rem;
+}
+
+.warning-zone-group {
+  border: none;
+  /* Roomier below than the 0.75rem rhythm inside the list: this margin is
+     the only thing separating a group's last member from the standalone
+     zone under it, and at 0.75rem the two read as one list. */
+  margin: 0 0 1.1rem;
+  padding: 0;
+}
+
+/* `:last-child`, not `:last-of-type`. The point is to drop the trailing
+   gap when a group really does end the list — but West Coast Vancouver
+   Island South is a single-zone area, so it renders as a bare checkbox
+   *after* the last fieldset. `:last-of-type` zeroed that fieldset's margin
+   anyway, and the loose row underneath closed right up against the Juan de
+   Fuca group and read as a fourth member of it. It is a separate EC area
+   (South Coast, m0000065), and the list must not say otherwise. */
+.warning-zone-group:last-child {
+  margin-bottom: 0;
+}
+
+/* A bare checkbox for a single-zone area sits between two grouped
+   fieldsets, so it needs the same breathing room the groups have. */
+#warning-zone-picker-list > .warning-zone-option {
+  margin-bottom: 0.75rem;
+}
+
+#warning-zone-picker-list > .warning-zone-option:last-child {
+  margin-bottom: 0;
+}
+
+.warning-zone-group > legend {
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+/* Indent the members of a group under their heading. Spacing alone could
+   not carry the hierarchy: Haro Strait, Howe Sound, Johnstone Strait and
+   West Coast Van Island are each their own EC area, rendered as bare rows
+   because a heading identical to its single child is noise — but sitting
+   flush under "STRAIT OF GEORGIA" they read as part of it, which is wrong
+   on every count (Johnstone Strait is north of the Strait of Georgia past
+   Discovery Passage, Haro Strait is east of Victoria). The <select> beside
+   this gets the same hierarchy free, from optgroup's native indent. */
+.warning-zone-group > .warning-zone-option {
+  padding-left: 0.9rem;
+}
+
+.warning-zone-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* A comfortable touch target — these are nine adjacent checkboxes on a
+     phone, where a tight list means mis-taps. */
+  padding: 0.35rem 0.15rem;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.warning-zone-option input {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-accent-blue);
+}
+
+/* "No banners for any zone" heads the list and is not one of the zones, so
+   it is ruled off from them rather than sitting as a tenth peer. */
+.warning-zone-none {
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--color-border-light);
+  align-items: flex-start;
+  font-weight: 600;
+}
+
+.warning-zone-none input {
+  /* The label is two lines here; a centre-aligned box would float beside
+     the gap between them. */
+  margin-top: 0.15rem;
+}
+
+/* The storm floor, under the choice it qualifies. Its own line: run inline
+   it reads as part of the label and the label stops being scannable. */
+.warning-zone-note {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+
+/* Full-width so it is unmissable at the foot of a long list, and quiet
+   enough not to read as a second action beside the checkboxes. */
+.warning-zone-collapse {
+  display: block;
+  /* Bled out to the panel's own edges (cancelling the body's 0.7rem
+     padding) so the hover band reads as the foot of the box rather than a
+     floating strip inside it. The width is stated rather than left to
+     `auto`: a <button> shrink-wraps its content in Firefox even at
+     display:block, which collapsed this to the width of the triangle. */
+  width: calc(100% + 1.4rem);
+  box-sizing: border-box;
+  margin: 0.75rem -0.7rem -0.7rem;
+  padding: 0.55rem 0;
+  border: none;
+  border-top: 1px solid var(--color-border-light);
+  border-radius: 0 0 6px 6px;
+  background: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* The whole row is the target, so the whole row has to react — a hover
+   effect on the glyph alone makes a 100%-wide button look like a tiny one
+   and leaves most of its own hit area feeling dead. --color-surface is the
+   panel's opposite in both themes (white against the muted panel in light,
+   darker than it in dark), so the band is visible either way without a
+   page-local colour of its own. */
+.warning-zone-collapse:hover {
+  color: var(--color-accent-blue);
+  background: var(--color-surface);
+}
+
+.warning-zone-collapse:active {
+  background: var(--color-border-light);
+}
+
+.warning-zone-collapse:focus-visible {
+  outline: 2px solid var(--color-accent-blue);
+  outline-offset: -2px;
+}
+
+
+
+/* The inline toggle in the zone card: the discovery path for a reader who
+   came to read one zone and did not know the picker existed. */
+.zone-alert-toggle:empty {
+  display: none;
+}
+
+.zone-alert-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: -0.25rem 0 0.75rem;
+  padding: 0.3rem 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.zone-alert-toggle-label input {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-accent-blue);
+}
+
+/* Segmented control: one row of joined buttons, exactly one active. */
+.forecast-mode-toggle {
+  display: flex;
+  /* 40% of the viewport on desktop, 75% on phones (see the media query
+     below) — 40vw is only ~156 px at 390 px wide, too cramped for two
+     labels. max-width keeps it inside the card in every case. */
+  width: 40vw;
+  max-width: 100%;
+  margin: 0.5rem auto 0.25rem;
+  padding: 2px;
+  background: var(--color-card-muted-bg);
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+}
+
+.forecast-mode-btn {
+  /* Equal halves, so the divider sits dead centre of the control. */
+  flex: 1;
+  padding: 0.4rem 1.25rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.forecast-mode-btn:hover {
+  color: var(--color-text);
+}
+
+.forecast-mode-btn.active {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.forecast-mode-btn.active:hover {
+  color: var(--color-on-primary);
+}
+
+.wave-forecast-map-link {
+  margin: -0.25rem 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.wave-forecast-map-link a {
+  color: var(--color-accent-blue);
+  text-decoration: none;
+}
+
+.wave-forecast-map-link a:hover {
+  text-decoration: underline;
+}
+
+.wave-forecast-subhead {
+  margin: 1.5rem 0 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+/* Centred and given the same 40vw box as the segmented control below it,
+   so the two line up on both edges. Centring the label+select *pair*
+   instead would push the select's right edge past the control's by the
+   width of the label. */
+.wave-forecast-station {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 40vw;
+  max-width: 100%;
+  margin: 0 auto 1rem;
+}
+
+.wave-forecast-station:empty {
+  display: none;
+}
+
+.wave-forecast-station label {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+}
+
+.wave-forecast-station select {
+  /* Takes whatever the label leaves of the 40vw row. */
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: 4px;
+}
+
+#wave-forecast-metadata {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-light);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--color-text-muted);
+}
+
+.wave-forecast-about {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+/* Full height, no inner scroll. A capped, inner-scrolling table hides
+   most of its rows behind a scrollbar that readers don't notice —
+   the table looks shorter than the 48 h chart above it. Only the
+   horizontal overflow is handled, for narrow screens. */
+.wave-forecast-table-wrap {
+  margin-top: 1.5rem;
+  overflow-x: auto;
+}
+
+.wave-forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.wave-forecast-table th,
+.wave-forecast-table td {
+  padding: 0.4rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-light);
+  white-space: nowrap;
+}
+
+.wave-forecast-table thead th {
+  background: var(--color-surface);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+}
+
+.wave-forecast-table tbody th {
+  font-weight: 400;
+  color: var(--color-text);
+}
+
+/* Narrow screens: the wrapper scrolls either way, but the split into
+   waves/wind views brings the wind table close enough to fitting a phone
+   that trimming the cell padding gets it the rest of the way. The waves
+   view still overflows — five columns of numbers do not fit 356 px — and
+   that is what the wrapper's horizontal scroll is for. */
+@media (max-width: 600px) {
+  /* Phones get proportionally wider controls: 40vw is a thumb-hostile
+     156 px at 390 px wide, where 75vw is a comfortable 292 px. */
+  .forecast-mode-toggle,
+  .wave-forecast-station {
+    width: 75vw;
+  }
+
+  .wave-forecast-table {
+    font-size: 0.8rem;
+  }
+
+  .wave-forecast-table th,
+  .wave-forecast-table td {
+    padding: 0.35rem 0.35rem;
+  }
+}
+
+.wave-forecast-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.wave-forecast-extent {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.wave-forecast-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.wave-forecast-btn {
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--color-accent-blue);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-accent-blue);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.wave-forecast-btn:hover {
+  background: var(--color-accent-blue);
+  color: var(--color-surface);
+}
+
+.wave-forecast-btn-quiet {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.wave-forecast-btn-quiet:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
