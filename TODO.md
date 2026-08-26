@@ -55,6 +55,40 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+- [ ] **Verification panel: say when the model side is missing** (user
+      2026-08-26, for 2026-08-27). Neah Bay and La Perouse Bank opt out of the
+      HRDPS wind fetch (`STATIONS` in `scripts/fetch/fetch_wave_forecast.py`),
+      so on the Wind view their forecast series is empty while the observed
+      series is full — 0 forecast points against ~251 observed at Neah Bay.
+      That reads as *the model predicted dead calm*, when in fact we never
+      asked. The forward wind chart and the wind table columns have the same
+      problem.
+
+      This is the trap the verification code already reasons about one level
+      down: `renderVerificationMode()` in `site/assets/js/wave-forecast.js`
+      leaves gusts out precisely because "a near-empty line beside a
+      continuous observed one reads as the model predicting calm rather than
+      the model not being asked." Same failure, now visible at station scope.
+
+      Two directions, and the choice is genuinely open:
+      - **Note it.** Read `models` from the forecast payload (already there,
+        and it names one model rather than two at these stations) and either
+        hide the Wind toggle or show an explicit "wind not forecast at this
+        station" note. Zero fetch cost. Downside: the toggle appears and
+        disappears as the reader switches stations.
+      - **Fetch wind everywhere, for completeness.** Flip both stations to
+        `{"wind": True}`. Costs **+1,584 requests/day** and ~5 min more
+        runtime per run. Budget check before doing this: the current footprint
+        is 6,310 ECCC req/day (7.3% of MSC's 86,400 guidance), so the total is
+        not the binding constraint — but runtime is, both as publication lag
+        and against the 2 h stale-lock threshold, and the burst-rate ceiling
+        of 1/`FETCH_DELAY` is what the guidance actually cares about. Re-read
+        the sizing comment above `FETCH_DELAY` before changing anything.
+
+      A note is worth adding regardless of which way the fetch decision goes —
+      any station whose archive is younger than the 48 h window has the same
+      thin-forecast-line problem while it fills.
+
 - [ ] **More marine text-forecast zones than north/south of Nanaimo**
       (user 2026-08-18): we parse one file, `m0000028_en.xml`, which carries
       both Strait of Georgia zones. Adjacent water — Juan de Fuca Strait,
