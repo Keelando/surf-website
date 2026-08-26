@@ -84,7 +84,10 @@ Databases in `~/.local/share/` (never in the repo):
   `npm run test:python` for the pytest suite alone.
 - Cache busting is automated: `scripts/update_asset_versions.py` rewrites
   `?v=` to content hashes (pre-commit hook runs it and stages the result —
-  never bump versions by hand). See `site/docs/CACHE_BUSTING.md`.
+  never bump versions by hand). It stages *whole* HTML files, so partially
+  staging a page does not survive the commit; splitting a commit that touches
+  HTML means rebuilding the working tree, not `git add -p`. See
+  `site/docs/CACHE_BUSTING.md`.
 - Crontab: edit `config/crontab.txt`, apply with
   `scripts/install_crontab.sh` (`--diff-only` to preview). Never edit the
   live crontab as the primary copy.

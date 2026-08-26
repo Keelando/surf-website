@@ -26,6 +26,42 @@ Edit JS/CSS freely and commit. Nothing else to do:
 - Manual run: `.venv/bin/python scripts/update_asset_versions.py`
   (`--check` to report without writing).
 
+## Gotcha: the hook stages whole HTML files
+
+The pre-commit hook refreshes versions from the **working tree**, then
+`git add`s each HTML file it touched — the whole file, not a hunk. So any
+HTML you staged *partially* gets replaced by its full working-tree content
+on commit, silently pulling in changes you meant to leave for a later commit.
+
+This only bites when splitting one working tree into several commits, but it
+bites hard: it looks like the split worked (the pre-commit output does name
+the files it re-staged) and the extra changes only show up in the commit
+afterwards.
+
+`git add -p` on an HTML file is therefore not enough. Instead, make the
+working tree *be* the intermediate state you want to commit:
+
+```bash
+git stash -u                                   # park the finished work
+git checkout HEAD -- site/thepage.html         # or rebuild the intermediate
+# ...apply only the first commit's edits, commit...
+git stash pop                                  # restore, commit the rest
+```
+
+Reconstructing the intermediate by hand is usually quicker than fighting the
+index, and it has the better property: each commit is a state that actually
+ran, not a slice of one. Worth checking afterwards that every commit in the
+range is self-consistent:
+
+```bash
+for c in $(git rev-list HEAD~4..HEAD); do
+  git checkout -q "$c" && .venv/bin/python scripts/update_asset_versions.py --check
+done; git checkout -q main
+```
+
+Hit while splitting the 2026-08-26 forecasts-page work (CSS extraction,
+`setSafeHTML` consolidation and a bug fix) into four commits.
+
 ## Scope and limits
 
 - External URLs (`http(s)://`, `//`) are left untouched.
