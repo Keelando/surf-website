@@ -104,6 +104,7 @@ Databases in `~/.local/share/` (never in the repo):
 | `docs/TROUBLESHOOTING.md` | Common issues and fixes |
 | `docs/ARCHITECTURE_DETAILED.md` | Database schemas, script details |
 | `docs/MSC_REFERENCE_TABLES.md` | MSC code→name lookups (marine regions, SWOB stations) — dated snapshot, not authoritative |
+| `docs/PUBLIC_API.md` | Public `/api/v1` developer API: alias layer, allowlist guard, cache tiers, Cloudflare rule |
 | `site/assets/js/shared/README.md` | Frontend shared-module inventory |
 | `docs/project/` | Active plans (forecast upgrade, pressure page, …) |
 | `TODO.md` | Feature backlog (the 2026-07-19 maintenance items are all done) |

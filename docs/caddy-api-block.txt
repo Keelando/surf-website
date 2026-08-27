@@ -1,0 +1,133 @@
+# Excerpt from /etc/caddy/Caddyfile (:8090 block) - reference copy.
+# The live file is authoritative; see docs/PUBLIC_API.md.
+
+
+	# ------------------------------------------------------------------
+	# Public developer API: /api/v1/*
+	#
+	# Stable, versioned aliases onto the same JSON the site itself reads
+	# from /data/. The alias layer is the contract: file names on disk
+	# (and their historical suffixes) stay private and can change without
+	# breaking consumers. Documented at /api.html.
+	#
+	# system_health.json is deliberately NOT aliased here - it is
+	# operational telemetry, not marine data.
+	# ------------------------------------------------------------------
+	@apicors path /api/*
+	header @apicors {
+		Access-Control-Allow-Origin "*"
+		Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+		Access-Control-Allow-Headers "Content-Type"
+		Access-Control-Max-Age "86400"
+		Vary "Accept-Encoding, Origin"
+		-Content-Security-Policy
+		-X-Frame-Options
+	}
+
+	# Bare /api/v1 -> /api/v1/ so the catalog resolves
+	redir /api/v1 /api/v1/ 308
+
+	handle_path /api/v1/* {
+		# CORS preflight
+		@preflight method OPTIONS
+		respond @preflight 204
+
+		# Only GET/HEAD are meaningful on a static read-only API
+		@badmethod not method GET HEAD OPTIONS
+		respond @badmethod 405
+
+		# --- cache lifetimes, derived from each feed's export cadence ---
+		@fast path /buoys/latest
+		header @fast {
+			Cache-Control "public, max-age=60, stale-while-revalidate=120"
+			Cloudflare-CDN-Cache-Control "public, max-age=60"
+		}
+
+		@wind_latest path /wind/latest
+		header @wind_latest {
+			Cache-Control "public, max-age=120, stale-while-revalidate=240"
+			Cloudflare-CDN-Cache-Control "public, max-age=120"
+		}
+
+		@med path /buoys/timeseries /wind/timeseries /tides/* /water-level /marine-forecast /weather/* /wave-forecast/verification/*
+		header @med {
+			Cache-Control "public, max-age=300, stale-while-revalidate=600"
+			Cloudflare-CDN-Cache-Control "public, max-age=300"
+		}
+
+		@hourlyish path /lightstations/*
+		header @hourlyish {
+			Cache-Control "public, max-age=600, stale-while-revalidate=1200"
+			Cloudflare-CDN-Cache-Control "public, max-age=600"
+		}
+
+		@slow path /wave-forecast /wave-forecast/* /storm-surge /storm-surge/*
+		header @slow {
+			Cache-Control "public, max-age=1800, stale-while-revalidate=3600"
+			Cloudflare-CDN-Cache-Control "public, max-age=1800"
+		}
+
+		@stations path /stations /
+		header @stations {
+			Cache-Control "public, max-age=3600, stale-while-revalidate=7200"
+			Cloudflare-CDN-Cache-Control "public, max-age=3600"
+		}
+
+		@daily path /sunlight
+		header @daily {
+			Cache-Control "public, max-age=21600, stale-while-revalidate=43200"
+			Cloudflare-CDN-Cache-Control "public, max-age=21600"
+		}
+
+		# --- endpoint aliases -> files on disk ---
+		#
+		# `route` forces these to run in written order, so the allowlist
+		# guard below executes BEFORE the rewrites. Without it, file_server
+		# would serve any site file through the /api/v1 prefix (e.g.
+		# /api/v1/data/system_health.json), which would both leak
+		# operational telemetry and let callers bind to internal file paths
+		# that are explicitly NOT part of the v1 contract.
+		route {
+			@disallowed {
+				not path_regexp allow ^/(|stations|buoys/(latest|timeseries)|wind/(latest|timeseries)|lightstations/(latest|timeseries)|tides/(latest|hi-low|timeseries)|water-level|marine-forecast|sunlight|weather/whiterock|storm-surge|storm-surge/(observed|verification)|wave-forecast|wave-forecast/[A-Za-z0-9_-]+|wave-forecast/verification/[A-Za-z0-9_-]+)$
+			}
+			handle @disallowed {
+				header Content-Type "application/json"
+				header Cache-Control "public, max-age=300"
+				respond `{"error":"not_found","message":"Unknown endpoint. See https://halibutbank.ca/api/v1/ for the endpoint catalog."}` 404
+			}
+
+			rewrite / /assets/api-catalog.json
+			rewrite /stations /data/stations.json
+
+			rewrite /buoys/latest /data/latest_buoy_v2.json
+			rewrite /buoys/timeseries /data/buoy_timeseries_48h.json
+
+			rewrite /wind/latest /data/latest_wind.json
+			rewrite /wind/timeseries /data/wind_timeseries_48hr.json
+
+			rewrite /lightstations/latest /data/latest_lightstation.json
+			rewrite /lightstations/timeseries /data/lightstation_timeseries_24hr.json
+
+			rewrite /tides/latest /data/tide-latest.json
+			rewrite /tides/hi-low /data/tide-hi-low.json
+			rewrite /tides/timeseries /data/tide-timeseries.json
+			rewrite /water-level /data/combined-water-level.json
+
+			rewrite /marine-forecast /data/marine_forecast.json
+			rewrite /sunlight /data/sunlight_times.json
+			rewrite /weather/whiterock /data/whiterock_weather.json
+
+			rewrite /storm-surge /data/storm_surge/combined_forecast.json
+			rewrite /storm-surge/observed /data/storm_surge/observed_surge.json
+			rewrite /storm-surge/verification /data/storm_surge/verification.json
+
+			rewrite /wave-forecast /data/wave_forecast/index.json
+			@wave_verify path_regexp wv ^/wave-forecast/verification/([A-Za-z0-9_-]+)$
+			rewrite @wave_verify /data/wave_forecast/verification/{re.wv.1}.json
+			@wave_station path_regexp ws ^/wave-forecast/([A-Za-z0-9_-]+)$
+			rewrite @wave_station /data/wave_forecast/{re.ws.1}.json
+
+			file_server
+		}
+	}

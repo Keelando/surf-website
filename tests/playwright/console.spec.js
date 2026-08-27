@@ -9,6 +9,7 @@ const monitoredRoutes = [
   "/webcams.html",
   "/forecasts.html",
   "/guide.html",
+  "/api.html",
 ];
 
 test.describe("Frontend console health", () => {

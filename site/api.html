@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#eef4f8" />
+  <script src="/assets/js/theme-manager.js?v=f9b331e56b"></script>
+  <title>Developer API | Salish Sea Wave Conditions</title>
+  <meta name="description" content="Free, no-key JSON API for real-time Salish Sea marine weather: wave buoys, wind stations, tides, storm surge, lightstations, and RDWPS wave forecasts." />
+  <meta property="og:title" content="Developer API | Salish Sea Wave Conditions" />
+  <meta property="og:description" content="Free, no-key JSON API for real-time Salish Sea marine weather: buoys, winds, tides, storm surge, and wave forecasts." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://halibutbank.ca/api.html" />
+  <link rel="canonical" href="https://halibutbank.ca/api.html" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=bba861b406" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
+  <link rel="stylesheet" href="/assets/css/api-v4.css?v=e8195e28ee" />
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+
+  <main id="main-content" tabindex="-1">
+    <div class="api-wrap">
+
+      <h1>Developer API</h1>
+
+      <p>
+        Every observation this site displays is available as JSON over HTTPS. There is no
+        API key, no registration, and no rate limit beyond the fair-use request below.
+        The feeds are static files served from a CDN edge, so they are fast and cheap to read.
+      </p>
+
+      <div class="api-base">
+        <div>Base URL</div>
+        <code>https://halibutbank.ca/api/v1</code>
+      </div>
+
+      <p>
+        <a href="/api/v1/">GET <code>/api/v1/</code></a> returns a machine-readable catalog of
+        every endpoint below, including its refresh interval and cache lifetime, so you can
+        discover the surface programmatically rather than hard-coding this page.
+      </p>
+
+      <h2>Quick start</h2>
+
+      <pre><code>curl -s https://halibutbank.ca/api/v1/buoys/latest</code></pre>
+
+      <p>Cross-origin requests are allowed from any origin, so browser code works directly:</p>
+
+      <pre><code>const res  = await fetch("https://halibutbank.ca/api/v1/buoys/latest");
+const data = await res.json();
+
+const halibutBank = data["4600146"];
+if (!halibutBank.stale) {
+  console.log(`${halibutBank.wave_height_sig} m @ ${halibutBank.wave_period_peak} s`);
+}</code></pre>
+
+      <h2>Endpoints</h2>
+
+      <p>All endpoints are <code>GET</code> and return <code>application/json</code>.</p>
+
+      <div class="table-scroll">
+        <table class="api-table">
+          <thead>
+            <tr>
+              <th scope="col">Endpoint</th>
+              <th scope="col">Returns</th>
+              <th scope="col">Refresh</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>/stations</td>
+              <td>Station registry — ids, names, coordinates, types</td>
+              <td>hourly</td>
+            </tr>
+            <tr>
+              <td>/buoys/latest</td>
+              <td>Latest wave buoy observations — height, period, direction, wind, temperature</td>
+              <td>3 min</td>
+            </tr>
+            <tr>
+              <td>/buoys/timeseries</td>
+              <td>48-hour buoy history (~1.2 MB)</td>
+              <td>10 min</td>
+            </tr>
+            <tr>
+              <td>/wind/latest</td>
+              <td>Latest wind station observations — speed, gust, direction, pressure</td>
+              <td>5 min</td>
+            </tr>
+            <tr>
+              <td>/wind/timeseries</td>
+              <td>48-hour wind history (~460 KB)</td>
+              <td>15 min</td>
+            </tr>
+            <tr>
+              <td>/lightstations/latest</td>
+              <td>BC lightstation reports — sea state, swell, visibility</td>
+              <td>hourly</td>
+            </tr>
+            <tr>
+              <td>/lightstations/timeseries</td>
+              <td>24-hour lightstation history</td>
+              <td>hourly</td>
+            </tr>
+            <tr>
+              <td>/tides/latest</td>
+              <td>Current water level, prediction, surge, and trend per station</td>
+              <td>10 min</td>
+            </tr>
+            <tr>
+              <td>/tides/hi-low</td>
+              <td>High and low tide events</td>
+              <td>10 min</td>
+            </tr>
+            <tr>
+              <td>/tides/timeseries</td>
+              <td>Water level series, observed and predicted (~420 KB)</td>
+              <td>10 min</td>
+            </tr>
+            <tr>
+              <td>/water-level</td>
+              <td>Combined observed and predicted water levels, all sources</td>
+              <td>10 min</td>
+            </tr>
+            <tr>
+              <td>/marine-forecast</td>
+              <td>Environment Canada marine text forecasts and warnings, parsed</td>
+              <td>on publication</td>
+            </tr>
+            <tr>
+              <td>/wave-forecast</td>
+              <td>Index of stations with an RDWPS model forecast</td>
+              <td>4&times; daily</td>
+            </tr>
+            <tr>
+              <td>/wave-forecast/{id}</td>
+              <td>RDWPS wave forecast series for one station</td>
+              <td>4&times; daily</td>
+            </tr>
+            <tr>
+              <td>/wave-forecast/verification/{id}</td>
+              <td>Forecast vs. observed verification history</td>
+              <td>10 min</td>
+            </tr>
+            <tr>
+              <td>/storm-surge</td>
+              <td>Storm surge forecast series</td>
+              <td>2&times; daily</td>
+            </tr>
+            <tr>
+              <td>/storm-surge/observed</td>
+              <td>Observed surge (observed level minus predicted tide)</td>
+              <td>2&times; daily</td>
+            </tr>
+            <tr>
+              <td>/storm-surge/verification</td>
+              <td>Surge forecast vs. observed history</td>
+              <td>daily</td>
+            </tr>
+            <tr>
+              <td>/weather/whiterock</td>
+              <td>White Rock land weather station</td>
+              <td>10 min</td>
+            </tr>
+            <tr>
+              <td>/sunlight</td>
+              <td>Sunrise, sunset, and civil twilight per location</td>
+              <td>daily</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Valid <code>{id}</code> values for the wave forecast endpoints are
+        <code>4600146</code>, <code>4600206</code>, <code>4600304</code>,
+        <code>46087</code>, <code>46088</code>, and <code>CRPILE</code>. Read
+        <code>/wave-forecast</code> rather than hard-coding that list — stations get added.
+      </p>
+
+      <h2>Reading the data correctly</h2>
+
+      <h3>Directions are meteorological</h3>
+      <p>
+        Every direction field is the direction the wind or waves are coming <strong>from</strong>,
+        in degrees true. A <code>wind_direction</code> of 90 means an easterly — wind blowing
+        from the east toward the west. Getting this backwards is the single most common
+        mistake with marine data.
+      </p>
+
+      <h3>Check <code>stale</code>, not the timestamp</h3>
+      <p>
+        Observation payloads carry a <code>stale</code> boolean and an <code>age_minutes</code>
+        value. Instruments drop out regularly — buoys go offline for maintenance, upstream
+        feeds gap — and a payload will happily hand you a three-day-old reading with a
+        perfectly valid timestamp. Freshness is evaluated per field over a two-hour window.
+        Always branch on <code>stale</code>.
+      </p>
+
+      <h3>Units are in the field names</h3>
+      <p>
+        Fields suffixed <code>_kt</code> are knots; wind speeds without that suffix are km/h.
+        Wave heights and water levels are metres, temperatures Celsius, pressures hectopascals.
+        A pressure near 999 hPa is a real reading, not a missing-value sentinel.
+      </p>
+
+      <h3>Timestamps are UTC</h3>
+      <p>
+        All times are ISO 8601 with an explicit UTC offset, e.g.
+        <code>2026-08-27T17:05:00+00:00</code>. Local time on the water is
+        <code>America/Vancouver</code>, which observes daylight saving.
+      </p>
+
+      <h2>Caching and fair use</h2>
+
+      <p>
+        This runs on a single home server behind a CDN. Responses carry
+        <code>Cache-Control</code> headers matched to how often the underlying data actually
+        changes, and an <code>ETag</code> you can use with <code>If-None-Match</code> for
+        cheap conditional requests.
+      </p>
+
+      <div class="api-note">
+        <strong>Polling faster than the refresh interval returns identical bytes.</strong>
+        <code>/buoys/latest</code> updates every three minutes; requesting it every second
+        gets you the same payload 180 times. Please poll at or below the listed rate, and
+        send a descriptive <code>User-Agent</code> so I can reach you if something you
+        depend on is about to change.
+      </div>
+
+      <h2>Stability</h2>
+
+      <p>
+        The <code>/api/v1</code> prefix is a contract. Within <code>v1</code>, fields may be
+        <em>added</em>, but existing field names and their meanings will not change and
+        endpoints will not be removed or renamed. Anything breaking gets a
+        <code>/api/v2</code>. Note that the underlying file paths under <code>/data/</code>
+        are <em>not</em> part of that contract — they are internal and do change. Build
+        against <code>/api/v1</code>.
+      </p>
+
+      <h2>Attribution and licensing</h2>
+
+      <p>
+        This site collects, parses, and republishes data from public agencies. It does not
+        originate any observations. Attribution to halibutbank.ca is appreciated; attribution
+        to the original producers is expected, and under some of their licences, required.
+      </p>
+
+      <div class="table-scroll">
+        <table class="api-table">
+          <thead>
+            <tr>
+              <th scope="col">Source</th>
+              <th scope="col">Provides</th>
+              <th scope="col">Licence</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ECCC / MSC</td>
+              <td>Wave buoys, wind stations, lightstations, marine forecasts, RDWPS model</td>
+              <td><a href="https://eccc-msc.github.io/open-data/licence/readme_en/" target="_blank" rel="noopener">MSC Open Data</a></td>
+            </tr>
+            <tr>
+              <td>NOAA NDBC</td>
+              <td>US wave buoys and coastal stations</td>
+              <td><a href="https://www.weather.gov/disclaimer" target="_blank" rel="noopener">NWS disclaimer</a></td>
+            </tr>
+            <tr>
+              <td>DFO IWLS</td>
+              <td>Tide predictions and water levels</td>
+              <td><a href="https://open.canada.ca/en/open-government-licence-canada" target="_blank" rel="noopener">OGL &ndash; Canada</a></td>
+            </tr>
+            <tr>
+              <td>City of Surrey</td>
+              <td>Crescent Beach water level and wave sensors</td>
+              <td><a href="https://data.surrey.ca/pages/terms-of-use" target="_blank" rel="noopener">Surrey terms of use</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>No warranty</h2>
+
+      <p>
+        These feeds are provided as-is, with no guarantee of accuracy, availability, or
+        continuity, by a solo hobby project running on residential hardware. Do not use them
+        for navigation or for any safety-of-life decision. Verify conditions independently.
+      </p>
+
+      <p>
+        Questions, bug reports, or a heads-up that you are building something on this:
+        <a href="https://github.com/Keelando/surf-website/issues" target="_blank" rel="noopener">open an issue on GitHub</a>.
+      </p>
+
+    </div>
+  </main>
+
+  <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <div hx-get="/components/footer.html?v=4" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
+</body>
+</html>

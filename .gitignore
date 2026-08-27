@@ -79,6 +79,10 @@ storm_surge/
 # See docs/MSC_REFERENCE_TABLES.md.
 !docs/reference/*.json
 
+# Public API endpoint catalog — hand-written documentation served at
+# /api/v1/, not a generated data file. See docs/PUBLIC_API.md.
+!site/assets/api-catalog.json
+
 # Local webcam config — endpoints, referers, permission-gated feeds.
 # Schema lives in config/webcams.example.json.
 config/webcams.json

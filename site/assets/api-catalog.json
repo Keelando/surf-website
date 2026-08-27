@@ -1,0 +1,169 @@
+{
+  "name": "Halibut Bank Marine Data API",
+  "description": "Read-only JSON feeds of real-time marine weather and oceanographic observations for the Salish Sea and adjacent BC/WA coastal waters.",
+  "version": "v1",
+  "base_url": "https://halibutbank.ca/api/v1",
+  "documentation": "https://halibutbank.ca/api.html",
+  "terms": {
+    "cost": "Free, no authentication, no registration.",
+    "fair_use": "Please poll no faster than the refresh interval of the endpoint you are reading; responses are cached and polling faster returns identical bytes. Send a descriptive User-Agent.",
+    "attribution": "Attribution to halibutbank.ca is appreciated but not required. Attribution to the ORIGINAL data producers (Environment and Climate Change Canada, NOAA NDBC, Fisheries and Oceans Canada, City of Surrey) is expected and in some cases required by their licences.",
+    "warranty": "Provided as-is with no guarantee of accuracy, availability, or continuity. Not for navigational or safety-of-life use.",
+    "contact": "https://github.com/Keelando/surf-website/issues"
+  },
+  "conventions": {
+    "timestamps": "ISO 8601, UTC, e.g. 2026-08-27T17:05:00+00:00",
+    "directions": "Meteorological convention: the direction wind or waves are coming FROM, in degrees true (0-360).",
+    "wind_units": "Knots in fields suffixed _kt; kilometres per hour otherwise. Field names state the unit.",
+    "wave_units": "Metres.",
+    "water_level_units": "Metres, chart datum.",
+    "pressure_units": "Hectopascals (hPa). Values near 999 hPa are valid readings, not missing-value markers.",
+    "staleness": "Most observation payloads carry a boolean `stale` flag and an `age_minutes` value. A field is considered stale after 2 hours. Always check `stale` rather than assuming the payload is current."
+  },
+  "endpoints": [
+    {
+      "path": "/stations",
+      "description": "Station registry: ids, names, coordinates, types, and which feeds each station provides.",
+      "refresh": "hourly",
+      "cache_seconds": 3600
+    },
+    {
+      "path": "/buoys/latest",
+      "description": "Most recent observation from each wave buoy: significant/max wave height, wave period, wave direction, wind, air and sea temperature.",
+      "refresh": "every 3 minutes",
+      "cache_seconds": 60
+    },
+    {
+      "path": "/buoys/timeseries",
+      "description": "48-hour observation history for all buoys. Large payload (~1.2 MB).",
+      "refresh": "every 10 minutes",
+      "cache_seconds": 300
+    },
+    {
+      "path": "/wind/latest",
+      "description": "Most recent observation from each land and island wind station: wind speed and gust in knots, direction, air temperature, pressure, humidity.",
+      "refresh": "every 5 minutes",
+      "cache_seconds": 120
+    },
+    {
+      "path": "/wind/timeseries",
+      "description": "48-hour wind observation history for all wind stations. Large payload (~460 KB).",
+      "refresh": "every 15 minutes",
+      "cache_seconds": 300
+    },
+    {
+      "path": "/lightstations/latest",
+      "description": "Most recent BC lightstation marine weather reports (sea state, swell, visibility, wind).",
+      "refresh": "hourly",
+      "cache_seconds": 600
+    },
+    {
+      "path": "/lightstations/timeseries",
+      "description": "24-hour lightstation report history.",
+      "refresh": "hourly",
+      "cache_seconds": 600
+    },
+    {
+      "path": "/tides/latest",
+      "description": "Current water level at each tide station: observed value, prediction, storm surge offset, total water level, and trend.",
+      "refresh": "every 10 minutes",
+      "cache_seconds": 300
+    },
+    {
+      "path": "/tides/hi-low",
+      "description": "Upcoming and recent high and low tide events per station.",
+      "refresh": "every 10 minutes",
+      "cache_seconds": 300
+    },
+    {
+      "path": "/tides/timeseries",
+      "description": "Water level time series, observed and predicted. Large payload (~420 KB).",
+      "refresh": "every 10 minutes",
+      "cache_seconds": 300
+    },
+    {
+      "path": "/water-level",
+      "description": "Combined observed and predicted water levels across all sources in one payload.",
+      "refresh": "every 10 minutes",
+      "cache_seconds": 300
+    },
+    {
+      "path": "/marine-forecast",
+      "description": "Environment Canada marine text forecasts and warnings for the Georgia Basin zones, parsed into structured fields.",
+      "refresh": "on publication (push feed, typically 4x daily plus amendments)",
+      "cache_seconds": 300
+    },
+    {
+      "path": "/wave-forecast",
+      "description": "Index of stations that have an RDWPS model wave forecast available, with coordinates.",
+      "refresh": "4x daily",
+      "cache_seconds": 1800
+    },
+    {
+      "path": "/wave-forecast/{station_id}",
+      "description": "RDWPS model wave forecast time series for one station.",
+      "refresh": "4x daily",
+      "cache_seconds": 1800,
+      "station_ids": ["4600146", "4600206", "4600304", "46087", "46088", "CRPILE"]
+    },
+    {
+      "path": "/wave-forecast/verification/{station_id}",
+      "description": "Forecast-versus-observed verification history for one station: how the model performed against the buoy.",
+      "refresh": "every 10 minutes",
+      "cache_seconds": 300,
+      "station_ids": ["4600146", "4600206", "4600304", "46087", "46088", "CRPILE"]
+    },
+    {
+      "path": "/storm-surge",
+      "description": "Storm surge forecast time series for all surge stations.",
+      "refresh": "2x daily",
+      "cache_seconds": 1800
+    },
+    {
+      "path": "/storm-surge/observed",
+      "description": "Observed storm surge (observed water level minus predicted tide).",
+      "refresh": "2x daily",
+      "cache_seconds": 1800
+    },
+    {
+      "path": "/storm-surge/verification",
+      "description": "Storm surge forecast-versus-observed verification history.",
+      "refresh": "daily",
+      "cache_seconds": 1800
+    },
+    {
+      "path": "/weather/whiterock",
+      "description": "White Rock land weather station: temperature, wind, pressure, humidity.",
+      "refresh": "every 10 minutes",
+      "cache_seconds": 300
+    },
+    {
+      "path": "/sunlight",
+      "description": "Sunrise, sunset, and civil twilight times for each station location.",
+      "refresh": "daily",
+      "cache_seconds": 21600
+    }
+  ],
+  "upstream_sources": [
+    {
+      "name": "Environment and Climate Change Canada (MSC)",
+      "provides": "Wave buoys, wind stations, lightstations, marine text forecasts, RDWPS wave model",
+      "licence": "https://eccc-msc.github.io/open-data/licence/readme_en/"
+    },
+    {
+      "name": "NOAA National Data Buoy Center",
+      "provides": "US wave buoys and coastal stations",
+      "licence": "https://www.weather.gov/disclaimer"
+    },
+    {
+      "name": "Fisheries and Oceans Canada (IWLS)",
+      "provides": "Tide predictions and water level observations",
+      "licence": "https://open.canada.ca/en/open-government-licence-canada"
+    },
+    {
+      "name": "City of Surrey",
+      "provides": "Crescent Beach area water level and wave sensors",
+      "licence": "https://data.surrey.ca/pages/terms-of-use"
+    }
+  ]
+}
