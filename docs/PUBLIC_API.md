@@ -86,9 +86,16 @@ include `.json`**. Origin `Cache-Control` alone will be honoured by browsers
 but Cloudflare will still return `cf-cache-status: DYNAMIC` and pass every
 request through to this box.
 
-A Cache Rule matching `starts_with(http.request.uri.path, "/api/")` with
-*Eligible for cache* + *Respect origin TTL* is required for edge caching to
-engage. Verify with:
+**DONE 2026-08-27.** A Cache Rule named "Public API Caching" is deployed on
+the zone: *URI Path starts with `/api/`* → Eligible for cache, Edge TTL from
+the origin's cache-control, Browser TTL respect origin. Confirmed working —
+`/buoys/latest` shows a clean 60-second sawtooth (age climbs to ~55, resets
+to 0), so Cloudflare honours the per-feed TTLs rather than substituting a
+default, and the origin sees one request per minute no matter how many
+clients poll. `/data/` and the HTML pages stay `DYNAMIC`, so the site's own
+pages are unaffected.
+
+Verify with:
 
 ```bash
 curl -sI https://halibutbank.ca/api/v1/buoys/latest | grep -i cf-cache-status
@@ -109,6 +116,22 @@ caching**; keep the wildcard.
 
 **Do not enable Bot Fight Mode** on this zone — it challenges non-browser
 clients and would break every `curl` and server-side consumer of the API.
+
+## Rate limiting (not yet configured)
+
+Caddy has no built-in rate limiting without a plugin, so this belongs at the
+edge. With the cache rule live, ordinary polling never reaches the origin, so
+a rate limit is about capping abuse of *cache-missing* paths — note that a
+bogus `/api/v1/wave-forecast/<random>` 404s at the origin on every request,
+because the allowlist guard runs before `file_server` rather than being
+cached.
+
+Free tier allows one rate-limiting rule. Suggested starting point:
+expression `starts_with(http.request.uri.path, "/api/")`, characteristic IP,
+~100 requests per 10 seconds, action Block or Managed Challenge.
+
+Do **not** use a JavaScript challenge — it breaks `curl` and every
+server-side consumer, the same failure mode as Bot Fight Mode.
 
 ## Testing
 
