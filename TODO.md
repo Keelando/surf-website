@@ -55,17 +55,15 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
-- [ ] **Turn on the API support links** (user 2026-08-27): the support block
-  is written, styled, and sitting commented out in `site/api.html` directly
-  above the no-warranty section — it just needs two real URLs. Blocked only on
-  creating the accounts: **Ko-fi** and **GitHub Sponsors** (user wants both).
-  To activate: create the accounts, swap `KOFI_HANDLE` and
-  `GITHUB_SPONSORS_HANDLE` for the real links, delete the comment wrapper.
-  Deliberately not shipped live with placeholder hrefs — two dead donation
-  links read as a broken page and convert worse than none. Consider
-  `.github/FUNDING.yml` at the same time so the repo grows a Sponsor button.
-  Scope is the API page only; user explicitly did not want it in the shared
-  footer where every casual visitor checking wave heights would see it.
+- [ ] **Add the GitHub Sponsors button to the API page** (user 2026-08-27):
+  Ko-fi is live (`ko-fi.com/keeldude`) in the support block in
+  `site/api.html`. The Sponsors button is commented out right beside it,
+  pending GitHub Sponsors actually being enabled on the account — a dead
+  Sponsors link has the same broken-page problem the placeholder did. Once
+  enabled, uncomment it (likely `https://github.com/sponsors/Keelando`, but
+  confirm) and consider adding `.github/FUNDING.yml` so the repo grows a
+  Sponsor button too. API page only; user did not want it in the shared
+  footer where casual visitors would see it.
 
 - [ ] **Verification panel: say when the model side is missing** (user
       2026-08-26, for 2026-08-27). Neah Bay and La Perouse Bank opt out of the
