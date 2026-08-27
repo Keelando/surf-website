@@ -95,6 +95,18 @@ curl -sI https://halibutbank.ca/api/v1/buoys/latest | grep -i cf-cache-status
 # want: HIT (or MISS then HIT on a second call), not DYNAMIC
 ```
 
+### `Vary` must stay `Accept-Encoding` only
+
+Cloudflare will not cache a response whose `Vary` header lists anything
+beyond `Accept-Encoding`. The API block originally sent
+`Vary: Accept-Encoding, Origin`, which would have made the cache rule look
+correctly configured while every request still returned `BYPASS`.
+
+Nothing here varies by origin — `Access-Control-Allow-Origin` is a static
+`*`, not reflected per caller — so the `Origin` token bought nothing and cost
+the entire edge cache. **If you ever add per-origin CORS, you lose edge
+caching**; keep the wildcard.
+
 **Do not enable Bot Fight Mode** on this zone — it challenges non-browser
 clients and would break every `curl` and server-side consumer of the API.
 
