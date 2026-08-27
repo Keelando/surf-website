@@ -9,7 +9,6 @@
   <title>Salish Sea Wave Conditions | Halibut Bank, Strait of Georgia, and Marine Forecasts</title>
 
   <meta name="description" content="Live wave, wind, tide, and storm surge conditions across the Salish Sea, including Halibut Bank, English Bay, and the Strait of Georgia. Auto-updated from Environment Canada and NOAA sources." />
-  <meta name="keywords" content="Salish Sea, Halibut Bank, Strait of Georgia, English Bay, waves, surf, marine forecast, storm surge, tide, buoy data, Environment Canada, NOAA, marine conditions, BC coast, Vancouver waves, British Columbia marine weather, Pacific Northwest ocean conditions, wave forecast, sea state, boating conditions, sailing forecast, fishing weather, ocean buoy, wave height, swell forecast, coastal weather, Juan de Fuca, Boundary Bay, real-time wave data, marine safety" />
   <meta name="author" content="Salish Sea Wave Conditions Project" />
   <meta name="robots" content="index, follow" />
 
@@ -18,7 +17,19 @@
   <meta property="og:description" content="Hourly updated marine conditions for Halibut Bank, English Bay, and the Strait of Georgia. Includes wave height, wind, temperature, and storm surge forecasts." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://halibutbank.ca/" />
-  <meta property="og:image" content="https://halibutbank.ca/assets/img/social_preview.jpg" />
+  <meta property="og:image" content="https://halibutbank.ca/assets/images/social-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
+  <meta property="og:site_name" content="Salish Sea Wave Conditions" />
+  <meta property="og:locale" content="en_CA" />
+
+  <!-- Twitter/X: summary_large_image renders the full-width card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Salish Sea Wave Conditions | Real-time Marine Data" />
+  <meta name="twitter:description" content="Hourly updated marine conditions for Halibut Bank, English Bay, and the Strait of Georgia. Includes wave height, wind, temperature, and storm surge forecasts." />
+  <meta name="twitter:image" content="https://halibutbank.ca/assets/images/social-preview.png" />
+  <meta name="twitter:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
 
   <link rel="canonical" href="https://halibutbank.ca/" />
   <link rel="stylesheet" href="/assets/css/style-v4.css?v=bba861b406" />
@@ -67,6 +78,24 @@
       display: none;
     }
   </style>
+  <!-- Structured data: site identity -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Salish Sea Wave Conditions",
+    "alternateName": "Halibut Bank",
+    "url": "https://halibutbank.ca/",
+    "description": "Real-time marine weather for the Salish Sea and the BC coast: wave buoys, wind stations, tides, storm surge, lightstation reports and marine forecasts, aggregated from Environment and Climate Change Canada, NOAA NDBC and Fisheries and Oceans Canada.",
+    "inLanguage": "en-CA",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Salish Sea Wave Conditions",
+      "url": "https://halibutbank.ca/",
+      "logo": "https://halibutbank.ca/assets/images/social-preview.png"
+    }
+  }
+  </script>
 </head>
 
 <body>
@@ -80,7 +109,10 @@
   <!-- Navigation -->
   <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
 
-  <div hx-get="/components/header-buoys.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 80px;"></div>
+  <header class="hero">
+    <h1>Salish Sea Wave Conditions</h1>
+    <div id="hero-conditions" class="hero-conditions" aria-live="polite"></div>
+  </header>
 
   <main id="main-content" tabindex="-1">
 
