@@ -55,23 +55,6 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
-- [ ] **Cloudflare rate-limit rule on `/api/*`** (flagged 2026-08-27, user
-  asked to be reminded): optional hardening now that the API is public and
-  discoverable. Edge caching is live and absorbs the ordinary case, so this is
-  belt-and-braces — its job is capping damage from someone hammering a
-  cache-missing path (a bogus `/wave-forecast/<random>` 404s at the origin
-  every time, since the allowlist guard runs before `file_server`). Free tier
-  allows one rate-limit rule.
-  Dashboard → Security → WAF → Rate limiting rules → Create:
-    - Expression: `starts_with(http.request.uri.path, "/api/")`
-    - Characteristic: IP
-    - Rate: start ~100 requests / 10 seconds per IP (generous; the documented
-      fair-use is far below this, so only abuse trips it)
-    - Action: Block, or Managed Challenge with a short timeout
-  Do NOT use a JS challenge — it would break `curl` and every server-side
-  consumer, the same trap as Bot Fight Mode. Verify a normal polling client
-  is unaffected afterwards. See `docs/PUBLIC_API.md`.
-
 - [ ] **Add the GitHub Sponsors button to the API page** (user 2026-08-27):
   Ko-fi is live (`ko-fi.com/keeldude`) in the support block in
   `site/api.html`. The Sponsors button is commented out right beside it,
