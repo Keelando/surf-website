@@ -137,3 +137,62 @@
     font-size: 0.8rem;
   }
 }
+
+/* Support / donation block.
+   Sits between the GitHub issues line and the no-warranty section. */
+.api-support {
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.14));
+  border-left: 4px solid var(--color-accent-blue);
+  border-radius: 8px;
+  padding: 1.15rem 1.3rem;
+  margin: 1.75rem 0;
+  background: var(--color-surface-alt, rgba(0, 0, 0, 0.03));
+}
+
+.api-support h2 {
+  margin-top: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+  font-size: 1.15rem;
+}
+
+.api-support p {
+  margin: 0.5rem 0 0;
+}
+
+.api-support-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.api-support-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-accent-blue);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--color-accent-blue) !important;
+  background: transparent;
+}
+
+.api-support-btn:hover,
+.api-support-btn:focus-visible {
+  background: var(--color-accent-blue);
+  color: var(--color-bg, #fff) !important;
+}
+
+@media (max-width: 480px) {
+  .api-support-actions {
+    flex-direction: column;
+  }
+
+  .api-support-btn {
+    justify-content: center;
+  }
+}

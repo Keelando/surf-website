@@ -256,7 +256,27 @@ def query_and_export_timeseries():
     conn.close()
 
     # Add metadata
-    output["_meta"] = {"generated_utc": now.isoformat(), "window_hours": 48, "data_resolution": "hourly (downsampled)"}
+    #
+    # `units` is published because the timeseries values are bare arrays of
+    # numbers: the JSON key is stripped of its unit suffix (wind_speed_kmh ->
+    # wind_speed) and the speeds are converted to knots on the way out, so
+    # nothing in the payload itself says what unit a number is in. The sibling
+    # latest-wind export names the same quantity `wind_speed_kt`, which makes
+    # the bare name here read as km/h when it is not. Spelling the units out
+    # is additive and costs a few bytes, where duplicating every array as
+    # *_kt would cost roughly a third of a 460 KB payload.
+    output["_meta"] = {
+        "generated_utc": now.isoformat(),
+        "window_hours": 48,
+        "data_resolution": "hourly (downsampled)",
+        "units": {
+            json_key: meta["unit"]
+            for metric, meta in ALL_METRICS.items()
+            for json_key in [
+                metric.replace("_kmh", "").replace("_deg", "").replace("_c", "").replace("_hpa", "").replace("_mm", "")
+            ]
+        },
+    }
 
     # Atomic write
     safe_json_write(OUT_PATH, output)

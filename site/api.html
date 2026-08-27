@@ -14,7 +14,7 @@
   <link rel="canonical" href="https://halibutbank.ca/api.html" />
   <link rel="stylesheet" href="/assets/css/style-v4.css?v=bba861b406" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
-  <link rel="stylesheet" href="/assets/css/api-v4.css?v=e8195e28ee" />
+  <link rel="stylesheet" href="/assets/css/api-v4.css?v=9b865af353" />
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -201,11 +201,30 @@ if (!halibutBank.stale) {
         Always branch on <code>stale</code>.
       </p>
 
-      <h3>Units are in the field names</h3>
+      <h3>Every wind speed is in knots</h3>
       <p>
-        Fields suffixed <code>_kt</code> are knots; wind speeds without that suffix are km/h.
-        Wave heights and water levels are metres, temperatures Celsius, pressures hectopascals.
-        A pressure near 999 hPa is a real reading, not a missing-value sentinel.
+        All of them, on every endpoint, with no exceptions. Wind is stored internally in
+        km/h and converted on export, so nothing published here is km/h.
+      </p>
+      <p>
+        The field <em>names</em> are less consistent than the units are. Some endpoints say
+        <code>wind_speed_kt</code> and others just say <code>wind_speed</code> — that is
+        naming history, <strong>not</strong> a unit distinction, and it is the one thing on
+        this page most likely to cost you an afternoon. If you see a bare
+        <code>wind_speed</code> and assume it must be km/h because a neighbouring endpoint
+        bothered to write <code>_kt</code>, you will convert a 15-knot wind into 8 knots.
+      </p>
+      <p>
+        Every wind speed now also has an explicit <code>_kt</code> name. <strong>Prefer the
+        <code>_kt</code> fields in new code.</strong> The bare names remain, and will keep
+        working and keep meaning knots, but treat them as the legacy spelling.
+        <code>/wind/timeseries</code> returns bare arrays of numbers and publishes a
+        <code>_meta.units</code> map describing them.
+      </p>
+      <p>
+        Other units: wave heights and water levels are metres, temperatures Celsius,
+        pressures hectopascals. A pressure near 999 hPa is a real reading, not a
+        missing-value sentinel.
       </p>
 
       <h3>Timestamps are UTC</h3>
@@ -284,6 +303,47 @@ if (!halibutBank.stale) {
           </tbody>
         </table>
       </div>
+
+      <!-- ==================================================================
+           SUPPORT BLOCK - NOT YET LIVE.
+
+           Ready to ship, but commented out because neither account exists
+           yet. Two dead links on a public page look broken and convert worse
+           than no links at all.
+
+           TO ACTIVATE:
+             1. Create the Ko-fi page and enable GitHub Sponsors.
+             2. Replace KOFI_HANDLE and GITHUB_SPONSORS_HANDLE below with the
+                real URLs (the GitHub one is probably
+                https://github.com/sponsors/Keelando once Sponsors is on).
+             3. Delete this comment wrapper so the block renders.
+             4. Optionally add .github/FUNDING.yml so the repo grows a
+                Sponsor button too.
+
+           Tracked in TODO.md.
+      =================================================================== -->
+      <!--
+      <div class="api-support">
+        <h2>Who pays for this</h2>
+        <p>
+          This runs on a 2017 Dell in my house. The data is free and will stay free -
+          there is no paid tier, no key, and nothing behind a login. But the electricity,
+          the drives, and the domain are not free, and it is one person covering them.
+        </p>
+        <p>
+          If this API saved you an afternoon, or you are shipping something built on it,
+          ten dollars genuinely helps keep the box running.
+        </p>
+        <div class="api-support-actions">
+          <a class="api-support-btn" href="KOFI_HANDLE" target="_blank" rel="noopener">
+            Buy me a coffee
+          </a>
+          <a class="api-support-btn" href="GITHUB_SPONSORS_HANDLE" target="_blank" rel="noopener">
+            Sponsor on GitHub
+          </a>
+        </div>
+      </div>
+      -->
 
       <h2>No warranty</h2>
 

@@ -14,7 +14,7 @@
   "conventions": {
     "timestamps": "ISO 8601, UTC, e.g. 2026-08-27T17:05:00+00:00",
     "directions": "Meteorological convention: the direction wind or waves are coming FROM, in degrees true (0-360).",
-    "wind_units": "Knots in fields suffixed _kt; kilometres per hour otherwise. Field names state the unit.",
+    "wind_units": "ALL wind speeds are knots, on every endpoint, with no exceptions. Wind is stored internally in km/h and converted on export. Field naming is inconsistent for historical reasons - some endpoints use wind_speed_kt, others a bare wind_speed - but this is a naming difference, NOT a unit difference. Every wind speed now also has an explicit _kt name; prefer those in new code. The bare names are retained and still mean knots. /wind/timeseries returns bare numeric arrays and publishes a _meta.units map.",
     "wave_units": "Metres.",
     "water_level_units": "Metres, chart datum.",
     "pressure_units": "Hectopascals (hPa). Values near 999 hPa are valid readings, not missing-value markers.",
@@ -104,14 +104,28 @@
       "description": "RDWPS model wave forecast time series for one station.",
       "refresh": "4x daily",
       "cache_seconds": 1800,
-      "station_ids": ["4600146", "4600206", "4600304", "46087", "46088", "CRPILE"]
+      "station_ids": [
+        "4600146",
+        "4600206",
+        "4600304",
+        "46087",
+        "46088",
+        "CRPILE"
+      ]
     },
     {
       "path": "/wave-forecast/verification/{station_id}",
       "description": "Forecast-versus-observed verification history for one station: how the model performed against the buoy.",
       "refresh": "every 10 minutes",
       "cache_seconds": 300,
-      "station_ids": ["4600146", "4600206", "4600304", "46087", "46088", "CRPILE"]
+      "station_ids": [
+        "4600146",
+        "4600206",
+        "4600304",
+        "46087",
+        "46088",
+        "CRPILE"
+      ]
     },
     {
       "path": "/storm-surge",

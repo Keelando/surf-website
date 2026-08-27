@@ -177,6 +177,23 @@ def query_and_export():
                     if cardinal:
                         buoy_json[f"{field}_cardinal"] = cardinal
 
+            # Publish explicit _kt aliases for the wind speeds.
+            #
+            # These values are ALREADY knots - converted from the stored km/h
+            # a few lines above - but the bare names don't say so, and the
+            # sibling wind-station export calls the same quantity
+            # `wind_speed_kt`. A consumer seeing `wind_speed` here next to
+            # `wind_speed_kt` there reasonably infers the bare one is km/h
+            # and "helpfully" converts it, turning a 15 kt wind into 8 kt.
+            #
+            # The aliases are duplicates, not replacements: the bare fields
+            # stay for the site's own JS and for existing API consumers, and
+            # /api/v1 promises not to change what an existing field means.
+            # New code should read the _kt names.
+            for speed_field in ("wind_speed", "wind_gust", "wind_speed_sensor_2", "wind_gust_sensor_2"):
+                if buoy_json.get(speed_field) is not None:
+                    buoy_json[f"{speed_field}_kt"] = buoy_json[speed_field]
+
             # Skip buoys with no actual data (only name + observation_time + stale flag)
             if len(buoy_json.keys()) <= 3:
                 logger.debug(f"Skipped {buoy_id} (no data within freshness window)")
