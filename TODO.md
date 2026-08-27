@@ -55,6 +55,25 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+- [ ] **Decide a license for the Dataset structured data** (deferred by the
+  user 2026-08-27 — "I don't know much about Dataset license"). The JSON-LD
+  `Dataset` block in `site/api.html` omits `license`, which Google lists as
+  recommended (not required) for Dataset Search. Valid and indexable without
+  it, so there is no deadline.
+
+  The reason this is not a quick pick: **most of the data is not yours to
+  license.** Observations belong to ECCC, NOAA NDBC and DFO under their own
+  terms — `api-catalog.json`'s `terms.attribution` already says attribution
+  to the original producers is expected and sometimes required. What you can
+  license is the aggregation: the schema, derived fields, unit conversions.
+  A blanket CC-BY on the whole feed would overclaim.
+
+  Likely shape if picked up: license the *compilation* (CC-BY-4.0 is the
+  usual choice) while keeping the existing per-producer attribution note,
+  and mirror whatever is chosen into `terms` in
+  `site/assets/api-catalog.json` and the fair-use section of `api.html` so
+  there is one story in three places.
+
 - [ ] **Add the GitHub Sponsors button to the API page** (user 2026-08-27):
   Ko-fi is live (`ko-fi.com/keeldude`) in the support block in
   `site/api.html`. The Sponsors button is commented out right beside it,
