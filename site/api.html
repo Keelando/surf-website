@@ -28,7 +28,7 @@
 
       <p>
         Every observation this site displays is available as JSON over HTTPS. There is no
-        API key, no registration, and no rate limit beyond the fair-use request below.
+        API key and no registration &mdash; just a generous rate limit described below.
         The feeds are static files served from a CDN edge, so they are fast and cheap to read.
       </p>
 
@@ -250,6 +250,15 @@ if (!halibutBank.stale) {
         send a descriptive <code>User-Agent</code> so I can reach you if something you
         depend on is about to change.
       </div>
+
+      <p>
+        There is one hard limit, enforced at the CDN edge: <strong>100 requests per 10
+        seconds per IP address</strong>, across all <code>/api/</code> paths combined.
+        Exceeding it returns <code>429 Too Many Requests</code> for the following ten
+        seconds, after which normal service resumes on its own &mdash; there is no lasting
+        ban and nothing to appeal. Polling at the documented intervals will never come
+        close. If you have a use case that legitimately needs more, get in touch.
+      </p>
 
       <h2>Stability</h2>
 

@@ -117,21 +117,44 @@ caching**; keep the wildcard.
 **Do not enable Bot Fight Mode** on this zone — it challenges non-browser
 clients and would break every `curl` and server-side consumer of the API.
 
-## Rate limiting (not yet configured)
+## Rate limiting
 
-Caddy has no built-in rate limiting without a plugin, so this belongs at the
+Caddy has no built-in rate limiting without a plugin, so this lives at the
 edge. With the cache rule live, ordinary polling never reaches the origin, so
-a rate limit is about capping abuse of *cache-missing* paths — note that a
-bogus `/api/v1/wave-forecast/<random>` 404s at the origin on every request,
-because the allowlist guard runs before `file_server` rather than being
-cached.
+the rate limit is about capping abuse — in particular of *cache-missing*
+paths: a bogus `/api/v1/wave-forecast/<random>` 404s at the origin on every
+request, because the allowlist guard runs before `file_server` rather than
+being cached.
 
-Free tier allows one rate-limiting rule. Suggested starting point:
-expression `starts_with(http.request.uri.path, "/api/")`, characteristic IP,
-~100 requests per 10 seconds, action Block or Managed Challenge.
+**DONE 2026-08-27.** One Cloudflare rate-limiting rule (the free-tier
+allowance) is deployed and Active:
 
-Do **not** use a JavaScript challenge — it breaks `curl` and every
-server-side consumer, the same failure mode as Bot Fight Mode.
+| Setting | Value |
+|---------|-------|
+| Expression | `starts_with(http.request.uri.path, "/api/")` |
+| Characteristic | IP |
+| Period | 10 s |
+| Requests | 100 |
+| Action | Block |
+| Mitigation timeout | 10 s |
+
+Verified by burst: 150 parallel requests to `/api/v1/buoys/latest` returned
+99 × `200` then 51 × `429` (the 100th was an earlier smoke-test request), and
+a normal request succeeded again once the 10-second timeout elapsed.
+
+Two properties worth remembering:
+
+- **Counting happens at the edge, so cache hits count too.** The threshold is
+  against *all* API requests from an IP, not just origin-bound ones. 100 per
+  10 s is far above any legitimate consumer, but it is not a measure of
+  origin load.
+- **Block, not a challenge.** A JavaScript or Managed Challenge breaks `curl`
+  and every server-side consumer — the same failure mode as Bot Fight Mode
+  (above). Keep the action as Block.
+
+A cheap future complement, origin-side: give the allowlist guard's 404s a
+`Cache-Control` so the edge absorbs repeated bogus paths instead of passing
+each one through.
 
 ## Testing
 

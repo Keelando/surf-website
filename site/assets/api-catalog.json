@@ -6,6 +6,7 @@
   "documentation": "https://halibutbank.ca/api.html",
   "terms": {
     "cost": "Free, no authentication, no registration.",
+    "rate_limit": "100 requests per 10 seconds per IP address across all /api/ paths. Exceeding this returns HTTP 429 for the next 10 seconds, after which normal service resumes automatically.",
     "fair_use": "Please poll no faster than the refresh interval of the endpoint you are reading; responses are cached and polling faster returns identical bytes. Send a descriptive User-Agent.",
     "attribution": "Attribution to halibutbank.ca is appreciated but not required. Attribution to the ORIGINAL data producers (Environment and Climate Change Canada, NOAA NDBC, Fisheries and Oceans Canada, City of Surrey) is expected and in some cases required by their licences.",
     "warranty": "Provided as-is with no guarantee of accuracy, availability, or continuity. Not for navigational or safety-of-life use.",
