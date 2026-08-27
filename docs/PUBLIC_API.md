@@ -121,10 +121,12 @@ clients and would break every `curl` and server-side consumer of the API.
 
 Caddy has no built-in rate limiting without a plugin, so this lives at the
 edge. With the cache rule live, ordinary polling never reaches the origin, so
-the rate limit is about capping abuse — in particular of *cache-missing*
-paths: a bogus `/api/v1/wave-forecast/<random>` 404s at the origin on every
-request, because the allowlist guard runs before `file_server` rather than
-being cached.
+the rate limit is about capping abuse of *cache-missing* paths — someone
+walking `/api/v1/wave-forecast/<random>` with a fresh random string each
+time. Each distinct URL is a distinct cache key, so those miss at the edge by
+definition and reach the origin every time. **The rate limit is the only
+defence against that shape; caching cannot help, because there is nothing to
+re-serve.** See "Unknown paths are already cacheable" below.
 
 **DONE 2026-08-27.** One Cloudflare rate-limiting rule (the free-tier
 allowance) is deployed and Active:
@@ -152,9 +154,29 @@ Two properties worth remembering:
   and every server-side consumer — the same failure mode as Bot Fight Mode
   (above). Keep the action as Block.
 
-A cheap future complement, origin-side: give the allowlist guard's 404s a
-`Cache-Control` so the edge absorbs repeated bogus paths instead of passing
-each one through.
+### Unknown paths are already cacheable
+
+Both classes of 404 already carry `Cache-Control`, so *repeated* requests for
+the *same* unknown path are absorbed at the edge and never reach this box.
+Verified 2026-08-27: three requests for one bogus path returned
+`cf-cache-status: HIT` with `age` climbing.
+
+| Request | Handled by | Status | Body | `max-age` |
+|---------|-----------|--------|------|-----------|
+| `/api/v1/nope-xyz` (fails the allowlist) | `handle @disallowed` | 404 | JSON error pointing at the catalog | 300 |
+| `/api/v1/wave-forecast/<unknown>` (passes the allowlist, no such file) | `file_server` | 404 | **empty** | 1800, via `@slow` |
+
+The second row is the one to know about. The allowlist admits
+`wave-forecast/[A-Za-z0-9_-]+` as a wildcard — it cannot enumerate stations
+without duplicating the registry — so an unknown *station* is a legitimate
+path that simply has no file behind it. It falls through the rewrites to
+`file_server`, which stats the disk and returns a bare bodiless 404. A
+consumer who typos a station id gets no explanation, unlike every other wrong
+URL on the API. A `handle_errors` block inside `handle_path` would give it
+the same JSON body; not done, as it is cosmetic.
+
+Note that neither row helps against *randomised* paths, per the rate-limiting
+section above.
 
 ## Testing
 

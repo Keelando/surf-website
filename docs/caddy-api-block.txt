@@ -1,6 +1,6 @@
 # Excerpt from /etc/caddy/Caddyfile (:8090 block) - reference copy.
 # The live file is authoritative; see docs/PUBLIC_API.md.
-
+# Regenerated from the live file 2026-08-27.
 
 	# ------------------------------------------------------------------
 	# Public developer API: /api/v1/*
@@ -19,7 +19,11 @@
 		Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
 		Access-Control-Allow-Headers "Content-Type"
 		Access-Control-Max-Age "86400"
-		Vary "Accept-Encoding, Origin"
+		# NOT "Accept-Encoding, Origin": Cloudflare declines to cache any
+		# response whose Vary lists anything beyond Accept-Encoding, which
+		# would silently defeat the /api/* cache rule. Nothing here varies
+		# by origin anyway - Access-Control-Allow-Origin is a static "*".
+		Vary "Accept-Encoding"
 		-Content-Security-Policy
 		-X-Frame-Options
 	}
