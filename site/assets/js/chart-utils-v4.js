@@ -9,7 +9,7 @@
 /* exported calculateArrowRotation, degreesToCardinal,
    getDirectionalArrow, createWindDirectionArrowData, fetchWithTimeout,
    sanitizeSeriesData, registerChartThemeListener, formatCompactTimeLabel,
-   getResponsiveGridConfig, getResponsiveLegendBottom, showChartError,
+   getResponsiveGridConfig, getResponsiveLegendBottom, getLegendRowCount, showChartError,
    getMobileOptimizedTooltipConfig */
 
 /* =============================================================================
@@ -316,37 +316,116 @@ function getChartSideGutters() {
 }
 
 /**
- * Get responsive grid configuration based on screen width
- * @param {boolean} isComparisonChart - Whether this is for the comparison chart (needs more bottom space)
+ * How many rows a horizontal legend wraps onto.
+ *
+ * ECharts lays a bottom legend out left to right and wraps when it runs out of
+ * chart width, then anchors the whole block by its BOTTOM edge — so every
+ * extra row grows upward, into the x-axis labels. Nothing else in an option
+ * set reserves space for that, which is how a third legend entry starts
+ * writing over the labels on a phone.
+ *
+ * Measuring the text the way ECharts does (symbol + gap + label at the legend
+ * font) is enough to know the row count; the grid can then be told to end
+ * above the legend instead of behind it.
+ *
+ * @param {string[]} labels - Legend entries, in order
+ * @param {number} chartWidth - Rendered chart width in px
+ * @returns {number} Row count, at least 1
  */
-function getResponsiveGridConfig(isComparisonChart = false) {
+function getLegendRowCount(labels, chartWidth) {
+  // ECharts defaults: 25 px symbol, 5 px symbol-to-text gap, 10 px between
+  // entries, 12 px legend text.
+  const SYMBOL = 30;
+  const ITEM_GAP = 10;
+
+  if (!chartWidth || !labels || labels.length === 0) return 1;
+
+  const canvas =
+    getLegendRowCount._canvas || (getLegendRowCount._canvas = document.createElement("canvas"));
+  const ctx = canvas.getContext("2d");
+  ctx.font = "12px sans-serif";
+
+  let rows = 1;
+  let used = 0;
+  for (const text of labels) {
+    const width = SYMBOL + ctx.measureText(text).width;
+    if (used > 0 && used + ITEM_GAP + width > chartWidth) {
+      rows += 1;
+      used = width;
+    } else {
+      used += (used > 0 ? ITEM_GAP : 0) + width;
+    }
+  }
+  return rows;
+}
+
+/**
+ * Get responsive grid configuration based on screen width
+ *
+ * Pass `legendData` and the rendered `size` and the bottom band is measured
+ * rather than guessed: it ends above however many rows the legend wraps onto,
+ * so the legend always sits BELOW the x-axis labels instead of over them. The
+ * percentage bands below are the floor — this only ever widens them. Callers
+ * that omit those arguments keep the old single-row behaviour.
+ *
+ * @param {boolean} isComparisonChart - Whether this is for the comparison chart (needs more bottom space)
+ * @param {string[]} [legendData] - Legend entries, if the chart has a bottom legend
+ * @param {{width: number, height: number}} [size] - Rendered chart size in px
+ */
+function getResponsiveGridConfig(isComparisonChart = false, legendData = null, size = null) {
   const width = window.innerWidth;
   const { left, right } = getChartSideGutters();
 
   if (width < 600) {
-    return {
+    return withLegendRoom({
       left,
       right,
       top: "15%",
       bottom: isComparisonChart ? "28%" : "22%",
       containLabel: true,
-    };
+    });
   } else if (width < 1000) {
-    return {
+    return withLegendRoom({
       left,
       right,
       top: "12%",
       bottom: isComparisonChart ? "20%" : "16%",
       containLabel: true,
-    };
+    });
   } else {
-    return {
+    return withLegendRoom({
       left,
       right,
       top: "10%",
       bottom: isComparisonChart ? "16%" : "10%",
       containLabel: true,
-    };
+    });
+  }
+
+  /**
+   * Widen `bottom` to clear the legend, in px, when the caller told us enough
+   * to work it out.
+   *
+   * @param {Object} grid
+   * @returns {Object} The same grid, with a bottom that clears the legend
+   */
+  function withLegendRoom(grid) {
+    if (!legendData || !size?.height) return grid;
+
+    // A legend row is 14 px of symbol on 12 px text, so 22 px holds one with
+    // its line spacing. 8 px of clearance is enough to clear the labels'
+    // descenders — any more and the legend drifts away from the chart it
+    // belongs to, which on a 360 px-tall canvas is height the plot wants back.
+    const ROW_PX = 22;
+    const CLEARANCE_PX = 8;
+
+    const legendBottomPx = (parseFloat(getResponsiveLegendBottom()) / 100) * size.height;
+    const rows = getLegendRowCount(legendData, size.width);
+    const needed = Math.round(legendBottomPx + rows * ROW_PX + CLEARANCE_PX);
+
+    const current =
+      typeof grid.bottom === "string" ? (parseFloat(grid.bottom) / 100) * size.height : grid.bottom;
+    return { ...grid, bottom: Math.max(Math.round(current), needed) };
   }
 }
 

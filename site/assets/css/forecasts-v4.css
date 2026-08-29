@@ -381,6 +381,18 @@ header {
   height: 360px;
 }
 
+/* The verification panel is read as a shape — how far the dashed line sits
+   from the solid one — and on a phone a three-entry legend and rotated time
+   labels take the same fixed band out of a 360 px canvas that they take out
+   of a desktop one, leaving under 190 px of plot. The forecast charts above
+   are scrolled past on the way down; this is the one worth the extra height. */
+@media (max-width: 600px) {
+  #wave-verification-chart,
+  #wind-verification-chart {
+    height: 420px;
+  }
+}
+
 /* The verification panel is a distinct claim from the forecast above it — a rule and
    a heading keep a reader from mistaking the dashed model line for more
    forecast. */

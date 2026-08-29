@@ -317,6 +317,7 @@ function renderChart(rows) {
   const axisMax = heightAxisMax(rows);
   const periodMax = periodAxisMax(rows);
   const arrows = createDirectionArrows(rows, axisMax, colors);
+  const legendData = ["Significant wave height", "Peak period", "Wave direction"];
 
   waveChart.setOption(
     {
@@ -324,9 +325,12 @@ function renderChart(rows) {
       textStyle: { color: colors.text },
       // Grid, legend and tooltip all come from the shared responsive helpers,
       // so this chart breaks at the same widths as the buoy wave charts.
-      grid: getResponsiveGridConfig(false),
+      grid: getResponsiveGridConfig(false, legendData, {
+        width: el.clientWidth,
+        height: el.clientHeight,
+      }),
       legend: {
-        data: ["Significant wave height", "Peak period", "Wave direction"],
+        data: legendData,
         bottom: getResponsiveLegendBottom(),
         textStyle: { color: colors.mutedText },
       },
@@ -370,7 +374,10 @@ function renderChart(rows) {
           position: "left",
           min: 0,
           max: axisMax,
-          nameTextStyle: { color: colors.series.primary },
+          // Left-aligned for the same reason as the verification charts: an
+          // `end`-located name is centred on the axis, and the left gutter is
+          // too narrow to hold half of it.
+          nameTextStyle: { color: colors.series.primary, align: "left" },
           axisLine: { lineStyle: { color: colors.series.primary } },
           axisLabel: { color: colors.mutedText },
           splitLine: { lineStyle: { color: colors.gridLine } },
@@ -381,7 +388,9 @@ function renderChart(rows) {
           position: "right",
           min: 0,
           max: periodMax,
-          nameTextStyle: { color: colors.series.secondary },
+          // And right-aligned on the right-hand axis, where centring pushed
+          // "Period (s)" off the other edge.
+          nameTextStyle: { color: colors.series.secondary, align: "right" },
           axisLine: { lineStyle: { color: colors.series.secondary } },
           axisLabel: { color: colors.mutedText },
           splitLine: { show: false },
@@ -470,14 +479,18 @@ function renderWindChart(rows) {
 
   const axisMax = windAxisMax(rows);
   const arrows = createDirectionArrows(rows, axisMax, colors, "windDirection");
+  const legendData = ["Wind speed", "Gust", "Wind direction"];
 
   windChart.setOption(
     {
       backgroundColor: "transparent",
       textStyle: { color: colors.text },
-      grid: getResponsiveGridConfig(false),
+      grid: getResponsiveGridConfig(false, legendData, {
+        width: el.clientWidth,
+        height: el.clientHeight,
+      }),
       legend: {
-        data: ["Wind speed", "Gust", "Wind direction"],
+        data: legendData,
         bottom: getResponsiveLegendBottom(),
         textStyle: { color: colors.mutedText },
       },
@@ -512,7 +525,7 @@ function renderWindChart(rows) {
         name: "Speed (kt)",
         min: 0,
         max: axisMax,
-        nameTextStyle: { color: colors.series.secondary },
+        nameTextStyle: { color: colors.series.secondary, align: "left" },
         axisLine: { lineStyle: { color: colors.series.secondary } },
         axisLabel: { color: colors.mutedText },
         splitLine: { lineStyle: { color: colors.gridLine } },
@@ -1018,7 +1031,7 @@ function nearestPoint(points, timestamp, toleranceMs) {
  * @param {Object} config
  * @returns {Object} An ECharts option object
  */
-function verificationOption({ label, unit, series, decimals, axisMax, directions }) {
+function verificationOption({ label, unit, series, decimals, axisMax, directions, size }) {
   const colors = getChartThemeColors();
   // Sentence case in the legend, title case on the axis: "Observed Wind speed"
   // reads as a proper noun.
@@ -1039,14 +1052,16 @@ function verificationOption({ label, unit, series, decimals, axisMax, directions
       )
     : [];
 
+  const legendData = arrows.length
+    ? [observedName, forecastName, directionName]
+    : [observedName, forecastName];
+
   return {
     backgroundColor: "transparent",
     textStyle: { color: colors.text },
-    grid: getResponsiveGridConfig(false),
+    grid: getResponsiveGridConfig(false, legendData, size),
     legend: {
-      data: arrows.length
-        ? [observedName, forecastName, directionName]
-        : [observedName, forecastName],
+      data: legendData,
       bottom: getResponsiveLegendBottom(),
       textStyle: { color: colors.mutedText },
     },
@@ -1211,6 +1226,7 @@ function renderVerificationMode() {
         decimals: 1,
         // 5 kt steps: the granularity anyone actually thinks in on the water.
         axisMax: verificationAxisMax(series, MIN_WIND_AXIS_MAX, 5),
+        size: { width: el.clientWidth, height: el.clientHeight },
       }),
       { notMerge: true },
     );
@@ -1234,6 +1250,7 @@ function renderVerificationMode() {
       // 0.5 m steps, matching how the forward wave chart scales.
       axisMax: verificationAxisMax(series, MIN_HEIGHT_AXIS_MAX, 0.5),
       directions: verificationSeries("wave_direction").observed,
+      size: { width: el.clientWidth, height: el.clientHeight },
     }),
     { notMerge: true },
   );
