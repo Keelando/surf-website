@@ -114,6 +114,25 @@ verification, and a 30-minute cache on a 10-minute feed for observed surge.
 and enumerates `/storm-surge` and `/storm-surge/verification` instead of using
 `/storm-surge/*`. `tests/test_public_api.py::TestCacheTiers` pins this.
 
+### Conditional requests, and not churning mtime
+
+`file_server` derives `ETag` from the file's mtime and size, so a rewrite that
+changes nothing but the timestamp still invalidates every consumer's cached
+copy. That matters because several exports run more often than their upstream
+data arrives: `water_level_export.py` runs every 10 minutes against tide
+observations that land every 15 (hourly at Crescent Beach), so roughly one run
+in three used to rewrite `observed_surge.json` and
+`combined-water-level.json` with identical data.
+
+Both now go through `_write_json_if_changed`, which compares the payload
+against what is on disk — ignoring `generated_utc`, which changes every run by
+definition — and skips the write entirely when only the timestamp would move.
+The write is atomic (tmp + `replace`) when it does happen.
+
+**If you add an export that feeds an endpoint, use the same pattern.** An
+unconditional rewrite silently defeats `If-None-Match`, and the cost lands on
+every consumer rather than on us.
+
 ## Cloudflare: the cache only works if a Cache Rule exists
 
 Cloudflare's default cache-eligible set is **extension-based and does not

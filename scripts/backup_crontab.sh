@@ -45,21 +45,38 @@ fi
 # Anything referencing a path outside the repo must be listed below, with a
 # reason. If this fires on a job you just added, move it to /etc/cron.d instead
 # of widening the allowlist.
+#
+# This scans /home paths of ANY extension, on ALL lines including comments.
+# Both widenings are deliberate, and both were found the hard way on
+# 2026-08-29: a minecraft bot section had been sitting in the crontab where
+# only one of its three jobs (a .sh) tripped the old `.py|.sh` check -- a
+# `/usr/bin/node .../farm-digest.js` job and a bare `cd /home/keelando/...`
+# were both invisible to it. Commented-out jobs from the same project had
+# already been published, because the old check skipped comment lines
+# entirely. A comment naming a foreign path leaks it just as effectively as
+# the job does.
+#
+# Only /home is scanned, not every absolute path: system binaries
+# (/usr/bin/flock, /bin/bash) are outside the repo but are not anyone's
+# project, and flagging them would make this unusable.
 FOREIGN_ALLOWED=(
-  /home/keelando/backup_surf.sh        # restic; logs into envcan_wave/logs/
-  /home/keelando/psi_sample.sh         # host telemetry, tracked in ~/system-issues
-  /home/keelando/sys_stats_mqtt.py     # host telemetry, tracked in ~/system-issues
+  /home/keelando/backup_surf.sh          # restic; logs into envcan_wave/logs/
+  /home/keelando/psi_sample.sh           # host telemetry, tracked in ~/system-issues
+  /home/keelando/sys_stats_mqtt.py       # host telemetry, tracked in ~/system-issues
+  /home/keelando/.sys-venv/bin/python    # interpreter for sys_stats_mqtt.py above
+  /home/keelando/.config/GeoIP.conf      # geoipupdate config; feeds site analytics
 )
 
 foreign=()
 while IFS= read -r path; do
-  [[ "$path" == "$REPO_ROOT"/* ]] && continue
+  # Bare REPO_ROOT (e.g. a `cd` into it) as well as anything beneath it.
+  [[ "$path" == "$REPO_ROOT" || "$path" == "$REPO_ROOT"/* ]] && continue
   allowed=0
   for ok in "${FOREIGN_ALLOWED[@]}"; do
     [[ "$path" == "$ok" ]] && { allowed=1; break; }
   done
   (( allowed )) || foreign+=("$path")
-done < <(grep -vE '^\s*#|^\s*$' "$TMP" | grep -oE '/\S+\.(py|sh)' | sort -u)
+done < <(grep -oE '/home/[^ "'"'"';|)&>]+' "$TMP" | sed 's/[.,;:]$//' | sort -u)
 
 if (( ${#foreign[@]} > 0 )); then
   echo "ERROR: live crontab runs ${#foreign[@]} script(s) from outside this repo:" >&2

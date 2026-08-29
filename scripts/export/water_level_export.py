@@ -169,9 +169,7 @@ def build_forecast_for_station(conn, station, surge_forecasts, start_ts, end_ts)
                 "astronomical_tide_m": round(tide_level, 3),
                 "storm_surge_m": round(surge_value, 3),
                 "total_water_level_m": round(total, 3),
-                "description": (
-                    f"Peak occurs at {local_dt.strftime('%Y-%m-%d %I:%M %p PST')}"
-                ),
+                "description": (f"Peak occurs at {local_dt.strftime('%Y-%m-%d %I:%M %p PST')}"),
             }
 
         if _is_downsample_tick(dt):
@@ -187,6 +185,56 @@ def build_forecast_for_station(conn, station, surge_forecasts, start_ts, end_ts)
     return {"forecast": combined, "peak": peak_entry}
 
 
+def _without_timestamp(doc):
+    """A copy of `doc` with its generation timestamp removed.
+
+    Handles both shapes this module writes: a top-level `generated_utc`
+    (observed surge) and a nested `_meta.generated_utc` (combined levels).
+    """
+    if not isinstance(doc, dict):
+        return doc
+    trimmed = {k: v for k, v in doc.items() if k != "generated_utc"}
+    meta = trimmed.get("_meta")
+    if isinstance(meta, dict):
+        trimmed["_meta"] = {k: v for k, v in meta.items() if k != "generated_utc"}
+    return trimmed
+
+
+def _write_json_if_changed(payload, output_path, **dump_kwargs):
+    """Write `payload` atomically, but leave the file untouched if only the
+    timestamp would change.
+
+    This export runs every 10 minutes, while the tide observations behind it
+    arrive every 15 (hourly at Crescent Beach). Roughly one run in three
+    therefore has nothing new to say. Rewriting anyway bumps the file's mtime,
+    Caddy derives its ETag from mtime and size, and a changed ETag makes every
+    conditional request from an API consumer re-download bytes it already has
+    -- so the /api/v1 304s are defeated by a file that did not actually move.
+    See docs/PUBLIC_API.md.
+
+    `generated_utc` is excluded from the comparison because it changes on
+    every run by definition; what matters is whether the DATA moved.
+
+    Returns True if the file was written, False if it was already current.
+    """
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps(payload, **dump_kwargs)
+
+    if output_path.exists():
+        try:
+            existing = json.loads(output_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            existing = None  # unreadable or corrupt: rewrite it
+        if existing is not None and _without_timestamp(existing) == _without_timestamp(payload):
+            logger.info(f"{output_path.name} unchanged; leaving mtime and ETag alone")
+            return False
+
+    tmp = output_path.with_suffix(output_path.suffix + ".tmp")
+    tmp.write_text(serialized)
+    tmp.replace(output_path)
+    return True
+
+
 def write_combined(stations_data, today_local, forecast_end_local, output_path):
     output = {
         "_meta": {
@@ -200,17 +248,13 @@ def write_combined(stations_data, today_local, forecast_end_local, output_path):
             "units": "meters",
             "data_sources": {
                 "astronomical_tide": "DFO IWLS (Integrated Water Level System)",
-                "storm_surge": (
-                    "Environment Canada GDSPS (Global Deterministic Storm Surge Prediction System)"
-                ),
+                "storm_surge": ("Environment Canada GDSPS (Global Deterministic Storm Surge Prediction System)"),
             },
             "important_notes": IMPORTANT_NOTES,
         },
         "stations": stations_data,
     }
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
-        json.dump(output, f, indent=2, sort_keys=True)
+    _write_json_if_changed(output, output_path, indent=2, sort_keys=True)
 
 
 def update_latest_with_surge(surge_dir, latest_path):
@@ -263,21 +307,15 @@ def update_latest_with_surge(surge_dir, latest_path):
         if "prediction_now" in station_data:
             tide_value = station_data["prediction_now"]["value"]
             station_data["prediction_now"]["surge"] = round(closest_surge, 3)
-            station_data["prediction_now"]["total_water_level"] = round(
-                tide_value + closest_surge, 3
-            )
+            station_data["prediction_now"]["total_water_level"] = round(tide_value + closest_surge, 3)
         if "observation" in station_data:
             tide_value = station_data["observation"]["value"]
             station_data["observation"]["surge"] = round(closest_surge, 3)
-            station_data["observation"]["total_water_level"] = round(
-                tide_value + closest_surge, 3
-            )
+            station_data["observation"]["total_water_level"] = round(tide_value + closest_surge, 3)
         updated += 1
 
     if updated > 0:
-        tide_latest.setdefault("_meta", {})["updated_with_surge"] = (
-            datetime.now(timezone.utc).isoformat()
-        )
+        tide_latest.setdefault("_meta", {})["updated_with_surge"] = datetime.now(timezone.utc).isoformat()
         tmp = latest_path.with_suffix(latest_path.suffix + ".tmp")
         tmp.write_text(json.dumps(tide_latest, indent=2, sort_keys=True))
         tmp.replace(latest_path)
@@ -402,9 +440,7 @@ def write_observed(stations_data, output_path):
         "calculation": "observed_surge = tide_observation - tide_prediction",
         "stations": stations_data,
     }
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
-        json.dump(output, f, indent=2)
+    _write_json_if_changed(output, output_path, indent=2)
 
 
 # ---------- Orchestration ----------
@@ -442,9 +478,7 @@ def run(tide_db_path, surge_dir, combined_out, observed_out, latest_path):
 
             if station.surge_source is not None and surge_forecasts:
                 logger.info(f"forecast: {station.tide_key} + {station.surge_source}")
-                fc = build_forecast_for_station(
-                    conn, station, surge_forecasts, forecast_start_ts, forecast_end_ts
-                )
+                fc = build_forecast_for_station(conn, station, surge_forecasts, forecast_start_ts, forecast_end_ts)
                 if fc and fc["forecast"]:
                     combined_data[station.tide_key] = {
                         "tide_station_id": station.tide_key,
@@ -454,18 +488,12 @@ def run(tide_db_path, surge_dir, combined_out, observed_out, latest_path):
                     }
                     logger.info(
                         f"  {len(fc['forecast'])} combined predictions"
-                        + (
-                            f"; peak {fc['peak']['total_water_level_m']}m"
-                            if fc["peak"]
-                            else ""
-                        )
+                        + (f"; peak {fc['peak']['total_water_level_m']}m" if fc["peak"] else "")
                     )
 
             if station.observed_key is not None:
                 logger.info(f"observed: {station.tide_key} → {station.observed_key}")
-                ob = build_observed_for_station(
-                    conn, station, registry_entry, observed_start_ts
-                )
+                ob = build_observed_for_station(conn, station, registry_entry, observed_start_ts)
                 if ob:
                     observed_data[station.observed_key] = ob
                     logger.info(f"  {ob['count']} observed surge points")
@@ -478,9 +506,7 @@ def run(tide_db_path, surge_dir, combined_out, observed_out, latest_path):
     if surge_forecasts and latest_path is not None:
         update_latest_with_surge(surge_dir, latest_path)
 
-    logger.info(
-        f"Done. forecast_stations={len(combined_data)} observed_stations={len(observed_data)}"
-    )
+    logger.info(f"Done. forecast_stations={len(combined_data)} observed_stations={len(observed_data)}")
     return 0
 
 

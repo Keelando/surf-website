@@ -1,7 +1,7 @@
 # Cron Churn — Investigation Note & Top Suspects
 
 **Date:** 2026-06-28
-**Context:** Host (`surfserver`) temperature investigation traced steady background load to this
+**Context:** A host temperature investigation traced steady background load to this
 project's cron setup. Captured here so it can be tackled in the surf-website repo.
 
 ## TL;DR

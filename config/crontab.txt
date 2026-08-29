@@ -199,13 +199,6 @@
 # Purge logs older than 7 days (daily at midnight)
 19 0 * * * find /home/keelando/envcan_wave/logs -name "*.log" -type f -mtime +7 -delete
 
-# Git auto-backup - minecraft bot (07:05 UTC / 11:05pm PT)
-#5 7 * * * cd /home/keelando/minecraft && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit --no-verify -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/minecraft/git_backup.log 2>&1
-
-
-# Generate minecraft codebase digests (daily at 07:00 UTC / 11pm PT)
-#0 7 * * * /home/keelando/minecraft/digest_super.sh >> /home/keelando/minecraft/digest.log 2>&1
-
 # ==================== GEOIP DATABASE ====================
 # MaxMind releases GeoLite2 every Tuesday; update Wed + Sat at 03:30 UTC
 # Feeds IP→location lookups for site/scripts/generate_analytics.sh
