@@ -241,12 +241,12 @@ ps aux | grep sr3
 **File:** `~/.config/buoy_influx_1.env`
 
 ```bash
-INFLUX_HOST=192.168.1.98
+INFLUX_HOST=your_influx_host
 INFLUX_PORT=8086
 INFLUX_USER=your_user
 INFLUX_PASS=your_password
 INFLUX_DB=buoy_data
-MQTT_HOST=192.168.1.98
+MQTT_HOST=your_mqtt_host
 MQTT_PORT=1883
 MQTT_USER=your_user
 MQTT_PASS=your_password
@@ -854,21 +854,43 @@ If rebuilding system from scratch:
 
 ## Firewall Configuration
 
-If using UFW firewall:
+**Do not blanket-open the Caddy port.** The instructions here used to say
+`ufw allow 8090/tcp`, which opens the origin to anything that can route to
+this host. Whether that is needed depends entirely on how traffic reaches
+the site, and on this deployment it is not: the site is fronted by a CDN
+whose caching and rate limiting are only worth anything if callers cannot
+skip them by talking to the origin directly.
+
+Open a port only when something actually has to connect to it inbound. Work
+out what that is before enabling a firewall, because a default-deny policy
+will silently break anything you have not enumerated.
 
 ```bash
-# Allow web traffic on port 8090
-sudo ufw allow 8090/tcp
+# Inspect before changing anything: what is listening, and on which address?
+# A service bound to 127.0.0.1 needs no firewall rule at all.
+ss -tlnp | awk 'NR==1 || /0\.0\.0\.0|\[::\]/'
 
-# Allow SSH (if not already allowed)
-sudo ufw allow 22/tcp
+# Keep your own access first - a default-deny policy applies to SSH too.
+# Scope it to the network you administer from rather than the whole internet.
+sudo ufw allow from <your-admin-subnet> to any port 22 proto tcp
 
-# Enable firewall
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
 sudo ufw enable
-
-# Check status
-sudo ufw status
+sudo ufw status verbose
 ```
+
+Two things ufw will not do, worth knowing before relying on it:
+
+- **Containers bypass it.** Docker publishes ports via its own `nat` and
+  `FORWARD` rules, not the `INPUT` chain ufw filters, so a `ufw deny` on a
+  published container port has no effect. Restricting those means rules in
+  the `DOCKER-USER` chain instead.
+- **Outbound-initiated tunnels are unaffected.** Any agent that dials out and
+  proxies traffic back is not inbound traffic and is not filtered here.
+
+Rollback is `sudo ufw disable`. Run the first enable from a local console
+where a mistake in the SSH rule cannot lock you out.
 
 ---
 
