@@ -131,13 +131,13 @@
     },
     {
       "path": "/storm-surge",
-      "description": "Storm surge forecast time series for all surge stations.",
+      "description": "Storm surge FORECAST time series for all surge stations, from the Environment Canada surge model. Model runs twice daily.",
       "refresh": "2x daily",
       "cache_seconds": 1800
     },
     {
       "path": "/storm-surge/observed",
-      "description": "Observed storm surge (observed water level minus predicted tide).",
+      "description": "OBSERVED storm surge: a rolling 10-day history of observed water level minus predicted tide, per station. This is measurement, not forecast - it advances with each new tide observation (15 min at DFO stations, 60 min at Crescent Beach), independently of the twice-daily forecast run.",
       "refresh": "every 10 minutes",
       "cache_seconds": 300
     },
