@@ -1018,19 +1018,35 @@ function nearestPoint(points, timestamp, toleranceMs) {
  * @param {Object} config
  * @returns {Object} An ECharts option object
  */
-function verificationOption({ label, unit, series, decimals, axisMax }) {
+function verificationOption({ label, unit, series, decimals, axisMax, directions }) {
   const colors = getChartThemeColors();
   // Sentence case in the legend, title case on the axis: "Observed Wind speed"
   // reads as a proper noun.
   const observedName = `Observed ${label.toLowerCase()}`;
   const forecastName = `Forecast (~24 h ahead)`;
+  const directionName = "Observed direction";
+
+  // One direction, not two. The forecast carries a direction as well, but two
+  // rows of arrows over two lines is more than the panel can read; the
+  // observed one is the half worth being able to look back at ("yesterday's
+  // swell was westerly"), so that is the one drawn.
+  const arrows = (directions || []).length
+    ? createDirectionArrows(
+        directions.map((point) => ({ time: new Date(point[0]), direction: point[1] })),
+        axisMax,
+        colors,
+        "direction",
+      )
+    : [];
 
   return {
     backgroundColor: "transparent",
     textStyle: { color: colors.text },
     grid: getResponsiveGridConfig(false),
     legend: {
-      data: [observedName, forecastName],
+      data: arrows.length
+        ? [observedName, forecastName, directionName]
+        : [observedName, forecastName],
       bottom: getResponsiveLegendBottom(),
       textStyle: { color: colors.mutedText },
     },
@@ -1053,9 +1069,16 @@ function verificationOption({ label, unit, series, decimals, axisMax }) {
         }
         const lead = forecast?.leadHours ? `<br/>Lead time: ${forecast.leadHours} h` : "";
 
+        // The arrows are thinned to one every 3-6 h; the tooltip reads the
+        // full direction series, so hovering between two arrows still answers.
+        const heading = directions?.length ? nearestPoint(directions, stamp, 30 * 60 * 1000) : null;
+        const direction = heading
+          ? `<br/>Observed direction: ${formatDirection(heading.value)}`
+          : "";
+
         return `<strong>${formatStepLabel(new Date(stamp))}</strong><br/>
                 Observed: ${show(observed)}<br/>
-                Forecast: ${show(forecast)}${error}${lead}`;
+                Forecast: ${show(forecast)}${error}${lead}${direction}`;
       },
     },
     xAxis: {
@@ -1077,7 +1100,11 @@ function verificationOption({ label, unit, series, decimals, axisMax }) {
       name: `${label} (${unit})`,
       min: 0,
       max: axisMax,
-      nameTextStyle: { color: colors.mutedText },
+      // Left-aligned against the axis line. ECharts centres an `end`-located
+      // axis name on the axis, and the grid's left gutter is only 4-8 px, so
+      // half of a name this long ("Wave height (m)", "Wind speed (kt)") lands
+      // outside the canvas and gets clipped.
+      nameTextStyle: { color: colors.mutedText, align: "left" },
       axisLine: { lineStyle: { color: colors.axisLine } },
       axisLabel: { color: colors.mutedText },
       splitLine: { lineStyle: { color: colors.gridLine } },
@@ -1104,6 +1131,26 @@ function verificationOption({ label, unit, series, decimals, axisMax }) {
         lineStyle: { width: 2, color: colors.series.secondary, type: "dashed" },
         itemStyle: { color: colors.series.secondary },
       },
+      ...(arrows.length
+        ? [
+            {
+              name: directionName,
+              type: "scatter",
+              data: arrows,
+              symbol: DIRECTION_ARROW_PATH,
+              symbolSize: 14,
+              symbolRotate: (value, params) => arrows[params.dataIndex]?.symbolRotate ?? 0,
+              // Coloured with the observed line, not the forecast one, so the
+              // arrows read as belonging to the measured half of the chart.
+              itemStyle: { color: colors.series.primary, opacity: 0.75 },
+              // The axis tooltip already reports the direction; letting the
+              // arrows answer too would double the line up.
+              tooltip: { show: false },
+              silent: true,
+              z: 2,
+            },
+          ]
+        : []),
     ],
   };
 }
@@ -1186,6 +1233,7 @@ function renderVerificationMode() {
       decimals: 2,
       // 0.5 m steps, matching how the forward wave chart scales.
       axisMax: verificationAxisMax(series, MIN_HEIGHT_AXIS_MAX, 0.5),
+      directions: verificationSeries("wave_direction").observed,
     }),
     { notMerge: true },
   );

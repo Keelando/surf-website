@@ -13,11 +13,13 @@ Targets:
 - storage_metrics.load_webcam_archives — roster from webcams.json
 - storage_metrics.get_webcam_metrics   — trimmed dict + timeout-bounded reads
 - health_check._load_webcam_config — skips `_`-prefixed meta keys
+- health_check._webcam_in_scope        — daylight-only cams leave the count after dark
+- health_check._reporting_lightstations — `reporting: false` entries leave the count
 """
 
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -291,3 +293,81 @@ class TestHealthCheckLoader:
         assert cams, "expected at least one camera"
         assert all(not cam_id.startswith("_") for cam_id in cams)
         assert all("name" in meta for meta in cams.values())
+
+
+# ── health_check daylight scoping ────────────────────────────
+
+
+class TestWebcamScope:
+    """A daylight-only cam should leave the health fraction after dark.
+
+    Mud Bay and its siblings are switched off overnight on purpose, so counting
+    them as stations that failed to report publishes a nightly dip that means
+    nothing. Out of scope has to mean out of the denominator too.
+    """
+
+    # Mud Bay HD, 15-minute cadence, 30-minute capture margin.
+    CAM = {
+        "name": "Mud Bay HD (SE)",
+        "interval": 15,
+        "daylight_only": True,
+        "disabled": False,
+        "lat": 49.0714,
+        "lon": -122.9554,
+        "daylight_margin_minutes": 30,
+    }
+
+    def _at(self, iso):
+        return datetime.fromisoformat(iso).replace(tzinfo=timezone.utc)
+
+    def test_counted_in_broad_daylight(self):
+        # 13:00 PDT on a late-August day.
+        assert health_check._webcam_in_scope(self.CAM, self._at("2026-08-29T20:00:00"))
+
+    def test_not_counted_at_night(self):
+        # 22:00 PDT, hours past sunset + margin.
+        assert not health_check._webcam_in_scope(self.CAM, self._at("2026-08-30T05:00:00"))
+
+    def test_not_counted_immediately_after_dawn(self):
+        # 06:30 PDT: light, but the newest frame is still last night's. The cam
+        # rejoins the count only once it has had its warning window to catch up.
+        assert not health_check._webcam_in_scope(self.CAM, self._at("2026-08-29T13:30:00"))
+
+    def test_247_cam_always_counted(self):
+        cam = dict(self.CAM, daylight_only=False)
+        assert health_check._webcam_in_scope(cam, self._at("2026-08-30T05:00:00"))
+
+    def test_disabled_cam_never_counted(self):
+        cam = dict(self.CAM, disabled=True)
+        assert not health_check._webcam_in_scope(cam, self._at("2026-08-29T20:00:00"))
+
+    def test_daylight_cam_without_position_still_judged(self):
+        # No lat/lon to reason about: keep checking it rather than silently
+        # dropping a camera out of the count.
+        cam = dict(self.CAM, lat=None, lon=None)
+        assert health_check._webcam_in_scope(cam, self._at("2026-08-30T05:00:00"))
+
+
+# ── health_check lightstation scoping ────────────────────────
+
+
+class TestReportingLightstations:
+    """Registry entries flagged `"reporting": false` are out of the fraction.
+
+    Chatham Point, Egg Island and Green Island are real lights that have never
+    appeared in the bulletins we ingest. They stay on the map; they must not
+    read as three stations permanently down.
+    """
+
+    def test_flagged_stations_excluded(self):
+        everything = health_check.get_all_lightstations()
+        reporting = health_check._reporting_lightstations()
+
+        flagged = [k for k, v in everything.items() if v.get("reporting") is False]
+        assert flagged, "expected at least one non-reporting lightstation in the registry"
+        assert not set(flagged) & set(reporting)
+        assert len(reporting) == len(everything) - len(flagged)
+
+    def test_unflagged_stations_kept(self):
+        reporting = health_check._reporting_lightstations()
+        assert all(meta.get("reporting", True) for meta in reporting.values())

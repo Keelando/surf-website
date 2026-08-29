@@ -49,9 +49,10 @@ from lib.config import (
 from lib.config import (
     WIND_DATABASE as WIND_DB,
 )
-from lib.logging_config import setup_logging
 
 # Add lib to path for imports
+from lib.daylight import calculate_sunrise_sunset
+from lib.logging_config import setup_logging
 from lib.stations import get_all_buoys, get_all_lightstations, get_all_tides, get_all_wind
 from lib.windy import WINDY_PUSH_ENABLED, load_windy_credentials, read_station_status
 
@@ -93,6 +94,10 @@ def check_data_freshness() -> Dict:
     log("\n=== Checking Data Freshness ===")
 
     stale_stations = []
+    # Stations deliberately left out of the fraction: a cam that is dark by
+    # design, or a lightstation that has no feed to be late with. Published so
+    # the footer can say why the denominator moved rather than looking flaky.
+    excluded = []
     total_checked = 0
     status = "ok"
 
@@ -118,13 +123,41 @@ def check_data_freshness() -> Dict:
     log("Checking lightstations...")
     lightstation_stale = check_lightstation_freshness()
     stale_stations.extend(lightstation_stale)
-    total_checked += len(get_all_lightstations())
+    reporting_lights = _reporting_lightstations()
+    total_checked += len(reporting_lights)
+    for station_id, metadata in get_all_lightstations().items():
+        if station_id not in reporting_lights:
+            excluded.append(
+                {
+                    "id": station_id,
+                    "name": metadata["name"],
+                    "type": "lightstation",
+                    "reason": "no feed",
+                }
+            )
 
-    # Check webcams
+    # Check webcams. The scope is decided once and drives both halves of the
+    # fraction: a cam that is dark by design is neither stale nor counted.
     log("Checking webcams...")
-    webcam_stale = check_webcam_freshness()
+    now = datetime.now(timezone.utc)
+    all_webcams = _load_webcam_config()
+    webcams = {}
+    for cam_id, cam in all_webcams.items():
+        if _webcam_in_scope(cam, now):
+            webcams[cam_id] = cam
+        elif cam.get("disabled"):
+            log(f"  ⏭️  {cam['name']}: Disabled in cron")
+            excluded.append(
+                {"id": cam_id, "name": cam["name"], "type": "webcam", "reason": "disabled"}
+            )
+        else:
+            log(f"  ⏭️  {cam['name']}: dark, not expected to report right now")
+            excluded.append(
+                {"id": cam_id, "name": cam["name"], "type": "webcam", "reason": "dark"}
+            )
+    webcam_stale = check_webcam_freshness(webcams)
     stale_stations.extend(webcam_stale)
-    total_checked += len(_load_webcam_config())
+    total_checked += len(webcams)
 
     # Determine overall status (ignore 'info' severity for intermittent stations)
     error_stations = [s for s in stale_stations if s["severity"] == "error"]
@@ -140,6 +173,8 @@ def check_data_freshness() -> Dict:
         "total_stations": total_checked,
         "stale_count": len(stale_stations),
         "stale_stations": stale_stations,
+        "excluded_count": len(excluded),
+        "excluded_stations": excluded,
     }
 
 
@@ -377,6 +412,22 @@ def check_tide_freshness() -> List[Dict]:
     return stale
 
 
+def _reporting_lightstations() -> Dict[str, Dict]:
+    """Registry lightstations we actually expect to hear from.
+
+    A handful of entries (Chatham Point, Egg Island, Green Island) are real
+    lightstations that have never once appeared in the FPCN61 or SXCN bulletins
+    we ingest. They stay in the registry — the map still names the light — but
+    `"reporting": false` keeps them out of both halves of the health fraction,
+    so a feed that was never promised cannot read as three stations down.
+    """
+    return {
+        station_id: metadata
+        for station_id, metadata in get_all_lightstations().items()
+        if metadata.get("reporting", True)
+    }
+
+
 def check_lightstation_freshness() -> List[Dict]:
     """Check lightstation data freshness against the station registry."""
     stale = []
@@ -399,8 +450,8 @@ def check_lightstation_freshness() -> List[Dict]:
         db_stations = {row[0]: row[1] for row in cursor.fetchall()}
         conn.close()
 
-        # Check every station in the registry
-        for station_id, metadata in get_all_lightstations().items():
+        # Check every station in the registry we expect to hear from
+        for station_id, metadata in _reporting_lightstations().items():
             station_name = metadata["name"].upper()
 
             last_obs_timestamp = db_stations.get(station_name)
@@ -483,22 +534,76 @@ def _load_webcam_config() -> Dict[str, Dict]:
             "interval": cam.get("interval_minutes", 10),
             "daylight_only": cam.get("check_daylight", False),
             "disabled": cam.get("disabled_in_cron", False),
+            # Position and margin only matter for the daylight-only cams, but
+            # they come from the same keys fetch_webcam.py reads, so the health
+            # check asks the same question the capture did.
+            "lat": cam.get("lat"),
+            "lon": cam.get("lon"),
+            "daylight_margin_minutes": cam.get("daylight_margin_minutes", 30),
         }
     return webcams
 
 
-def check_webcam_freshness() -> List[Dict]:
-    """Check webcam image freshness."""
+def _webcam_thresholds(webcam_meta: Dict) -> tuple:
+    """Warning/error ages in hours for one cam.
+
+    Daylight-only cams get the 24 h error floor: within a single day a missed
+    frame is a gap, not a failure. 24/7 cams are held to their own cadence.
+    """
+    if webcam_meta.get("daylight_only"):
+        return (
+            max(webcam_meta["interval"] / 60 * 2, THRESHOLDS["webcam"]["warning"]),
+            THRESHOLDS["webcam"]["error"],
+        )
+    return (webcam_meta["interval"] / 60 * 2, webcam_meta["interval"] / 60 * 4)
+
+
+def _webcam_in_scope(webcam_meta: Dict, now: datetime) -> bool:
+    """Is this cam expected to have a fresh frame right now?
+
+    A daylight-only cam (Mud Bay, Cox Bay, Ambleside) is dark for half the day
+    by design, so counting it as a station that failed to report overnight
+    publishes a nightly dip in the reporting fraction that means nothing. It
+    leaves the count at dusk and rejoins it once it has been light long enough
+    to have actually taken a frame — the same daylight window, margin included,
+    that fetch_webcam.py uses to decide whether to capture at all.
+
+    Out of scope means out of the denominator too: the footer's fraction is
+    over the stations we expect to hear from, not over the roster.
+    """
+    if webcam_meta.get("disabled"):
+        return False
+    if not webcam_meta.get("daylight_only"):
+        return True
+
+    lat, lon = webcam_meta.get("lat"), webcam_meta.get("lon")
+    if lat is None or lon is None:
+        # No position to reason about: keep judging it rather than silently
+        # dropping a cam from the count.
+        return True
+
+    sunrise, sunset = calculate_sunrise_sunset(lat, lon, now)
+    if sunrise is None or sunset is None:
+        return True
+
+    margin = timedelta(minutes=webcam_meta["daylight_margin_minutes"])
+    first_capture = sunrise - margin
+    last_capture = sunset + margin
+    if not (first_capture <= now <= last_capture):
+        return False
+
+    # Just after dawn the newest frame is still last night's, through no fault
+    # of the cam. Give it its own warning threshold to catch up.
+    warning_hours, _ = _webcam_thresholds(webcam_meta)
+    return (now - first_capture) >= timedelta(hours=warning_hours)
+
+
+def check_webcam_freshness(webcams: Dict[str, Dict]) -> List[Dict]:
+    """Check webcam image freshness for the cams currently in scope."""
     stale = []
     now = datetime.now(timezone.utc)
 
-    webcams = _load_webcam_config()
-
     for webcam_id, webcam_meta in webcams.items():
-        if webcam_meta.get("disabled"):
-            log(f"  ⏭️  {webcam_meta['name']}: Disabled in cron")
-            continue
-
         if not webcam_meta["path"].exists():
             log(f"  ❌ {webcam_meta['name']}: Metadata file not found")
             stale.append(
@@ -536,15 +641,7 @@ def check_webcam_freshness() -> List[Dict]:
             last_update = datetime.fromisoformat(last_update_str.replace("Z", "+00:00"))
             age = (now - last_update).total_seconds() / 3600
 
-            # Daylight-only cams: use relaxed thresholds
-            if webcam_meta.get("daylight_only"):
-                # Warning at 2x interval, error at 24h (full day missed)
-                warning_threshold = max(webcam_meta["interval"] / 60 * 2, THRESHOLDS["webcam"]["warning"])
-                error_threshold = THRESHOLDS["webcam"]["error"]
-            else:
-                # 24/7 cams: use stricter thresholds
-                warning_threshold = webcam_meta["interval"] / 60 * 2  # 2x interval
-                error_threshold = webcam_meta["interval"] / 60 * 4  # 4x interval
+            warning_threshold, error_threshold = _webcam_thresholds(webcam_meta)
 
             if age > error_threshold:
                 severity = "error"

@@ -1,10 +1,22 @@
 # Known Issues
 
-## ⚠️ Lightstation health check blind spot (Apr 11, 2026)
+## ✅ Lightstation health check blind spot (Apr 11, 2026) - RESOLVED (Aug 29, 2026)
 
-`check_lightstation_freshness()` in `scripts/monitoring/health_check.py` only checks stations already in the database. Stations configured in `config/stations.json` but with zero data (e.g. Cape Beale, Estevan Point, Lennard Island, Nootka) are invisible to the health check.
+`check_lightstation_freshness()` used to check only stations already in the
+database, so a configured station with zero data was invisible. It now walks
+the registry, and a station with no rows at all is reported as "No data".
 
-**Fix:** Cross-reference `config/stations.json` lightstations against DB results and flag any configured station with no data at all.
+That surfaced the opposite problem: Chatham Point, Egg Island and Green Island
+have never appeared in the FPCN61 or SXCN bulletins we ingest, so they sat in
+the footer as three stations permanently down. They now carry
+`"reporting": false` in `config/stations.json` — still on the map, out of both
+halves of the health fraction, and listed under `excluded_stations` in
+`site/data/system_health.json` with the reason.
+
+The same accounting applies to the daylight-only webcams (Mud Bay, Cox Bay,
+Ambleside): they are dark by design overnight, so they leave the count at dusk
+and rejoin it once they have been light long enough to take a frame. The
+denominator shrinks with them — see `_webcam_in_scope()`.
 
 ---
 

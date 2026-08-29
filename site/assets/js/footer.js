@@ -72,6 +72,14 @@
       const staleStations = freshness.stale_stations.filter(
         (s) => s.severity === "error" || s.severity === "warning",
       );
+
+      // Stations the backend left out of the count on purpose — a daylight-only
+      // cam after dark, a lightstation with no feed. They are already out of
+      // `total`, so the tooltip only has to explain why it moved.
+      const excluded = freshness.excluded_stations || [];
+      const excludedNote = excluded.length
+        ? "\nNot counted right now:\n" + excluded.map((s) => `${s.name} (${s.reason})`).join("\n")
+        : "";
       const reporting = total - staleStations.length;
       const pct = Math.round((reporting / total) * 100);
 
@@ -95,7 +103,8 @@
           `System Status: ${status.toUpperCase()}\n` +
           (status === "ok"
             ? "All stations reporting normally"
-            : "All stations reporting; a system check is failing");
+            : "All stations reporting; a system check is failing") +
+          excludedNote;
       } else {
         // Build compact down list with shorthand names
         const downNames = staleStations.map((s) => shortNames[s.name] || s.name.split(" ")[0]);
@@ -118,7 +127,8 @@
                 : "no data";
               return `${s.name} (${s.type}, ${age})`;
             })
-            .join("\n");
+            .join("\n") +
+          excludedNote;
       }
     })
     .catch((err) => {

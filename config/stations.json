@@ -1217,7 +1217,9 @@
       "type": "lightstation",
       "update_frequency_hours": 3,
       "established": 1957,
-      "notes": "Critical for Inside Passage navigation, marks confluence of three channels"
+      "notes": "Critical for Inside Passage navigation, marks confluence of three channels",
+      "reporting": false,
+      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest — kept on the map as a station that exists, excluded from the health-check count."
     },
     "DRYAD_POINT": {
       "id": "DRYAD_POINT",
@@ -1244,7 +1246,9 @@
       "type": "lightstation",
       "update_frequency_hours": 3,
       "established": 1898,
-      "notes": "Exposed to full force of Pacific Ocean, one of oldest lighthouses on BC's central coast"
+      "notes": "Exposed to full force of Pacific Ocean, one of oldest lighthouses on BC's central coast",
+      "reporting": false,
+      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest — kept on the map as a station that exists, excluded from the health-check count."
     },
     "GREEN_ISLAND": {
       "id": "GREEN_ISLAND",
@@ -1257,7 +1261,9 @@
       "type": "lightstation",
       "update_frequency_hours": 3,
       "established": 1906,
-      "notes": "British Columbia's northernmost lighthouse, marks entrance to Canadian waters from north, Heritage status 2015"
+      "notes": "British Columbia's northernmost lighthouse, marks entrance to Canadian waters from north, Heritage status 2015",
+      "reporting": false,
+      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest — kept on the map as a station that exists, excluded from the health-check count."
     },
     "IVORY_ISLAND": {
       "id": "IVORY_ISLAND",
