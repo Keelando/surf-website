@@ -48,13 +48,12 @@ fi
 #
 # This scans /home paths of ANY extension, on ALL lines including comments.
 # Both widenings are deliberate, and both were found the hard way on
-# 2026-08-29: a minecraft bot section had been sitting in the crontab where
-# only one of its three jobs (a .sh) tripped the old `.py|.sh` check -- a
-# `/usr/bin/node .../farm-digest.js` job and a bare `cd /home/keelando/...`
-# were both invisible to it. Commented-out jobs from the same project had
-# already been published, because the old check skipped comment lines
-# entirely. A comment naming a foreign path leaks it just as effectively as
-# the job does.
+# 2026-08-29: another project's section had been sitting in the crontab where
+# only one of its three jobs tripped the old `.py|.sh` check -- a job invoking
+# a `.js` file, and a bare `cd` into the project directory, were both
+# invisible to it. Commented-out jobs from the same project had already been
+# published, because the old check skipped comment lines entirely. A comment
+# naming a foreign path leaks it just as effectively as the job does.
 #
 # Only /home is scanned, not every absolute path: system binaries
 # (/usr/bin/flock, /bin/bash) are outside the repo but are not anyone's
