@@ -221,9 +221,14 @@ def export_json(conn):
         "dew_point": row[2],
         "humidity": row[3],
         "wind_speed": row[4],
+        # Explicit _kt aliases alongside the bare names. The API documents
+        # that every wind speed carries an explicit _kt name; the bare names
+        # are retained because the site's own pages read them.
+        "wind_speed_kt": row[4],
         "wind_direction": row[5],
         "wind_direction_cardinal": row[6],
         "wind_gust": row[7],
+        "wind_gust_kt": row[7],
         "wind_gust_direction": row[8],
         "wind_gust_direction_cardinal": row[9],
         "pressure": row[10],

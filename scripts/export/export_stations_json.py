@@ -24,6 +24,107 @@ logger = setup_logging("stations_json_export")
 BACKEND_STATIONS = PROJECT_ROOT / "config" / "stations.json"
 FRONTEND_STATIONS = EXPORT_DIR / "stations.json"
 
+# ---------- Public field allowlist ----------
+#
+# site/data/stations.json is served to the world twice: directly at
+# /data/stations.json, and as the /api/v1/stations endpoint. This export used
+# to copy config/stations.json wholesale, so every field ever added to the
+# registry was published on the next hourly run - including internal
+# FlowWorks channel maps and operator notes.
+#
+# This is an ALLOWLIST, not a denylist: a new field in the registry stays
+# private until it is named here deliberately. See the "two public surfaces"
+# note in CLAUDE.md and docs/PUBLIC_API.md.
+#
+# Deliberately NOT published:
+#   channels, fallback_channels, flowworks_site_id
+#       internal FlowWorks sensor plumbing; meaningless without our credentials
+#   url
+#       the upstream endpoint we poll. source_url (the human-facing station
+#       page) IS published; this one is a fetch target and stays private so
+#       consumers bind to our contract rather than to our upstreams.
+_COMMON = {"id", "name", "short_name", "location", "lat", "lon", "source", "type"}
+
+PUBLIC_STATION_FIELDS = {
+    "buoys": _COMMON
+    | {
+        "data_types",
+        "update_frequency_minutes",
+        "flag",
+        "source_url",
+        "caveat",
+        "note",
+        "wave_display",
+        "wave_display_note",
+    },
+    "tides": _COMMON | {"data_types", "update_frequency_minutes", "code", "series", "note"},
+    "wind": _COMMON
+    | {
+        "data_types",
+        "update_frequency_minutes",
+        "flag",
+        "source_url",
+        "elevation_m",
+        "is_buoy",
+        "caveat",
+        "note",
+    },
+    "lightstations": _COMMON
+    | {
+        "update_frequency_hours",
+        "region",
+        "established",
+        "icao",
+        "notes",
+        "reporting",
+        "reporting_note",
+    },
+    "webcams": _COMMON | {"page_url", "update_frequency_minutes", "stream_delay_minutes"},
+}
+
+# _metadata is hand-written prose, so it gets its own allowlist. `notes`
+# is filtered separately: notes.flowworks_api documents the upstream API's
+# auth scheme and credentials, which is operator documentation and has no
+# place in a public marine-data payload.
+PUBLIC_METADATA_FIELDS = {
+    "version",
+    "updated",
+    "description",
+    "sources",
+    "coordinate_system",
+    "units",
+    "notes",
+}
+PUBLIC_METADATA_NOTES = {"tide_series", "buoy_sources"}
+
+
+def filter_public_fields(data):
+    """Reduce the canonical registry to the fields that may be published.
+
+    Returns a new dict; the input is not modified.
+    """
+    out = {}
+    for section, entries in data.items():
+        if section == "_metadata":
+            meta = {k: v for k, v in entries.items() if k in PUBLIC_METADATA_FIELDS}
+            if isinstance(meta.get("notes"), dict):
+                meta["notes"] = {k: v for k, v in meta["notes"].items() if k in PUBLIC_METADATA_NOTES}
+            out[section] = meta
+            continue
+
+        allowed = PUBLIC_STATION_FIELDS.get(section)
+        if allowed is None:
+            # An unrecognised section is withheld rather than guessed at, so
+            # adding one to the registry cannot silently publish it.
+            logger.warning(f"Section '{section}' has no public field allowlist; not exported")
+            continue
+
+        out[section] = {
+            sid: {k: v for k, v in entry.items() if k in allowed} if isinstance(entry, dict) else entry
+            for sid, entry in entries.items()
+        }
+    return out
+
 
 def validate_stations_json(file_path):
     """
@@ -105,9 +206,9 @@ def export_stations():
 
         output["_DO_NOT_EDIT"]["last_generated"] = datetime.now(timezone.utc).isoformat()
 
-        # Add all station data
-        for key in data:
-            output[key] = data[key]
+        # Add station data, reduced to the public field allowlist
+        for key, value in filter_public_fields(data).items():
+            output[key] = value
 
         # Write to frontend with warning
         EXPORT_DIR.mkdir(parents=True, exist_ok=True)

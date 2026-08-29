@@ -165,20 +165,26 @@ def query_and_export():
                     # Convert wind speeds from km/h to knots for display
                     if field in ["wind_speed_kmh", "wind_gust_kmh"]:
                         # Store knots with _kt suffix
-                        knot_field = field.replace("_kmh", "_kt")
-                        station_json[knot_field] = round(kmh_to_knots(value), 1)
+                        exported_field = field.replace("_kmh", "_kt")
+                        station_json[exported_field] = round(kmh_to_knots(value), 1)
                     elif field == "wind_direction_deg":
                         # Store as wind_direction (not wind_direction_deg) for backward compatibility
+                        exported_field = "wind_direction"
                         station_json["wind_direction"] = value
                     else:
                         # Store other fields as-is
+                        exported_field = field
                         station_json[field] = value
 
-                    # Track individual field timestamps if different from main observation
+                    # Track individual field timestamps if different from main
+                    # observation. Key these by the EXPORTED name: keying by the
+                    # raw column name published `wind_gust_kmh` into the public
+                    # payload, which reads as a km/h value when the figure
+                    # alongside it is knots.
                     if field_time != latest_time:
                         if "field_times" not in station_json:
                             station_json["field_times"] = {}
-                        station_json["field_times"][field] = datetime.fromtimestamp(
+                        station_json["field_times"][exported_field] = datetime.fromtimestamp(
                             field_time,
                             tz=timezone.utc,
                         ).isoformat()

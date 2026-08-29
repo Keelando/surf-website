@@ -207,7 +207,15 @@ if (!halibutBank.stale) {
 
       <h2>Endpoints</h2>
 
-      <p>All endpoints are <code>GET</code> and return <code>application/json</code>.</p>
+      <p>
+        All endpoints are <code>GET</code> and return <code>application/json</code>.
+        <code>HEAD</code> works everywhere, <code>OPTIONS</code> is answered for CORS
+        preflight, and any other method returns <code>405</code>. Responses are
+        gzip/zstd compressed and carry <code>ETag</code> and
+        <code>Last-Modified</code>, so a conditional request with
+        <code>If-None-Match</code> gets you a cheap <code>304</code> instead of
+        re-downloading an unchanged payload.
+      </p>
 
       <div class="table-scroll">
         <table class="api-table">
@@ -231,7 +239,7 @@ if (!halibutBank.stale) {
             </tr>
             <tr>
               <td>/buoys/timeseries</td>
-              <td>48-hour buoy history (~1.2 MB)</td>
+              <td>48-hour buoy history (~1.2 MB raw, ~60 KB gzipped)</td>
               <td>10 min</td>
             </tr>
             <tr>
@@ -241,7 +249,7 @@ if (!halibutBank.stale) {
             </tr>
             <tr>
               <td>/wind/timeseries</td>
-              <td>48-hour wind history (~460 KB)</td>
+              <td>48-hour wind history (~460 KB raw, ~25 KB gzipped)</td>
               <td>15 min</td>
             </tr>
             <tr>
@@ -266,7 +274,7 @@ if (!halibutBank.stale) {
             </tr>
             <tr>
               <td>/tides/timeseries</td>
-              <td>Water level series, observed and predicted (~420 KB)</td>
+              <td>Water level series, observed and predicted (~420 KB raw, ~31 KB gzipped)</td>
               <td>10 min</td>
             </tr>
             <tr>
@@ -277,7 +285,7 @@ if (!halibutBank.stale) {
             <tr>
               <td>/marine-forecast</td>
               <td>Environment Canada marine text forecasts and warnings, parsed</td>
-              <td>on publication</td>
+              <td>on publication, parsed hourly</td>
             </tr>
             <tr>
               <td>/wave-forecast</td>
@@ -302,7 +310,7 @@ if (!halibutBank.stale) {
             <tr>
               <td>/storm-surge/observed</td>
               <td>Observed surge (observed level minus predicted tide)</td>
-              <td>2&times; daily</td>
+              <td>10 min</td>
             </tr>
             <tr>
               <td>/storm-surge/verification</td>

@@ -54,6 +54,30 @@ which would run the rewrites first and defeat the check).
 **When adding an endpoint, add it to the allowlist regexp as well as adding a
 `rewrite`.** A rewrite alone will 404.
 
+### Everything that must run before the rewrites belongs in that `route`
+
+The same ordering trap bit the method guard, which sat directly inside
+`handle_path` rather than inside the `route`. Caddy sorts `respond` *after*
+`route` in its own directive order, so both guards were dead code: until
+2026-08-29 `POST`, `PUT`, `DELETE`, `PATCH` and `TRACE` all returned **200
+with the full payload**, and `OPTIONS` returned 200 plus the whole body
+instead of an empty 204.
+
+Nothing was writable — these are static files behind `file_server` — so the
+exposure was a false 405 contract and a wasted full payload on every CORS
+preflight, not a data-integrity problem. The guards now sit at the top of the
+`route`, ahead of the allowlist.
+
+The rule to carry forward: **inside `handle_path`, anything that must run
+before the rewrites goes inside the `route` block.** Only the `header`
+directives that set cache tiers are safe outside it, because they act on the
+response rather than on dispatch.
+
+`GET`, `HEAD` and `OPTIONS` are the whole method set. `HEAD` stays because
+RFC 9110 requires it wherever `GET` is supported and monitors rely on it;
+`OPTIONS` stays because a 405 there breaks CORS preflight for any consumer
+sending a custom header.
+
 ## Deliberately excluded
 
 `site/data/system_health.json` is **not** aliased. It is operational telemetry
@@ -71,13 +95,24 @@ not guessed. Both `Cache-Control` (browsers) and `Cloudflare-CDN-Cache-Control`
 |------|---------|-----------|
 | fast | 60 s | `/buoys/latest` (pipeline runs every 3 min) |
 | wind | 120 s | `/wind/latest` (export every 5 min) |
-| med | 300 s | timeseries, tides, water level, forecast, weather, verification |
+| med | 300 s | timeseries, tides, water level, forecast, weather, wave verification, `/storm-surge/observed` |
 | hourly | 600 s | lightstations |
-| slow | 1800 s | wave forecast, storm surge |
+| slow | 1800 s | wave forecast, `/storm-surge`, `/storm-surge/verification` |
 | stations | 3600 s | `/stations`, catalog |
 | daily | 21600 s | `/sunlight` |
 
 If you change a cron cadence, revisit the matching tier.
+
+**Tier matchers must be disjoint.** When two `header` matchers both match a
+path, the later one wins, and the tiers are not naturally exclusive: the fast
+10-minute feeds `/wave-forecast/verification/*` and `/storm-surge/observed`
+sit *underneath* prefixes the slow tier claims. Until 2026-08-29 both were
+silently served with `max-age=1800` — six times staler than documented for
+verification, and a 30-minute cache on a 10-minute feed for observed surge.
+
+`@slow` therefore carries an explicit `not path /wave-forecast/verification/*`
+and enumerates `/storm-surge` and `/storm-surge/verification` instead of using
+`/storm-surge/*`. `tests/test_public_api.py::TestCacheTiers` pins this.
 
 ## Cloudflare: the cache only works if a Cache Rule exists
 
@@ -164,21 +199,69 @@ Verified 2026-08-27: three requests for one bogus path returned
 | Request | Handled by | Status | Body | `max-age` |
 |---------|-----------|--------|------|-----------|
 | `/api/v1/nope-xyz` (fails the allowlist) | `handle @disallowed` | 404 | JSON error pointing at the catalog | 300 |
-| `/api/v1/wave-forecast/<unknown>` (passes the allowlist, no such file) | `file_server` | 404 | **empty** | 1800, via `@slow` |
+| `/api/v1/wave-forecast/<unknown>` (fails the allowlist) | `handle @disallowed` | 404 | JSON error pointing at the catalog | 300 |
 
-The second row is the one to know about. The allowlist admits
-`wave-forecast/[A-Za-z0-9_-]+` as a wildcard — it cannot enumerate stations
-without duplicating the registry — so an unknown *station* is a legitimate
-path that simply has no file behind it. It falls through the rewrites to
-`file_server`, which stats the disk and returns a bare bodiless 404. A
-consumer who typos a station id gets no explanation, unlike every other wrong
-URL on the API. A `handle_errors` block inside `handle_path` would give it
-the same JSON body; not done, as it is cosmetic.
+**Both rows now behave the same.** They did not until 2026-08-29: the
+allowlist used to admit `wave-forecast/[A-Za-z0-9_-]+` as a wildcard, so an
+unknown *station* passed the guard, fell through the rewrites to
+`file_server`, and got a bare bodiless 404 with the 1800 s `@slow` tier — no
+explanation for a consumer who simply typo'd a station id.
+
+The fix was to **enumerate the six station ids in the allowlist** rather than
+add a `handle_errors` block. `handle_errors` turned out not to be usable here
+anyway (it is not a plain handler directive, so Caddy rejects it both inside
+`route` and inside `handle_path`; only a site-level block works, which would
+have changed the main site's error pages too). Enumerating is better on three
+counts: the JSON body comes for free from the existing guard, an unknown
+station never reaches the disk, and random-path probes are answered by
+`respond` instead of a `file_server` stat.
+
+The cost is that the station list now lives in the Caddyfile as well as in
+`STATIONS` (`scripts/fetch/fetch_wave_forecast.py`) and the catalog.
+`tests/test_public_api.py::TestWaveStationIds` fails if the three drift, so
+adding a wave-forecast station means updating all three and running pytest.
 
 Note that neither row helps against *randomised* paths, per the rate-limiting
-section above.
+section above — each distinct URL is a distinct cache key.
+
+## The `/stations` payload is filtered, not copied
+
+`site/data/stations.json` is public twice over: directly at
+`/data/stations.json` and as `/api/v1/stations`. Until 2026-08-29
+`export_stations_json.py` copied `config/stations.json` wholesale
+(`for key in data: output[key] = data[key]`), which is exactly the pattern the
+"two public surfaces" note in `CLAUDE.md` warns against — **every field ever
+added to the registry was published on the next hourly export.**
+
+It now filters through `PUBLIC_STATION_FIELDS`, an explicit per-section
+allowlist, so a new registry field stays private until it is named there
+deliberately. Withheld today:
+
+- `channels`, `fallback_channels`, `flowworks_site_id` — internal FlowWorks
+  sensor plumbing, meaningless without our credentials
+- `url` — the upstream endpoint we poll. `source_url`, the human-facing
+  station page, *is* published; `url` stays private so consumers bind to our
+  contract rather than to our upstreams
+- `_metadata.notes.flowworks_api` — documented the upstream auth scheme and
+  carried a `credentials` field. Those Surrey credentials are genuinely
+  public (Surrey publishes them), so this was never an incident, but operator
+  documentation has no place in a marine-data payload
+
+`tests/test_public_api.py::TestStationsExportIsFiltered` fails if any of them
+reappear.
 
 ## Testing
+
+`tests/test_public_api.py` is the regression suite. It pins the three
+hand-maintained descriptions of the API to each other — the Caddy allowlist
+and rewrites (via the `docs/caddy-api-block.txt` reference copy), the catalog,
+and the `api.html` table — so a rewrite without an allowlist entry, an
+endpoint documented in one place but not the other, or a station id list that
+has drifted all fail at commit time rather than in production. It also covers
+the method guard's position, tier disjointness, and the stations field filter.
+
+**Keep `docs/caddy-api-block.txt` in sync when you edit the live Caddyfile**,
+or the tests are checking a stale copy.
 
 `tests/playwright/console.spec.js` includes `/api.html`. Endpoint smoke test:
 

@@ -1,6 +1,6 @@
 # Excerpt from /etc/caddy/Caddyfile (:8090 block) - reference copy.
 # The live file is authoritative; see docs/PUBLIC_API.md.
-# Regenerated from the live file 2026-08-27.
+# Regenerated from the live file 2026-08-29.
 
 	# ------------------------------------------------------------------
 	# Public developer API: /api/v1/*
@@ -32,14 +32,6 @@
 	redir /api/v1 /api/v1/ 308
 
 	handle_path /api/v1/* {
-		# CORS preflight
-		@preflight method OPTIONS
-		respond @preflight 204
-
-		# Only GET/HEAD are meaningful on a static read-only API
-		@badmethod not method GET HEAD OPTIONS
-		respond @badmethod 405
-
 		# --- cache lifetimes, derived from each feed's export cadence ---
 		@fast path /buoys/latest
 		header @fast {
@@ -53,7 +45,7 @@
 			Cloudflare-CDN-Cache-Control "public, max-age=120"
 		}
 
-		@med path /buoys/timeseries /wind/timeseries /tides/* /water-level /marine-forecast /weather/* /wave-forecast/verification/*
+		@med path /buoys/timeseries /wind/timeseries /tides/* /water-level /marine-forecast /weather/* /wave-forecast/verification/* /storm-surge/observed
 		header @med {
 			Cache-Control "public, max-age=300, stale-while-revalidate=600"
 			Cloudflare-CDN-Cache-Control "public, max-age=300"
@@ -65,7 +57,14 @@
 			Cloudflare-CDN-Cache-Control "public, max-age=600"
 		}
 
-		@slow path /wave-forecast /wave-forecast/* /storm-surge /storm-surge/*
+		# Disjoint from @med by construction: verification and observed-surge
+		# are 10-minute feeds and belong in @med, but they sit under the
+		# /wave-forecast/ and /storm-surge/ prefixes. Without the exclusions
+		# below they inherit the 1800 s tier and are served badly stale.
+		@slow {
+			path /wave-forecast /wave-forecast/* /storm-surge /storm-surge/verification
+			not path /wave-forecast/verification/*
+		}
 		header @slow {
 			Cache-Control "public, max-age=1800, stale-while-revalidate=3600"
 			Cloudflare-CDN-Cache-Control "public, max-age=1800"
@@ -92,8 +91,18 @@
 		# operational telemetry and let callers bind to internal file paths
 		# that are explicitly NOT part of the v1 contract.
 		route {
+			# These must live inside `route`: Caddy sorts `respond` after
+			# `route` in its own directive order, so guards written outside
+			# it never execute and every method fell through to file_server.
+			@preflight method OPTIONS
+			respond @preflight 204
+
+			# Only GET/HEAD are meaningful on a static read-only API.
+			@badmethod not method GET HEAD OPTIONS
+			respond @badmethod 405
+
 			@disallowed {
-				not path_regexp allow ^/(|stations|buoys/(latest|timeseries)|wind/(latest|timeseries)|lightstations/(latest|timeseries)|tides/(latest|hi-low|timeseries)|water-level|marine-forecast|sunlight|weather/whiterock|storm-surge|storm-surge/(observed|verification)|wave-forecast|wave-forecast/[A-Za-z0-9_-]+|wave-forecast/verification/[A-Za-z0-9_-]+)$
+				not path_regexp allow ^/(|stations|buoys/(latest|timeseries)|wind/(latest|timeseries)|lightstations/(latest|timeseries)|tides/(latest|hi-low|timeseries)|water-level|marine-forecast|sunlight|weather/whiterock|storm-surge|storm-surge/(observed|verification)|wave-forecast|wave-forecast/(4600146|4600206|4600304|46087|46088|CRPILE)|wave-forecast/verification/(4600146|4600206|4600304|46087|46088|CRPILE))$
 			}
 			handle @disallowed {
 				header Content-Type "application/json"
@@ -135,3 +144,4 @@
 			file_server
 		}
 	}
+
