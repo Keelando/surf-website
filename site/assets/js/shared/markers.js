@@ -33,19 +33,32 @@ export const DIRECTION_ARROW_PATH = "path://M0,15 L-3,-5 L0,0 L3,-5 Z";
  * @param {number} direction - Degrees, meteorological (coming FROM)
  * @param {number|null} value - Wave height (m) or wind speed (kt)
  * @param {Object} [opts]
- * @param {string} [opts.type] - 'wave', 'wind', or 'wind-on-wave'
+ * @param {string} [opts.type] - 'wave', 'wind', or 'wave-inferred'
  * @param {boolean} [opts.stale] - Dims the marker when true
+ * @param {number|null} [opts.windSpeed] - Knots, drawn as a second smaller
+ *   line under the wave-height label. Ignored on 'wind' markers, whose
+ *   primary label is already the wind speed. Callers gate this on zoom: a
+ *   whole map of two-line labels overlaps.
  * @returns {string} HTML for the marker
  */
-export function createDirectionalMarker(direction, value, { type = "wind", stale = false } = {}) {
-  const isWave = type === "wave";
+export function createDirectionalMarker(
+  direction,
+  value,
+  { type = "wind", stale = false, windSpeed = null } = {},
+) {
   const isWind = type === "wind";
-  const arrowColor = isWave
-    ? "var(--map-arrow-wave, #0077be)"
-    : isWind
-      ? "var(--map-arrow-wind, #dc2626)"
-      : "var(--map-arrow-nodir, #555555)";
+  // 'wave-inferred': a wave station with no directional sensor, pointed by
+  // its wind direction. Wave blue like any other wave station - grey read as
+  // "switched off", which is what stale markers already look like - but drawn
+  // hollow, so the map never claims a direction it did not measure.
+  const isInferred = type === "wave-inferred";
+  const arrowColor = isWind ? "var(--map-arrow-wind, #dc2626)" : "var(--map-arrow-wave, #0077be)";
+  const fillColor = isInferred ? "var(--map-marker-bg, #ffffff)" : "currentColor";
   const opacity = stale ? STALE_MARKER_OPACITY : 1.0;
+
+  // Halo that keeps a transparent-background label readable over map tiles.
+  const labelHalo =
+    "1px 1px 2px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9), 1px -1px 2px rgba(255,255,255,0.9), -1px 1px 2px rgba(255,255,255,0.9)";
 
   // Label: wind speed in knots (rounded), otherwise wave height in metres
   let valueLabel = "";
@@ -53,15 +66,31 @@ export function createDirectionalMarker(direction, value, { type = "wind", stale
     const text = isWind ? `${Math.round(value)}kt` : `${value.toFixed(1)}m`;
     valueLabel = `<div style="
       background: transparent;
-      color: var(--map-marker-text, #004b7c);
+      color: var(--map-marker-text, #0077be);
       padding: 2px 5px;
       border-radius: 3px;
       font-size: 13px;
       font-weight: bold;
       white-space: nowrap;
-      text-shadow: 1px 1px 2px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9), 1px -1px 2px rgba(255,255,255,0.9), -1px 1px 2px rgba(255,255,255,0.9);
+      text-shadow: ${labelHalo};
       margin-bottom: -3px;
     ">${text}</div>`;
+  }
+
+  // Second line: wind speed under a wave marker. Wind red, a size down from
+  // the wave height, so the two are told apart without reading them.
+  let windLabel = "";
+  if (!isWind && windSpeed !== null && windSpeed !== undefined) {
+    windLabel = `<div style="
+      background: transparent;
+      color: var(--map-arrow-wind, #dc2626);
+      padding: 0 5px;
+      font-size: 11px;
+      font-weight: bold;
+      white-space: nowrap;
+      text-shadow: ${labelHalo};
+      margin-bottom: -2px;
+    ">${Math.round(windSpeed)}kt</div>`;
   }
 
   // ECharts-style arrow path, fattened for map visibility; points down at
@@ -69,9 +98,10 @@ export function createDirectionalMarker(direction, value, { type = "wind", stale
   return `
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: ${opacity};">
       ${valueLabel}
+      ${windLabel}
       <div style="transform: rotate(${direction}deg); transform-origin: center center;">
         <svg aria-hidden="true" width="26" height="30" viewBox="-6 -10 12 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); color: ${arrowColor};">
-          <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="currentColor" fill-opacity="0.98" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="${fillColor}" fill-opacity="0.98" stroke="currentColor" stroke-width="${isInferred ? 2 : 1.5}"/>
         </svg>
       </div>
     </div>

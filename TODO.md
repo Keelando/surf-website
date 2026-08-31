@@ -476,6 +476,15 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       38 initially-visible stations (all of Haro Strait, Juan de Fuca and
       the west coast) in exchange for legible spacing. Solving this reopens
       that choice; see `initStationsMap` in `site/assets/js/stations-map.js`.
+      **Marker offsets (user 2026-08-31):** some pairs sit close enough that
+      no zoom separates them — White Rock East Beach's wind marker and the
+      webcam pin there are indistinct at *every* zoom level, because they
+      are effectively the same coordinate. Zoom-gating cannot fix that; it
+      needs an offset (nudge one marker along a fixed bearing, or spiderfy
+      the pair on click). The wind-label collision test added the same day
+      (`refreshWindLabels`, same file) already projects every marker to
+      pixels and finds overlapping boxes — that is the input an offset pass
+      would need, so build on it rather than starting again.
 - [x] **Stop guessing timestamps to find EC data** *(done 2026-08-21)*: the
       FPCN61 poller was walking `dd.weather.gc.ca/.../FP/CWVR/HH/` hourly,
       guessing the last two likely report hours — the one practice MSC's usage

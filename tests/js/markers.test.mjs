@@ -25,10 +25,17 @@ test("wave marker labels height to one decimal in metres", () => {
   assert.match(html, />1\.3m</);
 });
 
-test("wind-on-wave marker shows wave height with the no-direction arrow colour", () => {
-  const html = createDirectionalMarker(180, 0.8, { type: "wind-on-wave" });
+test("wave-inferred marker is wave blue but hollow, not a grey arrow", () => {
+  const html = createDirectionalMarker(180, 0.8, { type: "wave-inferred" });
   assert.match(html, />0\.8m</);
-  assert.match(html, /--map-arrow-nodir/);
+  assert.match(html, /--map-arrow-wave/);
+  assert.doesNotMatch(html, /--map-arrow-nodir/);
+  // Hollow: the arrow is filled with the marker background, not its own colour
+  assert.match(html, /fill="var\(--map-marker-bg/);
+});
+
+test("measured wave marker stays solid", () => {
+  assert.match(createDirectionalMarker(180, 0.8, { type: "wave" }), /fill="currentColor"/);
 });
 
 test("arrow colour follows type", () => {
@@ -78,4 +85,30 @@ test("spread vector draws all four cardinal labels", () => {
   for (const cardinal of [">N<", ">E<", ">S<", ">W<"]) {
     assert.ok(svg.includes(cardinal), `missing ${cardinal}`);
   }
+});
+
+test("wave marker adds a wind-speed line when a speed is supplied", () => {
+  const html = createDirectionalMarker(270, 1.4, { type: "wave", windSpeed: 12.6 });
+  assert.match(html, />1\.4m</);
+  assert.match(html, />13kt</);
+  assert.match(html, /--map-arrow-wind/);
+});
+
+test("wave marker without a wind speed keeps one label line", () => {
+  const html = createDirectionalMarker(270, 1.4, { type: "wave" });
+  assert.doesNotMatch(html, /kt</);
+});
+
+test("wave-inferred marker also takes the wind-speed line", () => {
+  assert.match(createDirectionalMarker(180, 0.8, { type: "wave-inferred", windSpeed: 9 }), />9kt</);
+});
+
+test("wind marker ignores windSpeed - its own label is already the wind", () => {
+  const html = createDirectionalMarker(0, 20, { type: "wind", windSpeed: 9 });
+  assert.match(html, />20kt</);
+  assert.doesNotMatch(html, />9kt</);
+});
+
+test("a calm 0kt still renders - 0 is a reading, not a missing value", () => {
+  assert.match(createDirectionalMarker(0, 1.0, { type: "wave", windSpeed: 0 }), />0kt</);
 });

@@ -66,6 +66,16 @@ const DESKTOP_BREAKPOINT_PX = 600;
 const STATIONS_MAP_ZOOM_DESKTOP = 9;
 const STATIONS_MAP_ZOOM_MOBILE = 8;
 
+// Marker label geometry, in px above the 30px arrow. Shared by the icon
+// builder and the collision test so the two cannot disagree about how tall a
+// marker is.
+const WAVE_LABEL_HEIGHT_PX = 18;
+const WIND_LABEL_HEIGHT_PX = 14;
+
+// Clear space required around a marker before it may grow a second label
+// line. Small: the point is to stop labels touching, not to space the map out.
+const LABEL_COLLISION_PADDING_PX = 4;
+
 // Initialize the map
 function initStationsMap() {
   // Create map centered on Salish Sea
@@ -87,6 +97,9 @@ function initStationsMap() {
   }).addTo(stationsMap);
 
   addFullscreenControl(stationsMap, { title: "View map fullscreen" });
+
+  // Rebuild buoy icons when a zoom crosses the wind-label threshold.
+  stationsMap.on("zoomend", refreshWindLabels);
 
   // Create layer group for markers
   markersLayer = L.layerGroup().addTo(stationsMap);
@@ -194,6 +207,10 @@ async function loadStationsAndMarkers() {
         addWebcamMarker(webcam);
       });
     }
+
+    // Markers start without the wind line; now that every one of them is on
+    // the map, work out which have room for it.
+    refreshWindLabels();
 
     // Check for station parameter in URL and zoom to it
     checkAndZoomToStation();
@@ -340,16 +357,27 @@ function latestStationData(station) {
   return source?.[station.id] ?? null;
 }
 
-// Add buoy marker to map
-function addBuoyMarker(buoy) {
+/**
+ * divIcon for a buoy or wind station: directional arrow plus value labels,
+ * falling back to the type emoji when there is no live direction.
+ *
+ * Split out of addBuoyMarker because the zoom handler rebuilds it: the
+ * wind-speed line appears and disappears as the user zooms, and re-running
+ * the same builder is what keeps the two paths from drifting.
+ */
+function buildBuoyIcon(buoy, { showWind = false } = {}) {
   const isWave = isWaveStation(buoy);
   const markerEmoji = isWave ? "🌊" : "💨";
-  const typeLabel = stationTypeLabel(buoy);
 
   // Check if we have live data with direction for this buoy
   let iconHtml = `<div class="marker-icon">${markerEmoji}</div>`;
   let iconSize = [30, 30];
   let iconAnchor = [15, 15];
+  // How much taller this icon WOULD get if the wind line were switched on.
+  // Zero once it is on, or when the station has no wind reading to show. The
+  // collision test reads it to size every marker at its maximum, so the
+  // answer does not depend on which markers happen to be expanded already.
+  let windLabelDelta = 0;
 
   try {
     const data = latestStationData(buoy);
@@ -362,6 +390,19 @@ function addBuoyMarker(buoy) {
       // Wind direction: unified field name (wind_direction_deg), fallback to old name for buoys
       const windDirection = data.wind_direction_deg || data.wind_direction;
       const isStale = data.stale || false;
+      // Wind stations use wind_speed_kt, buoys use wind_speed. Both are
+      // already knots. Absent means outside the freshness window (the export
+      // drops stale fields), so there is nothing to second-guess here.
+      const windSpeed = data.wind_speed_kt !== undefined ? data.wind_speed_kt : data.wind_speed;
+      // Wave markers only: the wind marker's own label is the wind speed.
+      const waveWindLabel =
+        showWind && windSpeed !== null && windSpeed !== undefined ? windSpeed : null;
+      // Each label line stacks above the 30px arrow; the anchor keeps the
+      // arrow tip on the station.
+      const labelHeight =
+        (waveHeight ? WAVE_LABEL_HEIGHT_PX : 0) +
+        (waveWindLabel !== null ? WIND_LABEL_HEIGHT_PX : 0);
+      const hasWind = windSpeed !== null && windSpeed !== undefined;
 
       // For wave stations with wave direction data
       if (isWave && waveDirection !== null && waveDirection !== undefined) {
@@ -369,11 +410,13 @@ function addBuoyMarker(buoy) {
         iconHtml = createDirectionalMarker(waveDirection, waveHeight, {
           type: "wave",
           stale: isStale,
+          windSpeed: waveWindLabel,
         });
-        // Arrow size: 26x30px (fattened), label adds ~18px height
-        iconSize = [26, waveHeight ? 48 : 30];
-        // Anchor at center of rotation
-        iconAnchor = [13, waveHeight ? 38 : 15];
+        // Arrow size: 26x30px (fattened), plus whatever the labels take
+        iconSize = [26, 30 + labelHeight];
+        // Anchor at center of rotation (arrow centre when there is no label)
+        iconAnchor = [13, labelHeight ? 20 + labelHeight : 15];
+        windLabelDelta = hasWind && waveWindLabel === null ? WIND_LABEL_HEIGHT_PX : 0;
       }
       // For wave stations without wave direction but with wind direction and wave height
       else if (
@@ -383,19 +426,20 @@ function addBuoyMarker(buoy) {
         windDirection !== null &&
         windDirection !== undefined
       ) {
-        // Show wind direction with wave height (GRAY)
+        // Still a wave station, so still wave blue - drawn hollow because the
+        // direction is the wind's, not a wave measurement (see the popup note)
         iconHtml = createDirectionalMarker(windDirection, waveHeight, {
-          type: "wind-on-wave",
+          type: "wave-inferred",
           stale: isStale,
+          windSpeed: waveWindLabel,
         });
-        iconSize = [26, 48];
-        iconAnchor = [13, 38];
+        iconSize = [26, 30 + labelHeight];
+        iconAnchor = [13, 20 + labelHeight];
+        windLabelDelta = hasWind && waveWindLabel === null ? WIND_LABEL_HEIGHT_PX : 0;
       }
       // For non-wave stations with wind direction
       else if (!isWave && windDirection !== null && windDirection !== undefined) {
         // Show red wind direction marker
-        // Wind stations use wind_speed_kt, buoys use wind_speed
-        const windSpeed = data.wind_speed_kt !== undefined ? data.wind_speed_kt : data.wind_speed;
         iconHtml = createDirectionalMarker(windDirection, windSpeed, {
           type: "wind",
           stale: isStale,
@@ -412,18 +456,100 @@ function addBuoyMarker(buoy) {
     iconAnchor = [15, 15];
   }
 
-  const icon = L.divIcon({
+  return L.divIcon({
     className: `station-marker buoy-marker ${buoy.type || "wave_buoy"}`,
     html: iconHtml,
     iconSize: iconSize,
     iconAnchor: iconAnchor,
     popupAnchor: [0, -15],
+    windLabelDelta: windLabelDelta,
   });
+}
+
+/**
+ * A marker's pixel footprint at the current zoom, sized at its MAXIMUM: any
+ * marker that could grow a wind line is measured as though it already had
+ * one. Layer points rather than container points, so the answer depends only
+ * on zoom and not on where the map happens to be panned.
+ *
+ * @returns {{left: number, top: number, right: number, bottom: number}|null}
+ */
+function markerBox(marker) {
+  const icon = marker.options?.icon?.options;
+  if (!icon?.iconSize || !icon?.iconAnchor) return null;
+
+  const [width, height] = icon.iconSize;
+  const [anchorX, anchorY] = icon.iconAnchor;
+  const grow = icon.windLabelDelta || 0; // labels stack upward
+  const point = stationsMap.latLngToLayerPoint(marker.getLatLng());
+  const left = point.x - anchorX;
+  const top = point.y - anchorY - grow;
+
+  return { left, top, right: left + width, bottom: top + height + grow };
+}
+
+/** Do two boxes come within LABEL_COLLISION_PADDING_PX of each other? */
+function boxesCollide(a, b) {
+  const pad = LABEL_COLLISION_PADDING_PX;
+  return (
+    a.left - pad < b.right &&
+    b.left - pad < a.right &&
+    a.top - pad < b.bottom &&
+    b.top - pad < a.bottom
+  );
+}
+
+/**
+ * Show the wind-speed line on every buoy marker that has room for it at the
+ * current zoom, and hide it on the ones that would collide with a neighbour.
+ *
+ * Replaces a single zoom threshold: a station alone in the middle of the
+ * strait (Halibut Bank) can carry two label lines at zoom 9, while the
+ * English Bay cluster cannot until it is pulled much further apart. Stations
+ * are fixed points, so their pixel separation is a function of zoom alone -
+ * projecting them and measuring is exact, not a heuristic.
+ *
+ * Every box is measured at its maximum (see markerBox), which makes the
+ * result symmetric: it does not matter which markers are already expanded, so
+ * zooming out and back in lands on the same layout.
+ *
+ * Icons only - popups are untouched, so an open popup survives the zoom.
+ */
+function refreshWindLabels() {
+  if (!stationsMap || !markersLayer) return;
+
+  // Every marker on the map is an obstacle, not just the buoys: a wind line
+  // is just as unreadable under a lightstation or webcam pin.
+  const boxes = markersLayer
+    .getLayers()
+    .map((marker) => ({ marker, box: markerBox(marker) }))
+    .filter((entry) => entry.box !== null);
+
+  boxes.forEach(({ marker, box }) => {
+    // Buoy and wind-station markers only; the rest carry no labels.
+    if (!marker.stationMeta) return;
+
+    const show = !boxes.some((other) => other.marker !== marker && boxesCollide(box, other.box));
+    if (show === marker.windLabelShown) return;
+
+    marker.windLabelShown = show;
+    marker.setIcon(buildBuoyIcon(marker.stationMeta, { showWind: show }));
+  });
+}
+
+// Add buoy marker to map
+function addBuoyMarker(buoy) {
+  const isWave = isWaveStation(buoy);
+  const typeLabel = stationTypeLabel(buoy);
 
   const marker = L.marker([buoy.lat, buoy.lon], {
-    icon: icon,
+    icon: buildBuoyIcon(buoy, { showWind: false }),
     title: `${buoy.name} buoy`,
   });
+  // Kept on the marker so the zoom handler can rebuild the icon without
+  // re-reading stations.json.
+  marker.stationMeta = buoy;
+  marker.windLabelShown = false;
 
   // Build popup with latest data at top
   let popupContent = `<div class="station-popup"><h3>${buoy.name}</h3>`;
@@ -534,8 +660,10 @@ function addBuoyMarker(buoy) {
 
           popupContent += `<div><strong>🌊 Wave:</strong> ${dirDisplay}${waveHeight}m${periodStr}${waveDegrees} ${waveArrow}</div>`;
         } else {
-          // No direction data available
+          // No wave direction: say so, because the marker is still an arrow
+          // and it is pointing with the wind (see the 'wave-inferred' type).
           popupContent += `<div><strong>🌊 Wave:</strong> ${waveHeight}m${periodStr}</div>`;
+          popupContent += `<div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 2px;">Height and period only — the marker arrow shows wind direction.</div>`;
         }
       }
     }
@@ -1006,6 +1134,7 @@ function loadFallbackStations() {
 
   fallbackBuoys.forEach((buoy) => addBuoyMarker(buoy));
   Object.entries(fallbackTides).forEach(([key, tide]) => addTideMarker(tide, key));
+  refreshWindLabels();
 }
 
 // Center map on specific buoy and open popup
