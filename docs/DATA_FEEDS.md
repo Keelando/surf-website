@@ -191,7 +191,19 @@ which zones we carry; the parser and UI need no edit to add one)
 
 ### Lightstation Bulletins
 
-Marine lightstation observations issued every 3 hours. Two bulletin families:
+Marine lightstation observations. Two bulletin families:
+
+**Publishing schedule is not uniform, and "every 3 hours" is only roughly
+true.** FPCN61 runs on two offset cycles — some stations at HH:10 on
+00/03/06/09/12/15/18/21 UTC, others at HH:40 on 02/05/08/11/14/17/20/23 UTC,
+and several appear in both (so their reports alternate ~30 min then ~2.5 h
+apart). Cape Mudge and Pulteney Point publish only four times a day, in
+Pacific daylight hours. No station has published the 08:40 or 09:10 UTC slot
+in the history held, so every cycle has an overnight gap. Rather than declare
+a figure that drifts, `lib/lightstation_schedule.py` infers each station's
+schedule from its own observations and the export ships it on every entry in
+`latest_lightstation.json`; `update_frequency_hours` in `config/stations.json`
+is now only the fallback for a station with too little history.
 
 **FPCN61 (current observations)** — sr3 AMQP
 **Subscription:** `config/sr3/bc_lightstation_obs.conf` (`accept .*FPCN61.*`)

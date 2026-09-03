@@ -18,7 +18,8 @@ Format:
     "swell_direction": "SOUTHERLY",
     "observation_time": "2025-11-25T18:10:00+00:00",
     "report_time_str": "10 AM Tuesday",
-    "stale": false
+    "stale": false,
+    "schedule": {"slots_utc": ["00:10", ...], "reports_per_day": 4, ...}
   },
   ...
 }
@@ -30,6 +31,7 @@ from datetime import datetime, timezone
 # Shared utilities
 from lib.config import EXPORT_DIR, safe_json_write
 from lib.config import LIGHTSTATION_DATABASE as DB_PATH
+from lib.lightstation_schedule import infer_schedule
 from lib.logging_config import setup_logging
 
 logger = setup_logging("lightstation_json_export")
@@ -37,6 +39,11 @@ logger = setup_logging("lightstation_json_export")
 # ---------- Config ----------
 OUT_PATH = EXPORT_DIR / "latest_lightstation.json"
 FRESHNESS_WINDOW = 21600  # 6 hours (reports are 3-hourly, but may have delays)
+
+# How much history the publishing-schedule inference gets to look at. Long
+# enough for a daily cycle to be obvious, short enough that a station which
+# changed its habits is described by what it does now, not last month.
+SCHEDULE_LOOKBACK_DAYS = 30
 
 
 def query_and_export():
@@ -117,6 +124,19 @@ def query_and_export():
             age_hours = (now_ts - observation_time) / 3600
             is_stale = age_hours > 12
 
+            # Publishing schedule, inferred from this station's own history —
+            # see lib/lightstation_schedule.py for why it is not read from
+            # `update_frequency_hours` in the registry.
+            cur.execute(
+                """
+                SELECT observation_time
+                FROM lightstation_observation
+                WHERE station_name = ? AND observation_time > ?
+            """,
+                (station_name, now_ts - SCHEDULE_LOOKBACK_DAYS * 86400),
+            )
+            schedule = infer_schedule(r[0] for r in cur.fetchall())
+
             # Build JSON entry
             station_json = {
                 "region": row["region"],
@@ -132,6 +152,7 @@ def query_and_export():
                 "observation_time": datetime.fromtimestamp(observation_time, tz=timezone.utc).isoformat(),
                 "report_time_str": row["report_time_str"],
                 "stale": is_stale,
+                "schedule": schedule,
             }
 
             latest_json[station_name] = station_json

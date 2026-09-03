@@ -186,6 +186,25 @@
       text-align: right;
     }
 
+    /* The report-times list is a run of "HH:MM, HH:MM, …" up to fourteen long.
+       Tabular figures keep the columns from shimmering, and the smaller size
+       keeps a full cycle to two lines inside the details panel. */
+    .ls-slot-times {
+      text-align: left !important;
+      margin-top: 0.3rem;
+      font-size: 0.8rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+
+    /* Second line under the report time: dimmer than the report itself, since
+       it is an expectation rather than an observation. */
+    .report-next {
+      margin-top: 0.15rem;
+      opacity: 0.85;
+    }
+
     .lightstation-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -490,8 +509,12 @@
         and visibility. Most stations report every 3 hours, though some report less frequently (once or twice daily).
       </p>
       <p style="margin: 0;">
-        <strong>Standard Report Schedule:</strong> 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 UTC
-        (subtract 8 hours for Pacific Standard Time, 7 hours for Pacific Daylight Time)
+        <strong>Report schedules vary by station.</strong> Two FPCN61 cycles run: some
+        stations report at ten past the hour on the 00/03/06/09/12/15/18/21&nbsp;UTC cycle,
+        others at forty past on the 02/05/08/11/14/17/20/23&nbsp;UTC cycle, and a few appear
+        in both. A handful report only four times a day, in daylight hours, and every cycle
+        has an overnight gap. Each station card lists its own observed schedule and the time
+        of its next expected report under <em>Station Details</em>.
       </p>
     </section>
 
@@ -597,7 +620,7 @@
        and lightstation-map.js. They must NOT get their own script tags — the ?v=
        query would differ from the bare import specifier and the browser would
        execute them twice (module cache is keyed by full URL). -->
-  <script type="module" src="/assets/js/lightstation-page.js?v=a9d7ee7fd9"></script>
+  <script type="module" src="/assets/js/lightstation-page.js?v=3d491c6902"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

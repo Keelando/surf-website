@@ -5,6 +5,7 @@
 
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
+import { describeNextReport, describeSchedule } from "./shared/lightstation-schedule.js";
 import { getPopupOptions } from "./shared/map-popup.js";
 import { stalePopupTheme } from "./shared/staleness.js";
 import { viewLightstationDataById } from "./lightstation-charts.js";
@@ -195,6 +196,16 @@ function addLightstationMapMarker(lightstation) {
       popupContent += `<div style="margin: 4px 0;"><strong>〰️ Swell:</strong> ${swellText || "N/A"}</div>`;
     }
 
+    // Publishing schedule: how often, and when the next one is due. One
+    // compact line — the popup has no room for the full slot list, which the
+    // card's "Station Details" panel carries.
+    const scheduleText = describeSchedule(obs.schedule);
+    const nextText = describeNextReport(obs.schedule);
+    if (scheduleText || nextText) {
+      const parts = [scheduleText, nextText].filter(Boolean).join(" · ");
+      popupContent += `<div style="margin: 4px 0; font-size: 0.85em; color: var(--color-text-light);"><strong>🕑 Reports:</strong> ${parts}</div>`;
+    }
+
     // Report time (with full date, day of week, and age in 24h format)
     if (obs.observation_time) {
       const formattedDate = formatWeekdayDayTime(obs.observation_time);
@@ -216,13 +227,15 @@ function addLightstationMapMarker(lightstation) {
     popupContent += `<div style="background: var(--color-surface-alt, #f5f5f5); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-text-muted, #999); color: var(--color-text-muted); font-size: 0.9em;">No current data — this station is not reporting in the FPCN61 bulletin.</div>`;
   }
 
-  // Station details
+  // Station details. No "Source" row: it reads "Environment Canada" on all 24
+  // lightstations, and the popup is a summary — the card's Station Details
+  // panel carries the full record. Dropping it is also what keeps the tallest
+  // popup (Trial Island) inside the 76vh cap now that the schedule line is here.
   popupContent += `
     <div style="font-size: 0.9em; line-height: 1.4;">
       <div><strong>ID:</strong> ${lightstation.id}</div>
       <div><strong>Location:</strong> ${lightstation.location}</div>
       <div><strong>Region:</strong> ${lightstation.region}</div>
-      <div><strong>Source:</strong> ${lightstation.source}</div>
       ${lightstation.established ? `<div><strong>Established:</strong> ${lightstation.established}</div>` : ""}
       ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${lightstation.notes}</div>` : ""}
     </div>

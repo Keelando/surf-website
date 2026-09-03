@@ -6,6 +6,11 @@
 import { viewLightstationChart } from "./lightstation-charts.js";
 import { centerMapOnLightstation } from "./lightstation-map.js";
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
+import {
+  describeNextReport,
+  describeSchedule,
+  describeSlots,
+} from "./shared/lightstation-schedule.js";
 import { setSafeHTML } from "./shared/safe-html.js";
 
 // Lightstation metadata keyed by several name/ID formats (module-local;
@@ -208,6 +213,17 @@ function createStationCard(station) {
 
     reportTime.textContent = `Report: ${formattedDate}${ageText}`;
     card.appendChild(reportTime);
+
+    // When to check back. Lightkeeper reports land on a fixed daily cycle, so
+    // "next ~14:40" is knowable and is the thing a reader waiting on this
+    // station actually wants.
+    const nextReport = describeNextReport(station.schedule);
+    if (nextReport) {
+      const nextLine = document.createElement("div");
+      nextLine.className = "report-time report-next";
+      nextLine.textContent = `Next report ${nextReport.replace("next ", "")}`;
+      card.appendChild(nextLine);
+    }
   } else if (station.report_time_str) {
     const reportTime = document.createElement("div");
     reportTime.className = "report-time";
@@ -341,14 +357,33 @@ function createStationCard(station) {
       detailsContent.appendChild(estRow);
     }
 
-    if (meta.update_frequency_hours) {
+    // Publishing schedule, observed rather than declared. The registry's
+    // `update_frequency_hours` says "every 3 hours" for all of them, which is
+    // wrong for the stations that report four times a day in daylight only,
+    // and for the ones that appear in both bulletin cycles — it is used only
+    // as the fallback when a station has too little history to infer from.
+    const scheduleText = describeSchedule(station.schedule, meta.update_frequency_hours);
+    if (scheduleText) {
       const freqRow = document.createElement("div");
       freqRow.className = "detail-row";
       setSafeHTML(
         freqRow,
-        `<span class="detail-label">Update Frequency:</span><span class="detail-value">Every ${meta.update_frequency_hours} hours</span>`,
+        `<span class="detail-label">Reports:</span><span class="detail-value">${scheduleText}</span>`,
       );
       detailsContent.appendChild(freqRow);
+    }
+
+    const slotsText = describeSlots(station.schedule);
+    if (slotsText) {
+      const slotsRow = document.createElement("div");
+      slotsRow.className = "detail-row";
+      slotsRow.style.flexDirection = "column";
+      slotsRow.style.alignItems = "flex-start";
+      setSafeHTML(
+        slotsRow,
+        `<span class="detail-label">Report times:</span><span class="detail-value ls-slot-times">${slotsText}</span>`,
+      );
+      detailsContent.appendChild(slotsRow);
     }
 
     if (meta.notes) {

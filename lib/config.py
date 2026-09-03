@@ -94,8 +94,26 @@ STORM_SURGE_RETENTION_DAYS = 30
 # How long to keep wave forecasts (for model-vs-buoy validation)
 WAVE_FORECAST_RETENTION_DAYS = 60
 
-# How long to keep lightstation observations
-LIGHTSTATION_RETENTION_DAYS = 7
+# How long to keep lightstation observations.
+#
+# 30, matching buoys and wind. This table is not just recent conditions — it
+# is the only record of WHEN each lightstation publishes, which
+# lib/lightstation_schedule.py reads to describe each station's cycle on the
+# page. At 7 days the stations that report once or twice a day (Chrome Island,
+# Entrance Island, Langara) never accumulated enough samples to establish
+# their slots, so the page could only call them "irregular".
+#
+# The cost is nil: observations run ~164 rows/day at ~235 bytes, so 30 days is
+# ~1.2 MB — less than the 3.5 MB of free pages the 7-day purge cycle had
+# already left in the file for SQLite to reuse.
+LIGHTSTATION_RETENTION_DAYS = 30
+
+# How long to keep the raw FPCN61/SXCN bulletin files. Separate from the
+# observations above, and much shorter: once parsed into SQLite a bulletin has
+# no further use, and the crontab already sweeps
+# data/lightstation_bulletins at one day. Splitting the two constants keeps a
+# 30-day observation window from silently implying a 30-day pile of raw text.
+LIGHTSTATION_RAW_RETENTION_DAYS = 1
 
 # How long to keep reporting-lag rows. Longer than the observations they
 # describe: the point is spotting slow degradation over weeks, and the rows

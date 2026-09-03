@@ -14,6 +14,10 @@ node can import these files in tests; browsers ignore it.
 ## Modules
 
 - `format-time.js` — Pacific-time formatters + `getAgeString`/`getShortAgeString`.
+- `lightstation-schedule.js` — renders the backend-inferred publishing schedule
+  (`describeSchedule`, `describeSlots`, `describeNextReport`, `nextReportTime`).
+- `map-popup.js` — `getPopupOptions()`, the single popup width for all three
+  Leaflet maps; sizes against the wrapper's `88vw` mobile cap.
   Model runs have **two** formatters, deliberately: `formatModelRunTime`
   ("Jul 14 12Z", UTC — the storm-surge pages) and `formatModelRunTimeLocal`
   ("Jul 14, 05:00 PDT (12Z)", Pacific-first — the wave forecast page). Same

@@ -17,7 +17,11 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from lib.config import LIGHTSTATION_DATABASE as DB_PATH
-from lib.config import LIGHTSTATION_RETENTION_DAYS, PROJECT_ROOT
+from lib.config import (
+    LIGHTSTATION_RAW_RETENTION_DAYS,
+    LIGHTSTATION_RETENTION_DAYS,
+    PROJECT_ROOT,
+)
 from lib.logging_config import setup_logging
 
 # Disable console logging (runs from cron, file logging only)
@@ -87,14 +91,26 @@ SXCN_SEA_CONDITIONS = {
 
 # SXCN wind direction abbreviations
 SXCN_WIND_DIRS = {
-    "N": "NORTH", "NE": "NORTHEAST", "E": "EAST", "SE": "SOUTHEAST",
-    "S": "SOUTH", "SW": "SOUTHWEST", "W": "WEST", "NW": "NORTHWEST",
+    "N": "NORTH",
+    "NE": "NORTHEAST",
+    "E": "EAST",
+    "SE": "SOUTHEAST",
+    "S": "SOUTH",
+    "SW": "SOUTHWEST",
+    "W": "WEST",
+    "NW": "NORTHWEST",
 }
 
 # SXCN swell direction abbreviations
 SXCN_SWELL_DIRS = {
-    "N": "NORTHERLY", "NE": "NORTHEASTERLY", "E": "EASTERLY", "SE": "SOUTHEASTERLY",
-    "S": "SOUTHERLY", "SW": "SOUTHWESTERLY", "W": "WESTERLY", "NW": "NORTHWESTERLY",
+    "N": "NORTHERLY",
+    "NE": "NORTHEASTERLY",
+    "E": "EASTERLY",
+    "SE": "SOUTHEASTERLY",
+    "S": "SOUTHERLY",
+    "SW": "SOUTHWESTERLY",
+    "W": "WESTERLY",
+    "NW": "NORTHWESTERLY",
 }
 
 
@@ -340,8 +356,7 @@ def parse_report_file(filepath):
                     stale = is_stale_retransmission(header_line, line)
                     if stale:
                         logger.info(
-                            f"Skipping stale retransmission {filepath.name}: "
-                            f"header date does not match '{line}'"
+                            f"Skipping stale retransmission {filepath.name}: " f"header date does not match '{line}'"
                         )
                         return []
                     observation_time = parse_report_time(header_line, line)
@@ -600,8 +615,15 @@ def insert_observations(observations):
 
 
 def purge_old_data():
-    """Remove observations and raw files older than the retention window."""
-    cutoff = datetime.now(timezone.utc) - timedelta(days=LIGHTSTATION_RETENTION_DAYS)
+    """Remove observations and raw files older than their retention windows.
+
+    The two windows differ: observations are kept long enough to describe each
+    station's publishing schedule (see lib/lightstation_schedule.py), while a
+    raw bulletin is disposable the moment it has been parsed.
+    """
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=LIGHTSTATION_RETENTION_DAYS)
+    raw_cutoff = now - timedelta(days=LIGHTSTATION_RAW_RETENTION_DAYS)
     cutoff_epoch = int(cutoff.timestamp())
 
     # Purge DB rows
@@ -619,22 +641,22 @@ def purge_old_data():
         removed = 0
         for filepath in FPCN61_DATA_DIR.glob("FPCN61_CWVR_*"):
             mtime = datetime.fromtimestamp(filepath.stat().st_mtime, tz=timezone.utc)
-            if mtime < cutoff:
+            if mtime < raw_cutoff:
                 filepath.unlink()
                 removed += 1
         if removed:
-            logger.info(f"Removed {removed} raw FPCN61 files older than {LIGHTSTATION_RETENTION_DAYS} days")
+            logger.info(f"Removed {removed} raw FPCN61 files older than {LIGHTSTATION_RAW_RETENTION_DAYS} day(s)")
 
     # Purge raw SXCN files
     if SXCN_DATA_DIR.exists():
         removed = 0
         for filepath in SXCN_DATA_DIR.glob("SXCN*_CWVR_*"):
             mtime = datetime.fromtimestamp(filepath.stat().st_mtime, tz=timezone.utc)
-            if mtime < cutoff:
+            if mtime < raw_cutoff:
                 filepath.unlink()
                 removed += 1
         if removed:
-            logger.info(f"Removed {removed} raw SXCN files older than {LIGHTSTATION_RETENTION_DAYS} days")
+            logger.info(f"Removed {removed} raw SXCN files older than {LIGHTSTATION_RAW_RETENTION_DAYS} day(s)")
 
 
 def main():
