@@ -5,7 +5,8 @@
 
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
-import { staleDataWarningHTML, stalePopupTheme } from "./shared/staleness.js";
+import { getPopupOptions } from "./shared/map-popup.js";
+import { stalePopupTheme } from "./shared/staleness.js";
 import { viewLightstationDataById } from "./lightstation-charts.js";
 
 let lightstationMap = null;
@@ -134,10 +135,6 @@ async function loadLightstationsAndMarkers() {
 }
 
 // Add lightstation marker to map
-// Same fixed bounds as the stations map (see stations-map.js POPUP_OPTIONS):
-// one width for every popup, rather than whatever the longest line produced.
-const POPUP_OPTIONS = { minWidth: 280, maxWidth: 280 };
-
 function addLightstationMapMarker(lightstation) {
   // Check if this station has any current data
   const lookupName = lightstation.id.replace(/_/g, " ");
@@ -208,10 +205,11 @@ function addLightstationMapMarker(lightstation) {
       popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-border);">📅 Report: ${obs.report_time_str}</div>`;
     }
 
-    // Staleness warning (already shown in header, but keep for emphasis)
-    if (obs.stale) {
-      popupContent += staleDataWarningHTML();
-    }
+    // No separate "⚠️ STALE DATA" line here. The block's own header already
+    // reads "Latest Conditions (STALE - >12h old):" in red, on a red-tinted
+    // panel with a red left border, and the report line below states the age
+    // — a fourth restatement was the ~50px that pushed the tallest popups
+    // (Nootka, Trial Island) past the 70vh cap on a 360x640 phone.
 
     popupContent += `</div>`;
   } else {
@@ -225,7 +223,6 @@ function addLightstationMapMarker(lightstation) {
       <div><strong>Location:</strong> ${lightstation.location}</div>
       <div><strong>Region:</strong> ${lightstation.region}</div>
       <div><strong>Source:</strong> ${lightstation.source}</div>
-      <div><strong>Type:</strong> Lightstation</div>
       ${lightstation.established ? `<div><strong>Established:</strong> ${lightstation.established}</div>` : ""}
       ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${lightstation.notes}</div>` : ""}
     </div>
@@ -234,7 +231,7 @@ function addLightstationMapMarker(lightstation) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, POPUP_OPTIONS);
+  marker.bindPopup(popupContent, getPopupOptions());
 
   // Add permanent label (station name) that shows/hides based on zoom
   marker.bindTooltip(lightstation.name, {

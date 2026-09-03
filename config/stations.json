@@ -1089,6 +1089,19 @@
       "update_frequency_hours": 3,
       "notes": "Marks southeast entrance to Welcome Passage"
     },
+    "ENTRANCE_ISLAND": {
+      "id": "ENTRANCE_ISLAND",
+      "name": "Entrance Island",
+      "location": "Northern approach to Nanaimo, Georgia Strait",
+      "lat": 49.209194,
+      "lon": -123.808167,
+      "region": "STRAIT OF GEORGIA",
+      "source": "Environment Canada",
+      "type": "lightstation",
+      "update_frequency_hours": 3,
+      "established": 1875,
+      "notes": "Part of the BC Shore Station Oceanographic Program"
+    },
     "CAPE_BEALE": {
       "id": "CAPE_BEALE",
       "name": "Cape Beale",

@@ -63,12 +63,25 @@
    padding is not enough. */
 @media (max-width: 768px) {
   .leaflet-popup-content-wrapper {
-    max-height: 70vh;
+    /* 76vh, not 70vh. The tallest popup on the site is a lightstation with
+       every optional field present (Trial Island, 464px in Firefox — Gecko
+       renders these ~18px taller than Blink, so Chromium alone reports a
+       pass). 70vh of a 360x640 phone is 448px, which scrolled it; 76vh is
+       486px and still inside the 500px map container. Measure in BOTH
+       engines before changing this. */
+    max-height: 76vh;
     max-width: 88vw;
   }
 
+  /* !important because leaflet.css loads AFTER this file (same reason the
+     wrapper's background needs it above). Without it Leaflet's own
+     `margin: 13px 24px 13px 20px` wins and the popup carries 44px of
+     horizontal margin instead of 22px — which is what pushed a 280px popup
+     to 327px inside a wrapper capped at 88vw, clipping the right edge of
+     every popup on every map below ~372px of viewport. shared/map-popup.js
+     budgets against the 22px; keep the two in step. */
   .leaflet-popup-content {
-    margin: 0.5rem 0.7rem;
+    margin: 0.5rem 0.7rem !important;
   }
 
   .station-popup {

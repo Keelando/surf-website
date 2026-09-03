@@ -1,6 +1,6 @@
 /* -----------------------------
    Lightstation Charts Module (ES module)
-   Displays 24hr wind speed and wave height trends
+   Displays recent wind speed and wave height trends (WINDOW_HOURS)
 
    Chart helpers (fetchWithTimeout, getChartThemeColors,
    getMobileOptimizedTooltipConfig, registerChartThemeListener, echarts)
@@ -9,6 +9,16 @@
 
 import { formatDayMonthNumeric, formatNumericDayTime, formatTimeHM } from "./shared/format-time.js";
 import { setSafeHTML } from "./shared/safe-html.js";
+
+/**
+ * How far back the timeseries export reaches.
+ *
+ * MUST match HOURS_BACK in scripts/export/export_lightstation_timeseries.py —
+ * that file explains why it is 72 and not 24. `tests/test_lightstation_window.py`
+ * asserts the two stay in step, because the only thing worse than a stale
+ * window is a page that labels it wrongly.
+ */
+const WINDOW_HOURS = 72;
 
 /**
  * Lightkeepers report wind direction as a full compass word ("SOUTHEAST").
@@ -176,8 +186,8 @@ let detachLightstationThemeListener = null;
  */
 async function loadLightstationTimeseries() {
   try {
-    // Load timeseries data (past 24hr only)
-    const data = await fetchWithTimeout(`/data/lightstation_timeseries_24hr.json?t=${Date.now()}`);
+    // Load timeseries data (the export's window — see WINDOW_HOURS)
+    const data = await fetchWithTimeout(`/data/lightstation_timeseries.json?t=${Date.now()}`);
     lightstationTimeseriesData = data;
 
     // Load ALL lightstations from stations.json (including those without recent data)
@@ -272,14 +282,33 @@ function populateLightstationDropdown() {
     regionGroups[region].push([id, station]);
   });
 
-  // Define region order
-  const regionOrder = [
+  // Preferred ordering, south to north — NOT a whitelist. This list used to be
+  // iterated on its own, so a station whose region was not one of these five
+  // simply never got an <option>: 11 of the 23 lightstations were unreachable
+  // from the dropdown, McInnes Island among them (region "MILBANKE SOUND"),
+  // which is why "View Data" on its popup could not select it. Regions are
+  // free text in config/stations.json, so anything not named here is appended
+  // rather than dropped.
+  const PREFERRED_REGION_ORDER = [
     "STRAIT OF GEORGIA",
     "JUAN DE FUCA STRAIT",
+    "DISCOVERY PASSAGE",
+    "QUEEN CHARLOTTE STRAIT",
     "WEST COAST VANCOUVER ISLAND",
+    "QUEEN CHARLOTTE SOUND",
     "CENTRAL COAST",
+    "MILBANKE SOUND",
+    "SEAFORTH CHANNEL",
+    "INSIDE PASSAGE",
     "HECATE STRAIT",
+    "NORTH COAST",
+    "HAIDA GWAII",
   ];
+
+  const remainingRegions = Object.keys(regionGroups)
+    .filter((region) => !PREFERRED_REGION_ORDER.includes(region))
+    .sort();
+  const regionOrder = [...PREFERRED_REGION_ORDER, ...remainingRegions];
 
   // Create optgroups for each region
   regionOrder.forEach((regionName) => {
@@ -314,7 +343,7 @@ export function renderLightstationCharts(stationName) {
   // Update 24-hour reports title with station name
   const title = document.getElementById("lightstation-24hr-title");
   if (title) {
-    title.textContent = `24-Hour Reports: ${stationName}`;
+    title.textContent = `${WINDOW_HOURS}-Hour Reports: ${stationName}`;
   }
 
   if (!station) {
@@ -336,7 +365,7 @@ function showNoDataMessage(stationName) {
   if (tbody) {
     setSafeHTML(
       tbody,
-      '<tr><td colspan="5" class="ls-table-empty ls-table-empty-alert">⚠️ No data from the past 24 hours</td></tr>',
+      `<tr><td colspan="5" class="ls-table-empty ls-table-empty-alert">⚠️ No reports in the past ${WINDOW_HOURS} hours</td></tr>`,
     );
   }
 
@@ -346,9 +375,13 @@ function showNoDataMessage(stationName) {
     windSpeedChart.setOption({
       title: {
         text: `${stationName} - Wind Speed`,
-        subtext: "No data from the past 24 hours",
+        subtext: `No reports in the past ${WINDOW_HOURS} hours`,
         left: "center",
-        textStyle: { fontSize: 18, fontWeight: 600, color: "var(--color-primary-dark,#004b7c)" },
+        textStyle: {
+          fontSize: isNarrowChart() ? 14 : 18,
+          fontWeight: 600,
+          color: "var(--color-primary-dark,#004b7c)",
+        },
         subtextStyle: { fontSize: 14, color: "var(--color-accent-red,#e53e3e)" },
       },
     });
@@ -359,9 +392,13 @@ function showNoDataMessage(stationName) {
     waveHeightChart.setOption({
       title: {
         text: `${stationName} - Sea State`,
-        subtext: "No data from the past 24 hours",
+        subtext: `No reports in the past ${WINDOW_HOURS} hours`,
         left: "center",
-        textStyle: { fontSize: 18, fontWeight: 600, color: "var(--color-primary-dark,#004b7c)" },
+        textStyle: {
+          fontSize: isNarrowChart() ? 14 : 18,
+          fontWeight: 600,
+          color: "var(--color-primary-dark,#004b7c)",
+        },
         subtextStyle: { fontSize: 14, color: "var(--color-accent-red,#e53e3e)" },
       },
     });
@@ -391,16 +428,12 @@ export function viewLightstationChart(stationName) {
   const select = document.getElementById("lightstation-station-select");
   if (!select) return;
 
-  // Check if station exists in timeseries data
-  if (!lightstationTimeseriesData || !lightstationTimeseriesData[stationName]) {
-    // Station doesn't have 24hr data - show alert instead of scrolling
-    alert(
-      `${stationName} does not have data from the past 24 hours.\n\nMost recent observation may be older than 24 hours.`,
-    );
-    return;
-  }
-
-  // Select the station in dropdown
+  // A station with nothing in the window is not an error worth a modal. The
+  // old behaviour was `alert()` and an early return, so clicking "View Data"
+  // on a quiet station gave you a dialog and left you where you were —
+  // reported for McInnes Island, which had been reporting normally until 28 h
+  // earlier. Select it and scroll like any other station; the table and
+  // charts say what is missing, in place.
   select.value = stationName;
   renderLightstationCharts(stationName);
 

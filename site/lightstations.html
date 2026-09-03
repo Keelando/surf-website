@@ -34,7 +34,7 @@
   <link rel="stylesheet" href="/assets/css/style-v4.css?v=619c4c241d" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=3e83e68729" />
-  <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=3df3346e1e" />
+  <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=e9e68c5cbb" />
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
@@ -152,8 +152,14 @@
       margin-top: 0.5rem;
     }
 
+    /* 300px was not enough: six detail rows plus a wrapped Notes line measure
+       287px of content, and the 0.75rem padding this rule adds pushes that to
+       311px — so the longest stations (Trial Island, Cape Beale) had their
+       last row clipped by the same max-height that animates the panel open.
+       The transition still needs a bounded value, so this is a generous cap
+       rather than `none`. */
     .station-details-content.expanded {
-      max-height: 300px;
+      max-height: 500px;
       padding: 0.75rem;
       border: 1px solid var(--color-border-light);
     }
@@ -591,7 +597,7 @@
        and lightstation-map.js. They must NOT get their own script tags — the ?v=
        query would differ from the bare import specifier and the browser would
        execute them twice (module cache is keyed by full URL). -->
-  <script type="module" src="/assets/js/lightstation-page.js?v=02779346af"></script>
+  <script type="module" src="/assets/js/lightstation-page.js?v=a9d7ee7fd9"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

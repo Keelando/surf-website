@@ -7,6 +7,7 @@
  */
 
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
+import { getPopupOptions } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
 import { stationTypeLabel } from "./shared/station-meta.js";
 import { windData } from "./wind-data.js";
@@ -77,10 +78,6 @@ async function loadWindStationsAndMarkers() {
     }
   }
 }
-
-// Same fixed bounds as the stations map (see stations-map.js POPUP_OPTIONS):
-// one width for every popup, rather than whatever the longest line produced.
-const POPUP_OPTIONS = { minWidth: 280, maxWidth: 280 };
 
 /**
  * Add a wind marker (station or buoy) to the map
@@ -181,7 +178,7 @@ function addWindMarker(station, currentData, isBuoy = false) {
     <a href="#" class="view-data-btn" data-wind-station-id="${station.id}">View Wind Chart →</a>
   </div>`;
 
-  marker.bindPopup(popupContent, POPUP_OPTIONS);
+  marker.bindPopup(popupContent, getPopupOptions());
   marker.addTo(windMarkersLayer);
 
   // Store marker reference

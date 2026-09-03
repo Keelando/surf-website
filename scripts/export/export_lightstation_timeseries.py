@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Export 24-hour lightstation timeseries for charts.
+Export recent lightstation timeseries for charts and the public API.
 
-Output: ~/site/data/lightstation_timeseries_24hr.json
+Output: ~/site/data/lightstation_timeseries.json
 
 Format:
 {
@@ -31,14 +31,26 @@ from lib.logging_config import setup_logging
 logger = setup_logging("lightstation_timeseries_export")
 
 # ---------- Config ----------
-OUT_PATH = EXPORT_DIR / "lightstation_timeseries_24hr.json"
+OUT_PATH = EXPORT_DIR / "lightstation_timeseries.json"
 
-# Time window: past 24 hours
-HOURS_BACK = 24
+# Time window.
+#
+# 72 hours, not 24. Lightkeepers do not all report on the same schedule: over
+# the 6.9 days of history in the database the fastest stations report every
+# 1.5 h, but Chrome Island and Entrance Island run 16.5 h median and 33 h at
+# the 90th percentile. A 24-hour window therefore held ZERO points for those
+# two most of the time even though both were reporting normally, and the page
+# could only answer "no data from the past 24 hours". 72 h clears the slowest
+# observed p90 gap with better than 2x margin.
+#
+# The cost is payload: 24 h was ~31 KiB and 18 of 23 stations, 72 h is ~96 KiB
+# and 20 of 23. A 7-day window would reach 21 of 23 for ~236 KiB, which is not
+# worth it on a phone for one more station.
+HOURS_BACK = 72
 
 
 def export_timeseries():
-    """Export 24hr timeseries for all lightstations."""
+    """Export the recent timeseries for all lightstations."""
     if not DB_PATH.exists():
         logger.warning(f"Lightstation database not found: {DB_PATH}")
         return
@@ -55,10 +67,10 @@ def export_timeseries():
         cur.execute("SELECT DISTINCT station_name FROM lightstation_observation ORDER BY station_name")
         stations = [row[0] for row in cur.fetchall()]
 
-        logger.info(f"Exporting 24hr timeseries for {len(stations)} lightstation(s)")
+        logger.info(f"Exporting {HOURS_BACK}h timeseries for {len(stations)} lightstation(s)")
 
         for station_name in stations:
-            # Get all observations for this station in the past 24 hours
+            # Get all observations for this station inside the window
             cur.execute(
                 """
                 SELECT
@@ -141,7 +153,7 @@ def export_timeseries():
 
 
 def main():
-    logger.info("=== Exporting Lightstation 24hr Timeseries ===")
+    logger.info(f"=== Exporting Lightstation {HOURS_BACK}h Timeseries ===")
     export_timeseries()
     logger.info("=== Export complete ===")
 

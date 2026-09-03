@@ -25,7 +25,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from lib.logging_config import setup_logging  # noqa: E402
-from scripts.export import export_lightstation_24hr_timeseries, export_lightstation_json  # noqa: E402
+from scripts.export import export_lightstation_json, export_lightstation_timeseries  # noqa: E402
 from scripts.parse import parse_lightstation  # noqa: E402
 
 logger = setup_logging("lightstation_pipeline")
@@ -36,7 +36,7 @@ logger = setup_logging("lightstation_pipeline")
 STAGES = [
     ("parse:parse_lightstation", parse_lightstation.main),
     ("export:export_lightstation_json", export_lightstation_json.main),
-    ("export:export_lightstation_24hr_timeseries", export_lightstation_24hr_timeseries.main),
+    ("export:export_lightstation_timeseries", export_lightstation_timeseries.main),
 ]
 
 

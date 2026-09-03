@@ -900,7 +900,7 @@ def check_export_freshness() -> Dict:
         "latest_lightstation": SITE_DATA / "latest_lightstation.json",
         "buoy_48hr": SITE_DATA / "buoy_timeseries_48h.json",
         "wind_48hr": SITE_DATA / "wind_timeseries_48hr.json",
-        "lightstation_24hr": SITE_DATA / "lightstation_timeseries_24hr.json",
+        "lightstation_timeseries": SITE_DATA / "lightstation_timeseries.json",
         "tide_timeseries": SITE_DATA / "tide-timeseries.json",
         "marine_forecast": SITE_DATA / "marine_forecast.json",
         "stations": SITE_DATA / "stations.json",

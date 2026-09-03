@@ -8,6 +8,7 @@
 
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
+import { getPopupOptions } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
 import { isNoaaStation, isWaveStation, stationTypeLabel } from "./shared/station-meta.js";
 import { staleDataWarningHTML, stalePopupTheme } from "./shared/staleness.js";
@@ -52,16 +53,6 @@ function getDirectionalArrow(degrees, arrowType = "wind") {
 // zoom 8 leaves the Salish Sea stations bunched in the middle. Narrow screens
 // stay at 8, where the extra level would push most stations off-screen.
 // 600px matches the nav's mobile breakpoint (nav-tide-styles-v4.css).
-// Every station popup binds with these, so a popup is the same width whichever
-// marker opened it. Left to Leaflet's defaults (minWidth 50, maxWidth 300) the
-// width came out of whatever the longest line happened to be — measured across
-// twelve popups it produced eight different widths between 286px and 349px,
-// and the ones that hit the cap looked as though they were reserving space for
-// the optional "Wave Forecast" button. Fixing both bounds to the same value
-// makes that impossible. Mobile stays narrower via the max-width in
-// stations-map-v4.css.
-const POPUP_OPTIONS = { minWidth: 280, maxWidth: 280 };
-
 const DESKTOP_BREAKPOINT_PX = 600;
 const STATIONS_MAP_ZOOM_DESKTOP = 9;
 const STATIONS_MAP_ZOOM_MOBILE = 8;
@@ -733,7 +724,7 @@ function addBuoyMarker(buoy) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, POPUP_OPTIONS);
+  marker.bindPopup(popupContent, getPopupOptions());
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
@@ -852,7 +843,7 @@ function addTideMarker(tide, stationKey) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, POPUP_OPTIONS);
+  marker.bindPopup(popupContent, getPopupOptions());
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
@@ -957,7 +948,7 @@ function addLightstationMarker(lightstation) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, POPUP_OPTIONS);
+  marker.bindPopup(popupContent, getPopupOptions());
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
@@ -1004,7 +995,7 @@ function addWebcamMarker(webcam) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, POPUP_OPTIONS);
+  marker.bindPopup(popupContent, getPopupOptions());
   marker.addTo(markersLayer);
 
   // Store marker reference for later access

@@ -120,7 +120,7 @@
 			rewrite /wind/timeseries /data/wind_timeseries_48hr.json
 
 			rewrite /lightstations/latest /data/latest_lightstation.json
-			rewrite /lightstations/timeseries /data/lightstation_timeseries_24hr.json
+			rewrite /lightstations/timeseries /data/lightstation_timeseries.json
 
 			rewrite /tides/latest /data/tide-latest.json
 			rewrite /tides/hi-low /data/tide-hi-low.json

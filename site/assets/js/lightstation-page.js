@@ -294,9 +294,12 @@ function createStationCard(station) {
   const detailsContent = document.createElement("div");
   detailsContent.className = "station-details-content";
 
-  // Add metadata rows (fetch from window.stationMetadata if available)
-  if (window.stationMetadata && window.stationMetadata[station.name]) {
-    const meta = window.stationMetadata[station.name];
+  // Add metadata rows. `window.stationMetadata` until the ES-module
+  // conversion moved the registry to the module-scoped `stationMetadata` on
+  // line 13 — this one call site kept the `window.` prefix, so the guard was
+  // always false and every card's "Station Details" panel opened empty.
+  if (stationMetadata[station.name]) {
+    const meta = stationMetadata[station.name];
 
     if (meta.id) {
       const idRow = document.createElement("div");
