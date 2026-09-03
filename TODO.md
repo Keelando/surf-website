@@ -77,6 +77,33 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
   Worth keeping in touch with the correspondent: a working mariner in the area
   is a better source on which points matter than a map is.
 
+- [ ] **A "View source" link on every rendered dataset** (added 2026-09-03).
+  The forecasts page has had per-zone source links for a while and the
+  lightstations page just got one; nothing else does. Two reasons to finish
+  the job. First, it is the honest thing for a site that re-presents someone
+  else's bulletins: a reader can always reach the original. Second, and the
+  reason to prioritise it — **it crowdsources the accuracy vetting.** The
+  McInnes Island position error sat there until a mariner happened to notice;
+  a reader who can put our rendering beside the source in one click is a
+  reader who can catch the next one. Pages needing links: buoys/index, winds,
+  tides, storm surge, webcams, and the wave-forecast points. Some sources have
+  no per-station public page (NOAA NDBC does, DFO tides does, the RDWPS model
+  output does not) — link the closest honest thing and say what it is, rather
+  than linking a landing page and implying more precision than exists. Note
+  the EC lightstation URL needs its `?mapID=02&siteID=16200` query string or
+  the page renders an "incorrect web address" banner over the content.
+
+- [ ] **Parse the FICN31/32/33 bulletins** (added 2026-09-03; the subscription
+  config already exists, `docs/DATA_FEEDS.md` has it as "awaiting parser").
+  EC's own public page —
+  <https://weather.gc.ca/marine/weatherConditions-lightstation_e.html> — renders
+  these, and carries materially more than the FPCN61 bulletins we parse:
+  **visibility, cloud cover and layers, and temperature/dewpoint**, none of
+  which this site shows. It also lists **Triple Island**, which is not in
+  `config/stations.json` at all. Worth checking at the same time whether Egg
+  Island, Estevan Point and Green Island (registered here but never yet seen
+  reporting) arrive on those bulletins rather than FPCN61.
+
 - [ ] **Accuracy audit: forecasts and lightstations pages** (added 2026-09-03).
   Both pages re-present someone else's bulletins, and the 2026-09-03 session
   found four separate ways this one had drifted from its source (a dropdown

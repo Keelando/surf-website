@@ -73,6 +73,29 @@
       line-height: 1.5;
     }
 
+    /* Same affordance the forecasts page puts beside each zone heading: a way
+       back to the bulletin this is a rendering of. EC's own lightstation page
+       is two clicks down from Marine Weather (area → Current Conditions →
+       Lightstations Reports), so most readers have never seen it.
+
+       Keep the ?mapID/&siteID query string. The page renders the same full BC
+       list without it, but with "The web address you have entered is
+       incorrect" banded across the top — which would read as our broken link,
+       not theirs. */
+    .ls-source-link {
+      font-size: 0.75em;
+      margin-left: 0.5rem;
+      font-weight: normal;
+      color: var(--color-accent-blue);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .ls-source-link:hover,
+    .ls-source-link:focus-visible {
+      text-decoration: underline;
+    }
+
     .ls-about-more {
       margin-top: 0.75rem;
     }
@@ -580,9 +603,11 @@
         <strong>Environment Canada is the only authoritative source for marine decisions.</strong>
         This page re-presents their published bulletins and infers each station's schedule
         from what has arrived here — that inference is still settling, and a report can be
-        late, missed, or absent from our copy. Check
-        <a href="https://weather.gc.ca/marine/index_e.html" target="_blank" rel="noopener">EC Marine Weather</a>
-        before going out.
+        late, missed, or absent from our copy. Before going out, check EC directly:
+        <a href="https://weather.gc.ca/marine/weatherConditions-lightstation_e.html?mapID=02&amp;siteID=16200" target="_blank" rel="noopener">Lightstation Reports</a>
+        (every BC station on one page, in the raw coded format) or
+        <a href="https://weather.gc.ca/marine/index_e.html" target="_blank" rel="noopener">Marine Weather</a>
+        for forecasts and warnings.
       </p>
 
       <details class="ls-about-more">
@@ -636,7 +661,11 @@
 
     <!-- Station Selector + 24-Hour Data Table -->
     <section id="lightstation-selector-section" class="ls-selector">
-      <h2>Lightstation Reports</h2>
+      <h2>
+        Lightstation Reports
+        <a class="ls-source-link" href="https://weather.gc.ca/marine/weatherConditions-lightstation_e.html?mapID=02&amp;siteID=16200"
+           target="_blank" rel="noopener">View source</a>
+      </h2>
       <div id="station-selector" class="ls-selector-controls">
         <label for="lightstation-station-search">Search:</label>
         <input type="text" id="lightstation-station-search" placeholder="Type to jump to station...">
