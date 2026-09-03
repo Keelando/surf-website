@@ -100,7 +100,7 @@ those need real rendering in both engines).
   (allow ~1.5s).
 - **lightstations.html**: `.lightstation-card` count grouped in
   `.region-section`s; `.report-time` text matches
-  `Report: <Weekday> <Mon> <D>, <HH:MM> (<age> ago)`;
+  `Reported: <Weekday> <Mon> <D>, <HH:MM> (<age> ago)`;
   `#lightstation-station-select` has region optgroups, default
   MERRY ISLAND; `#lightstation-wind-chart canvas` +
   `#lightstation-24hr-body tr` rows; marker popup "View Data"

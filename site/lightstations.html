@@ -96,6 +96,39 @@
       text-decoration: underline;
     }
 
+    /* The two EC links used to be inline in the authority paragraph, where the
+       one that matters most on this page — EC's own lightstation list — read as
+       a footnote. A button row makes it the first thing the eye lands on after
+       the warning. */
+    .ls-about-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .ls-about-link {
+      display: inline-block;
+      padding: 0.5rem 0.9rem;
+      border: 1px solid var(--color-primary-dark);
+      border-radius: 6px;
+      color: var(--color-primary-dark);
+      background: var(--color-surface);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .ls-about-link-primary {
+      background: var(--color-primary-dark);
+      color: var(--color-surface);
+    }
+
+    .ls-about-link:hover,
+    .ls-about-link:focus-visible {
+      text-decoration: underline;
+    }
+
     .ls-about-more {
       margin-top: 0.75rem;
     }
@@ -444,7 +477,7 @@
       background: var(--color-primary-light);
     }
 
-    /* 24-hour reports table.
+    /* Reports table.
        Was a wall of inline styles on every <th> and <td>, which left no hook
        for a media query — the reason every row on a phone ran onto two or
        three lines. Classes here, values in the media query below. */
@@ -533,6 +566,28 @@
 
     /* Mobile responsive styles */
     @media (max-width: 768px) {
+      /* This block sits above every piece of data on the page, so on a phone it
+         is a screenful of prose before the first reading. Tighter padding and
+         type keep it to a glance. */
+      .ls-about {
+        padding: 1rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .ls-about-lead {
+        font-size: 0.9rem;
+      }
+
+      .ls-about-authority {
+        font-size: 0.875rem;
+        padding: 0.6rem 0.75rem;
+      }
+
+      .ls-about-link {
+        flex: 1 1 100%;
+        text-align: center;
+      }
+
       .ls-selector-controls {
         flex-direction: column;
         align-items: stretch;
@@ -594,21 +649,20 @@
       <h2>About Lightstation Reports</h2>
       <p class="ls-about-lead">
         BC's staffed lightstations report wind, sea state, swell and visibility from remote
-        coastal locations — observations made by a person, from places no instrument covers.
-        Reporting schedules differ from station to station; each card shows its own, and
-        the time of its next expected report, under <em>Station Details</em>.
+        coastal locations, observed and phoned in by the lightkeepers on site. Reporting
+        schedules vary by station; each card shows its own under <em>Station Details</em>.
       </p>
 
       <p class="ls-about-authority">
-        <strong>Environment Canada is the only authoritative source for marine decisions.</strong>
-        This page re-presents their published bulletins and infers each station's schedule
-        from what has arrived here — that inference is still settling, and a report can be
-        late, missed, or absent from our copy. Before going out, check EC directly:
-        <a href="https://weather.gc.ca/marine/weatherConditions-lightstation_e.html?mapID=02&amp;siteID=16200" target="_blank" rel="noopener">Lightstation Reports</a>
-        (every BC station on one page, in the raw coded format) or
-        <a href="https://weather.gc.ca/marine/index_e.html" target="_blank" rel="noopener">Marine Weather</a>
-        for forecasts and warnings.
+        <strong>Environment Canada is the authoritative source for marine decisions.</strong>
+        This page re-presents their bulletins, and a report can be late, missed, or absent
+        from our copy. Check EC directly before going out:
       </p>
+
+      <div class="ls-about-links">
+        <a class="ls-about-link ls-about-link-primary" href="https://weather.gc.ca/marine/weatherConditions-lightstation_e.html?mapID=02&amp;siteID=16200" target="_blank" rel="noopener">EC Lightstation Reports</a>
+        <a class="ls-about-link" href="https://weather.gc.ca/marine/index_e.html" target="_blank" rel="noopener">EC Marine Weather</a>
+      </div>
 
       <details class="ls-about-more">
         <summary>How the reporting schedule works</summary>
@@ -616,7 +670,7 @@
           <p>
             Two FPCN61 bulletin cycles run. Some stations report at ten past the hour on the
             00/03/06/09/12/15/18/21&nbsp;UTC cycle, others at forty past on the
-            02/05/08/11/14/17/20/23&nbsp;UTC cycle, and several appear in both — so their
+            02/05/08/11/14/17/20/23&nbsp;UTC cycle, and several appear in both, so their
             reports arrive about half an hour apart, then not again for two and a half hours.
           </p>
           <p>
@@ -676,7 +730,7 @@
         <a href="#lightstation-map-section" id="show-lightstation-on-map-btn" class="ls-map-btn">Show on Map</a>
       </div>
 
-      <h3 id="lightstation-24hr-title" style="margin: 1.5rem 0 0.75rem; color: var(--color-primary-dark); font-size: 1.15rem;">24-Hour Reports</h3>
+      <h3 id="lightstation-24hr-title" style="margin: 1.5rem 0 0.75rem; color: var(--color-primary-dark); font-size: 1.15rem;">72-Hour Reports</h3>
       <div id="lightstation-data-table-section" class="data-table ls-table-wrap">
         <table id="lightstation-24hr-table" class="ls-table">
           <thead>
@@ -690,7 +744,7 @@
           </thead>
           <tbody id="lightstation-24hr-body">
             <tr>
-              <td colspan="5" class="ls-table-empty">Select a station to view 24-hour data</td>
+              <td colspan="5" class="ls-table-empty">Select a station to view 72-hour data</td>
             </tr>
           </tbody>
         </table>
@@ -699,7 +753,7 @@
 
     <!-- Lightstation Charts Section (Optional - sparse data) -->
     <section id="lightstation-chart-section" class="ls-section">
-      <h2>24-Hour Trend Charts</h2>
+      <h2>72-Hour Trend Charts</h2>
       <p style="text-align: center; color: var(--color-text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; font-style: italic;">
         Note: Charts show limited data points due to 3-hour reporting intervals
       </p>
@@ -741,7 +795,7 @@
        and lightstation-map.js. They must NOT get their own script tags — the ?v=
        query would differ from the bare import specifier and the browser would
        execute them twice (module cache is keyed by full URL). -->
-  <script type="module" src="/assets/js/lightstation-page.js?v=3d491c6902"></script>
+  <script type="module" src="/assets/js/lightstation-page.js?v=4a762ee86f"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

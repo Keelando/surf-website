@@ -211,9 +211,9 @@ function addLightstationMapMarker(lightstation) {
       const formattedDate = formatWeekdayDayTime(obs.observation_time);
       const ageText = ` (${getShortAgeString(obs.observation_time)})`;
 
-      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-border);">📅 Report: ${formattedDate}${ageText}</div>`;
+      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-border);">📅 Reported: ${formattedDate}${ageText}</div>`;
     } else if (obs.report_time_str) {
-      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-border);">📅 Report: ${obs.report_time_str}</div>`;
+      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-border);">📅 Reported: ${obs.report_time_str}</div>`;
     }
 
     // No separate "⚠️ STALE DATA" line here. The block's own header already

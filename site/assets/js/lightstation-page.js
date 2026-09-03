@@ -211,7 +211,7 @@ function createStationCard(station) {
     const formattedDate = formatWeekdayDayTime(station.observation_time);
     const ageText = ` (${getShortAgeString(station.observation_time)})`;
 
-    reportTime.textContent = `Report: ${formattedDate}${ageText}`;
+    reportTime.textContent = `Reported: ${formattedDate}${ageText}`;
     card.appendChild(reportTime);
 
     // When to check back. Lightkeeper reports land on a fixed daily cycle, so
@@ -227,7 +227,7 @@ function createStationCard(station) {
   } else if (station.report_time_str) {
     const reportTime = document.createElement("div");
     reportTime.className = "report-time";
-    reportTime.textContent = `Report: ${station.report_time_str}`;
+    reportTime.textContent = `Reported: ${station.report_time_str}`;
     card.appendChild(reportTime);
   }
 

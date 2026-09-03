@@ -22,7 +22,7 @@ const WINDOW_HOURS = 72;
 
 /**
  * Lightkeepers report wind direction as a full compass word ("SOUTHEAST").
- * Spelled out, that single cell is the widest thing in the 24-hour table and
+ * Spelled out, that single cell is the widest thing in the reports table and
  * is what pushes every phone-width row onto a second line — so the table (and
  * only the table; the map popups and cards have room) shows the abbreviation.
  */
@@ -64,7 +64,7 @@ function isNarrowChart() {
 }
 
 /**
- * Shared option fragments for the two 24-hour charts, which are identical in
+ * Shared option fragments for the two trend charts, which are identical in
  * layout and differ only in series. Every one of these was a phone-only
  * legibility bug before it was a helper — see the comments on each.
  */
@@ -340,7 +340,7 @@ export function renderLightstationCharts(stationName) {
   currentLightstationStation = stationName;
   ensureLightstationThemeListener();
 
-  // Update 24-hour reports title with station name
+  // Update reports title with station name
   const title = document.getElementById("lightstation-24hr-title");
   if (title) {
     title.textContent = `${WINDOW_HOURS}-Hour Reports: ${stationName}`;
@@ -452,7 +452,7 @@ export function viewLightstationDataById(lightstationId) {
 }
 
 /**
- * Render 24-hour data table for selected station
+ * Render the reports table for the selected station
  */
 function render24HourTable(stationName, station) {
   const tbody = document.getElementById("lightstation-24hr-body");
