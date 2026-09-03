@@ -55,6 +55,50 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+- [ ] **North coast coverage** (added 2026-09-03, prompted by a mariner out of
+  Kitimat who emailed about the McInnes Island position error). The
+  lightstations are currently the *only* north-coast data this site carries,
+  which is presumably why a north-coast reader was the one who spotted it.
+  Measured gaps:
+  - **Wind stations: 22 carried, none north of 50.5°N.** The northernmost is
+    Sisters Islets at 49.49°N; Kitimat is 54°N. Candidates to add along
+    Hecate Strait, Douglas Channel and Chatham Sound.
+  - **Marine text forecasts: 6 areas, all Georgia Basin and south** (Haro
+    Strait, Howe Sound, Johnstone Strait, Juan de Fuca, Strait of Georgia,
+    WCVI South). Nothing north of Johnstone Strait — no Hecate Strait, Dixon
+    Entrance, Douglas Channel, Principe Channel or Queen Charlotte Sound.
+    The zone plumbing already handles nine zones and needs no parser change
+    to add more (see `docs/project/` marine-forecast notes).
+  - **Automated forecast points: 6, none north of 48.8°N** (La Perouse Bank).
+    One or two RDWPS/HRDPS points on the north coast would pair with the
+    lightstations already there. Mind the fetch footprint — see the
+    `FETCH_DELAY` sizing note in `scripts/fetch/fetch_wave_forecast.py`.
+
+  Worth keeping in touch with the correspondent: a working mariner in the area
+  is a better source on which points matter than a map is.
+
+- [ ] **Accuracy audit: forecasts and lightstations pages** (added 2026-09-03).
+  Both pages re-present someone else's bulletins, and the 2026-09-03 session
+  found four separate ways this one had drifted from its source (a dropdown
+  that silently hid 11 of 23 stations, a window too short for the slowest
+  stations, an empty details panel, a station missing from the registry). Walk
+  each rendered field back to the upstream bulletin and confirm it says what
+  the source says. Overlaps with the queued end-to-end feed audit — do them
+  together.
+
+- [ ] **Infer the human forecasters' issue cadence** (added 2026-09-03), the
+  same way lightstation schedules now work. Mariners plan around when the next
+  EC bulletin lands, and the page currently says nothing about it. The pieces
+  are in place: `issued_utc` is already parsed per location into
+  `marine_forecast.json`, and `lib/lightstation_schedule.py` is generic over
+  "timestamps in, slots out" — it would need renaming and a small
+  generalization rather than a rewrite. The missing half is history: unlike
+  lightstation observations there is no table of past issue times, so a
+  lightweight record of them has to accumulate first. Note the cadence differs
+  from the lightstations' — text bulletins are issued a few times a day with
+  amendments in between, so amended reissues must not be mistaken for
+  scheduled slots.
+
 - [ ] **Decide a license for the Dataset structured data** (deferred by the
   user 2026-08-27 — "I don't know much about Dataset license"). The JSON-LD
   `Dataset` block in `site/api.html` omits `license`, which Google lists as

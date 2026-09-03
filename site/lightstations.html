@@ -40,6 +40,72 @@
   <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
 
   <style>
+    /* --- "About Lightstation Reports" ---------------------------------
+       Was three paragraphs of inline-styled prose above the map, most of it
+       schedule mechanics that a returning reader has already absorbed. The
+       lead and the authority note stay visible; the mechanics fold away. */
+    .ls-about {
+      background: var(--color-surface-alt);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+    }
+
+    .ls-about h2 {
+      margin-top: 0;
+      color: var(--color-primary-dark);
+      font-size: 1.3rem;
+    }
+
+    .ls-about-lead {
+      margin: 0 0 0.75rem;
+    }
+
+    /* Deliberately the loudest thing in the block: this page is read by people
+       deciding whether to put a boat in the water. */
+    .ls-about-authority {
+      margin: 0;
+      padding: 0.75rem 1rem;
+      border-left: 3px solid var(--color-primary);
+      border-radius: 4px;
+      background: var(--color-callout-info-bg);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .ls-about-more {
+      margin-top: 0.75rem;
+    }
+
+    .ls-about-more > summary {
+      cursor: pointer;
+      width: fit-content;
+      padding: 0.25rem 0.4rem;
+      border-radius: 4px;
+      color: var(--color-text-muted);
+      font-size: 0.9rem;
+    }
+
+    .ls-about-more > summary:hover,
+    .ls-about-more > summary:focus-visible {
+      color: var(--color-text);
+      background: var(--color-callout-info-bg);
+    }
+
+    .ls-about-more-body {
+      padding: 0.25rem 0.4rem 0;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .ls-about-more-body p {
+      margin: 0 0 0.6rem;
+    }
+
+    .ls-about-more-body p:last-child {
+      margin-bottom: 0;
+    }
+
     /* Lightstation map label styling */
     .lightstation-label {
       background: var(--color-lightstation-label-bg) !important;
@@ -501,21 +567,47 @@
   <div hx-get="/components/tagline-lightstations.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
 
   <div class="container">
-    <section style="background: var(--color-surface-alt); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-      <h2 style="margin-top: 0; color: var(--color-primary-dark); font-size: 1.3rem;">About Lightstation Reports</h2>
-      <p style="margin-bottom: 0.5rem;">
-        BC's staffed lightstations provide essential weather observations from remote coastal locations.
-        Lightkeepers report wind speed and direction, sea state (wave height and conditions), swell intensity and direction,
-        and visibility. Most stations report every 3 hours, though some report less frequently (once or twice daily).
+    <section class="ls-about">
+      <h2>About Lightstation Reports</h2>
+      <p class="ls-about-lead">
+        BC's staffed lightstations report wind, sea state, swell and visibility from remote
+        coastal locations — observations made by a person, from places no instrument covers.
+        Reporting schedules differ from station to station; each card shows its own, and
+        the time of its next expected report, under <em>Station Details</em>.
       </p>
-      <p style="margin: 0;">
-        <strong>Report schedules vary by station.</strong> Two FPCN61 cycles run: some
-        stations report at ten past the hour on the 00/03/06/09/12/15/18/21&nbsp;UTC cycle,
-        others at forty past on the 02/05/08/11/14/17/20/23&nbsp;UTC cycle, and a few appear
-        in both. A handful report only four times a day, in daylight hours, and every cycle
-        has an overnight gap. Each station card lists its own observed schedule and the time
-        of its next expected report under <em>Station Details</em>.
+
+      <p class="ls-about-authority">
+        <strong>Environment Canada is the only authoritative source for marine decisions.</strong>
+        This page re-presents their published bulletins and infers each station's schedule
+        from what has arrived here — that inference is still settling, and a report can be
+        late, missed, or absent from our copy. Check
+        <a href="https://weather.gc.ca/marine/index_e.html" target="_blank" rel="noopener">EC Marine Weather</a>
+        before going out.
       </p>
+
+      <details class="ls-about-more">
+        <summary>How the reporting schedule works</summary>
+        <div class="ls-about-more-body">
+          <p>
+            Two FPCN61 bulletin cycles run. Some stations report at ten past the hour on the
+            00/03/06/09/12/15/18/21&nbsp;UTC cycle, others at forty past on the
+            02/05/08/11/14/17/20/23&nbsp;UTC cycle, and several appear in both — so their
+            reports arrive about half an hour apart, then not again for two and a half hours.
+          </p>
+          <p>
+            Not every station runs a full cycle. Cape Mudge and Pulteney Point report four
+            times a day, in daylight hours, with a long overnight silence. And no station has
+            published the 08:40 or 09:10&nbsp;UTC slot in the history we hold, so every cycle
+            has an overnight gap and none reaches the nominal eight reports a day.
+          </p>
+          <p>
+            The schedule shown for each station is measured from its own recent reports rather
+            than declared in advance, so it follows what a station actually does. A station
+            that has not reported often enough for a pattern to emerge is labelled as
+            irregular instead.
+          </p>
+        </div>
+      </details>
     </section>
 
     <!-- Lightstation Map Section -->
