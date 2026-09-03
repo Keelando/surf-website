@@ -50,6 +50,11 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 **Next feature** (not maintenance): Salish Sea forecast upgrade — RDWPS waves
 + CIOPS-SalishSea water levels. Plan: `docs/project/FORECAST_UPGRADE.md`.
 
+**Next bugfix**: lightstation parser — FPCN61 drops every sea height under
+4 ft (`FEET?` never matched `FOOT`), and Merry/Trial Island store each
+observation twice because FPCN61 and SXCN26 publish the same reading 30
+minutes apart. Plan: `docs/project/LIGHTSTATION_PARSE_FIXES.md`.
+
 ## Feature backlog
 
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
