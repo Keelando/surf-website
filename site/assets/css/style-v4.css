@@ -2127,9 +2127,14 @@ header h2 {
   #wind-data-table-section,
   #lightstation-selector-section,
   #lightstation-chart-section,
-  #lightstation-map-section,
-  #lightstation-data-table-section {
+  #lightstation-map-section {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
+
+  /* #lightstation-data-table-section is deliberately NOT in the list above.
+     It is not a page section — it is the horizontal scroll container around
+     the 24-hour table, already inside #lightstation-selector-section's
+     gutters. The extra 0.5rem a side was enough on its own to push the table
+     into a scrollbar at 360 px. */
 }

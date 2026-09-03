@@ -26,10 +26,14 @@ export function formatTimeHM(input) {
   return fmt(input, { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
+/** "7/14" — the date alone, for chart axes that show the day boundary only. */
+export function formatDayMonthNumeric(input) {
+  return fmt(input, { month: "numeric", day: "numeric" });
+}
+
 /** "14:30 7/14" — replaces chart-utils-v4 formatTimestamp(). */
 export function formatTimeWithDate(input) {
-  const day = fmt(input, { month: "numeric", day: "numeric" });
-  return `${formatTimeHM(input)} ${day}`;
+  return `${formatTimeHM(input)} ${formatDayMonthNumeric(input)}`;
 }
 
 /**

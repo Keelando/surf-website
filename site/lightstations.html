@@ -31,7 +31,7 @@
   <meta name="twitter:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
 
   <link rel="canonical" href="https://halibutbank.ca/lightstations.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=bba861b406" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=619c4c241d" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=3e83e68729" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=3df3346e1e" />
@@ -330,6 +330,93 @@
       background: var(--color-primary-light);
     }
 
+    /* 24-hour reports table.
+       Was a wall of inline styles on every <th> and <td>, which left no hook
+       for a media query — the reason every row on a phone ran onto two or
+       three lines. Classes here, values in the media query below. */
+    .ls-table-wrap {
+      overflow-x: auto;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .ls-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .ls-table thead tr {
+      background: linear-gradient(to bottom, var(--color-primary-dark), #003d66);
+      color: #fff;
+    }
+
+    .ls-table th {
+      padding: 0.65rem 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .ls-table td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--color-border-light);
+      font-size: 0.95rem;
+    }
+
+    /* The gusting flag: a plain "G", not the browser's dotted underline,
+       which reads as an error squiggle in a data cell. */
+    .ls-table abbr[title] {
+      text-decoration: none;
+      border-bottom: 1px dotted currentColor;
+      cursor: help;
+    }
+
+    .ls-table-empty {
+      text-align: center;
+      padding: 2rem;
+      color: var(--color-text-muted);
+    }
+
+    .ls-table-empty-alert {
+      color: var(--color-accent-red);
+    }
+
+    /* Phone widths: the five columns fit only if each cell stays on one line,
+       so the data cells never wrap and carry their content already shortened
+       ("SE 29 kt G", "6 ft", "Moderate"). Headers are allowed to wrap — that
+       costs one row once, not one per observation. `.ls-table-wrap` keeps its
+       horizontal scroll as the backstop for a longer word than we planned. */
+    @media (max-width: 600px) {
+      .ls-table th,
+      .ls-table td {
+        padding: 0.4rem 0.3rem;
+        font-size: 0.8rem;
+      }
+
+      /* First and last cells keep the table off the card edge. */
+      .ls-table th:first-child,
+      .ls-table td:first-child {
+        padding-left: 0.5rem;
+      }
+
+      .ls-table th:last-child,
+      .ls-table td:last-child {
+        padding-right: 0.5rem;
+      }
+
+      .ls-table td {
+        white-space: nowrap;
+      }
+
+      .ls-table th {
+        white-space: normal;
+      }
+
+      .ls-table td.ls-col-time {
+        font-variant-numeric: tabular-nums;
+      }
+    }
+
     /* Mobile responsive styles */
     @media (max-width: 768px) {
       .ls-selector-controls {
@@ -440,20 +527,20 @@
       </div>
 
       <h3 id="lightstation-24hr-title" style="margin: 1.5rem 0 0.75rem; color: var(--color-primary-dark); font-size: 1.15rem;">24-Hour Reports</h3>
-      <div id="lightstation-data-table-section" class="data-table" style="overflow-x: auto; border-radius: 6px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);">
-        <table id="lightstation-24hr-table" style="width: 100%; border-collapse: collapse;">
+      <div id="lightstation-data-table-section" class="data-table ls-table-wrap">
+        <table id="lightstation-24hr-table" class="ls-table">
           <thead>
-            <tr style="background: linear-gradient(to bottom, #004b7c, #003d66); color: white;">
-              <th style="padding: 0.65rem 0.75rem; text-align: left; font-weight: 600; font-size: 0.95rem;">Report Time</th>
-              <th style="padding: 0.65rem 0.75rem; text-align: left; font-weight: 600; font-size: 0.95rem;">Wind</th>
-              <th style="padding: 0.65rem 0.75rem; text-align: left; font-weight: 600; font-size: 0.95rem;">Sea State</th>
-              <th style="padding: 0.65rem 0.75rem; text-align: left; font-weight: 600; font-size: 0.95rem;">Swell</th>
-              <th style="padding: 0.65rem 0.75rem; text-align: left; font-weight: 600; font-size: 0.95rem;">Conditions</th>
+            <tr>
+              <th class="ls-col-time">Report Time</th>
+              <th class="ls-col-wind">Wind</th>
+              <th class="ls-col-sea">Sea State</th>
+              <th class="ls-col-swell">Swell</th>
+              <th class="ls-col-cond">Conditions</th>
             </tr>
           </thead>
           <tbody id="lightstation-24hr-body">
             <tr>
-              <td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">Select a station to view 24-hour data</td>
+              <td colspan="5" class="ls-table-empty">Select a station to view 24-hour data</td>
             </tr>
           </tbody>
         </table>

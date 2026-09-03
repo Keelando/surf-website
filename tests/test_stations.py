@@ -181,3 +181,42 @@ class TestStationDataIntegrity:
             assert "name" in data, f"Wind {sid} missing 'name'"
             assert "lat" in data, f"Wind {sid} missing 'lat'"
             assert "lon" in data, f"Wind {sid} missing 'lon'"
+
+
+# ── Lightstation coordinates ─────────────────────────────────
+
+
+class TestLightstationCoordinates:
+    """Guards on the lightstation coordinates specifically.
+
+    Every entry is transcribed from the Canadian Coast Guard's *List of
+    Lights, Buoys and Fog Signals — Pacific Coast*, which gives each light to
+    a tenth of an arcsecond. Two entries were not: McInnes Island and Egg
+    Island had been pinned off a map to two decimal places, putting McInnes
+    24 km from the light (a user reported it) and Egg Island 3 km out.
+
+    A bounding box would not have caught either — both were plausible BC
+    coastal points. The tell was the rounding, so that is what is asserted.
+    """
+
+    # Wide enough for Langara Island (54.26 N, 133.06 W) at the northwest
+    # corner of Haida Gwaii and Trial Islands (48.40 N) off Victoria.
+    LAT_RANGE = (48.0, 55.0)
+    LON_RANGE = (-134.0, -122.0)
+
+    def test_within_bc_coast(self):
+        for sid, data in STATIONS.lightstations.items():
+            lat, lon = data["lat"], data["lon"]
+            assert self.LAT_RANGE[0] < lat < self.LAT_RANGE[1], f"{sid} lat {lat} out of range"
+            assert self.LON_RANGE[0] < lon < self.LON_RANGE[1], f"{sid} lon {lon} out of range"
+
+    def test_not_rounded_to_two_decimals(self):
+        """Two decimal places is ~1 km — an eyeballed pin, not a transcription."""
+        for sid, data in STATIONS.lightstations.items():
+            for field in ("lat", "lon"):
+                value = data[field]
+                decimals = len(str(value).partition(".")[2])
+                assert decimals >= 3, (
+                    f"{sid} {field}={value} has {decimals} decimal places; "
+                    "take the value from the CCG List of Lights, Pacific Coast"
+                )

@@ -7,8 +7,161 @@
    still come from classic scripts loaded before this one.
    ----------------------------- */
 
-import { formatNumericDayTime } from "./shared/format-time.js";
+import { formatDayMonthNumeric, formatNumericDayTime, formatTimeHM } from "./shared/format-time.js";
 import { setSafeHTML } from "./shared/safe-html.js";
+
+/**
+ * Lightkeepers report wind direction as a full compass word ("SOUTHEAST").
+ * Spelled out, that single cell is the widest thing in the 24-hour table and
+ * is what pushes every phone-width row onto a second line — so the table (and
+ * only the table; the map popups and cards have room) shows the abbreviation.
+ */
+const WIND_DIRECTION_ABBR = {
+  NORTH: "N",
+  NORTHEAST: "NE",
+  EAST: "E",
+  SOUTHEAST: "SE",
+  SOUTH: "S",
+  SOUTHWEST: "SW",
+  WEST: "W",
+  NORTHWEST: "NW",
+};
+
+/**
+ * "SOUTHEAST" → "SE"; anything unrecognised is passed through unchanged so a
+ * new vocabulary word from upstream still shows up rather than vanishing.
+ */
+function abbreviateDirection(direction) {
+  if (!direction) return "";
+  return WIND_DIRECTION_ABBR[String(direction).toUpperCase()] || direction;
+}
+
+/**
+ * "MODERATE" → "Moderate". The feed shouts every sea-state and swell word;
+ * title case reads as a value rather than a warning.
+ */
+function titleCase(word) {
+  const text = String(word);
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+}
+
+/**
+ * True on phone-width screens, where the charts need shorter titles, one-line
+ * axis labels and an unrotated axis name to stay legible.
+ */
+function isNarrowChart() {
+  return window.innerWidth < 600;
+}
+
+/**
+ * Shared option fragments for the two 24-hour charts, which are identical in
+ * layout and differ only in series. Every one of these was a phone-only
+ * legibility bug before it was a helper — see the comments on each.
+ */
+
+/** Title block: wraps to the canvas instead of being clipped, and shrinks on a phone. */
+function lightstationTitle(text, chart, textColor) {
+  const narrow = isNarrowChart();
+  return {
+    text,
+    left: "center",
+    textStyle: {
+      fontSize: narrow ? 14 : 18,
+      fontWeight: 600,
+      color: textColor,
+      // A centred one-line title longer than the canvas is clipped at both
+      // ends — "MERRY ISLAND - Sea State (Wave Heig" — so let it wrap to the
+      // chart's own width instead.
+      width: chartWidth(chart),
+      overflow: "break",
+    },
+  };
+}
+
+/**
+ * Where the legend and plot area start.
+ *
+ * A wrapped two-line title is ~34 px at the phone font size and the legend sat
+ * at a fixed `top: 35`, so the title's second line was printed straight
+ * through it. Both anchors move down together on a narrow screen.
+ */
+function lightstationLegendTop() {
+  return isNarrowChart() ? 52 : 35;
+}
+
+/**
+ * X-axis tick labels.
+ *
+ * Wide: two lines, "9/3" over "13:40". On a phone that stacked pair is wider
+ * than the ~55 px between ticks and `hideOverlap` alone was not enough — so a
+ * narrow screen gets a single-line clock, with the date shown in place of
+ * "00:00" at the midnight tick to keep the day boundary readable.
+ */
+function lightstationTimeAxisLabel(mutedText) {
+  const narrow = isNarrowChart();
+  return {
+    formatter: (value) => {
+      const date = new Date(value);
+      if (!narrow) return formatNumericDayTime(date).replace(" ", "\n");
+      const clock = formatTimeHM(date);
+      return clock === "00:00" ? formatDayMonthNumeric(date) : clock;
+    },
+    fontSize: narrow ? 11 : 12,
+    color: mutedText,
+    hideOverlap: true,
+  };
+}
+
+/**
+ * Y-axis name.
+ *
+ * Rotated in the middle of the axis it needs `nameGap` px of margin outside
+ * the tick labels; with `grid.left: 30` and one-character labels ("0"…"6")
+ * there was nowhere near 40 px on a phone and "Wave Height (ft)" was sliced
+ * off at the canvas edge. Narrow screens get it unrotated above the axis,
+ * where it cannot be clipped.
+ */
+function lightstationValueAxisName(name, textColor) {
+  const narrow = isNarrowChart();
+  return {
+    name,
+    nameLocation: narrow ? "end" : "middle",
+    nameRotate: narrow ? 0 : 90,
+    nameGap: narrow ? 12 : 40,
+    nameTextStyle: {
+      fontSize: narrow ? 11 : 13,
+      fontWeight: 600,
+      color: textColor,
+      align: narrow ? "left" : "center",
+    },
+  };
+}
+
+/** Plot area, with room reserved for whichever y-axis name style is in play. */
+function lightstationGrid() {
+  const narrow = isNarrowChart();
+  return {
+    // containLabel reserves the tick labels; `left` then only has to leave
+    // room for the rotated axis name outside them, and `right` comes from the
+    // site-wide gutter. The old 15%/4% pair spent 120 px of a 800 px chart on
+    // blank margin. On a phone the name sits above the axis instead, so there
+    // is nothing to reserve at the left.
+    //
+    // 44, not 30: with containLabel the axis line sits at left + label width,
+    // and the name is nameGap (40) back from there — so a chart whose labels
+    // are one character wide ("0"…"6", i.e. the wave chart) put the name at
+    // x≈2 and sliced it off against the canvas edge. 44 clears the widest
+    // nameGap with the narrowest labels.
+    left: narrow ? getChartSideGutters().left : 44,
+    right: getChartSideGutters().right,
+    // 22% of a 400 px canvas is 88 px of margin under the plot for a 30 px
+    // dataZoom slider and one line of tick labels. Pixels on a phone, where
+    // that overhead is a fifth of the chart.
+    bottom: narrow ? 62 : "22%",
+    top: narrow ? 96 : "20%",
+    containLabel: true,
+  };
+}
 
 // Global chart instances
 let windSpeedChart = null;
@@ -183,7 +336,7 @@ function showNoDataMessage(stationName) {
   if (tbody) {
     setSafeHTML(
       tbody,
-      '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-accent-red,#e53e3e);">⚠️ No data from the past 24 hours</td></tr>',
+      '<tr><td colspan="5" class="ls-table-empty ls-table-empty-alert">⚠️ No data from the past 24 hours</td></tr>',
     );
   }
 
@@ -289,14 +442,14 @@ function render24HourTable(stationName, station) {
   if (sortedTimes.length === 0) {
     setSafeHTML(
       tbody,
-      '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-text-muted,#718096);">No data available for this station</td></tr>',
+      '<tr><td colspan="5" class="ls-table-empty">No data available for this station</td></tr>',
     );
     return;
   }
 
   // Build table rows
   let tableHTML = "";
-  sortedTimes.forEach((time, rowIndex) => {
+  sortedTimes.forEach((time) => {
     // Find data for this timestamp
     const windData = timeseries.wind_speed_kt?.find((p) => p.time === time);
     const seaData = timeseries.sea_height_ft?.find((p) => p.time === time);
@@ -307,48 +460,43 @@ function render24HourTable(stationName, station) {
     // Format timestamp
     const formattedTime = formatNumericDayTime(time);
 
-    // Build wind text
+    // Build wind text. "(gusting)" spelled out is a whole extra line on a
+    // phone, so it becomes a "G" flag with the long form on hover/AT.
     let windText = "—";
     if (windData && windData.value !== null) {
-      const direction = directionData ? directionData.value : "";
-      const gusting = windData.gusting ? " (gusting)" : "";
-      windText = `${direction} ${Math.round(windData.value)} kt${gusting}`;
+      const direction = abbreviateDirection(directionData ? directionData.value : "");
+      const gusting = windData.gusting ? ' <abbr title="gusting">G</abbr>' : "";
+      windText = `${direction} ${Math.round(windData.value)} kt${gusting}`.trim();
     }
 
-    // Build sea state text
+    // Sea state and condition each get their own cell. Concatenating them
+    // ("3 ft - MODERATE") made the widest column on the page while leaving
+    // Conditions permanently empty — two short cells fit where one long one
+    // did not.
     let seaText = "—";
     if (seaData && seaData.value !== null) {
       seaText = `${seaData.value} ft`;
     }
 
-    // Build swell text
     let swellText = "—";
     if (swellData && swellData.value) {
-      swellText = swellData.value;
+      swellText = titleCase(swellData.value);
     }
 
-    // Build conditions text
     let conditionsText = "—";
     if (conditionData && conditionData.value) {
-      conditionsText = conditionData.value;
+      conditionsText = titleCase(conditionData.value);
     }
 
-    // Combine sea state and condition if both exist
-    if (seaData && seaData.value !== null && conditionData && conditionData.value) {
-      seaText = `${seaData.value} ft - ${conditionData.value}`;
-      conditionsText = "—"; // Don't duplicate
-    }
-
-    const rowBackground = rowIndex % 2 === 0 ? "var(--color-surface)" : "var(--color-table-zebra)";
-    const borderColor = "var(--color-border-light)";
-
+    // Zebra striping is `.data-table tbody tr:nth-child(even)` in style-v4.css,
+    // not a per-row background written out here.
     tableHTML += `
-      <tr style="background: ${rowBackground};">
-        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid ${borderColor}; font-size: 0.95rem;">${formattedTime}</td>
-        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid ${borderColor}; font-size: 0.95rem;">${windText}</td>
-        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid ${borderColor}; font-size: 0.95rem;">${seaText}</td>
-        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid ${borderColor}; font-size: 0.95rem;">${swellText}</td>
-        <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid ${borderColor}; font-size: 0.95rem;">${conditionsText}</td>
+      <tr>
+        <td class="ls-col-time">${formattedTime}</td>
+        <td class="ls-col-wind">${windText}</td>
+        <td class="ls-col-sea">${seaText}</td>
+        <td class="ls-col-swell">${swellText}</td>
+        <td class="ls-col-cond">${conditionsText}</td>
       </tr>
     `;
   });
@@ -392,13 +540,7 @@ function renderWindSpeedChart(stationName, station) {
     backgroundColor: theme.background,
     textStyle: { color: textColor },
     title: {
-      text: `${station.name} - Wind Speed`,
-      left: "center",
-      textStyle: {
-        fontSize: 18,
-        fontWeight: 600,
-        color: textColor,
-      },
+      ...lightstationTitle(`${station.name} - Wind Speed`, windSpeedChart, textColor),
     },
     tooltip: {
       ...getMobileOptimizedTooltipConfig(),
@@ -417,23 +559,13 @@ function renderWindSpeedChart(stationName, station) {
     },
     legend: {
       data: ["Wind Speed", "Gusting"],
-      top: 35,
+      top: lightstationLegendTop(),
       textStyle: {
         fontSize: 14,
         color: textColor,
       },
     },
-    grid: {
-      // containLabel reserves the tick labels; `left` then only has to leave
-      // room for the rotated axis name outside them (nameGap 40 below), and
-      // `right` comes from the site-wide gutter. The old 15%/4% pair spent
-      // 120 px of a 800 px chart on blank margin.
-      left: 30,
-      right: getChartSideGutters().right,
-      bottom: "22%",
-      top: "20%",
-      containLabel: true,
-    },
+    grid: lightstationGrid(),
     xAxis: {
       type: "time",
       boundaryGap: false,
@@ -444,28 +576,12 @@ function renderWindSpeedChart(stationName, station) {
           type: "dashed",
         },
       },
-      axisLabel: {
-        // "7/16 11:05" → "7/16\n11:05" (two-line axis label)
-        formatter: (value) => formatNumericDayTime(new Date(value)).replace(" ", "\n"),
-        fontSize: 12,
-        color: mutedText,
-        // The wider plot area (see the grid above) fits more ticks, and a
-        // two-line date label runs into its neighbour long before ECharts'
-        // default single-line collision check notices.
-        hideOverlap: true,
-      },
+      axisLabel: lightstationTimeAxisLabel(mutedText),
       axisLine: { lineStyle: { color: axisColor } },
     },
     yAxis: {
       type: "value",
-      name: "Wind Speed (kt)",
-      nameLocation: "middle",
-      nameGap: 40,
-      nameTextStyle: {
-        fontSize: 13,
-        fontWeight: 600,
-        color: textColor,
-      },
+      ...lightstationValueAxisName("Wind Speed (kt)", textColor),
       min: 0,
       axisLabel: { color: mutedText },
       axisLine: { lineStyle: { color: axisColor } },
@@ -577,18 +693,15 @@ function renderWaveHeightChart(stationName, station) {
     backgroundColor: theme.background,
     textStyle: { color: textColor },
     title: {
-      text: `${station.name} - Sea State (Wave Height)`,
-      left: "center",
-      textStyle: {
-        fontSize: 18,
-        fontWeight: 600,
-        color: textColor,
-        // A centred one-line title longer than the canvas is clipped at both
-        // ends — "MERRY ISLAND - Sea State (Wave Heig" — so let it wrap to the
-        // chart's own width instead.
-        width: chartWidth(waveHeightChart),
-        overflow: "break",
-      },
+      // "Sea State (Wave Height)" says the same thing twice and, spelled out,
+      // wraps to three lines on a phone; the axis name carries the units.
+      ...lightstationTitle(
+        isNarrowChart()
+          ? `${station.name} - Wave Height`
+          : `${station.name} - Sea State (Wave Height)`,
+        waveHeightChart,
+        textColor,
+      ),
     },
     tooltip: {
       ...getMobileOptimizedTooltipConfig(),
@@ -607,23 +720,13 @@ function renderWaveHeightChart(stationName, station) {
     },
     legend: {
       data: ["Wave Height"],
-      top: 35,
+      top: lightstationLegendTop(),
       textStyle: {
         fontSize: 14,
         color: textColor,
       },
     },
-    grid: {
-      // containLabel reserves the tick labels; `left` then only has to leave
-      // room for the rotated axis name outside them (nameGap 40 below), and
-      // `right` comes from the site-wide gutter. The old 15%/4% pair spent
-      // 120 px of a 800 px chart on blank margin.
-      left: 30,
-      right: getChartSideGutters().right,
-      bottom: "22%",
-      top: "20%",
-      containLabel: true,
-    },
+    grid: lightstationGrid(),
     xAxis: {
       type: "time",
       boundaryGap: false,
@@ -634,28 +737,12 @@ function renderWaveHeightChart(stationName, station) {
           type: "dashed",
         },
       },
-      axisLabel: {
-        // "7/16 11:05" → "7/16\n11:05" (two-line axis label)
-        formatter: (value) => formatNumericDayTime(new Date(value)).replace(" ", "\n"),
-        fontSize: 12,
-        color: mutedText,
-        // The wider plot area (see the grid above) fits more ticks, and a
-        // two-line date label runs into its neighbour long before ECharts'
-        // default single-line collision check notices.
-        hideOverlap: true,
-      },
+      axisLabel: lightstationTimeAxisLabel(mutedText),
       axisLine: { lineStyle: { color: axisColor } },
     },
     yAxis: {
       type: "value",
-      name: "Wave Height (ft)",
-      nameLocation: "middle",
-      nameGap: 40,
-      nameTextStyle: {
-        fontSize: 13,
-        fontWeight: 600,
-        color: textColor,
-      },
+      ...lightstationValueAxisName("Wave Height (ft)", textColor),
       min: 0,
       axisLabel: { color: mutedText },
       axisLine: { lineStyle: { color: axisColor } },
