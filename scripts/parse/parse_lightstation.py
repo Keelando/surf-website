@@ -305,7 +305,9 @@ def parse_station_entry(line, region):
     else:
         # Extract sea height and condition
         # Pattern: "SEAS 4 FEET MODERATE" or "SEAS 2 FOOT CHOP"
-        seas_match = re.search(r"SEAS?\s+(\d+)\s+FEET?\s+([A-Z]+)", line)
+        # EC writes FOOT for 1-3 ft and FEET for 4 ft and up, so both spellings
+        # need matching explicitly: FEET? matches FEE/FEET, never FOOT.
+        seas_match = re.search(r"SEAS?\s+(\d+)\s+(?:FOOT|FEET|FT)\s+([A-Z]+)", line)
         if seas_match:
             data["sea_height_ft"] = float(seas_match.group(1))
             data["sea_condition"] = seas_match.group(2)

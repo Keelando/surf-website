@@ -195,6 +195,13 @@ class TestParseStationEntry:
         assert result["sea_height_ft"] == 5.0
         assert result["sea_condition"] == "MODERATE"
 
+    def test_seas_in_feet_singular(self):
+        # EC writes FOOT for 1-3 ft; these are the majority of FPCN61 readings.
+        line = "CHROME ISLAND. ESTIMATED WIND SOUTHEAST 16 KNOTS. SEAS 2 FOOT CHOP."
+        result = parse_station_entry(line, "STRAIT OF GEORGIA")
+        assert result["sea_height_ft"] == 2.0
+        assert result["sea_condition"] == "CHOP"
+
     def test_wind_calm(self):
         line = "BOAT BLUFF. WIND CALM. SEAS RIPPLED."
         result = parse_station_entry(line, "CENTRAL COAST")

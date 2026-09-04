@@ -1,6 +1,7 @@
 # Lightstation parse fixes: duplicate observations and dropped sea heights
 
-**Status:** QUEUED (written 2026-09-03)
+**Status:** Bug 2 FIXED 2026-09-04; Bug 1 (duplicate observations) still QUEUED
+(written 2026-09-03)
 **Target:** `scripts/parse/parse_lightstation.py`, `lib/lightstation_schedule.py`,
 `site/lightstations.html`
 **Origin:** the lightstation page shows Merry Island reporting twice, half an
@@ -133,11 +134,17 @@ page, and for the fifteen-odd FPCN61-only stations it is present only when the
 sea is running 4 ft or more — so the chart is blank in calm weather and the
 site looks like it has no data rather than like the sea is flat.
 
-### Fix
+### Fix — applied 2026-09-04
 
 ```python
 seas_match = re.search(r"SEAS?\s+(\d+)\s+(?:FOOT|FEET|FT)\s+([A-Z]+)", line)
 ```
+
+Covered by `test_seas_in_feet_singular` in `tests/test_lightstation_parse.py`.
+Existing rows could only be repaired where the raw bulletin survives: raw
+retention is 1 day, so a one-off re-parse of the FPCN61 files on disk filled
+39 rows. The remaining 351 null-sea-height FPCN61 rows predate that and age
+out of the 30-day window on their own.
 
 Add table-driven cases for both spellings, plus `SEAS RIPPLED`, so the pairing
 is asserted rather than described in a comment. Then re-parse the retained raw
