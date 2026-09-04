@@ -119,6 +119,12 @@
       text-decoration: none;
     }
 
+    /* Both buttons leave the site; the arrow says so before the click. */
+    .ls-external-arrow {
+      font-size: 0.85em;
+      line-height: 1;
+    }
+
     .ls-about-link-primary {
       background: var(--color-primary-dark);
       color: var(--color-surface);
@@ -660,8 +666,8 @@
       </p>
 
       <div class="ls-about-links">
-        <a class="ls-about-link ls-about-link-primary" href="https://weather.gc.ca/marine/weatherConditions-lightstation_e.html?mapID=02&amp;siteID=16200" target="_blank" rel="noopener">EC Lightstation Reports</a>
-        <a class="ls-about-link" href="https://weather.gc.ca/marine/index_e.html" target="_blank" rel="noopener">EC Marine Weather</a>
+        <a class="ls-about-link ls-about-link-primary" href="https://weather.gc.ca/marine/weatherConditions-lightstation_e.html?mapID=02&amp;siteID=16200" target="_blank" rel="noopener" aria-label="EC Lightstation Reports (opens weather.gc.ca in a new tab)">EC Lightstation Reports <span class="ls-external-arrow" aria-hidden="true">&#8599;</span></a>
+        <a class="ls-about-link" href="https://weather.gc.ca/marine/index_e.html" target="_blank" rel="noopener" aria-label="EC Marine Weather (opens weather.gc.ca in a new tab)">EC Marine Weather <span class="ls-external-arrow" aria-hidden="true">&#8599;</span></a>
       </div>
 
       <details class="ls-about-more">
@@ -676,10 +682,11 @@
             they report roughly every three hours.
           </p>
           <p>
-            Merry Island and Trial Island appear in both. The lightkeeper takes one observation
-            and it is published in both formats, so we currently list it twice, about half an
-            hour apart. That is a known bug on our side, not two visits to the anemometer &mdash;
-            these stations report on the same three-hourly rhythm as the rest.
+            Nine stations appear in both bulletins, Merry Island and Trial Island among them.
+            The lightkeeper takes one observation and it goes out in both formats, so we
+            currently list it twice, thirty to forty minutes apart. That is a known bug on our
+            side, not two visits to the anemometer &mdash; those stations report on the same
+            three-hourly rhythm as the rest.
           </p>
           <p>
             Not every station runs a full cycle. Cape Mudge and Pulteney Point report four

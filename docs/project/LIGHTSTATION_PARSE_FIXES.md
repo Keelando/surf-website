@@ -50,22 +50,24 @@ land 30 minutes apart and the unique index
 
 ### Scale
 
-Over the 30-day retention window: **340 duplicate pairs** out of 1,133 rows.
-By station, over the last 7 days:
+Corrected 2026-09-04: the first pass measured only Merry and Trial and
+concluded they were the only affected stations. They are not. Nine of the 23
+stations are published in both families, on two offsets:
 
-| Station | SXCN rows | FPCN61 rows | pairs within 1 h | identical wind |
-|---|---|---|---|---|
-| MERRY ISLAND | 47 | 49 | 47 | 46 |
-| TRIAL ISLAND | 49 | 10 | 10 | 10 |
+| SXCN family | Stations paired with FPCN61 | FPCN61 minus SXCN |
+|---|---|---|
+| SXCN23 (north/central coast) | Addenbroke, Boat Bluff, Bonilla, Dryad, Ivory, Langara, McInnes | +40 min |
+| SXCN26 (Georgia Strait) | Merry Island, Trial Island | +30 min |
 
-The one non-identical pair is an SXCN26 row where wind did not parse, not a
-genuine difference. Chrome and Entrance are SXCN-only; every other station is
-FPCN61-only. **Merry and Trial are the only two affected**, and Merry is the
-page's default station — which is why it is the one that looks wrong.
+Counts over the last 7 days, per station: 47 of 48 FPCN61 rows have an SXCN
+partner inside an hour for each of the SXCN23 stations, 47 of 48 for Merry,
+10 of 10 for Trial. Cape Beale, Lennard and Nootka (SXCN25) and Chrome and
+Entrance (SXCN26) are SXCN-only; Cape Mudge, Cape Scott, Chatham, Pine,
+Pulteney, Quatsino and Scarlett are FPCN61-only, since `SXCN24` is
+deliberately not subscribed.
 
-`bc_lightstation_obs.conf` already reasons this way for one feed ("Skip SXCN24
-— all its stations are already in FPCN61"). The same overlap exists for SXCN26
-and was not caught.
+So the tolerance window must cover 40 min, not just 30, and the fix touches
+nine stations rather than two.
 
 ### Consequences
 
@@ -88,13 +90,13 @@ the compact format does not). Deduplicate at insert instead:
 - Treat SXCN as authoritative for **time**. Its supplementary line states the
   observation minute outright; FPCN61 states a rounded hour.
 - When an FPCN61 report matches an existing SXCN report for the same station
-  within a tolerance window (60 min covers the observed 30 min offset), merge
+  within a tolerance window (60 min covers both observed offsets, 30 and 40 min), merge
   it into that row rather than inserting a new one: fill fields the SXCN row
   left null, keep the SXCN timestamp.
 - Order matters. SXCN (HH:40) arrives *before* FPCN61 (HH:10 of the next hour),
   so the SXCN row will normally exist first. Handle the reverse too — a
   re-parse, or a delayed SXCN — by collapsing whichever pair is found.
-- Backfill the existing 340 duplicate pairs, or accept that they age out of the
+- Backfill the existing duplicate pairs, or accept that they age out of the
   30-day window.
 
 Then re-word the disclosure to describe what actually happens: one observation
