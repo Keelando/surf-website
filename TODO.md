@@ -251,13 +251,11 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       **every stated interval checked against what cron actually runs**.
       Mutation-tested: all five real drift modes caught. *Done 2026-09-06.*
 
-      Left open, deliberately: the duplication itself. The structural fix is for
-      the fetch side to read position and identity from the registry and keep
-      only mechanics in the private file. That changes what a live cron job
-      reads, so it is a decision to take deliberately rather than as a side
-      effect of this cleanup. The tests hold the line until then. Also noted:
-      nothing on the site reads the per-camera `sunlight.json` files any more;
-      the set is frozen at the three already published rather than growing.
+      The duplication itself is still there; the tests only hold the line. That
+      is now the first item in the backlog below — **Collapse the webcam
+      registries to one owner per field**. Also noted: nothing on the site reads
+      the per-camera `sunlight.json` files any more; the set is frozen at the
+      three already published rather than growing.
 
 - [x] **Lightstation staleness measured per station, not flat** (user
       2026-09-06, prompted by "we now know the approx publish interval"). The
@@ -344,6 +342,60 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       `chart-utils-v4.js` compare against it), the `—` peak-value placeholders
       in `storm_surge.html`, en-dashes in ranges like `3–9 km`, and code
       comments, which are not UI text. *Done 2026-09-06.*
+
+- [ ] **Collapse the webcam registries to one owner per field** (raised to the
+  top 2026-09-06 at the user's request, straight after the drift audit that
+  found it). A camera is still described in **four** places. On 2026-09-06 they
+  disagreed by up to **24 km of position**, a **wrong cadence** (cron runs both
+  Mud Bay cams every 15 min; two sources said 10, so the page stated a cadence
+  the pipeline never had) and **three of six names**. Those values are
+  reconciled and `TestWebcamRegistryConsistency` now fails on re-drift — but a
+  test that catches divergence is a strictly worse thing to own than a
+  structure that cannot diverge, and every new camera adds four places to keep
+  in step.
+
+  **The split to aim for**, one owner per field:
+  - `config/stations.json` ["webcams"] — tracked, already public, already
+    exported: `name`, `short_name`, `lat`, `lon`, `update_frequency_minutes`,
+    `stream_delay_minutes`, `page_url`. This is *what a camera is*.
+  - `config/webcams.json` — gitignored, and the only reason two files exist at
+    all: `image_url`/`youtube_url`/`yawcam_url`, `image_referer`,
+    `image_user_agent`, `image_from`, `archive_dir`, `website_dir`, `prefix`,
+    `crop`, `max_height`, `check_daylight`, `daylight_margin_minutes`,
+    `cron_offset`, `annotate_timestamp`, `dedupe`, `disabled_in_cron`. This is
+    *how a camera is fetched*, and it is permission-restricted.
+
+  **Consumers to convert**, in rising order of blast radius:
+  1. `scripts/export/storage_metrics_to_mqtt.py` — takes only `{path, prefix,
+     name}`; `name` moves to the registry. Lowest risk, do it first.
+  2. `scripts/monitoring/health_check.py` `_load_webcam_config()` — already
+     merges both kinds of field; have it read identity from the registry and
+     mechanics from the private file. It is also where `display_name()` lives,
+     so it is the natural place to prove the merged shape works.
+  3. `site/assets/js/webcams-v4.js` — the fourth copy, and the one a reader
+     sees. It hardcodes `name`, `location`, `updateInterval`, `streamDelay` and
+     the `/data/<dir>/` paths per camera. `/data/stations.json` already carries
+     the first four. The data paths are the awkward part: `website_dir` is a
+     private-file field, so either mirror a public `data_path` into the
+     registry or keep deriving it from the camera id.
+  4. `scripts/fetch/fetch_webcam.py` — **highest risk, do it last.** Six cron
+     jobs depend on it and a bad import stops image capture silently until
+     someone looks at the page. It needs `lat`/`lon` for the daylight check and
+     `name` for logging and the `latest.json` metadata.
+
+  **Done when:** `webcams.json` carries no `name`/`lat`/`lon` (or they are
+  ignored with a warning on load); the three positional and naming assertions
+  in `TestWebcamRegistryConsistency` are deleted as structurally impossible,
+  leaving the roster check and the crontab-cadence check, which stay useful;
+  and a camera can be added by editing two files with no field written twice.
+
+  **Watch for:** a fresh clone has `stations.json` but not `webcams.json`, so
+  every loader needs a clear failure when the private file is missing rather
+  than a half-configured camera. And keep the permission-restricted endpoints
+  out of the tracked file — that constraint is the whole reason for the split
+  and is easy to erode once fields start moving. Same family as *Lightstation
+  regions should come from the registry* below: a field stored where it is
+  convenient rather than where it belongs.
 
 - [ ] **North coast coverage** (added 2026-09-03, prompted by a mariner out of
   Kitimat who emailed about the McInnes Island position error). The
