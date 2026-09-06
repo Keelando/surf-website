@@ -50,10 +50,9 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 **Next feature** (not maintenance): Salish Sea forecast upgrade — RDWPS waves
 + CIOPS-SalishSea water levels. Plan: `docs/project/FORECAST_UPGRADE.md`.
 
-**Next bugfix**: lightstation parser — FPCN61 drops every sea height under
-4 ft (`FEET?` never matched `FOOT`), and Merry/Trial Island store each
-observation twice because FPCN61 and SXCN26 publish the same reading 30
-minutes apart. Plan: `docs/project/LIGHTSTATION_PARSE_FIXES.md`.
+**Next bugfix**: none queued. The lightstation parser's two bugs are both
+fixed — the `FOOT` sea heights on 2026-09-04, the duplicated observations on
+2026-09-06. Write-up: `docs/project/LIGHTSTATION_PARSE_FIXES.md`.
 
 ## Feature backlog
 
@@ -81,6 +80,20 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 
   Worth keeping in touch with the correspondent: a working mariner in the area
   is a better source on which points matter than a map is.
+
+- [ ] **Lightstation regions should come from the registry** (found
+      2026-09-06, while deduplicating the two bulletin feeds). `region` is
+      stored per observation, and the two products disagree: SXCN can only
+      name the area its whole bulletin covers, so it files the central-coast
+      lights under Hecate Strait and Trial Island under the Strait of
+      Georgia. Whichever bulletin wrote the newest row decides which group a
+      station appears in on the page, so nine stations drift between groups
+      as the feeds alternate. `config/stations.json` already carries a
+      per-station `region` — the export should read it and the column should
+      stop being consulted. One catch: the registry uses `INSIDE PASSAGE` for
+      Boat Bluff, which has no group in `regionOrder` in
+      `site/assets/js/lightstation-page.js`, so that list needs reconciling
+      with the registry's vocabulary first.
 
 - [ ] **A "View source" link on every rendered dataset** (added 2026-09-03).
   The forecasts page has had per-zone source links for a while and the

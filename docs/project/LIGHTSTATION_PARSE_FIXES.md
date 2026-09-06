@@ -1,6 +1,6 @@
 # Lightstation parse fixes: duplicate observations and dropped sea heights
 
-**Status:** Bug 2 FIXED 2026-09-04; Bug 1 (duplicate observations) still QUEUED
+**Status:** both bugs FIXED — Bug 2 on 2026-09-04, Bug 1 on 2026-09-06
 (written 2026-09-03)
 **Target:** `scripts/parse/parse_lightstation.py`, `lib/lightstation_schedule.py`,
 `site/lightstations.html`
@@ -81,7 +81,7 @@ nine stations rather than two.
    "Two FPCN61 bulletin cycles run" (they are two different products), and it
    presents the pair as two reports rather than one published twice.
 
-### Fix
+### Fix — applied 2026-09-06
 
 Do not drop a bulletin family — each carries fields the other lacks (see Bug 2;
 SXCN has sea state where FPCN61 currently does not, and FPCN61 has swell where
@@ -101,6 +101,42 @@ the compact format does not). Deduplicate at insert instead:
 
 Then re-word the disclosure to describe what actually happens: one observation
 roughly every 3 hours, on the :40 cycle, published in two bulletin formats.
+
+### What shipped
+
+`insert_observations()` now routes every observation through
+`find_existing_row()` / `merge_observation()` rather than straight to an
+`INSERT`. Three details are worth keeping in mind:
+
+- **The window is an offset band, not a tolerance.** `PAIR_OFFSET_MIN_SEC` to
+  `PAIR_OFFSET_MAX_SEC` is 20–50 min, bracketing the two offsets EC uses. The
+  60-minute tolerance this document originally proposed is too wide: Coast
+  Guard SPECIAL reports arrive off-cycle, and Addenbroke published one exactly
+  60 min after its regular SXCN23 slot on 2026-09-06. That is a real second
+  observation — same wind and sea, different visibility — so a plain tolerance
+  would have eaten it. `test_special_report_stays_separate` pins the case.
+- **Partner lookup matches on family membership** (`LIKE '%SXCN%'`), not on
+  the filename prefix, because a merged row names both products and re-parsing
+  either file has to find it again. `source_file` becomes `<first>+<second>`.
+- **`region` is deliberately not merged.** The two products disagree — SXCN
+  can only name the area its whole bulletin covers, so it files the
+  central-coast lights under Hecate Strait and Trial Island under the Strait
+  of Georgia — but region belongs to the station, not the reading. Taking
+  FPCN61's answer moved a station between groups on the page every time a
+  merge landed. `config/stations.json` already carries a per-station region;
+  wiring the export to read it is the real fix and is its own change (note
+  that its `INSIDE PASSAGE` value has no group in the page's `regionOrder`).
+
+Backfill: `scripts/utils/dedupe_lightstation_observations.py` applies the same
+merge to rows written before the fix. It collapsed all 464 pairs, 1552 rows →
+1088, with no ambiguous matches. No value was lost — 189 FPCN61 sea-height
+gaps and 21 wind-speed gaps were filled from the SXCN copy, and all 69
+gusting flags survived.
+
+Verified afterwards: every dual-feed station now infers as 7 reports/day on a
+single cycle with a 6.0 h overnight gap, the same shape as the single-feed
+stations, and a live parser run over the retained bulletins merged 7 second
+copies without re-splitting anything.
 
 ---
 
@@ -155,14 +191,13 @@ bulletins to backfill what is recoverable
 
 ---
 
-## Suggested order
+## Order taken
 
 1. **Bug 2 first** — one regex, largest data recovery, no schema or
-   dedupe reasoning involved. Ship it with tests over both spellings.
-2. **Bug 1 dedupe** at insert, with tests for both arrival orders.
-3. Re-run schedule inference and confirm Merry reads as one report per
-   3 hours.
-4. Rewrite the *How the reporting schedule works* copy to match.
+   dedupe reasoning involved. Shipped with tests over both spellings.
+2. **Bug 1 dedupe** at insert, with tests for both arrival orders. *Done.*
+3. Re-ran schedule inference: Merry reads as one report per 3 hours. *Done.*
+4. Rewrote the *How the reporting schedule works* copy to match. *Done.*
 
 ## Verification
 

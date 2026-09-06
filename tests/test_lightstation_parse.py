@@ -1,5 +1,6 @@
 """Tests for lightstation report parsing, especially stale retransmission filtering."""
 
+import sqlite3
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -9,7 +10,9 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.parse.parse_lightstation import (
+    PAIR_OFFSET_MAX_SEC,
     extract_observation_day,
+    insert_observations,
     is_stale_retransmission,
     parse_report_file,
     parse_station_entry,
@@ -273,3 +276,184 @@ class TestParseReportFile:
 
         observations = parse_report_file(report_file)
         assert len(observations) >= 1
+
+
+# ── Cross-bulletin merge ───────────────────────────────────────
+
+
+class TestCrossBulletinMerge:
+    """One observation published in two bulletins must land in one row.
+
+    Nine stations are carried by both FPCN61 and an SXCN bulletin. Each copy
+    is timestamped from its own WMO header, so the pair sits 30 or 40 minutes
+    apart -- far enough for the unique index to treat it as two readings.
+    """
+
+    OFFSETS = {"SXCN23": 40 * 60, "SXCN26": 30 * 60}
+
+    @pytest.fixture
+    def db(self, tmp_path, monkeypatch):
+        """An empty lightstation database, built from the real schema."""
+        from scripts.utils.create_lightstation_db import CREATE_INDEXES_SQL, CREATE_TABLE_SQL
+
+        path = tmp_path / "lightstation_data.sqlite"
+        conn = sqlite3.connect(path)
+        conn.execute(CREATE_TABLE_SQL)
+        for statement in CREATE_INDEXES_SQL:
+            conn.execute(statement)
+        conn.commit()
+        conn.close()
+        monkeypatch.setattr("scripts.parse.parse_lightstation.DB_PATH", path)
+        return path
+
+    def rows(self, db, station="MERRY ISLAND"):
+        conn = sqlite3.connect(db)
+        conn.row_factory = sqlite3.Row
+        found = conn.execute(
+            "SELECT * FROM lightstation_observation WHERE station_name = ? ORDER BY observation_time",
+            (station,),
+        ).fetchall()
+        conn.close()
+        return found
+
+    def observation(self, source, when, station="MERRY ISLAND", **overrides):
+        obs = {
+            "station_name": station,
+            "region": "STRAIT OF GEORGIA",
+            "observation_time": when,
+            "report_time_str": source,
+            "wind_speed_kt": 11.0,
+            "wind_direction": "SOUTHEAST",
+            "wind_gusting": 0,
+            "wind_calm": 0,
+            "wind_estimated": 1,
+            "sea_height_ft": 2.0,
+            "sea_condition": "CHOP",
+            "swell_intensity": None,
+            "swell_direction": None,
+            "source_file": source,
+        }
+        obs.update(overrides)
+        return obs
+
+    # SXCN26 03/2040Z and FPCN61 03/2110Z, the pair from the bug report.
+    SXCN_TIME = 1757_020_800  # arbitrary, only the 30-minute offset matters
+    FPCN_TIME = SXCN_TIME + 30 * 60
+
+    def test_sxcn_then_fpcn61_makes_one_row(self, db):
+        """The usual arrival order: the coded bulletin lands first."""
+        insert_observations([self.observation("SXCN26_CWVR_032040___1", self.SXCN_TIME)])
+        insert_observations(
+            [self.observation("FPCN61_CWVR_032110___2", self.FPCN_TIME, wind_gusting=1, sea_height_ft=None)]
+        )
+
+        rows = self.rows(db)
+        assert len(rows) == 1
+        assert rows[0]["observation_time"] == self.SXCN_TIME, "SXCN is authoritative for time"
+        assert rows[0]["wind_gusting"] == 1, "only FPCN61 can say gusting"
+        assert rows[0]["sea_height_ft"] == 2.0, "the SXCN value survives a null"
+        assert "SXCN26" in rows[0]["source_file"] and "FPCN61" in rows[0]["source_file"]
+
+    def test_fpcn61_then_sxcn_makes_one_row(self, db):
+        """The reverse order -- a re-parse, or a delayed SXCN -- collapses too."""
+        insert_observations([self.observation("FPCN61_CWVR_032110___2", self.FPCN_TIME, wind_gusting=1)])
+        insert_observations([self.observation("SXCN26_CWVR_032040___1", self.SXCN_TIME)])
+
+        rows = self.rows(db)
+        assert len(rows) == 1
+        assert rows[0]["observation_time"] == self.SXCN_TIME
+        assert rows[0]["wind_gusting"] == 1
+
+    def test_forty_minute_offset_merges(self, db):
+        """SXCN23 sits at HH:30 against FPCN61's HH:10 -- 40 minutes, not 30."""
+        insert_observations([self.observation("SXCN23_CWVR_061130___1", self.SXCN_TIME, station="BOAT BLUFF")])
+        insert_observations(
+            [self.observation("FPCN61_CWVR_061210___2", self.SXCN_TIME + 40 * 60, station="BOAT BLUFF")]
+        )
+        assert len(self.rows(db, "BOAT BLUFF")) == 1
+
+    def test_special_report_stays_separate(self, db):
+        """An off-cycle SPECIAL is a real second observation, not a re-publication.
+
+        Addenbroke, 2026-09-06: SXCN23 at 11:30, FPCN61 at 12:10, then a Coast
+        Guard SPECIAL at 12:30. A plain 60-minute tolerance would swallow the
+        special into the FPCN61 row; the offset band must not.
+        """
+        base = self.SXCN_TIME
+        insert_observations([self.observation("SXCN23_CWVR_061130___1", base, station="ADDENBROKE ISLAND")])
+        insert_observations(
+            [self.observation("FPCN61_CWVR_061210___2", base + 40 * 60, station="ADDENBROKE ISLAND")]
+        )
+        insert_observations(
+            [self.observation("SXCN23_CWVR_061230___3", base + 60 * 60, station="ADDENBROKE ISLAND")]
+        )
+
+        rows = self.rows(db, "ADDENBROKE ISLAND")
+        assert len(rows) == 2
+        assert [r["observation_time"] for r in rows] == [base, base + 60 * 60]
+
+    def test_other_stations_are_not_paired(self, db):
+        """The window only ever collapses one station's own two copies."""
+        insert_observations([self.observation("SXCN26_CWVR_032040___1", self.SXCN_TIME, station="MERRY ISLAND")])
+        insert_observations([self.observation("FPCN61_CWVR_032110___2", self.FPCN_TIME, station="CHROME ISLAND")])
+        assert len(self.rows(db, "MERRY ISLAND")) == 1
+        assert len(self.rows(db, "CHROME ISLAND")) == 1
+
+    def test_region_is_left_alone(self, db):
+        """Region belongs to the station, so a merge must not reassign it.
+
+        The two products disagree -- SXCN26 files Trial Island under the
+        Strait of Georgia, FPCN61 under Juan de Fuca -- and letting the merge
+        pick would shuffle the station between groups on the page whenever a
+        second copy landed.
+        """
+        insert_observations(
+            [
+                self.observation(
+                    "SXCN26_CWVR_032040___1",
+                    self.SXCN_TIME,
+                    station="TRIAL ISLAND",
+                    region="STRAIT OF GEORGIA",
+                )
+            ]
+        )
+        insert_observations(
+            [
+                self.observation(
+                    "FPCN61_CWVR_032110___2",
+                    self.FPCN_TIME,
+                    station="TRIAL ISLAND",
+                    region="JUAN DE FUCA STRAIT",
+                )
+            ]
+        )
+        rows = self.rows(db, "TRIAL ISLAND")
+        assert len(rows) == 1
+        assert rows[0]["region"] == "STRAIT OF GEORGIA"
+
+    def test_reparsing_the_same_files_is_idempotent(self, db):
+        """Re-running the parser over retained bulletins must not re-split the pair."""
+        sxcn = self.observation("SXCN26_CWVR_032040___1", self.SXCN_TIME)
+        fpcn = self.observation("FPCN61_CWVR_032110___2", self.FPCN_TIME, wind_gusting=1)
+        for _ in range(3):
+            insert_observations([sxcn])
+            insert_observations([fpcn])
+
+        rows = self.rows(db)
+        assert len(rows) == 1
+        assert rows[0]["source_file"].count("FPCN61") == 1
+
+    def test_no_station_holds_two_copies_of_one_reading(self, db):
+        """The invariant, asserted over a batch rather than a single pair."""
+        base = self.SXCN_TIME
+        batch = []
+        for step in range(4):
+            when = base + step * 3 * 3600
+            batch.append(self.observation("SXCN26_CWVR_0000___%d" % step, when))
+            batch.append(self.observation("FPCN61_CWVR_0000___%d" % step, when + 30 * 60))
+        insert_observations(batch)
+
+        times = [row["observation_time"] for row in self.rows(db)]
+        assert len(times) == 4
+        gaps = [b - a for a, b in zip(times, times[1:])]
+        assert all(gap >= PAIR_OFFSET_MAX_SEC for gap in gaps), gaps

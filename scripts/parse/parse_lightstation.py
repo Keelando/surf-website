@@ -562,19 +562,183 @@ def parse_sxcn_file(filepath):
         return []
 
 
+# ---------- Cross-bulletin merge ----------
+#
+# One observation, two bulletins. Nine of the 23 stations are carried by both
+# FPCN61 and an SXCN bulletin, and each copy is timestamped from its own WMO
+# header rather than from the observation, so the pair lands 30 minutes
+# (SXCN26) or 40 minutes (SXCN23) apart and the unique index reads them as two
+# readings. Neither feed can be dropped -- each states things the other cannot
+# -- so the second copy is merged into the first instead.
+#
+# The window is a band around the offsets EC actually uses, not a plain
+# tolerance, because Coast Guard SPECIAL reports arrive off-cycle: Addenbroke
+# published one 60 minutes after its regular SXCN23 slot on 2026-09-06, and
+# that is a real second observation, not a re-publication of the first.
+PAIR_OFFSET_MIN_SEC = 20 * 60
+PAIR_OFFSET_MAX_SEC = 50 * 60
+
+# Both copies describe the same reading, so a merge only ever fills a gap:
+# across the 464 pairs in the database when this was written, no value field
+# disagreed where both bulletins stated one.
+MERGE_VALUE_FIELDS = (
+    "wind_speed_kt",
+    "wind_direction",
+    "sea_height_ft",
+    "sea_condition",
+    "swell_intensity",
+    "swell_direction",
+)
+
+# Flags accumulate rather than fill, since absence is encoded as 0, not NULL.
+# Gusting is the reason it matters: the coded format has no way to say it, so
+# only FPCN61 ever sets it.
+MERGE_FLAG_FIELDS = ("wind_gusting", "wind_calm", "wind_estimated")
+
+
+def bulletin_family(source_file):
+    """Which product a file belongs to: "FPCN61", "SXCN", or None."""
+    if not source_file:
+        return None
+    if source_file.startswith("FPCN61"):
+        return "FPCN61"
+    if source_file.startswith("SXCN"):
+        return "SXCN"
+    return None
+
+
+def partner_window(family, observation_time):
+    """Epoch bounds where the other bulletin's copy of this reading would sit.
+
+    FPCN61 re-publishes what SXCN already carried, so its stamp is the later
+    of the two whichever order the files arrive in.
+    """
+    if observation_time is None:
+        return None
+    if family == "FPCN61":
+        return observation_time - PAIR_OFFSET_MAX_SEC, observation_time - PAIR_OFFSET_MIN_SEC
+    if family == "SXCN":
+        return observation_time + PAIR_OFFSET_MIN_SEC, observation_time + PAIR_OFFSET_MAX_SEC
+    return None
+
+
+def find_existing_row(cur, obs):
+    """Locate the row this observation belongs in, if there is one.
+
+    Returns ``(row, keep_time)``: the row to merge into (None to insert a new
+    one) and the timestamp the merged row should carry.
+    """
+    station = obs["station_name"]
+    timestamp = obs["observation_time"]
+
+    cur.execute(
+        "SELECT * FROM lightstation_observation WHERE station_name = ? AND observation_time = ?",
+        (station, timestamp),
+    )
+    row = cur.fetchone()
+    if row is not None:
+        return row, timestamp
+
+    family = bulletin_family(obs.get("source_file"))
+    window = partner_window(family, timestamp)
+    if window is None:
+        return None, timestamp
+
+    # Match on family membership, not filename prefix: an already-merged row
+    # names both products, and re-parsing either file must find it again.
+    other = "%FPCN61%" if family == "SXCN" else "%SXCN%"
+    cur.execute(
+        """
+        SELECT * FROM lightstation_observation
+        WHERE station_name = ? AND observation_time BETWEEN ? AND ?
+          AND source_file LIKE ?
+        ORDER BY ABS(observation_time - ?) LIMIT 1
+        """,
+        (station, window[0], window[1], other, timestamp),
+    )
+    row = cur.fetchone()
+    if row is None:
+        return None, timestamp
+
+    # SXCN's header minute is the observation minute -- its supplementary line
+    # states it outright. FPCN61's is only when the prose went out, and the
+    # hour its text names ("2 PM Thursday") is rounded. So the pair keeps the
+    # SXCN time whichever copy arrived first.
+    keep_time = timestamp if family == "SXCN" else row["observation_time"]
+    return row, keep_time
+
+
+def merge_observation(cur, row, obs, keep_time):
+    """Fold an observation into an existing row. Returns True if it changed."""
+    updates = {}
+
+    for field in MERGE_VALUE_FIELDS:
+        if row[field] is None and obs.get(field) is not None:
+            updates[field] = obs[field]
+
+    for field in MERGE_FLAG_FIELDS:
+        if obs.get(field) and not row[field]:
+            updates[field] = 1
+
+    # region is deliberately not merged. The two products disagree about it --
+    # SXCN can only name the whole area its bulletin covers, which files the
+    # central-coast lights under Hecate Strait and Trial Island under the
+    # Strait of Georgia -- but region is a property of the station, not of the
+    # reading, and taking FPCN61's answer here would move a station between
+    # groups on the page every time a merge landed. `config/stations.json`
+    # already carries a per-station region; wiring the export to read it is
+    # the fix, and it is its own change.
+
+    if keep_time is not None and keep_time != row["observation_time"]:
+        updates["observation_time"] = keep_time
+
+    # report_time_str is deliberately left alone: it labels the timestamp the
+    # row kept, and overwriting it with the other bulletin's wording would
+    # describe a time the row no longer carries.
+    sources = row["source_file"] or ""
+    incoming = obs.get("source_file")
+    if incoming and incoming not in sources:
+        updates["source_file"] = f"{sources}+{incoming}" if sources else incoming
+
+    if not updates:
+        return False
+
+    assignments = ", ".join(f"{field} = ?" for field in updates)
+    cur.execute(
+        f"UPDATE lightstation_observation SET {assignments} WHERE id = ?",  # noqa: S608 - keys are literals above
+        (*updates.values(), row["id"]),
+    )
+    return True
+
+
 def insert_observations(observations):
-    """Insert parsed observations into SQLite database."""
+    """Store parsed observations, merging each reading's second copy.
+
+    See the cross-bulletin merge notes above: a station in both FPCN61 and an
+    SXCN bulletin publishes one observation twice, so the second copy fills
+    gaps in the first rather than becoming a row of its own.
+    """
     if not observations:
         return
 
     conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
     inserted = 0
+    merged = 0
     skipped = 0
 
     for obs in observations:
         try:
+            existing, keep_time = find_existing_row(cur, obs)
+            if existing is not None:
+                if merge_observation(cur, existing, obs, keep_time):
+                    merged += 1
+                else:
+                    skipped += 1
+                continue
+
             cur.execute(
                 """
                 INSERT INTO lightstation_observation (
@@ -613,7 +777,10 @@ def insert_observations(observations):
     conn.commit()
     conn.close()
 
-    logger.info(f"Inserted {inserted} new observations, skipped {skipped} duplicates")
+    logger.info(
+        f"Inserted {inserted} new observations, merged {merged} second copies, "
+        f"skipped {skipped} already stored"
+    )
 
 
 def purge_old_data():
