@@ -11,7 +11,7 @@ import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { getPopupOptions } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
 import { isNoaaStation, isWaveStation, stationTypeLabel } from "./shared/station-meta.js";
-import { staleDataWarningHTML, stalePopupTheme } from "./shared/staleness.js";
+import { staleDataWarningHTML, stalePopupTheme, staleThresholdLabel } from "./shared/staleness.js";
 
 let stationsMap = null;
 let markersLayer = null;
@@ -654,7 +654,7 @@ function addBuoyMarker(buoy) {
           // No wave direction: say so, because the marker is still an arrow
           // and it is pointing with the wind (see the 'wave-inferred' type).
           popupContent += `<div><strong>🌊 Wave:</strong> ${waveHeight}m${periodStr}</div>`;
-          popupContent += `<div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 2px;">Height and period only — the marker arrow shows wind direction.</div>`;
+          popupContent += `<div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 2px;">Height and period only; the marker arrow shows wind direction.</div>`;
         }
       }
     }
@@ -880,7 +880,7 @@ function addLightstationMarker(lightstation) {
   if (hasData) {
     const obs = latestLightstationData[lookupName];
     const isStale = obs.stale || false;
-    const popupTheme = stalePopupTheme(isStale, { threshold: ">12h" });
+    const popupTheme = stalePopupTheme(isStale, { threshold: staleThresholdLabel(obs) });
 
     popupContent += `<div style="background: ${popupTheme.bg}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${popupTheme.border};">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 6px; color: ${popupTheme.headingColor}; font-size: 0.95em;">${popupTheme.headerText}</div>`;
@@ -928,7 +928,7 @@ function addLightstationMarker(lightstation) {
 
     popupContent += `</div>`;
   } else {
-    popupContent += `<div style="background: var(--color-surface-alt, #f5f5f5); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-text-muted, #999); color: var(--color-text-muted); font-size: 0.9em;">No current data — this station is not reporting in the FPCN61 bulletin.</div>`;
+    popupContent += `<div style="background: var(--color-surface-alt, #f5f5f5); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-text-muted, #999); color: var(--color-text-muted); font-size: 0.9em;">No current data. This station is not reporting in the FPCN61 bulletin.</div>`;
   }
 
   // Station details

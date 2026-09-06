@@ -58,6 +58,25 @@ export function formatDataAge(ageMinutes) {
   return `${days} day${days !== 1 ? "s" : ""} ago`;
 }
 
+/**
+ * Human-readable staleness threshold for one lightstation, e.g. ">9h".
+ *
+ * The number is per station and comes from the export, which measures it
+ * against that station's own inferred publishing cadence — most report every
+ * three hours and are flagged at 9 h, while Cape Mudge, Chatham Point and
+ * Pulteney Point report four times a day in daylight only and are normally
+ * silent for 15 h overnight, so they are flagged at 18 h. Hardcoding ">12h"
+ * here, as all three renderers used to, was wrong for both groups at once.
+ *
+ * @param {Object} station - Entry from latest_lightstation.json
+ * @returns {string} Threshold label, falling back to the pre-2026-09-06 flat
+ *   value when an older payload has no `stale_after_hours`.
+ */
+export function staleThresholdLabel(station) {
+  const hours = station?.stale_after_hours;
+  return `>${Number.isFinite(hours) ? Math.round(hours) : 12}h`;
+}
+
 /** Emphasis line appended at the bottom of a popup when data is stale. */
 export function staleDataWarningHTML() {
   return `<div style="color: var(--color-accent-red); font-size: 0.85em; margin-top: 4px; font-weight: 600;">⚠️ STALE DATA</div>`;

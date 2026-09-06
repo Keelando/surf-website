@@ -780,8 +780,8 @@ function updateVerificationChart(stationId) {
   ensureChart("verification", "verification-chart").setOption(
     {
       ...baseSurgeChartOption(theme, {
-        title: `${displayStation.station_name} — forecasts issued 56-79 h ahead`,
-        mobileTitle: `${displayStation.station_name} — verification`,
+        title: `${displayStation.station_name}: forecasts issued 56-79 h ahead`,
+        mobileTitle: `${displayStation.station_name}: verification`,
         subtext: "Black line = Tide offset observations | Colored lines = Historical forecast runs",
         mobileSubtext: "Observed (black) vs Forecast runs (colored)",
         tooltipTime: formatMonthDayTime,
@@ -875,7 +875,7 @@ function getColorForIndex(index, total, theme) {
 function renderVerificationHeading(days) {
   const heading = document.getElementById("verification-heading");
   if (!heading || !days) return;
-  heading.textContent = `Forecast Verification — Last ${days} day${days === 1 ? "" : "s"}`;
+  heading.textContent = `Forecast Verification: Last ${days} day${days === 1 ? "" : "s"}`;
 }
 
 function updateVerificationMetadata(station) {

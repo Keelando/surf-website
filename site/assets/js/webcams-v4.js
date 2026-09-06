@@ -16,6 +16,36 @@ const webcamRegions = {
   west_coast_vi: { name: "West Coast Vancouver Island (Tofino)" },
 };
 
+// Staleness, in wall-clock minutes rather than multiples of each cam's update
+// interval. The interval multiple (3x) that used to drive this meant the six
+// cams crossed into STALE at four different ages, none of which meant anything
+// to a reader looking at a picture; and the DOWN threshold sat at 24 h, which
+// is a day of showing a dead camera as merely "stale".
+//
+// The site's closest precedent is the winds page (`wind-stations.js`): 2 h
+// dimmed, 4 h moved to the offline list. Webcams are tighter because they
+// update every 10-20 min, so an hour is already three to six missed frames.
+const STALE_THRESHOLD_MINUTES = 60;
+const DOWN_THRESHOLD_MINUTES = 180;
+
+// Daylight-only cams stop overnight BY DESIGN — fetch_webcam.py skips them
+// outside [sunrise - margin, sunset + margin]. Judged on wall-clock age they
+// would all show DOWN every night, so their age is measured from whichever is
+// later, the last frame or the moment the capture window opened.
+//
+// The margins mirror `daylight_margin_minutes` in config/webcams.json. The
+// sunrise/sunset comes from /data/sunlight_times.json, which carries an entry
+// per camera at the camera's own position — keyed `webcam_<id>` because
+// `whiterock` is both a camera id and a tide station key and the tide station
+// used to win.
+const WEBCAM_SUNLIGHT_PREFIX = "webcam_";
+const daylightMargins = {
+  ambleside: 60,
+  mudbay: 75,
+  mudbay_sw: 75,
+  coxbay: 75,
+};
+
 const webcams = [
   {
     id: "ambleside",
@@ -87,7 +117,7 @@ const webcams = [
     imageUrl: "/data/mudbay/latest.jpg",
     slideshowUrl: "/data/mudbay/slideshow_manifest.json",
     slideshowPath: "/data/mudbay/",
-    updateInterval: 10,
+    updateInterval: 15,
     streamDelay: null,
     daylightOnly: true,
     conditions: [
@@ -108,7 +138,7 @@ const webcams = [
     imageUrl: "/data/mudbay_sw/latest.jpg",
     slideshowUrl: "/data/mudbay_sw/slideshow_manifest.json",
     slideshowPath: "/data/mudbay_sw/",
-    updateInterval: 10,
+    updateInterval: 15,
     streamDelay: null,
     daylightOnly: true,
     conditions: [
@@ -184,16 +214,93 @@ async function fetchMarineData() {
   }
 }
 
-function isWebcamStale(metadata, updateInterval) {
-  if (!metadata?.timestamp) return false;
+// Sunrise/sunset for the daylight-only cams. One fetch, cached for the page's
+// life: the file carries several days and only changes nightly.
+let cachedSunlightTimes = null;
+let sunlightTimesPromise = null;
+
+async function fetchSunlightTimes() {
+  if (cachedSunlightTimes) return cachedSunlightTimes;
+  if (!sunlightTimesPromise) {
+    sunlightTimesPromise = fetch("/data/sunlight_times.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        cachedSunlightTimes = data;
+        return data;
+      })
+      .catch((error) => {
+        console.error("Failed to load sunlight times:", error);
+        return null;
+      });
+  }
+  return sunlightTimesPromise;
+}
+
+/**
+ * When the capture window opened for a daylight-only cam, and whether we are
+ * inside it now.
+ *
+ * Returns null for a 24/7 cam, and also whenever the answer is unknown — a
+ * missing file, an unlisted station, a date the export does not cover. A null
+ * makes the caller fall back to plain wall-clock age, which is the safe
+ * direction: it can over-report staleness, never hide a dead camera.
+ *
+ * @param {Object} webcam - Entry from `webcams`
+ * @param {number} now - Epoch ms
+ * @returns {{openedAt: number, closesAt: number, isOpen: boolean}|null}
+ */
+function captureWindow(webcam, now) {
+  const marginMinutes = daylightMargins[webcam.id];
+  if (!webcam.daylightOnly || !marginMinutes || !cachedSunlightTimes) return null;
+
+  const station = cachedSunlightTimes.stations?.[WEBCAM_SUNLIGHT_PREFIX + webcam.id];
+  if (!station?.days) return null;
+
+  const margin = marginMinutes * 60 * 1000;
+
+  // The export keys days by local date, and a window can span UTC midnight, so
+  // scan every day it holds and take the one containing `now` — falling back to
+  // the most recent window that has already opened.
+  let current = null;
+  let latestOpened = null;
+  for (const day of Object.values(station.days)) {
+    if (!day?.sunrise || !day?.sunset) continue;
+    const openedAt = new Date(day.sunrise).getTime() - margin;
+    const closesAt = new Date(day.sunset).getTime() + margin;
+    if (Number.isNaN(openedAt) || Number.isNaN(closesAt)) continue;
+    if (now >= openedAt && now <= closesAt) current = { openedAt, closesAt, isOpen: true };
+    if (openedAt <= now && (!latestOpened || openedAt > latestOpened.openedAt)) {
+      latestOpened = { openedAt, closesAt, isOpen: false };
+    }
+  }
+  return current || latestOpened;
+}
+
+/**
+ * Age of the displayed frame in minutes, and whether the cam is off duty.
+ *
+ * For a daylight-only cam the clock starts at the later of the last frame and
+ * the capture window opening, so the overnight pause does not accumulate into
+ * an age the cam had no chance to avoid.
+ *
+ * @param {Object} metadata - The cam's latest.json
+ * @param {Object} webcam - Entry from `webcams`
+ * @returns {{ageMinutes: number, offDuty: boolean}|null} null with no timestamp
+ */
+function webcamAge(metadata, webcam) {
+  if (!metadata?.timestamp) return null;
 
   const now = Date.now();
   const lastUpdate = new Date(metadata.timestamp).getTime();
-  const ageMinutes = (now - lastUpdate) / (1000 * 60);
+  if (Number.isNaN(lastUpdate)) return null;
 
-  // Consider stale if older than 3x the update interval (e.g., 30 min for 10-min interval)
-  const staleThreshold = updateInterval * 3;
-  return ageMinutes > staleThreshold;
+  const window = captureWindow(webcam, now);
+  if (window && !window.isOpen) {
+    return { ageMinutes: (now - lastUpdate) / (1000 * 60), offDuty: true };
+  }
+
+  const clockStart = window ? Math.max(lastUpdate, window.openedAt) : lastUpdate;
+  return { ageMinutes: (now - clockStart) / (1000 * 60), offDuty: false };
 }
 
 function formatAge(ageMinutes) {
@@ -210,6 +317,38 @@ function formatAge(ageMinutes) {
   return `${Math.round(ageMinutes)} min ago`;
 }
 
+/**
+ * Write the "Last updated" line and set the card's staleness class.
+ *
+ * Both the initial render and the periodic metadata refresh need this and had
+ * drifted into two copies of the same twenty lines; the copies are how a
+ * threshold change lands in one place and not the other.
+ *
+ * @param {Element} card - The .webcam-card element (carries the state class)
+ * @param {Element} timestampEl - The .webcam-timestamp element
+ * @param {Object} metadata - The cam's latest.json
+ * @param {Object} webcam - Entry from `webcams`
+ */
+function renderTimestamp(card, timestampEl, metadata, webcam) {
+  const age = webcamAge(metadata, webcam);
+  let text = "Last updated: " + formatFullTimestamp(metadata.timestamp);
+
+  card.classList.remove("webcam-stale", "webcam-stale-error");
+
+  // offDuty: a daylight-only cam outside its capture window is not late, it is
+  // done for the day. The card already says "Screen grabs stop at night".
+  if (age && !age.offDuty && age.ageMinutes > STALE_THRESHOLD_MINUTES) {
+    const shown = Math.round(age.ageMinutes);
+    const isDown = age.ageMinutes > DOWN_THRESHOLD_MINUTES;
+    const severity = isDown ? "stale-error" : "";
+    const label = isDown ? "DOWN" : "STALE";
+    text += ` <span class="stale-indicator ${severity}" title="No new frame for ${shown} minutes">${label} (${formatAge(shown)})</span>`;
+    card.classList.add(isDown ? "webcam-stale-error" : "webcam-stale");
+  }
+
+  setSafeHTML(timestampEl, text);
+}
+
 async function loadWebcamMetadata(webcam, card) {
   try {
     const response = await fetch(webcam.dataUrl);
@@ -218,25 +357,8 @@ async function loadWebcamMetadata(webcam, card) {
     if (card) {
       const timestampEl = card.querySelector(".webcam-timestamp");
       if (timestampEl) {
-        const stale = isWebcamStale(metadata, webcam.updateInterval || 10);
-        const now = Date.now();
-        const lastUpdate = new Date(metadata.timestamp).getTime();
-        const ageMinutes = Math.round((now - lastUpdate) / (1000 * 60));
-
-        let timestampText = "Last updated: " + formatFullTimestamp(metadata.timestamp);
-
-        if (stale) {
-          const ageText = formatAge(ageMinutes);
-          const isDown = ageMinutes > 60 * 24;
-          const severity = isDown ? "stale-error" : "";
-          const label = isDown ? "DOWN" : "STALE";
-          timestampText += ` <span class="stale-indicator ${severity}" title="Image is ${ageMinutes} minutes old">${label} (${ageText})</span>`;
-          card.classList.add(isDown ? "webcam-stale-error" : "webcam-stale");
-        } else {
-          card.classList.remove("webcam-stale", "webcam-stale-error");
-        }
-
-        setSafeHTML(timestampEl, timestampText);
+        await fetchSunlightTimes();
+        renderTimestamp(card, timestampEl, metadata, webcam);
       }
     }
     return metadata;
@@ -418,7 +540,7 @@ function createDetailedWaveDisplay(data) {
       const peakSpreadMetric = createElement("div", "wave-metric");
       setSafeHTML(
         peakSpreadMetric,
-        `<span class="wave-label">Peak Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_peak)}° <span style="color: ${peakDesc.color}; font-weight: 600;">(${peakDesc.label})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— dominant swell</span></span>`,
+        `<span class="wave-label">Peak Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_peak)}° <span style="color: ${peakDesc.color}; font-weight: 600;">(${peakDesc.label})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">(dominant swell)</span></span>`,
       );
       dataGrid.appendChild(peakSpreadMetric);
 
@@ -428,7 +550,7 @@ function createDetailedWaveDisplay(data) {
         const avgSpreadMetric = createElement("div", "wave-metric");
         setSafeHTML(
           avgSpreadMetric,
-          `<span class="wave-label">Avg Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_avg)}° <span style="color: ${avgDesc.color}; font-weight: 600;">(${avgDesc.label})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">— all frequencies</span></span>`,
+          `<span class="wave-label">Avg Spread:</span> <span class="wave-value">${Math.round(data.wave_direction_spread_avg)}° <span style="color: ${avgDesc.color}; font-weight: 600;">(${avgDesc.label})</span> <span style="font-size: 0.85em; color: var(--color-text-muted);">(all frequencies)</span></span>`,
         );
         dataGrid.appendChild(avgSpreadMetric);
       }
@@ -653,23 +775,7 @@ async function createWebcamCard(webcam, metadata) {
   if (metadata) {
     // Timestamp with staleness check
     const timestampEl = createElement("div", "webcam-timestamp");
-    const stale = isWebcamStale(metadata, webcam.updateInterval || 10);
-    const now = Date.now();
-    const lastUpdate = new Date(metadata.timestamp).getTime();
-    const ageMinutes = Math.round((now - lastUpdate) / (1000 * 60));
-
-    let timestampText = "Last updated: " + formatFullTimestamp(metadata.timestamp);
-
-    if (stale) {
-      const ageText = formatAge(ageMinutes);
-      const isDown = ageMinutes > 60 * 24; // >24h = down, not just stale
-      const severity = isDown ? "stale-error" : "";
-      const label = isDown ? "DOWN" : "STALE";
-      timestampText += ` <span class="stale-indicator ${severity}" title="Image is ${ageMinutes} minutes old">${label} (${ageText})</span>`;
-      card.classList.add(isDown ? "webcam-stale-error" : "webcam-stale");
-    }
-
-    setSafeHTML(timestampEl, timestampText);
+    renderTimestamp(card, timestampEl, metadata, webcam);
     info.appendChild(timestampEl);
 
     // Source link
@@ -861,7 +967,10 @@ async function loadWebcams() {
 
   container.innerHTML = "";
 
-  const marineData = await fetchMarineData();
+  // Both before the first card is built: renderTimestamp() needs the sunlight
+  // times to know whether a daylight-only cam is off duty, and without them it
+  // falls back to wall-clock age and paints those cams DOWN all night.
+  const [marineData] = await Promise.all([fetchMarineData(), fetchSunlightTimes()]);
 
   // Group webcams by region
   const grouped = {};

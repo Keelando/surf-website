@@ -1003,3 +1003,65 @@ header {
   background: var(--color-border);
   color: var(--color-text);
 }
+
+/* --- Source footer (forecasts.js renderSourceFooter) -------------------
+   Sits below the extended forecast, at the end of the read. Deliberately
+   quieter than a .forecast-zone card — it is an exit, not content — but
+   bordered so it does not read as a stray paragraph. */
+.forecast-source-footer {
+  margin-bottom: 1.25rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+}
+
+.forecast-source-note {
+  margin: 0 0 0.7rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.forecast-source-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.forecast-source-link {
+  display: inline-block;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--color-primary-dark);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-primary-dark);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.forecast-source-link-primary {
+  background: var(--color-primary-dark);
+  color: var(--color-surface);
+}
+
+.forecast-source-link:hover,
+.forecast-source-link:focus-visible {
+  text-decoration: underline;
+}
+
+/* Both links leave the site; the arrow says so before the click. */
+.forecast-external-arrow {
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+/* One per line on a phone: side by side, the zone name wraps to two lines
+   inside a button and the pair reads as one ragged block. */
+@media (max-width: 768px) {
+  .forecast-source-link {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+}

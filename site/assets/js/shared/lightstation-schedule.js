@@ -50,6 +50,19 @@ export function nextReportTime(schedule, from = new Date()) {
   return null;
 }
 
+/** "2026-09-06" in Pacific time — the key for comparing calendar days. */
+function pacificDayKey(date) {
+  return date.toLocaleDateString("en-CA", { timeZone: PACIFIC_TZ });
+}
+
+/** "Today" / "Tomorrow" / "Tuesday", relative to `from`, in Pacific time. */
+function dayLabel(date, from) {
+  const day = pacificDayKey(date);
+  if (day === pacificDayKey(from)) return "Today";
+  if (day === pacificDayKey(new Date(from.getTime() + 86400000))) return "Tomorrow";
+  return date.toLocaleDateString("en-US", { timeZone: PACIFIC_TZ, weekday: "long" });
+}
+
 /** "14:40" in Pacific time, for a Date. */
 function clock(date) {
   return date.toLocaleString("en-US", {
@@ -109,12 +122,50 @@ export function describeSlots(schedule) {
 }
 
 /**
- * "next ~14:40" — the actionable half, for a card or popup line.
+ * "Today ~14:40" / "Tomorrow ~04:40" — the actionable half, for a card or
+ * popup line.
+ *
+ * Only meaningful for a station that is still reporting. A station five days
+ * silent has a next *scheduled* slot like any other, and saying "next ~16:40"
+ * beside "5 days ago" is the card contradicting itself: two of the three lines
+ * describe a healthy station and one does not. Callers must pass `isStale` so
+ * this can decline to make a promise the station is not keeping.
  *
  * @param {Object|null} schedule
- * @returns {string|null}
+ * @param {boolean} [isStale] - The exported staleness flag for this station
+ * @returns {string|null} null when there is nothing honest to say
  */
-export function describeNextReport(schedule) {
-  const next = nextReportTime(schedule);
-  return next ? `next ~${clock(next)}` : null;
+export function describeNextReport(schedule, isStale = false, from = new Date()) {
+  if (isStale) return null;
+  const next = nextReportTime(schedule, from);
+  // The day matters: a bare "~16:40" late in the evening is read as tonight
+  // when the next slot is actually tomorrow morning, and the whole point of
+  // this line is telling a reader when to come back.
+  return next ? `${dayLabel(next, from)} ~${clock(next)}` : null;
+}
+
+/**
+ * "35 scheduled reports missed" — what to say instead of a next-report time
+ * once a station has stopped.
+ *
+ * The count is what separates a station that is merely late from one that is
+ * off air, which the age alone does not: "5 days ago" reads the same whether
+ * the station reports hourly or twice a week.
+ *
+ * @param {Object|null} schedule
+ * @param {string|number|Date|null} observationTime - Last report
+ * @param {Date} [now]
+ * @returns {string|null} null when the cadence is unknown or nothing is missed
+ */
+export function describeMissedReports(schedule, observationTime, now = new Date()) {
+  const perDay = schedule?.reports_per_day;
+  if (!schedule?.confident || !perDay || !observationTime) return null;
+
+  const last = new Date(observationTime);
+  if (Number.isNaN(last.getTime())) return null;
+
+  const days = (now.getTime() - last.getTime()) / 86400000;
+  const missed = Math.floor(days * perDay);
+  if (missed < 1) return null;
+  return `${missed} scheduled report${missed === 1 ? "" : "s"} missed`;
 }

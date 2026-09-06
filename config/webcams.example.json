@@ -1,8 +1,9 @@
 {
-  "_comment": "Copy this file to config/webcams.json and edit. webcams.json is gitignored — keep endpoints, referers, and any permission-restricted feeds out of the public repo.",
+  "_comment": "Copy this file to config/webcams.json and edit. webcams.json is gitignored — keep endpoints, referers, and any permission-restricted feeds out of the public repo. short_name is the label the footer status badge prints when a cam goes down; that list is shared with buoys, tide gauges, wind stations and lightstations, so it must stay distinct from every name and short_name in config/stations.json as well. tests/test_webcam_pipeline.py enforces it.",
 
   "examplecam_youtube": {
     "name": "Example YouTube Livestream Cam",
+    "short_name": "EX YT Cam",
     "youtube_url": "https://www.youtube.com/watch?v=YOUR_VIDEO_ID",
     "video_id": "YOUR_VIDEO_ID",
     "archive_dir": "/mnt/storage/example_cam",
@@ -20,6 +21,7 @@
 
   "examplecam_image": {
     "name": "Example Direct-Image Cam",
+    "short_name": "EX Cam",
     "image_url": "https://example.com/path/to/cam.jpg",
     "image_referer": "https://example.com/",
     "image_user_agent": "YourBot/1.0 (+https://yoursite.example)",
@@ -36,6 +38,8 @@
     "daylight_margin_minutes": 60,
     "interval_minutes": 20,
     "cron_offset": 0,
-    "annotate_timestamp": false
+    "annotate_timestamp": false,
+    "_dedupe_note": "Direct-image sources only. A dead camera often keeps serving its last good frame with a 200, so the fetch succeeds and the site calls a week-old picture current. With dedupe on, fetch_webcam.py HEADs for a changed Content-Length and hashes the downloaded bytes; an identical frame is discarded before latest.json is rewritten, so the timestamp stops advancing and the page goes stale on schedule. Leave it on unless the source stamps something unique into every frame.",
+    "dedupe": true
   }
 }

@@ -201,7 +201,7 @@ export function buildHistoryNote(meta) {
   if (usesDominantPeriod(meta)) {
     return `
       <div class="history-note">
-        <strong>Note:</strong> Height is significant wave height; period is the <strong>dominant period</strong> — NOAA's term for the wave period carrying the most energy (equivalent to peak period).
+        <strong>Note:</strong> Height is significant wave height; period is the <strong>dominant period</strong>, NOAA's term for the wave period carrying the most energy (equivalent to peak period).
       </div>
     `;
   }

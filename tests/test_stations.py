@@ -183,6 +183,96 @@ class TestStationDataIntegrity:
             assert "lon" in data, f"Wind {sid} missing 'lon'"
 
 
+# ── Display labels ───────────────────────────────────────────
+
+
+class TestDisplayLabels:
+    """The label a station is named by must identify exactly one station.
+
+    `name` alone does not: four places carry both a tide gauge and a wind
+    station of the same name (Point Atkinson, Tsawwassen, Tofino, White Rock),
+    and Entrance Island is both a wind station and a lightstation. The
+    disambiguation lives in `short_name`, which is also what
+    `health_check.display_name()` reports and what the footer's status badge
+    prints when a station goes down. Before 2026-09-06 the footer kept its own
+    map instead and fell back to the first word of the name, so Cape Mudge,
+    Cape Beale and Cape Scott all rendered as "Cape".
+    """
+
+    GROUPS = ("buoys", "tides", "wind", "lightstations")
+
+    def _labels(self):
+        """(label, group, key) for every station, as the footer would show it."""
+        out = []
+        for group in self.GROUPS:
+            for key, data in getattr(STATIONS, group).items():
+                out.append((data.get("short_name") or data["name"], group, key))
+        return out
+
+    @staticmethod
+    def _key(label):
+        """Fold a label to what a reader actually distinguishes by."""
+        return "".join(c for c in label.lower() if c.isalnum())
+
+    def test_labels_are_unique_across_every_station_type(self):
+        seen = {}
+        clashes = []
+        for label, group, key in self._labels():
+            if label in seen:
+                clashes.append(f"{label!r}: {seen[label]} and {group}/{key}")
+            seen[label] = f"{group}/{key}"
+        assert not clashes, "labels shared by more than one station:\n  " + "\n  ".join(clashes)
+
+    def test_no_label_is_a_truncation_of_another(self):
+        """Exact equality is too weak a bar.
+
+        "Entrance Is." and "Entrance Island" are different strings and name
+        different stations — a wind station and a lightstation — but nobody
+        reading a status badge would tell them apart. So the rule is prefix
+        distinctness after folding away case and punctuation: no label may be
+        the start of another. That is what catches an abbreviation being
+        introduced on one side of a pair and not the other, which is exactly
+        how the old footer map went wrong.
+        """
+        entries = [(self._key(label), label, group, key) for label, group, key in self._labels()]
+        entries.sort()
+        clashes = []
+        for i, (folded, label, group, key) in enumerate(entries):
+            for other_folded, other_label, other_group, other_key in entries[i + 1 :]:
+                if not other_folded.startswith(folded):
+                    break  # sorted, so nothing further can share this prefix
+                clashes.append(
+                    f"{label!r} ({group}/{key}) is a truncation of "
+                    f"{other_label!r} ({other_group}/{other_key})"
+                )
+        assert not clashes, "confusable labels:\n  " + "\n  ".join(clashes)
+
+    def test_a_station_sharing_a_name_carries_a_short_name(self):
+        """The twins specifically: whichever way a future edit goes, at least
+        one of a same-named pair must carry a short_name, or they collapse."""
+        by_name = {}
+        for group in self.GROUPS:
+            for key, data in getattr(STATIONS, group).items():
+                by_name.setdefault(data["name"], []).append((group, key, data))
+        for name, entries in by_name.items():
+            if len(entries) < 2:
+                continue
+            labelled = [e for e in entries if e[2].get("short_name")]
+            assert len(labelled) >= len(entries) - 1, (
+                f"{name!r} is used by {len(entries)} stations "
+                f"({', '.join(f'{g}/{k}' for g, k, _ in entries)}) "
+                f"but only {len(labelled)} carry a short_name"
+            )
+
+    def test_short_names_stay_short(self):
+        """They exist to keep the status badge readable; a long one defeats
+        the point and the badge is a single line in the footer."""
+        for label, group, key in self._labels():
+            data = getattr(STATIONS, group)[key]
+            if data.get("short_name"):
+                assert len(data["short_name"]) <= 18, f"{group}/{key}: {data['short_name']!r}"
+
+
 # ── Lightstation coordinates ─────────────────────────────────
 
 

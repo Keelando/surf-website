@@ -400,7 +400,7 @@ function renderCaveatFootnotes(stations) {
       caveats
         .map(
           ([caveat, name, id]) =>
-            `<p class="station-caveat" id="caveat-${id}" tabindex="-1">* <strong>${name}</strong> — ${caveat}</p>`,
+            `<p class="station-caveat" id="caveat-${id}" tabindex="-1">* <strong>${name}</strong>: ${caveat}</p>`,
         )
         .join("") +
       `</details>`,

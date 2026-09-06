@@ -91,7 +91,31 @@ test("wave marker adds a wind-speed line when a speed is supplied", () => {
   const html = createDirectionalMarker(270, 1.4, { type: "wave", windSpeed: 12.6 });
   assert.match(html, />1\.4m</);
   assert.match(html, />13kt</);
-  assert.match(html, /--map-arrow-wind/);
+});
+
+// Label colour encodes the quantity, arrow colour encodes the station type.
+// Before 2026-09-06 the label was blue on both kinds of marker and the wind
+// line under a wave marker was arrow-red, which gave the map three colours
+// and no rule. These three tests are the rule.
+test("wind speed labels are near-black, not wave blue", () => {
+  const html = createDirectionalMarker(0, 18, { type: "wind" });
+  assert.match(html, /color: var\(--map-marker-wind-text/);
+  assert.doesNotMatch(html, /color: var\(--map-marker-text/);
+});
+
+test("wave height labels stay blue", () => {
+  const html = createDirectionalMarker(0, 1.4, { type: "wave" });
+  assert.match(html, /color: var\(--map-marker-text/);
+  assert.doesNotMatch(html, /color: var\(--map-marker-wind-text/);
+});
+
+test("the wind line under a wave marker matches a standalone wind label", () => {
+  const html = createDirectionalMarker(270, 1.4, { type: "wave", windSpeed: 12.6 });
+  assert.match(html, /color: var\(--map-marker-text/); // the wave height
+  assert.match(html, /color: var\(--map-marker-wind-text/); // the wind speed
+  // A wave marker draws a wave-blue arrow, so arrow-red must now appear
+  // nowhere in it at all — that variable was the old wind-line colour.
+  assert.doesNotMatch(html, /--map-arrow-wind/);
 });
 
 test("wave marker without a wind speed keeps one label line", () => {

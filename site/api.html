@@ -25,7 +25,7 @@
   <meta name="twitter:image" content="https://halibutbank.ca/assets/images/social-preview.png" />
   <meta name="twitter:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
   <link rel="canonical" href="https://halibutbank.ca/api.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=619c4c241d" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=c011500b2e" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
   <link rel="stylesheet" href="/assets/css/api-v4.css?v=9b865af353" />
   <!-- Structured data: dataset description for Google Dataset Search -->
@@ -176,7 +176,7 @@
 
       <p>
         Every observation this site displays is available as JSON over HTTPS. There is no
-        API key and no registration &mdash; just a generous rate limit described below.
+        API key and no registration, just a generous rate limit described below.
         The feeds are static files served from a CDN edge, so they are fast and cheap to read.
       </p>
 
@@ -229,12 +229,12 @@ if (!halibutBank.stale) {
           <tbody>
             <tr>
               <td>/stations</td>
-              <td>Station registry — ids, names, coordinates, types</td>
+              <td>Station registry: ids, names, coordinates, types</td>
               <td>hourly</td>
             </tr>
             <tr>
               <td>/buoys/latest</td>
-              <td>Latest wave buoy observations — height, period, direction, wind, temperature</td>
+              <td>Latest wave buoy observations: height, period, direction, wind, temperature</td>
               <td>3 min</td>
             </tr>
             <tr>
@@ -244,7 +244,7 @@ if (!halibutBank.stale) {
             </tr>
             <tr>
               <td>/wind/latest</td>
-              <td>Latest wind station observations — speed, gust, direction, pressure</td>
+              <td>Latest wind station observations: speed, gust, direction, pressure</td>
               <td>5 min</td>
             </tr>
             <tr>
@@ -254,7 +254,7 @@ if (!halibutBank.stale) {
             </tr>
             <tr>
               <td>/lightstations/latest</td>
-              <td>BC lightstation reports — sea state, swell, visibility</td>
+              <td>BC lightstation reports: sea state, swell, visibility</td>
               <td>hourly</td>
             </tr>
             <tr>
@@ -309,7 +309,7 @@ if (!halibutBank.stale) {
             </tr>
             <tr>
               <td>/storm-surge/observed</td>
-              <td><strong>Observed</strong> surge &mdash; rolling 10-day history of measured level minus predicted tide, not a forecast</td>
+              <td><strong>Observed</strong> surge: rolling 10-day history of measured level minus predicted tide, not a forecast</td>
               <td>10 min</td>
             </tr>
             <tr>
@@ -335,7 +335,7 @@ if (!halibutBank.stale) {
         Valid <code>{id}</code> values for the wave forecast endpoints are
         <code>4600146</code>, <code>4600206</code>, <code>4600304</code>,
         <code>46087</code>, <code>46088</code>, and <code>CRPILE</code>. Read
-        <code>/wave-forecast</code> rather than hard-coding that list — stations get added.
+        <code>/wave-forecast</code> rather than hard-coding that list, because stations get added.
       </p>
 
       <h2>Reading the data correctly</h2>
@@ -343,7 +343,7 @@ if (!halibutBank.stale) {
       <h3>Directions are meteorological</h3>
       <p>
         Every direction field is the direction the wind or waves are coming <strong>from</strong>,
-        in degrees true. A <code>wind_direction</code> of 90 means an easterly — wind blowing
+        in degrees true. A <code>wind_direction</code> of 90 means an easterly, wind blowing
         from the east toward the west. Getting this backwards is the single most common
         mistake with marine data.
       </p>
@@ -351,8 +351,8 @@ if (!halibutBank.stale) {
       <h3>Check <code>stale</code>, not the timestamp</h3>
       <p>
         Observation payloads carry a <code>stale</code> boolean and an <code>age_minutes</code>
-        value. Instruments drop out regularly — buoys go offline for maintenance, upstream
-        feeds gap — and a payload will happily hand you a three-day-old reading with a
+        value. Instruments drop out regularly (buoys go offline for maintenance, upstream
+        feeds gap), and a payload will happily hand you a three-day-old reading with a
         perfectly valid timestamp. Freshness is evaluated per field over a two-hour window.
         Always branch on <code>stale</code>.
       </p>
@@ -364,7 +364,7 @@ if (!halibutBank.stale) {
       </p>
       <p>
         The field <em>names</em> are less consistent than the units are. Some endpoints say
-        <code>wind_speed_kt</code> and others just say <code>wind_speed</code> — that is
+        <code>wind_speed_kt</code> and others just say <code>wind_speed</code>. That is
         naming history, <strong>not</strong> a unit distinction, and it is the one thing on
         this page most likely to cost you an afternoon. If you see a bare
         <code>wind_speed</code> and assume it must be km/h because a neighbouring endpoint
@@ -411,7 +411,7 @@ if (!halibutBank.stale) {
         There is one hard limit, enforced at the CDN edge: <strong>100 requests per 10
         seconds per IP address</strong>, across all <code>/api/</code> paths combined.
         Exceeding it returns <code>429 Too Many Requests</code> for the following ten
-        seconds, after which normal service resumes on its own &mdash; there is no lasting
+        seconds, after which normal service resumes on its own; there is no lasting
         ban and nothing to appeal. Polling at the documented intervals will never come
         close. If you have a use case that legitimately needs more, get in touch.
       </p>
@@ -423,7 +423,7 @@ if (!halibutBank.stale) {
         <em>added</em>, but existing field names and their meanings will not change and
         endpoints will not be removed or renamed. Anything breaking gets a
         <code>/api/v2</code>. Note that the underlying file paths under <code>/data/</code>
-        are <em>not</em> part of that contract — they are internal and do change. Build
+        are <em>not</em> part of that contract; they are internal and do change. Build
         against <code>/api/v1</code>.
       </p>
 
@@ -472,7 +472,7 @@ if (!halibutBank.stale) {
       <div class="api-support">
         <h2>Who pays for this</h2>
         <p>
-          This runs on an old Dell in my house. The data is free and will stay free —
+          This runs on an old Dell in my house. The data is free and will stay free:
           there is no paid tier, no key, and nothing behind a login. But the electricity,
           the drives, and the domain are not free, and it is one person covering them.
         </p>

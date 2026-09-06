@@ -31,10 +31,10 @@
   <meta name="twitter:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
 
   <link rel="canonical" href="https://halibutbank.ca/lightstations.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=619c4c241d" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=c011500b2e" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=3e83e68729" />
-  <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=e9e68c5cbb" />
+  <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=19cbab888b" />
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
@@ -326,6 +326,20 @@
       line-height: 1.5;
     }
 
+    /* The age of the reading, promoted out of the muted italic line it used to
+       sit at the end of. Not italic, a size up from its own timestamp, and
+       alert-coloured when the station is overdue for its own cadence. */
+    .report-age {
+      font-style: normal;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .report-age-stale {
+      color: var(--color-accent-red);
+    }
+
     /* Second line under the report time: dimmer than the report itself, since
        it is an expectation rather than an observation. */
     .report-next {
@@ -411,6 +425,15 @@
       max-width: 1200px;
       margin: 2rem auto;
       padding: 0 var(--page-gutter);
+    }
+
+    /* Was an inline style. The viewport cap that keeps this from swallowing a
+       phone screen lives on `.leaflet-container` in stations-map-v4.css, so
+       every map on the site gets it — see the comment there. */
+    #lightstation-map {
+      height: 500px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     /* Lightstation selector card */
@@ -627,6 +650,22 @@
         text-align: right;
       }
 
+      /* Collapsed, the region bars are the whole page on a phone: four of them
+         stacked, each 1.3rem type in 0.75rem/1.5rem padding, which is a
+         desktop heading pretending to be a button. The region names arrive
+         from the bulletins already upper-cased, which makes them read a size
+         larger than they measure.
+
+         0.85rem matches .station-details-toggle, the other "this is a control,
+         not content" affordance on the card — and it is the first size at
+         which "WEST COAST VANCOUVER ISLAND (5 stations)" stops wrapping to two
+         lines at 390px. Bars go 41px to 33px, and that one 66px to 33px. */
+      .region-header {
+        padding: 0.4rem 0.7rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.6rem;
+      }
+
       /* Reduce grid spacing on mobile */
       .lightstation-grid {
         grid-template-columns: 1fr;
@@ -677,13 +716,13 @@
             The observations reach us in two different Environment Canada bulletins. FPCN61 is
             written out in full, covers every station, and is issued at ten past the hour on the
             00/03/06/09/12/15/18/21&nbsp;UTC cycle. The SXCN bulletins are terse and coded, cover
-            regional subsets, and are issued at thirty or forty past &mdash; the north
-            coast on the half hour, the rest ten minutes later &mdash; on the
+            regional subsets, and are issued at thirty or forty past (the north
+            coast on the half hour, the rest ten minutes later) on the
             02/05/08/11/14/17/20/23&nbsp;UTC cycle. Most stations appear in only one of them, so
             they report roughly every three hours.
             <a href="https://weather.gc.ca/marine/weatherConditions-lightstation_e.html?mapID=02&amp;siteID=16200" target="_blank" rel="noopener">EC's own <em>Lightstation Reports</em> page <span class="ls-external-arrow" aria-hidden="true">&#8599;</span></a>
             shows the coded bulletins, so a reading there can be timed a little differently from
-            the same reading here. FPCN61 has no web page of its own &mdash; it is a raw bulletin
+            the same reading here. FPCN61 has no web page of its own. It is a raw bulletin
             on the
             <a href="https://eccc-msc.github.io/open-data/msc-datamart/readme_en/" target="_blank" rel="noopener">MSC Datamart <span class="ls-external-arrow" aria-hidden="true">&#8599;</span></a>,
             filed under a new path every hour.
@@ -729,7 +768,7 @@
           </span> Lightstation
         </span>
       </div>
-      <div id="lightstation-map" style="height: 500px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);"></div>
+      <div id="lightstation-map"></div>
     </section>
 
     <div id="lightstations-container">
@@ -810,7 +849,7 @@
   <script src="/assets/vendor/echarts.min.js?v=968b4d8c55"></script>
 
   <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
-  <script src="/assets/js/sanitize-html.js?v=4cff6e63aa"></script>
+  <script src="/assets/js/sanitize-html.js?v=57084326c8"></script>
   <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
   <script type="module" src="/assets/js/warning-banner.js?v=3bff67fbe9"></script>
   <script src="/assets/js/chart-utils-v4.js?v=c29ea91170"></script>
@@ -818,7 +857,7 @@
        and lightstation-map.js. They must NOT get their own script tags — the ?v=
        query would differ from the bare import specifier and the browser would
        execute them twice (module cache is keyed by full URL). -->
-  <script type="module" src="/assets/js/lightstation-page.js?v=4a762ee86f"></script>
+  <script type="module" src="/assets/js/lightstation-page.js?v=f34627b4e3"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

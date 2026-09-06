@@ -7,7 +7,7 @@ import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { describeNextReport, describeSchedule } from "./shared/lightstation-schedule.js";
 import { getPopupOptions } from "./shared/map-popup.js";
-import { stalePopupTheme } from "./shared/staleness.js";
+import { stalePopupTheme, staleThresholdLabel } from "./shared/staleness.js";
 import { viewLightstationDataById } from "./lightstation-charts.js";
 
 let lightstationMap = null;
@@ -165,7 +165,7 @@ function addLightstationMapMarker(lightstation) {
   if (hasData) {
     const obs = latestLightstationData[lookupName];
     const isStale = obs.stale || false;
-    const popupTheme = stalePopupTheme(isStale, { threshold: ">12h" });
+    const popupTheme = stalePopupTheme(isStale, { threshold: staleThresholdLabel(obs) });
 
     popupContent += `<div style="background: ${popupTheme.bg}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${popupTheme.border};">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 6px; color: ${popupTheme.headingColor}; font-size: 0.95em;">${popupTheme.headerText}</div>`;
@@ -200,9 +200,9 @@ function addLightstationMapMarker(lightstation) {
     // compact line — the popup has no room for the full slot list, which the
     // card's "Station Details" panel carries.
     const scheduleText = describeSchedule(obs.schedule);
-    const nextText = describeNextReport(obs.schedule);
+    const nextText = describeNextReport(obs.schedule, obs.stale);
     if (scheduleText || nextText) {
-      const parts = [scheduleText, nextText].filter(Boolean).join(" · ");
+      const parts = [scheduleText, nextText && `next ${nextText}`].filter(Boolean).join(" · ");
       popupContent += `<div style="margin: 4px 0; font-size: 0.85em; color: var(--color-text-light);"><strong>🕑 Reports:</strong> ${parts}</div>`;
     }
 
@@ -224,7 +224,7 @@ function addLightstationMapMarker(lightstation) {
 
     popupContent += `</div>`;
   } else {
-    popupContent += `<div style="background: var(--color-surface-alt, #f5f5f5); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-text-muted, #999); color: var(--color-text-muted); font-size: 0.9em;">No current data — this station is not reporting in the FPCN61 bulletin.</div>`;
+    popupContent += `<div style="background: var(--color-surface-alt, #f5f5f5); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-text-muted, #999); color: var(--color-text-muted); font-size: 0.9em;">No current data. This station is not reporting in the FPCN61 bulletin.</div>`;
   }
 
   // Station details. No "Source" row: it reads "Environment Canada" on all 24

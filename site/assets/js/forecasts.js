@@ -240,6 +240,12 @@ function displayForecasts() {
     html += renderExtendedForecast(extended, zone.areaData);
   }
 
+  // Last thing on the page, after the extended forecast: where this came from.
+  // The link beside the zone heading is easy to miss on the way in; this one
+  // is where a reader lands when they have finished reading and want the
+  // original.
+  html += renderSourceFooter(zone.zoneKey, zone.zoneData);
+
   setSafeHTML(container, html);
 
   // After the card exists: the inline toggle mounts into it, and the card is
@@ -355,7 +361,7 @@ function warningJumpLink(warning) {
   // The type is named once by the row, so name it again for a reader who
   // arrives at the link alone — a screen reader running the links list has no
   // row heading beside it.
-  link.setAttribute("aria-label", `${warning.type} — ${warning.zone_name || warning.zone_key}`);
+  link.setAttribute("aria-label", `${warning.type}: ${warning.zone_name || warning.zone_key}`);
 
   // The href alone is not enough. Clicking the chip for the zone already on
   // screen changes nothing about the hash, so no hashchange fires and the
@@ -538,6 +544,61 @@ function renderExtendedForecast(extendedForecast, areaData) {
   `;
 
   return html;
+}
+
+/**
+ * The bulletin every BC marine zone appears in. Verified 2026-09-06: FQCN13
+ * CWVR carries all 23 Pacific marine areas, so it is an honest destination for
+ * a zone we have no per-zone siteID for, and a useful second link for one we
+ * do — a reader comparing zones gets them all on one page.
+ */
+const ALL_ZONES_BULLETIN =
+  "https://weather.gc.ca/marine/marine_bulletins_e.html?Bulletin=fqcn13.cwvr";
+
+/**
+ * Where this forecast came from, rendered below everything else.
+ *
+ * The site re-presents someone else's bulletins, so a reader must always be
+ * able to reach the original in one click — and a reader who can put our
+ * rendering beside the source is a reader who can catch our next transcription
+ * error. That is the reason this is worth the vertical space.
+ *
+ * @param {string} zoneKey - Zone identifier
+ * @param {Object} zoneData - Zone forecast data (for the display name)
+ * @returns {string} HTML string
+ */
+function renderSourceFooter(zoneKey, zoneData) {
+  const zoneName = zoneData.zone_name || zoneKey.replace(/_/g, " ");
+  const siteId = ZONE_SITE_IDS[zoneKey];
+  const arrow = '<span class="forecast-external-arrow" aria-hidden="true">\u2197</span>';
+
+  // Zones we hold a siteID for get their own EC page first. The rest fall
+  // through to the all-zones bulletin rather than to a landing page, which
+  // would imply a precision we cannot deliver.
+  const zoneLink = siteId
+    ? `<a class="forecast-source-link forecast-source-link-primary"
+          href="https://weather.gc.ca/marine/forecast_e.html?mapID=03&siteID=${siteId}"
+          target="_blank" rel="noopener"
+          aria-label="${zoneName} forecast on Environment Canada (opens weather.gc.ca in a new tab)"
+       >${zoneName} on weather.gc.ca ${arrow}</a>`
+    : "";
+
+  return `
+    <div class="forecast-source-footer">
+      <p class="forecast-source-note">
+        <strong>Environment Canada is the authoritative source.</strong>
+        This is their bulletin, rendered here${siteId ? "" : " (we have no direct page link for this zone)"}.
+        Read the original:
+      </p>
+      <div class="forecast-source-links">
+        ${zoneLink}
+        <a class="forecast-source-link" href="${ALL_ZONES_BULLETIN}"
+           target="_blank" rel="noopener"
+           aria-label="All BC marine forecasts, full bulletin (opens weather.gc.ca in a new tab)"
+        >All BC zones (full bulletin) ${arrow}</a>
+      </div>
+    </div>
+  `;
 }
 
 /**

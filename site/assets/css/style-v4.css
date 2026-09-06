@@ -1951,7 +1951,12 @@ header h2 {
 
 /* --- Source link footer --- */
 
-.buoy-source-link-wrap {
+/* Shared with the lightstation cards (.ls-card-source-*), which carry the same
+   "View Source Data" footer. Two selectors on one rule rather than a second
+   copy of the declarations — the two cards are meant to look identical, and a
+   copy is how they stop being. */
+.buoy-source-link-wrap,
+.ls-card-source-wrap {
   margin-top: 0.75rem;
   margin-bottom: 0;
   padding-top: 0.5rem;
@@ -1959,7 +1964,8 @@ header h2 {
   text-align: center;
 }
 
-.buoy-source-link {
+.buoy-source-link,
+.ls-card-source-link {
   font-size: 0.85em;
   color: var(--color-primary-dark);
   text-decoration: none;

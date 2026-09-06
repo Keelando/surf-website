@@ -670,7 +670,7 @@ function renderTable(allRows) {
     <div class="wave-forecast-controls">
       <span class="wave-forecast-extent">
         Showing ${atFullExtent ? "all" : `the first ${Math.round(Math.min(visibleHours, total))} h`}
-        of ${Math.round(total)} h — ${shown.length} of ${rows.length} steps
+        of ${Math.round(total)} h, ${shown.length} of ${rows.length} steps
       </span>
       <span class="wave-forecast-buttons">
         ${
@@ -795,7 +795,7 @@ function renderMetadata(payload, rows) {
   const modelLines = models
     .map((model) => {
       const run = formatModelRunTimeLocal(model.run_time);
-      return `<strong>Model:</strong> ${model.name}${run ? ` — run ${run}` : ""}<br/>`;
+      return `<strong>Model:</strong> ${model.name}${run ? ` (run ${run})` : ""}<br/>`;
     })
     .join("");
 
@@ -807,7 +807,7 @@ function renderMetadata(payload, rows) {
     ${modelLines}
     <strong>Data Retrieved:</strong> ${formatMonthDayTimeTZ(new Date(payload.generated_utc))}<br/>
     <strong>Forecast Period:</strong> ${formatMonthDayTimeTZ(first)} to ${formatMonthDayTimeTZ(last)}<br/>
-    <strong>Resolution:</strong> ${rows.length} steps — hourly to 24 h, then 3-hourly;
+    <strong>Resolution:</strong> ${rows.length} steps, hourly to 24 h then 3-hourly;
     the table below samples every ${TABLE_STEP_HOURS} h`,
   );
 }
@@ -1281,7 +1281,7 @@ function renderVerificationHeading() {
           return `${days} day${days === 1 ? "" : "s"}`;
         })();
 
-  heading.textContent = `Forecast Verification — Last ${span}`;
+  heading.textContent = `Forecast Verification: Last ${span}`;
 }
 
 /**
@@ -1315,7 +1315,7 @@ function renderVerificationMetadata() {
      updated ${formatMonthDayTimeTZ(new Date(currentVerification.generated_utc))}.</p>
      <details class="verification-help">
        <summary>How to read this</summary>
-       <p>The dashed line is what the model said about a day ahead — for each
+       <p>The dashed line is what the model said about a day ahead: for each
        hour, the most recent run that was still ${min}–${max} hours away.
        Because runs come every six hours, the lead time sawtooths between
        ${min} and ${max} h, so a small step every six hours is two runs

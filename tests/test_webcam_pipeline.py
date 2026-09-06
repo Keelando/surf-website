@@ -17,6 +17,7 @@ Targets:
 - health_check._reporting_lightstations — `reporting: false` entries leave the count
 """
 
+import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -231,6 +232,160 @@ class TestLoadWebcamArchives:
         assert {"mudbay_sw", "ambleside"} <= ids
 
 
+class TestWebcamRegistryConsistency:
+    """A camera is described in four places and they had drifted apart.
+
+    - `config/stations.json` ["webcams"] — tracked and public: identity and
+      position. Drives the map pin and the exported /data/stations.json.
+    - `config/webcams.json` — gitignored: the fetch mechanics (URLs, referers,
+      crop, archive paths), which is why it cannot live in the public repo.
+    - `site/assets/js/webcams-v4.js` — the page's own card list.
+    - `config/crontab.txt` — the only authority on how often a camera runs.
+
+    What they disagreed about on 2026-09-06, before these tests existed:
+    coordinates differing by up to 24 km (boundarybay still held the old
+    Boundary Bay position after the camera became the White Rock East Beach
+    one), three of six names, and the Mud Bay cams' interval — cron runs them
+    every 15 minutes while two sources said 10, so the page told readers a
+    cadence the pipeline never had.
+
+    The fix for the duplication itself is to have the fetch side read position
+    and identity from the registry; until then these tests are what stops the
+    copies drifting again.
+    """
+
+    JS_PATH = Path(__file__).parent.parent / "site" / "assets" / "js" / "webcams-v4.js"
+    CRONTAB = Path(__file__).parent.parent / "config" / "crontab.txt"
+
+    @staticmethod
+    def _registry_cams():
+        from lib.stations import get_all_webcams
+
+        return get_all_webcams()
+
+    @staticmethod
+    def _private_cams():
+        return health_check._load_webcam_config()
+
+    def _js_intervals(self):
+        """{cam_id: updateInterval} as the webcams page states it."""
+        text = self.JS_PATH.read_text()
+        return {
+            m.group(1): int(m.group(2))
+            for m in re.finditer(r'id: "(\w+)".*?updateInterval: (\d+)', text, re.S)
+        }
+
+    def _cron_intervals(self):
+        """{cam_id: minutes} implied by the schedule, or None if irregular."""
+        out = {}
+        for line in self.CRONTAB.read_text().splitlines():
+            m = re.match(r"^([\d,]+) .*fetch_webcam\.py (\w+)", line)
+            if not m:
+                continue
+            mins = sorted(int(x) for x in m.group(1).split(","))
+            gaps = {(b - a) % 60 for a, b in zip(mins, mins[1:] + [mins[0] + 60])}
+            out[m.group(2)] = gaps.pop() if len(gaps) == 1 else None
+        return out
+
+    def test_the_same_cameras_exist_everywhere(self):
+        registry, private = set(self._registry_cams()), set(self._private_cams())
+        assert registry == private, (
+            f"only in stations.json: {sorted(registry - private)}; "
+            f"only in webcams.json: {sorted(private - registry)}"
+        )
+        assert registry <= set(self._js_intervals()), sorted(registry - set(self._js_intervals()))
+
+    def test_names_agree_between_the_public_and_private_registries(self):
+        private = self._private_cams()
+        mismatches = [
+            f"{cam_id}: stations.json {cam['name']!r} vs webcams.json {private[cam_id]['name']!r}"
+            for cam_id, cam in self._registry_cams().items()
+            if cam_id in private and cam["name"] != private[cam_id]["name"]
+        ]
+        assert not mismatches, "\n  ".join(mismatches)
+
+    def test_positions_agree_between_the_public_and_private_registries(self):
+        private = self._private_cams()
+        mismatches = []
+        for cam_id, cam in self._registry_cams().items():
+            other = private.get(cam_id)
+            if not other or other.get("lat") is None:
+                continue
+            drift_m = max(abs(cam["lat"] - other["lat"]), abs(cam["lon"] - other["lon"])) * 111_320
+            if drift_m > 1:
+                mismatches.append(
+                    f"{cam_id}: stations.json ({cam['lat']}, {cam['lon']}) vs "
+                    f"webcams.json ({other['lat']}, {other['lon']}) — {drift_m:.0f} m apart"
+                )
+        assert not mismatches, "\n  ".join(mismatches)
+
+    def test_stated_interval_matches_what_cron_actually_runs(self):
+        """The crontab is the authority; everything else is a claim about it."""
+        cron = self._cron_intervals()
+        registry, private, js = self._registry_cams(), self._private_cams(), self._js_intervals()
+        wrong = []
+        for cam_id, minutes in cron.items():
+            if minutes is None:
+                continue  # deliberately irregular schedule; nothing to compare
+            for where, stated in (
+                ("stations.json", registry.get(cam_id, {}).get("update_frequency_minutes")),
+                ("webcams.json", private.get(cam_id, {}).get("interval")),
+                ("webcams-v4.js", js.get(cam_id)),
+            ):
+                if stated is not None and stated != minutes:
+                    wrong.append(f"{cam_id}: cron runs every {minutes} min, {where} says {stated}")
+        assert not wrong, "\n  ".join(wrong)
+
+
+class TestWebcamDisplayLabels:
+    """Cams share the footer's down-list with buoys, tides, wind stations and
+    lightstations, so their labels have to be distinct from those too — and
+    from each other. Two of them were the same place under different
+    instruments ("White Rock Pier Cam" and the White Rock tide gauge), and the
+    two Mud Bay cams differ only by "(SE)"/"(SW)" at the end of a long name,
+    which is exactly where a compact badge truncates. See TestDisplayLabels in
+    tests/test_stations.py for the station-side rule this mirrors."""
+
+    @staticmethod
+    def _fold(label):
+        return "".join(c for c in label.lower() if c.isalnum())
+
+    def _all_labels(self):
+        """Every label the footer can print: cams plus every station type."""
+        from lib.stations import STATIONS
+
+        labels = []
+        for cam_id, cam in health_check._load_webcam_config().items():
+            labels.append((cam.get("short_name") or cam["name"], f"webcam/{cam_id}"))
+        for group in ("buoys", "tides", "wind", "lightstations"):
+            for key, data in getattr(STATIONS, group).items():
+                labels.append((data.get("short_name") or data["name"], f"{group}/{key}"))
+        return labels
+
+    def test_every_cam_has_a_short_name(self):
+        for cam_id, cam in health_check._load_webcam_config().items():
+            assert cam.get("short_name"), f"{cam_id}: {cam['name']!r} has no short_name"
+
+    def test_cam_labels_do_not_collide_with_anything_else(self):
+        seen, clashes = {}, []
+        for label, where in self._all_labels():
+            folded = self._fold(label)
+            if folded in seen:
+                clashes.append(f"{label!r}: {seen[folded]} and {where}")
+            seen[folded] = where
+        assert not clashes, "labels shared by more than one station:\n  " + "\n  ".join(clashes)
+
+    def test_no_cam_label_is_a_truncation_of_another(self):
+        entries = sorted((self._fold(label), label, where) for label, where in self._all_labels())
+        clashes = []
+        for i, (folded, label, where) in enumerate(entries):
+            for other_folded, other_label, other_where in entries[i + 1 :]:
+                if not other_folded.startswith(folded):
+                    break
+                clashes.append(f"{label!r} ({where}) is a truncation of {other_label!r} ({other_where})")
+        assert not clashes, "confusable labels:\n  " + "\n  ".join(clashes)
+
+
 class TestGetWebcamMetrics:
     def _cam(self, path, prefix="TC"):
         return {"path": path, "prefix": prefix, "name": "Test Cam"}
@@ -371,3 +526,134 @@ class TestReportingLightstations:
     def test_unflagged_stations_kept(self):
         reporting = health_check._reporting_lightstations()
         assert all(meta.get("reporting", True) for meta in reporting.values())
+
+
+# ── dedupe: a frozen camera must not read as fresh ───────────
+
+
+class TestDedupeFrozenCamera:
+    """A dead camera usually keeps serving its last good frame with a 200. The
+    fetch succeeds, `latest.json` is rewritten, and the site calls a week-old
+    picture current — which is what the Ambleside cam did from 2026-08-27 until
+    dedupe was turned on for it (2026-09-06). The only visible tell was the
+    timestamp burned into the image.
+
+    The contract these tests pin: when the bytes have not changed, nothing
+    downstream of the download runs — no slideshow entry, and above all no new
+    `latest.json` timestamp, because that timestamp is the sole input to the
+    staleness badge on the webcams page."""
+
+    def _config(self, tmp_path, **overrides):
+        archive = tmp_path / "archive"
+        website = tmp_path / "website"
+        archive.mkdir()
+        website.mkdir()
+        config = {
+            "name": "Frozen Cam",
+            "image_url": "http://example.invalid/frame.jpg",
+            "archive_dir": archive,
+            "website_dir": website,
+            "prefix": "FC",
+            "source_text": "Test Source",
+            "check_daylight": False,
+            "dedupe": True,
+        }
+        config.update(overrides)
+        return config
+
+    def _run(self, monkeypatch, config, payload, head_size=None):
+        """One full main() pass serving `payload`. Returns (slideshow_calls,
+        download_calls) so a skip can be told from a publish."""
+        calls = {"slideshow": 0, "download": 0}
+        monkeypatch.setattr(fetch_webcam, "WEBCAM_CONFIGS", {"test": config})
+        monkeypatch.setattr(fetch_webcam, "setup_logger", lambda name: MagicMock())
+        monkeypatch.setattr(sys, "argv", ["fetch_webcam.py", "test"])
+        monkeypatch.setattr(fetch_webcam, "archive_is_writable", lambda *a, **k: False)
+
+        def fake_download(url, dest, logger, **kwargs):
+            calls["download"] += 1
+            Path(dest).write_bytes(payload)
+            return True
+
+        def fake_slideshow(*a, **k):
+            calls["slideshow"] += 1
+
+        monkeypatch.setattr(fetch_webcam, "download_image", fake_download)
+        monkeypatch.setattr(fetch_webcam, "manage_slideshow_images", fake_slideshow)
+        monkeypatch.setattr(fetch_webcam, "head_image", lambda *a, **k: head_size)
+
+        with pytest.raises(SystemExit) as exc:
+            fetch_webcam.main()
+        assert exc.value.code == 0
+        return calls
+
+    def test_identical_frame_does_not_advance_latest_json(self, tmp_path, monkeypatch):
+        config = self._config(tmp_path)
+        frame = b"\xff\xd8\xff\xe0frozen-frame"
+
+        first = self._run(monkeypatch, config, frame)
+        assert first["slideshow"] == 1
+        published = (config["website_dir"] / "latest.json").read_bytes()
+
+        # Same bytes again: the run must stop before anything is published.
+        second = self._run(monkeypatch, config, frame)
+        assert second["slideshow"] == 0
+        assert (config["website_dir"] / "latest.json").read_bytes() == published
+
+    def test_changed_frame_still_publishes(self, tmp_path, monkeypatch):
+        config = self._config(tmp_path)
+
+        self._run(monkeypatch, config, b"\xff\xd8\xff\xe0frame-one")
+        first = (config["website_dir"] / "latest.json").read_bytes()
+
+        moved = self._run(monkeypatch, config, b"\xff\xd8\xff\xe0frame-two-longer")
+        assert moved["slideshow"] == 1
+        assert (config["website_dir"] / "latest.json").read_bytes() != first
+        assert (config["website_dir"] / "latest.jpg").read_bytes().endswith(b"frame-two-longer")
+
+    def test_head_size_match_skips_the_download_entirely(self, tmp_path, monkeypatch):
+        """Stage 1 exists to save the transfer, not just the write."""
+        config = self._config(tmp_path)
+        frame = b"\xff\xd8\xff\xe0frozen-frame"
+
+        self._run(monkeypatch, config, frame)
+        second = self._run(monkeypatch, config, frame, head_size=len(frame))
+        assert second["download"] == 0
+        assert second["slideshow"] == 0
+
+    def test_head_size_change_falls_through_to_the_fetch(self, tmp_path, monkeypatch):
+        """A camera whose server reports a stale Content-Length must not be
+        able to pin us to an old frame — a mismatch always re-fetches."""
+        config = self._config(tmp_path)
+
+        self._run(monkeypatch, config, b"\xff\xd8\xff\xe0frame-one")
+        moved = self._run(monkeypatch, config, b"\xff\xd8\xff\xe0frame-two", head_size=99999)
+        assert moved["download"] == 1
+        assert moved["slideshow"] == 1
+
+    def test_annotation_does_not_defeat_the_hash(self, tmp_path, monkeypatch):
+        """The Mud Bay cams burn a timestamp into every frame, which would make
+        every image unique if the hash were taken after annotation. It is taken
+        on the downloaded bytes instead — this test is what keeps it there."""
+        config = self._config(tmp_path, annotate_timestamp=True)
+        frame = b"\xff\xd8\xff\xe0frozen-frame"
+
+        def fake_annotate(path, timestamp, logger):
+            Path(path).write_bytes(Path(path).read_bytes() + str(timestamp).encode())
+            return True
+
+        monkeypatch.setattr(fetch_webcam, "annotate_image", fake_annotate)
+        assert self._run(monkeypatch, config, frame)["slideshow"] == 1
+
+        monkeypatch.setattr(fetch_webcam, "annotate_image", fake_annotate)
+        assert self._run(monkeypatch, config, frame)["slideshow"] == 0
+
+    def test_dedupe_off_republishes_the_same_frame(self, tmp_path, monkeypatch):
+        """The opt-out has to keep working: YouTube cams re-encode every frame,
+        so byte equality there would be an accident, not a signal."""
+        config = self._config(tmp_path, dedupe=False)
+        frame = b"\xff\xd8\xff\xe0frozen-frame"
+
+        self._run(monkeypatch, config, frame)
+        assert self._run(monkeypatch, config, frame)["slideshow"] == 1
+        assert not (config["website_dir"] / fetch_webcam.DEDUPE_SIDECAR).exists()

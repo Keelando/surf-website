@@ -11,7 +11,15 @@
   --map-popup-shadow: 0 3px 14px rgba(0, 0, 0, 0.2);
   /* Marker vars are intentionally NOT overridden in dark mode — map tiles stay light */
   --map-marker-bg: #ffffff;
+  /* Marker label colour encodes the QUANTITY, not the station: wave heights
+     blue, wind speeds near-black. The arrow is what says which kind of station
+     this is. Before 2026-09-06 both labels were blue, so a wind station drew a
+     blue "18kt" over a red arrow while the wind line under a wave marker was
+     red — three colours and no rule a reader could infer. Near-black rather
+     than pure #000 so it sits with the rest of the site's text; both sit on a
+     white text-shadow halo over light tiles in either theme. */
   --map-marker-text: #0077be;
+  --map-marker-wind-text: #1a1a1a;
   --map-marker-border: #004b7c;
   --map-arrow-wave: #0077be;
   --map-arrow-wind: #dc2626;
@@ -31,6 +39,25 @@
    sits at z-index 100. Covers every map (stations, winds, lightstations). */
 .leaflet-container {
   isolation: isolate;
+
+  /* Scroll trap: a map tall enough to fill a phone screen leaves nowhere to
+     put a finger that is NOT the map, and Leaflet takes every touch on itself
+     as a pan — so the page cannot be scrolled past it. The three maps are
+     sized independently (#stations-map 600/400px, .winds-map-container 400px,
+     #lightstation-map 500px) and only the first defended against this, so the
+     cap lives here on the class Leaflet puts on all of them.
+
+     10rem is the gutter: enough to clear the sticky nav (~60px) and still
+     leave a comfortable band of page to drag on. It is a cap, not a height —
+     on any viewport with room, each map keeps its own designed size.
+
+     dvh, not vh: on mobile Safari 100vh is the *expanded* viewport (URL bar
+     retracted), which is exactly the case being defended against. The plain
+     vh line above it is the fallback for browsers without dvh.
+
+     Fullscreen still wins — .map-is-fullscreen sets max-height: none. */
+  max-height: calc(100vh - 10rem);
+  max-height: calc(100dvh - 10rem);
 }
 
 /* Brighten the map tiles slightly */
@@ -68,8 +95,19 @@
        renders these ~18px taller than Blink, so Chromium alone reports a
        pass). 70vh of a 360x640 phone is 448px, which scrolled it; 76vh is
        486px and still inside the 500px map container. Measure in BOTH
-       engines before changing this. */
+       engines before changing this.
+
+       The second line is the same value tied to the map's new viewport cap
+       (`.leaflet-container` above): .leaflet-container is overflow:hidden, so
+       a popup taller than its map is CLIPPED, not scrolled — a strictly worse
+       failure than an internal scrollbar. 11rem leaves ~16px inside the map's
+       10rem gutter for the popup tip and margins. On a 360x640 phone this
+       resolves to 464px, which is exactly the Trial Island measurement above,
+       so nothing regresses; on anything taller 76vh is the binding limit and
+       this line does nothing. Short landscape viewports are where it earns
+       its keep. */
     max-height: 76vh;
+    max-height: min(76vh, calc(100dvh - 11rem));
     max-width: 88vw;
   }
 

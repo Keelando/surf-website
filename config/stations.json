@@ -3,6 +3,7 @@
     "4600146": {
       "id": "4600146",
       "name": "Halibut Bank",
+      "short_name": "Halibut",
       "location": "Off Vancouver",
       "lat": 49.337,
       "lon": -123.731,
@@ -280,6 +281,7 @@
       "id": "5cebf1de3d0f4a073c4bb94c",
       "code": "07795",
       "name": "Point Atkinson",
+      "short_name": "PtAtk Tide",
       "location": "West Vancouver",
       "lat": 49.3375,
       "lon": -123.253583,
@@ -322,6 +324,7 @@
       "id": "5cebf1de3d0f4a073c4bb935",
       "code": "07590",
       "name": "Tsawwassen",
+      "short_name": "Tsaw Tide",
       "location": "Delta",
       "lat": 49.00677,
       "lon": -123.12933,
@@ -342,6 +345,7 @@
       "id": "5cebf1de3d0f4a073c4bb933",
       "code": "07577",
       "name": "White Rock",
+      "short_name": "White Rock Tide",
       "location": "White Rock",
       "lat": 49.016667,
       "lon": -122.8,
@@ -362,6 +366,7 @@
       "id": "5dd3064fe0fdc4b9b4be69d7",
       "code": "07579",
       "name": "Crescent Beach",
+      "short_name": "Cres Pile Tide",
       "location": "Surrey",
       "lat": 49.033333,
       "lon": -122.883333,
@@ -402,6 +407,7 @@
       "id": "5cebf1e13d0f4a073c4bbf93",
       "code": "07654",
       "name": "New Westminster",
+      "short_name": "New West",
       "location": "Fraser River",
       "lat": 49.2,
       "lon": -122.91,
@@ -423,6 +429,7 @@
       "id": "5cebf1de3d0f4a073c4bb996",
       "code": "08074",
       "name": "Campbell River",
+      "short_name": "Campbell R",
       "location": "Discovery Passage",
       "lat": 50.042,
       "lon": -125.247,
@@ -444,6 +451,7 @@
       "id": "5cebf1e23d0f4a073c4bc07c",
       "code": "08615",
       "name": "Tofino",
+      "short_name": "Tofino Tide",
       "location": "Clayoquot Sound",
       "lat": 49.154,
       "lon": -125.913,
@@ -507,6 +515,7 @@
       "id": "5cebf1df3d0f4a073c4bbd1e",
       "code": "07120",
       "name": "Victoria Harbor",
+      "short_name": "Victoria Hbr",
       "location": "Victoria",
       "lat": 48.424666,
       "lon": -123.3707,
@@ -528,6 +537,7 @@
       "id": "surrey_crescent_ocean",
       "code": "CBOCN",
       "name": "Crescent Beach Ocean",
+      "short_name": "Cres Beach Tide",
       "location": "Surrey (Geodetic)",
       "lat": 49.033333,
       "lon": -122.883333,
@@ -550,6 +560,7 @@
       "id": "surrey_crescent_channel",
       "code": "CCOCN",
       "name": "Crescent Channel Ocean",
+      "short_name": "Cres Chan Tide",
       "location": "Surrey (Geodetic)",
       "lat": 49.033333,
       "lon": -122.866667,
@@ -798,6 +809,7 @@
     "CYAZ": {
       "id": "CYAZ",
       "name": "Tofino Airport",
+      "short_name": "Tofino Arpt",
       "location": "Tofino, BC",
       "lat": 49.0821,
       "lon": -125.772,
@@ -813,7 +825,6 @@
         "humidity"
       ],
       "source_url": "https://spaces.navcanada.ca/workspace/aeroview/CYAZ",
-      "short_name": "Tofino",
       "flag": "🇨🇦"
     },
     "CWZO": {
@@ -962,6 +973,7 @@
     "whiterock_east": {
       "id": "whiterock_east",
       "name": "White Rock East Beach",
+      "short_name": "WR East Beach",
       "location": "White Rock East Beach, Boundary Bay",
       "lat": 49.01647,
       "lon": -122.79082,
@@ -981,7 +993,6 @@
       ],
       "note": "Coastal weather station at White Rock pier - excellent Boundary Bay coverage",
       "source_url": "https://www.whiterockcity.ca/1000/Weather-Station",
-      "short_name": "White Rock",
       "flag": "🏛️"
     },
     "COLEB": {
@@ -1092,6 +1103,7 @@
     "ENTRANCE_ISLAND": {
       "id": "ENTRANCE_ISLAND",
       "name": "Entrance Island",
+      "short_name": "Entrance Light",
       "location": "Northern approach to Nanaimo, Georgia Strait",
       "lat": 49.209194,
       "lon": -123.808167,
@@ -1182,6 +1194,7 @@
     "ADDENBROKE_ISLAND": {
       "id": "ADDENBROKE_ISLAND",
       "name": "Addenbroke Island",
+      "short_name": "Addenbroke",
       "location": "West point of Addenbroke Island, Fitzhugh Sound",
       "lat": 51.603295,
       "lon": -127.86364,
@@ -1232,7 +1245,7 @@
       "established": 1957,
       "notes": "Critical for Inside Passage navigation, marks confluence of three channels",
       "reporting": false,
-      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest — kept on the map as a station that exists, excluded from the health-check count."
+      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest; kept on the map as a station that exists, excluded from the health-check count."
     },
     "DRYAD_POINT": {
       "id": "DRYAD_POINT",
@@ -1261,7 +1274,7 @@
       "established": 1898,
       "notes": "Exposed to full force of Pacific Ocean, one of oldest lighthouses on BC's central coast",
       "reporting": false,
-      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest — kept on the map as a station that exists, excluded from the health-check count."
+      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest; kept on the map as a station that exists, excluded from the health-check count."
     },
     "GREEN_ISLAND": {
       "id": "GREEN_ISLAND",
@@ -1276,7 +1289,7 @@
       "established": 1906,
       "notes": "British Columbia's northernmost lighthouse, marks entrance to Canadian waters from north, Heritage status 2015",
       "reporting": false,
-      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest — kept on the map as a station that exists, excluded from the health-check count."
+      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest; kept on the map as a station that exists, excluded from the health-check count."
     },
     "IVORY_ISLAND": {
       "id": "IVORY_ISLAND",
@@ -1417,7 +1430,8 @@
   "webcams": {
     "whiterock": {
       "id": "whiterock",
-      "name": "White Rock Pier Webcam",
+      "name": "White Rock Pier Cam",
+      "short_name": "WR Pier Cam",
       "location": "White Rock Pier, Boundary Bay",
       "lat": 49.021719,
       "lon": -122.807111,
@@ -1429,7 +1443,8 @@
     },
     "boundarybay": {
       "id": "boundarybay",
-      "name": "White Rock East Beach Webcam",
+      "name": "White Rock East Beach Cam",
+      "short_name": "WR East Cam",
       "location": "White Rock East Beach, Boundary Bay",
       "lat": 49.01647,
       "lon": -122.79082,
@@ -1441,7 +1456,8 @@
     },
     "coxbay": {
       "id": "coxbay",
-      "name": "Cox Bay",
+      "name": "Cox Bay Cam",
+      "short_name": "Cox Bay Cam",
       "location": "Tofino, BC",
       "lat": 49.106802,
       "lon": -125.872949,
@@ -1454,30 +1470,33 @@
     "mudbay": {
       "id": "mudbay",
       "name": "Mud Bay HD (SE)",
+      "short_name": "Mud Bay SE Cam",
       "location": "Mud Bay, BC",
       "lat": 49.07138649092664,
       "lon": -122.95538135838513,
       "source": "Mud Bay HD (SE) - OxBlue Archive",
       "type": "webcam",
-      "update_frequency_minutes": 10,
+      "update_frequency_minutes": 15,
       "stream_delay_minutes": 0,
       "page_url": "/webcams.html#mudbay"
     },
     "mudbay_sw": {
       "id": "mudbay_sw",
       "name": "Mud Bay HD (SW)",
+      "short_name": "Mud Bay SW Cam",
       "location": "Mud Bay, BC",
       "lat": 49.07138649092664,
       "lon": -122.95538135838513,
       "source": "Mud Bay HD (SW) - OxBlue Archive",
       "type": "webcam",
-      "update_frequency_minutes": 10,
+      "update_frequency_minutes": 15,
       "stream_delay_minutes": 0,
       "page_url": "/webcams.html#mudbay_sw"
     },
     "ambleside": {
       "id": "ambleside",
       "name": "Ambleside Beach",
+      "short_name": "Ambleside Cam",
       "location": "West Vancouver, BC",
       "lat": 49.326635134999776,
       "lon": -123.1529396759124,

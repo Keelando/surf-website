@@ -52,6 +52,7 @@ from lib.config import (
 
 # Add lib to path for imports
 from lib.daylight import calculate_sunrise_sunset
+from lib.lightstation_schedule import infer_schedule, staleness_threshold_hours
 from lib.logging_config import setup_logging
 from lib.stations import get_all_buoys, get_all_lightstations, get_all_tides, get_all_wind
 from lib.windy import WINDY_PUSH_ENABLED, load_windy_credentials, read_station_status
@@ -70,6 +71,9 @@ THRESHOLDS = {
     "buoy": {"warning": 2, "error": 4},
     "wind": {"warning": 2, "error": 4},
     "tide": {"warning": 2, "error": 4},
+    # Lightstations are the exception: their thresholds are per station, derived
+    # from each one's own inferred cadence (see _lightstation_thresholds). These
+    # values are only the fallback for a station with too little history.
     "lightstation": {"warning": 6, "error": 12},
     "webcam": {"warning": 2, "error": 24},  # 24h error threshold for daylight-only cams
 }
@@ -80,6 +84,25 @@ INTERMITTENT_STATIONS = {
 }
 
 VERBOSE = False
+
+
+def display_name(metadata: Dict) -> str:
+    """Label for logs and for the footer's compact down-list.
+
+    Prefers the registry's `short_name`. That field is not only an
+    abbreviation: for the places that carry two instruments it is where the
+    disambiguation lives, because `name` alone is genuinely not unique —
+    "Point Atkinson", "Tsawwassen", "Tofino" and "White Rock" are each both a
+    tide gauge and a wind station, and "Entrance Island" is both a wind station
+    and a lightstation. A log line or a status badge naming only "Entrance
+    Island" does not say which one is down.
+
+    `config/stations.json` (and `config/webcams.json`) is the single place
+    these labels live; `tests/test_stations.py` enforces that they stay
+    distinct. Falls back to the full name, which is unique for every station
+    that has no twin.
+    """
+    return metadata.get("short_name") or metadata["name"]
 
 
 def log(msg: str):
@@ -131,6 +154,7 @@ def check_data_freshness() -> Dict:
                 {
                     "id": station_id,
                     "name": metadata["name"],
+                    "short_name": display_name(metadata),
                     "type": "lightstation",
                     "reason": "no feed",
                 }
@@ -146,14 +170,26 @@ def check_data_freshness() -> Dict:
         if _webcam_in_scope(cam, now):
             webcams[cam_id] = cam
         elif cam.get("disabled"):
-            log(f"  ⏭️  {cam['name']}: Disabled in cron")
+            log(f"  ⏭️  {display_name(cam)}: Disabled in cron")
             excluded.append(
-                {"id": cam_id, "name": cam["name"], "type": "webcam", "reason": "disabled"}
+                {
+                    "id": cam_id,
+                    "name": cam["name"],
+                    "short_name": display_name(cam),
+                    "type": "webcam",
+                    "reason": "disabled",
+                }
             )
         else:
-            log(f"  ⏭️  {cam['name']}: dark, not expected to report right now")
+            log(f"  ⏭️  {display_name(cam)}: dark, not expected to report right now")
             excluded.append(
-                {"id": cam_id, "name": cam["name"], "type": "webcam", "reason": "dark"}
+                {
+                    "id": cam_id,
+                    "name": cam["name"],
+                    "short_name": display_name(cam),
+                    "type": "webcam",
+                    "reason": "dark",
+                }
             )
     webcam_stale = check_webcam_freshness(webcams)
     stale_stations.extend(webcam_stale)
@@ -204,11 +240,12 @@ def check_buoy_freshness() -> List[Dict]:
 
             result = cursor.fetchone()
             if not result or not result[0]:
-                log(f"  ❌ {metadata['name']}: No data found")
+                log(f"  ❌ {display_name(metadata)}: No data found")
                 stale.append(
                     {
                         "id": buoy_id,
                         "name": metadata["name"],
+                        "short_name": display_name(metadata),
                         "type": "buoy",
                         "age_hours": None,
                         "severity": "error",
@@ -222,18 +259,19 @@ def check_buoy_freshness() -> List[Dict]:
 
             if age > THRESHOLDS["buoy"]["error"]:
                 severity = "error"
-                log(f"  ❌ {metadata['name']}: {age:.1f}h old (ERROR)")
+                log(f"  ❌ {display_name(metadata)}: {age:.1f}h old (ERROR)")
             elif age > THRESHOLDS["buoy"]["warning"]:
                 severity = "warning"
-                log(f"  ⚠️  {metadata['name']}: {age:.1f}h old (WARNING)")
+                log(f"  ⚠️  {display_name(metadata)}: {age:.1f}h old (WARNING)")
             else:
-                log(f"  ✅ {metadata['name']}: {age:.1f}h old (OK)")
+                log(f"  ✅ {display_name(metadata)}: {age:.1f}h old (OK)")
                 continue
 
             stale.append(
                 {
                     "id": buoy_id,
                     "name": metadata["name"],
+                    "short_name": display_name(metadata),
                     "type": "buoy",
                     "age_hours": round(age, 1),
                     "last_observation": last_obs.isoformat(),
@@ -287,11 +325,12 @@ def check_wind_freshness() -> List[Dict]:
                 )
                 result = cursor.fetchone()
             if not result or not result[0]:
-                log(f"  ❌ {metadata['name']}: No data found")
+                log(f"  ❌ {display_name(metadata)}: No data found")
                 stale.append(
                     {
                         "id": station_id,
                         "name": metadata["name"],
+                        "short_name": display_name(metadata),
                         "type": "wind",
                         "age_hours": None,
                         "severity": "error",
@@ -305,18 +344,19 @@ def check_wind_freshness() -> List[Dict]:
 
             if age > THRESHOLDS["wind"]["error"]:
                 severity = "error"
-                log(f"  ❌ {metadata['name']}: {age:.1f}h old (ERROR)")
+                log(f"  ❌ {display_name(metadata)}: {age:.1f}h old (ERROR)")
             elif age > THRESHOLDS["wind"]["warning"]:
                 severity = "warning"
-                log(f"  ⚠️  {metadata['name']}: {age:.1f}h old (WARNING)")
+                log(f"  ⚠️  {display_name(metadata)}: {age:.1f}h old (WARNING)")
             else:
-                log(f"  ✅ {metadata['name']}: {age:.1f}h old (OK)")
+                log(f"  ✅ {display_name(metadata)}: {age:.1f}h old (OK)")
                 continue
 
             stale.append(
                 {
                     "id": station_id,
                     "name": metadata["name"],
+                    "short_name": display_name(metadata),
                     "type": "wind",
                     "age_hours": round(age, 1),
                     "last_observation": last_obs.isoformat(),
@@ -349,7 +389,7 @@ def check_tide_freshness() -> List[Dict]:
         # Only check stations that should have observations (series contains 'wlo')
         for station_key, metadata in get_all_tides().items():
             if "wlo" not in metadata.get("series", []):
-                log(f"  ⏭️  {metadata['name']}: No observations expected (predictions only)")
+                log(f"  ⏭️  {display_name(metadata)}: No observations expected (predictions only)")
                 continue
 
             # Map station_key to station_id (e.g., 'point_atkinson' -> '07795')
@@ -368,11 +408,12 @@ def check_tide_freshness() -> List[Dict]:
 
             result = cursor.fetchone()
             if not result or not result[0]:
-                log(f"  ❌ {metadata['name']}: No data found")
+                log(f"  ❌ {display_name(metadata)}: No data found")
                 stale.append(
                     {
                         "id": station_key,
                         "name": metadata["name"],
+                        "short_name": display_name(metadata),
                         "type": "tide",
                         "age_hours": None,
                         "severity": "error",
@@ -386,18 +427,19 @@ def check_tide_freshness() -> List[Dict]:
 
             if age > THRESHOLDS["tide"]["error"]:
                 severity = "error"
-                log(f"  ❌ {metadata['name']}: {age:.1f}h old (ERROR)")
+                log(f"  ❌ {display_name(metadata)}: {age:.1f}h old (ERROR)")
             elif age > THRESHOLDS["tide"]["warning"]:
                 severity = "warning"
-                log(f"  ⚠️  {metadata['name']}: {age:.1f}h old (WARNING)")
+                log(f"  ⚠️  {display_name(metadata)}: {age:.1f}h old (WARNING)")
             else:
-                log(f"  ✅ {metadata['name']}: {age:.1f}h old (OK)")
+                log(f"  ✅ {display_name(metadata)}: {age:.1f}h old (OK)")
                 continue
 
             stale.append(
                 {
                     "id": station_key,
                     "name": metadata["name"],
+                    "short_name": display_name(metadata),
                     "type": "tide",
                     "age_hours": round(age, 1),
                     "last_observation": last_obs.isoformat(),
@@ -448,6 +490,17 @@ def check_lightstation_freshness() -> List[Dict]:
             GROUP BY station_name
         """)
         db_stations = {row[0]: row[1] for row in cursor.fetchall()}
+
+        # And each station's own publishing cadence, over the same 30-day
+        # window the export uses, so the two agree about what "overdue" means.
+        cutoff = int(now.timestamp()) - 30 * 86400
+        cursor.execute(
+            "SELECT station_name, observation_time FROM lightstation_observation " "WHERE observation_time > ?",
+            (cutoff,),
+        )
+        history: Dict[str, List[int]] = {}
+        for name, ts in cursor.fetchall():
+            history.setdefault(name, []).append(ts)
         conn.close()
 
         # Check every station in the registry we expect to hear from
@@ -457,11 +510,12 @@ def check_lightstation_freshness() -> List[Dict]:
             last_obs_timestamp = db_stations.get(station_name)
 
             if not last_obs_timestamp:
-                log(f"  ❌ {metadata['name']}: No data found")
+                log(f"  ❌ {display_name(metadata)}: No data found")
                 stale.append(
                     {
                         "id": station_id,
                         "name": metadata["name"],
+                        "short_name": display_name(metadata),
                         "type": "lightstation",
                         "age_hours": None,
                         "severity": "error",
@@ -473,27 +527,40 @@ def check_lightstation_freshness() -> List[Dict]:
             last_obs = datetime.fromtimestamp(last_obs_timestamp, tz=timezone.utc)
             age = (now - last_obs).total_seconds() / 3600
 
-            if age > THRESHOLDS["lightstation"]["error"]:
+            # A flat threshold cannot serve both kinds of station here. Most
+            # report seven times a day and are normally silent for at most 6 h;
+            # Cape Mudge, Chatham Point and Pulteney Point report four times a
+            # day in daylight only and are normally silent for 15 h. Against a
+            # flat 12 h error threshold those three were reported down every
+            # night for behaving exactly as they always do — 10 such gaps each
+            # in the last 30 days — which is the fastest way to teach someone
+            # to ignore a status badge.
+            error_hours = staleness_threshold_hours(infer_schedule(history.get(station_name, [])))
+            warning_hours = error_hours * 2 / 3
+
+            if age > error_hours:
                 severity = "error"
                 if station_id in INTERMITTENT_STATIONS:
                     severity = "info"
-                    log(f"  ℹ️  {metadata['name']}: {age:.1f}h old (INTERMITTENT - expected)")
+                    log(f"  ℹ️  {display_name(metadata)}: {age:.1f}h old (INTERMITTENT - expected)")
                 else:
-                    log(f"  ❌ {metadata['name']}: {age:.1f}h old (ERROR)")
-            elif age > THRESHOLDS["lightstation"]["warning"]:
+                    log(f"  ❌ {display_name(metadata)}: {age:.1f}h old (ERROR, >{error_hours:.0f}h)")
+            elif age > warning_hours:
                 severity = "warning"
-                log(f"  ⚠️  {metadata['name']}: {age:.1f}h old (WARNING)")
+                log(f"  ⚠️  {display_name(metadata)}: {age:.1f}h old (WARNING, >{warning_hours:.0f}h)")
             else:
-                log(f"  ✅ {metadata['name']}: {age:.1f}h old (OK)")
+                log(f"  ✅ {display_name(metadata)}: {age:.1f}h old (OK)")
                 continue
 
             stale_entry = {
                 "id": station_id,
                 "name": metadata["name"],
+                "short_name": display_name(metadata),
                 "type": "lightstation",
                 "age_hours": round(age, 1),
                 "last_observation": last_obs.isoformat(),
                 "severity": severity,
+                "stale_after_hours": round(error_hours, 1),
             }
 
             if station_id in INTERMITTENT_STATIONS:
@@ -530,6 +597,7 @@ def _load_webcam_config() -> Dict[str, Dict]:
             continue
         webcams[cam_id] = {
             "name": cam["name"],
+            "short_name": cam.get("short_name"),
             "path": project_root / cam["website_dir"] / "latest.json",
             "interval": cam.get("interval_minutes", 10),
             "daylight_only": cam.get("check_daylight", False),
@@ -605,11 +673,12 @@ def check_webcam_freshness(webcams: Dict[str, Dict]) -> List[Dict]:
 
     for webcam_id, webcam_meta in webcams.items():
         if not webcam_meta["path"].exists():
-            log(f"  ❌ {webcam_meta['name']}: Metadata file not found")
+            log(f"  ❌ {display_name(webcam_meta)}: Metadata file not found")
             stale.append(
                 {
                     "id": webcam_id,
                     "name": webcam_meta["name"],
+                    "short_name": display_name(webcam_meta),
                     "type": "webcam",
                     "age_hours": None,
                     "severity": "error",
@@ -624,11 +693,12 @@ def check_webcam_freshness(webcams: Dict[str, Dict]) -> List[Dict]:
 
             last_update_str = metadata.get("timestamp")
             if not last_update_str:
-                log(f"  ❌ {webcam_meta['name']}: No timestamp in metadata")
+                log(f"  ❌ {display_name(webcam_meta)}: No timestamp in metadata")
                 stale.append(
                     {
                         "id": webcam_id,
                         "name": webcam_meta["name"],
+                        "short_name": display_name(webcam_meta),
                         "type": "webcam",
                         "age_hours": None,
                         "severity": "error",
@@ -645,18 +715,19 @@ def check_webcam_freshness(webcams: Dict[str, Dict]) -> List[Dict]:
 
             if age > error_threshold:
                 severity = "error"
-                log(f"  ❌ {webcam_meta['name']}: {age:.1f}h old (ERROR)")
+                log(f"  ❌ {display_name(webcam_meta)}: {age:.1f}h old (ERROR)")
             elif age > warning_threshold:
                 severity = "warning"
-                log(f"  ⚠️  {webcam_meta['name']}: {age:.1f}h old (WARNING)")
+                log(f"  ⚠️  {display_name(webcam_meta)}: {age:.1f}h old (WARNING)")
             else:
-                log(f"  ✅ {webcam_meta['name']}: {age:.1f}h old (OK)")
+                log(f"  ✅ {display_name(webcam_meta)}: {age:.1f}h old (OK)")
                 continue
 
             stale.append(
                 {
                     "id": webcam_id,
                     "name": webcam_meta["name"],
+                    "short_name": display_name(webcam_meta),
                     "type": "webcam",
                     "age_hours": round(age, 1),
                     "last_update": last_update.isoformat(),
@@ -666,11 +737,12 @@ def check_webcam_freshness(webcams: Dict[str, Dict]) -> List[Dict]:
             )
 
         except Exception as e:
-            log(f"  ❌ {webcam_meta['name']}: Error reading metadata - {e}")
+            log(f"  ❌ {display_name(webcam_meta)}: Error reading metadata - {e}")
             stale.append(
                 {
                     "id": webcam_id,
                     "name": webcam_meta["name"],
+                    "short_name": display_name(webcam_meta),
                     "type": "webcam",
                     "age_hours": None,
                     "severity": "error",

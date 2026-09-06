@@ -41,34 +41,6 @@
       const freshness = data.checks.data_freshness;
       const total = freshness.total_stations;
 
-      // Shorthand names for stale stations (keep footer compact)
-      const shortNames = {
-        "Halibut Bank": "Halibut",
-        "English Bay": "EngBay",
-        "Southern Georgia Strait": "SGS",
-        "Sentry Shoal": "Sentry",
-        "Crescent Beach Ocean": "CRPILE",
-        "Angeles Point": "Angeles",
-        "Neah Bay": "Neah",
-        "New Dungeness": "Dungeness",
-        "White Rock Pier": "WR Cam",
-        "Cox Bay": "Cox Cam",
-        "Mud Bay HD": "Mud Cam",
-        Ambleside: "Ambl Cam",
-        "White Rock East Beach": "BB Cam",
-        "Point Atkinson": "PtAtk",
-        Kitsilano: "Kits",
-        "New Westminster": "NewWest",
-        "Campbell River": "CampR",
-        "Sisters Islets": "Sisters",
-        Ballenas: "Ballenas",
-        "Entrance Island": "Entrance",
-        "Sand Heads": "SandH",
-        Saturna: "Saturna",
-        "Race Rocks": "RaceR",
-        "Trial Island": "Trial",
-      };
-
       const staleStations = freshness.stale_stations.filter(
         (s) => s.severity === "error" || s.severity === "warning",
       );
@@ -78,7 +50,8 @@
       // `total`, so the tooltip only has to explain why it moved.
       const excluded = freshness.excluded_stations || [];
       const excludedNote = excluded.length
-        ? "\nNot counted right now:\n" + excluded.map((s) => `${s.name} (${s.reason})`).join("\n")
+        ? "\nNot counted right now:\n" +
+          excluded.map((s) => `${s.short_name || s.name} (${s.reason})`).join("\n")
         : "";
       const reporting = total - staleStations.length;
       const pct = Math.round((reporting / total) * 100);
@@ -106,8 +79,15 @@
             : "All stations reporting; a system check is failing") +
           excludedNote;
       } else {
-        // Build compact down list with shorthand names
-        const downNames = staleStations.map((s) => shortNames[s.name] || s.name.split(" ")[0]);
+        // Labels come from the station registry via health_check's
+        // `display_name()` — `short_name` when a station has one, else its full
+        // name. This used to be a hardcoded map here keyed by display name,
+        // which was wrong twice over: display names are not unique (four places
+        // carry both a tide gauge and a wind station, and Entrance Island is
+        // both a wind station and a lightstation), and the fallback took the
+        // first word, which rendered Cape Mudge, Cape Beale and Cape Scott all
+        // as "Cape". Three of its entries had also drifted and matched nothing.
+        const downNames = staleStations.map((s) => s.short_name || s.name);
         const downList = downNames.join(", ");
 
         setSafeHTML(
@@ -125,7 +105,7 @@
                   ? `${Math.round(s.age_hours * 60)}m`
                   : `${Math.round(s.age_hours)}h`
                 : "no data";
-              return `${s.name} (${s.type}, ${age})`;
+              return `${s.short_name || s.name} (${s.type}, ${age})`;
             })
             .join("\n") +
           excludedNote;

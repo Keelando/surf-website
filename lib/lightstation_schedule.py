@@ -46,6 +46,42 @@ MIN_SLOT_DAYS = 2
 MIN_CONFIDENT_DAYS = 3.0
 
 
+# Silence past a station's own longest normal gap, plus one reporting cycle.
+# One late report is not a failure; two is.
+STALE_GRACE_HOURS = 3.0
+
+# For a station whose cadence we cannot infer — too little history, or a
+# genuinely irregular publisher. The flat value every station used before
+# schedules were inferred.
+DEFAULT_STALE_HOURS = 12.0
+
+
+def staleness_threshold_hours(schedule: Optional[Dict]) -> float:
+    """How long a station may go quiet before the silence means something.
+
+    A flat threshold cannot serve both kinds of station on this page. Most
+    report seven times a day with a longest normal gap of 6 h; Cape Mudge,
+    Chatham Point and Pulteney Point report four times a day in daylight only
+    and are normally silent for 15 h overnight. The old flat 12 h was wrong at
+    both ends — it called the daylight-only stations stale every night for
+    doing exactly what they always do, and it gave the three-hourly stations
+    two whole missed cycles before saying anything.
+
+    Measuring against the station's own inferred gap fixes both directions at
+    once: the regular stations are now flagged at 9 h instead of 12, and the
+    daylight-only ones at 18 h instead of tripping nightly.
+
+    @param schedule: an `infer_schedule()` result, or None
+    @returns: hours of silence after which the station counts as stale
+    """
+    if not schedule or not schedule.get("confident"):
+        return DEFAULT_STALE_HOURS
+    gap = schedule.get("longest_gap_hours")
+    if not gap:
+        return DEFAULT_STALE_HOURS
+    return gap + STALE_GRACE_HOURS
+
+
 def _slot_key(timestamp: int) -> str:
     """Epoch seconds → "HH:MM" UTC, minutes rounded to the nearest ten."""
     moment = datetime.fromtimestamp(timestamp, timezone.utc)

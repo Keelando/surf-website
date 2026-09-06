@@ -7,11 +7,13 @@ import { viewLightstationChart } from "./lightstation-charts.js";
 import { centerMapOnLightstation } from "./lightstation-map.js";
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
 import {
+  describeMissedReports,
   describeNextReport,
   describeSchedule,
   describeSlots,
 } from "./shared/lightstation-schedule.js";
 import { setSafeHTML } from "./shared/safe-html.js";
+import { staleThresholdLabel } from "./shared/staleness.js";
 
 // Lightstation metadata keyed by several name/ID formats (module-local;
 // was window.stationMetadata before the ES-module conversion)
@@ -164,6 +166,19 @@ function handleLightstationHash() {
   }, 300);
 }
 
+/**
+ * Name the bulletin(s) a station's observations arrive in, for the details
+ * panel. `bulletins` is written by export_lightstation_json.py.
+ *
+ * @param {Array<string>|undefined} bulletins - Product codes, e.g. ["SXCN"]
+ * @returns {string} Display text, or "" when we have nothing to say
+ */
+function describeBulletins(bulletins) {
+  if (!Array.isArray(bulletins) || bulletins.length === 0) return "";
+  const labels = { SXCN: "SXCN (coded)", FPCN61: "FPCN61 (written)" };
+  return bulletins.map((code) => labels[code] || code).join(" + ");
+}
+
 function createStationCard(station) {
   const card = document.createElement("div");
   card.className = "lightstation-card";
@@ -208,20 +223,37 @@ function createStationCard(station) {
     const reportTime = document.createElement("div");
     reportTime.className = "report-time";
 
+    // How old the reading is, said first and said plainly. The whole line used
+    // to be 0.85rem muted italic with the age in parentheses at the end, which
+    // is the least prominent place on the card for the one number a reader
+    // needs — the colour badge below is a nicety, this is the substance. The
+    // age carries the alert colour itself when the station is overdue, so it
+    // does not depend on the badge to be noticed.
     const formattedDate = formatWeekdayDayTime(station.observation_time);
-    const ageText = ` (${getShortAgeString(station.observation_time)})`;
-
-    reportTime.textContent = `Reported: ${formattedDate}${ageText}`;
+    const age = document.createElement("span");
+    age.className = station.stale ? "report-age report-age-stale" : "report-age";
+    age.textContent = getShortAgeString(station.observation_time);
+    reportTime.appendChild(age);
+    reportTime.appendChild(document.createTextNode(` \u00b7 ${formattedDate}`));
     card.appendChild(reportTime);
 
     // When to check back. Lightkeeper reports land on a fixed daily cycle, so
     // "next ~14:40" is knowable and is the thing a reader waiting on this
     // station actually wants.
-    const nextReport = describeNextReport(station.schedule);
-    if (nextReport) {
+    // Either when to check back, or — once the station has stopped — how much
+    // it has missed. Never both, and never a next-report promise from a
+    // station that is not reporting.
+    const nextReport = describeNextReport(station.schedule, station.stale);
+    const missed = station.stale
+      ? describeMissedReports(station.schedule, station.observation_time)
+      : null;
+    if (nextReport || missed) {
       const nextLine = document.createElement("div");
+      // Deliberately the same muted styling as the next-report line it
+      // replaces: the age above is already red and the badge below says
+      // STALE, so a third red on one card would be noise, not emphasis.
       nextLine.className = "report-time report-next";
-      nextLine.textContent = `Next report ${nextReport.replace("next ", "")}`;
+      nextLine.textContent = missed || `Next report: ${nextReport}`;
       card.appendChild(nextLine);
     }
   } else if (station.report_time_str) {
@@ -238,7 +270,13 @@ function createStationCard(station) {
     warning.style.color = "var(--color-accent-red)";
     warning.style.fontWeight = "600";
     warning.style.marginTop = "0.5rem";
-    warning.textContent = "⚠️ STALE DATA (>12h old)";
+    // No number here. It used to print the threshold — "(>9h old)" — directly
+    // under a line reading "5 days ago", which reads as a contradiction and
+    // badly understates the gap. The age line above is the substance; this is
+    // just the flag. The threshold that triggered it goes in the tooltip and
+    // in the details panel, where it explains rather than competes.
+    warning.title = `Flagged after ${staleThresholdLabel(station).replace(">", "")} without a report`;
+    warning.textContent = "⚠️ STALE DATA";
     card.appendChild(warning);
   }
 
@@ -399,6 +437,36 @@ function createStationCard(station) {
     }
   }
 
+  // Which EC product this station's readings actually arrive in, measured from
+  // 30 days of its own history by the export rather than declared anywhere.
+  // It is the reason a reading here can be timed differently from the same
+  // reading on EC's page: the two bulletins are issued on different cycles,
+  // and nine stations appear in both. Rendered outside the registry guard
+  // above because it comes from the observations, not from stations.json.
+  // The threshold that drives the badge, explained where it can inform rather
+  // than compete with the age. It is per station — 9 h for the three-hourly
+  // ones, 18 h for the daylight-only ones whose normal overnight gap is 15 h.
+  if (Number.isFinite(station.stale_after_hours)) {
+    const staleRow = document.createElement("div");
+    staleRow.className = "detail-row";
+    setSafeHTML(
+      staleRow,
+      `<span class="detail-label">Flagged stale after:</span><span class="detail-value">${Math.round(station.stale_after_hours)} h without a report</span>`,
+    );
+    detailsContent.appendChild(staleRow);
+  }
+
+  const bulletinText = describeBulletins(station.bulletins);
+  if (bulletinText) {
+    const bulletinRow = document.createElement("div");
+    bulletinRow.className = "detail-row";
+    setSafeHTML(
+      bulletinRow,
+      `<span class="detail-label">Bulletin:</span><span class="detail-value">${bulletinText}</span>`,
+    );
+    detailsContent.appendChild(bulletinRow);
+  }
+
   // Toggle functionality
   detailsToggle.addEventListener("click", () => {
     detailsToggle.classList.toggle("expanded");
@@ -407,6 +475,39 @@ function createStationCard(station) {
 
   card.appendChild(detailsToggle);
   card.appendChild(detailsContent);
+
+  // Where this reading came from. The buoy cards have carried a per-card
+  // source link for a while; this is the lightstation equivalent, and it is
+  // here for the same two reasons: the site re-presents someone else's
+  // bulletins and a reader must be able to reach the original, and a reader
+  // who can put our rendering beside EC's is the one who catches our next
+  // transcription error. (The McInnes Island coordinate error sat on this page
+  // until a mariner happened to notice.)
+  //
+  // One URL serves every station: EC's Lightstation Reports page is a single
+  // list with no per-station anchor, and — verified 2026-09-06 — it carries
+  // all 21 stations we render, including the seven that reach us only in
+  // FPCN61. Keep the ?mapID/&siteID query string; without it EC renders the
+  // same list under a "The web address you have entered is incorrect" banner,
+  // which reads as our broken link rather than theirs.
+  // Same footer the buoy cards use — "🔗 View Source Data" under a rule, in
+  // the shared .buoy-source-link-wrap / .ls-card-source-wrap styling (one rule,
+  // two selectors, in style-v4.css) so the two card types stay identical.
+  const sourceWrap = document.createElement("p");
+  sourceWrap.className = "ls-card-source-wrap";
+  const sourceLink = document.createElement("a");
+  sourceLink.className = "ls-card-source-link";
+  sourceLink.href =
+    "https://weather.gc.ca/marine/weatherConditions-lightstation_e.html?mapID=02&siteID=16200";
+  sourceLink.target = "_blank";
+  sourceLink.rel = "noopener noreferrer";
+  sourceLink.setAttribute(
+    "aria-label",
+    `${station.name} on Environment Canada's Lightstation Reports (opens weather.gc.ca in a new tab)`,
+  );
+  sourceLink.textContent = "🔗 View Source Data";
+  sourceWrap.appendChild(sourceLink);
+  card.appendChild(sourceWrap);
 
   return card;
 }

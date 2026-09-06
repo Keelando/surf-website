@@ -60,13 +60,18 @@ export function createDirectionalMarker(
   const labelHalo =
     "1px 1px 2px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9), 1px -1px 2px rgba(255,255,255,0.9), -1px 1px 2px rgba(255,255,255,0.9)";
 
-  // Label: wind speed in knots (rounded), otherwise wave height in metres
+  // Label: wind speed in knots (rounded), otherwise wave height in metres.
+  // Coloured by the quantity, not the station — see --map-marker-wind-text in
+  // stations-map-v4.css. Waves blue, wind near-black, wherever either appears.
+  const labelColor = isWind
+    ? "var(--map-marker-wind-text, #1a1a1a)"
+    : "var(--map-marker-text, #0077be)";
   let valueLabel = "";
   if (value !== null && value !== undefined) {
     const text = isWind ? `${Math.round(value)}kt` : `${value.toFixed(1)}m`;
     valueLabel = `<div style="
       background: transparent;
-      color: var(--map-marker-text, #0077be);
+      color: ${labelColor};
       padding: 2px 5px;
       border-radius: 3px;
       font-size: 13px;
@@ -77,13 +82,14 @@ export function createDirectionalMarker(
     ">${text}</div>`;
   }
 
-  // Second line: wind speed under a wave marker. Wind red, a size down from
-  // the wave height, so the two are told apart without reading them.
+  // Second line: wind speed under a wave marker. Same near-black as a
+  // standalone wind marker's label — it is the same quantity — and a size down
+  // from the wave height above it, which is what tells the two apart.
   let windLabel = "";
   if (!isWind && windSpeed !== null && windSpeed !== undefined) {
     windLabel = `<div style="
       background: transparent;
-      color: var(--map-arrow-wind, #dc2626);
+      color: var(--map-marker-wind-text, #1a1a1a);
       padding: 0 5px;
       font-size: 11px;
       font-weight: bold;

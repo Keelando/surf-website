@@ -19,6 +19,8 @@ Format:
     "observation_time": "2025-11-25T18:10:00+00:00",
     "report_time_str": "10 AM Tuesday",
     "stale": false,
+    "stale_after_hours": 9.0,
+    "bulletins": ["FPCN61"],
     "schedule": {"slots_utc": ["00:10", ...], "reports_per_day": 4, ...}
   },
   ...
@@ -31,19 +33,33 @@ from datetime import datetime, timezone
 # Shared utilities
 from lib.config import EXPORT_DIR, safe_json_write
 from lib.config import LIGHTSTATION_DATABASE as DB_PATH
-from lib.lightstation_schedule import infer_schedule
+from lib.lightstation_schedule import infer_schedule, staleness_threshold_hours
 from lib.logging_config import setup_logging
 
 logger = setup_logging("lightstation_json_export")
 
 # ---------- Config ----------
 OUT_PATH = EXPORT_DIR / "latest_lightstation.json"
-FRESHNESS_WINDOW = 21600  # 6 hours (reports are 3-hourly, but may have delays)
 
 # How much history the publishing-schedule inference gets to look at. Long
 # enough for a daily cycle to be obvious, short enough that a station which
 # changed its habits is described by what it does now, not last month.
 SCHEDULE_LOOKBACK_DAYS = 30
+
+# Which Environment Canada product(s) a station's observations actually arrive
+# in, measured over the same window as the schedule rather than declared in a
+# table. The page uses this to point each station's "View source" link at
+# something that really carries it: SXCN is rendered on EC's public
+# Lightstation Reports page, FPCN61 is not published as a page at all.
+#
+# It has to be measured per station because the two products cover overlapping
+# but different rosters — nine stations appear in both, and eleven in only one.
+# And it has to be measured over history rather than read off the newest row:
+# `report_time_str` names whichever bulletin happened to arrive FIRST for that
+# observation (the merge deliberately leaves it alone, see parse_lightstation),
+# so for a dual-bulletin station it flips with arrival order. `source_file`
+# accumulates every product that contributed, which is the stable answer.
+BULLETIN_PRODUCTS = ("SXCN", "FPCN61")
 
 
 def query_and_export():
@@ -117,12 +133,9 @@ def query_and_export():
                 if fallback_row:
                     row = fallback_row
 
-            # Calculate staleness (>12 hours = stale)
-            # Lightstations report every 3 hours, but can be delayed or infrequent
             observation_time = row["observation_time"]
             now_ts = datetime.now(timezone.utc).timestamp()
             age_hours = (now_ts - observation_time) / 3600
-            is_stale = age_hours > 12
 
             # Publishing schedule, inferred from this station's own history —
             # see lib/lightstation_schedule.py for why it is not read from
@@ -136,6 +149,28 @@ def query_and_export():
                 (station_name, now_ts - SCHEDULE_LOOKBACK_DAYS * 86400),
             )
             schedule = infer_schedule(r[0] for r in cur.fetchall())
+
+            # Staleness is measured against this station's own cadence, not a
+            # flat threshold — see staleness_threshold_hours(). Exported so the
+            # page can name the number instead of hardcoding one that is wrong
+            # for a third of the stations.
+            stale_after_hours = staleness_threshold_hours(schedule)
+            is_stale = age_hours > stale_after_hours
+
+            # Bulletin membership over the same window (see BULLETIN_PRODUCTS).
+            cur.execute(
+                """
+                SELECT source_file
+                FROM lightstation_observation
+                WHERE station_name = ? AND observation_time > ?
+                  AND source_file IS NOT NULL
+            """,
+                (station_name, now_ts - SCHEDULE_LOOKBACK_DAYS * 86400),
+            )
+            # A merged row's source_file is "fileA+fileB", so substring-match
+            # each product rather than splitting on a delimiter.
+            seen = " ".join(r[0] for r in cur.fetchall())
+            bulletins = [p for p in BULLETIN_PRODUCTS if p in seen]
 
             # Build JSON entry
             station_json = {
@@ -152,6 +187,8 @@ def query_and_export():
                 "observation_time": datetime.fromtimestamp(observation_time, tz=timezone.utc).isoformat(),
                 "report_time_str": row["report_time_str"],
                 "stale": is_stale,
+                "stale_after_hours": stale_after_hours,
+                "bulletins": bulletins,
                 "schedule": schedule,
             }
 

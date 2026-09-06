@@ -16,28 +16,43 @@ from astral import Depression, LocationInfo
 from astral.sun import blue_hour, dawn, dusk, golden_hour, sun
 
 from lib.config import EXPORT_DIR
+from lib.stations import get_all_webcams
 
-# Webcam locations (same as in fetch_webcam.py)
-WEBCAM_LOCATIONS = {
-    "whiterock": {
-        "name": "White Rock, BC",
-        "lat": 49.0253,
-        "lon": -122.8031,
-        "output_file": EXPORT_DIR / "wrcam" / "sunlight.json",
-    },
-    "boundarybay": {
-        "name": "Boundary Bay, BC",
-        "lat": 49.0042,
-        "lon": -123.0128,
-        "output_file": EXPORT_DIR / "bbcam" / "sunlight.json",
-    },
-    "coxbay": {
-        "name": "Cox Bay (Tofino), BC",
-        "lat": 49.1167,
-        "lon": -125.9000,
-        "output_file": EXPORT_DIR / "coxbay" / "sunlight.json",
-    },
+# Webcam positions come from the station registry, not a copy here. The copy
+# this replaced had drifted three ways: its comment said "same as in
+# fetch_webcam.py", which stopped being true when that script moved to
+# config/webcams.json; its coordinates disagreed with the registry by up to
+# 24 km (the boundarybay entry still held the old Boundary Bay position after
+# the camera became the White Rock East Beach one); and it listed
+# whiterock/boundarybay/coxbay, which is almost exactly the wrong three — the
+# cams that actually need sunlight times are the daylight-gated ones
+# (ambleside, coxbay, mudbay, mudbay_sw), and three of those were absent.
+#
+# Reading the registry fixes all three at once and makes a fourth impossible.
+
+# Webcam entries in the combined file are keyed "webcam_<id>" — see the
+# namespacing note in export_all_locations().
+WEBCAM_KEY_PREFIX = "webcam_"
+
+# Legacy per-camera files. Nothing on the site reads these; they are written
+# only because they are already published under those paths, and the set is
+# frozen deliberately so that adding a camera does not publish a new unread
+# file. Delete them together with these three entries when it is confirmed
+# nothing external depends on them.
+LEGACY_WEBCAM_FILES = {
+    WEBCAM_KEY_PREFIX + "whiterock": EXPORT_DIR / "wrcam" / "sunlight.json",
+    WEBCAM_KEY_PREFIX + "boundarybay": EXPORT_DIR / "bbcam" / "sunlight.json",
+    WEBCAM_KEY_PREFIX + "coxbay": EXPORT_DIR / "coxbay" / "sunlight.json",
 }
+
+
+def load_webcam_locations():
+    """Webcam positions from config/stations.json, keyed by camera id."""
+    return {
+        cam_id: {"name": cam["name"], "lat": cam["lat"], "lon": cam["lon"]}
+        for cam_id, cam in get_all_webcams().items()
+        if "lat" in cam and "lon" in cam
+    }
 
 
 def get_sunlight_times(lat, lon, date=None, tz_name="America/Vancouver"):
@@ -244,9 +259,15 @@ def export_all_locations(days_ahead=5):
     # Combine webcams and tide stations into one structure
     all_locations = {}
 
-    # Add webcams
+    # Add webcams. Keys are namespaced because the two sets genuinely collide:
+    # `whiterock` is both a camera id and a tide station key, and the tide
+    # station — added second — was silently overwriting the camera, so anything
+    # asking this file where the White Rock camera is got the tide gauge's
+    # position instead. Namespacing is the fix rather than renaming either id,
+    # because both ids are load-bearing in their own registries.
     print("=== Preparing Webcam Locations ===")
-    for location_key, location in WEBCAM_LOCATIONS.items():
+    for cam_id, location in load_webcam_locations().items():
+        location_key = WEBCAM_KEY_PREFIX + cam_id
         all_locations[location_key] = {
             "name": location["name"],
             "lat": location["lat"],
@@ -273,7 +294,13 @@ def export_all_locations(days_ahead=5):
     for station_key, location in all_locations.items():
         print(f"\n{location['name']} ({location['type']})...")
 
-        station_data = {"name": location["name"], "lat": location["lat"], "lon": location["lon"], "days": {}}
+        station_data = {
+            "name": location["name"],
+            "lat": location["lat"],
+            "lon": location["lon"],
+            "type": location["type"],
+            "days": {},
+        }
 
         # Calculate for each day
         for day_offset in range(days_ahead):
@@ -319,19 +346,18 @@ def export_all_locations(days_ahead=5):
 
     # Also write individual webcam files for backwards compatibility
     print("\n=== Writing Individual Webcam Files ===")
-    for location_key, location in WEBCAM_LOCATIONS.items():
+    for location_key, output_file in LEGACY_WEBCAM_FILES.items():
         if location_key in results["stations"]:
             # Just write today's data to individual files (backwards compat)
             today_str = today.isoformat()
             today_data = results["stations"][location_key]["days"].get(today_str, {})
 
-            output_file = location["output_file"]
             output_file.parent.mkdir(parents=True, exist_ok=True)
 
             with open(output_file, "w") as f:
                 json.dump({"date": today_str, "generated_at": results["generated_at"], **today_data}, f, indent=2)
 
-            print(f"  {location['name']}: {output_file}")
+            print(f"  {location_key}: {output_file}")
 
     return results
 

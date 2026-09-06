@@ -67,6 +67,20 @@ class StationRegistry:
         return self._data.get("lightstations", {})
 
     @property
+    def webcams(self) -> Dict:
+        """Webcam positions and public identity.
+
+        The *fetch* side of a camera (URLs, referers, crop, archive paths)
+        lives in `config/webcams.json`, which is gitignored because it carries
+        permission-restricted endpoints. What a camera IS — its name, short
+        name, position and update cadence — belongs here, in the tracked
+        registry, because that is what the map, the status badge and the
+        sunlight export all need and none of them should be reaching into the
+        private file for it.
+        """
+        return self._data.get("webcams", {})
+
+    @property
     def metadata(self) -> Dict:
         """Get file metadata."""
         return self._data.get("_metadata", {})
@@ -189,6 +203,11 @@ def get_all_wind() -> Dict:
 def get_all_lightstations() -> Dict:
     """Get all lightstation stations."""
     return STATIONS.lightstations
+
+
+def get_all_webcams() -> Dict:
+    """Get all webcam positions from the tracked registry."""
+    return STATIONS.webcams
 
 
 def get_wind_station(station_id: str) -> Optional[Dict]:

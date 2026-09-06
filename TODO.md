@@ -50,14 +50,300 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 **Next feature** (not maintenance): Salish Sea forecast upgrade — RDWPS waves
 + CIOPS-SalishSea water levels. Plan: `docs/project/FORECAST_UPGRADE.md`.
 
-**Next bugfix**: none queued. The lightstation parser's two bugs are both
-fixed — the `FOOT` sea heights on 2026-09-04, the duplicated observations on
-2026-09-06. Write-up: `docs/project/LIGHTSTATION_PARSE_FIXES.md`.
+**Next bugfix**: none queued. The Ambleside stale-frame bug is fixed
+(2026-09-06, dedupe), as is the `target="_blank"` stripping it turned up.
+The lightstation parser's two bugs are both fixed — the `FOOT` sea heights on 2026-09-04, the
+duplicated observations on 2026-09-06. Write-up:
+`docs/project/LIGHTSTATION_PARSE_FIXES.md`.
 
 ## Feature backlog
 
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
+
+- [x] **Ambleside webcam reported a stale frame as fresh** (user 2026-09-06;
+      camera down since ~2026-08-27). The upstream URL kept returning 200 with
+      the *same* last-good frame, so the fetch succeeded, `latest.json` was
+      rewritten, and the staleness badge stayed green on a picture whose only
+      tell was the timestamp burned into it. The machinery already existed and
+      Ambleside was simply not opted in: `"dedupe": true` in
+      `config/webcams.json`. Confirmed against the archive first — seven
+      consecutive frames were byte-identical (same sha256, same 18,692 bytes),
+      so both dedupe stages fire.
+
+      The staleness half needed no change: a dedupe skip `sys.exit(0)`s before
+      `latest.json` is written, so the timestamp stops advancing and
+      `webcams-v4.js` flips the card stale at 3× the interval (60 min here).
+      Documented in `config/webcams.example.json` via `_dedupe_note` so the
+      next camera gets it by default. Tests: `TestDedupeFrozenCamera` in
+      `tests/test_webcam_pipeline.py` — six cases pinning that an identical
+      frame never advances `latest.json`, that a changed one still publishes,
+      that the HEAD stage skips the transfer, that a stale `Content-Length`
+      cannot pin us to an old frame, that annotation does not defeat the hash,
+      and that the opt-out still republishes. *Done 2026-09-06.*
+
+      Unrelated but noted: the endpoint served a frame at 21:48 UTC and 404ed
+      five minutes later, twice. Worth watching before assuming the feed is
+      merely frozen. Only the direct-image cams can use this; a stalled
+      YouTube cam re-encodes every frame, so byte equality would be an
+      accident there rather than a signal.
+
+- [x] **Lightstation region toggle bars were oversized on mobile** (user
+      2026-09-06). `.region-header` was `1.3rem` in `0.75rem 1.5rem` padding
+      at every width, and the page's ≤768px block never touched it. Now
+      `0.85rem` in `0.4rem 0.7rem` at ≤768px, which matches
+      `.station-details-toggle`, the other "this is a control" affordance on
+      the card. Bars go 41px → 33px, and "WEST COAST VANCOUVER ISLAND
+      (5 stations)" stops wrapping to two lines at 390px (66px → 33px).
+      Measured in both engines, light and dark. *Done 2026-09-06.*
+
+- [x] **Map height capped against the viewport, sitewide** (user 2026-09-06).
+      `#lightstation-map` was a flat 500px inline style with no mobile
+      override, so on a short phone the map filled the screen and there was
+      nowhere left to touch that was not the map. The cap lives on
+      `.leaflet-container` in `stations-map-v4.css`, so it covers all three
+      maps at once: `max-height: calc(100dvh - 10rem)` with a `vh` fallback
+      line before it (`dvh` because mobile Safari's `100vh` is the *expanded*
+      viewport, which is the case being defended against). The inline style
+      moved into the page's `<style>` block while there.
+
+      The popup cap had to move with it: `.leaflet-container` is
+      `overflow: hidden`, so a popup taller than its map is clipped rather
+      than scrolled. `.leaflet-popup-content-wrapper` is now
+      `min(76vh, calc(100dvh - 11rem))` at ≤768px, which resolves to 464px on
+      a 360×640 phone — exactly the Trial Island measurement the old 76vh was
+      sized for, so nothing regressed. Verified at 360/390/768/1280 in
+      Chromium and Firefox: map 480px inside a 640px viewport, popup 290px,
+      no clipping at either edge. *Done 2026-09-06.*
+
+- [x] **Per-card source link on the lightstation cards** (user 2026-09-06),
+      in the buoy cards' exact format — "🔗 View Source Data" under a rule, on
+      one shared CSS rule (`.buoy-source-link-wrap, .ls-card-source-wrap`)
+      rather than a second copy of the declarations.
+
+      The worry about FPCN61-only stations having no destination turned out
+      to be unfounded: EC's Lightstation Reports page renders the FICN
+      bulletins and carries **all 21 stations we show**, including the seven
+      that reach us only in FPCN61 (verified 2026-09-06). So one URL serves
+      every card. Keep its `?mapID=02&siteID=16200` query string.
+
+      The provenance work was worth doing anyway and shipped as a details-panel
+      row: `export_lightstation_json.py` now emits `bulletins` per station,
+      measured from 30 days of `source_file` history. It has to be history —
+      `report_time_str` names whichever bulletin arrived *first* for an
+      observation and the merge deliberately leaves it alone, so for a
+      dual-bulletin station it flips with arrival order. Current split: 9
+      stations in both products, 5 SXCN-only, 7 FPCN61-only. *Done 2026-09-06.*
+
+- [x] **Each marine text forecast links to its EC page** (user 2026-09-06):
+      `renderSourceFooter()` in `forecasts.js` puts a source block below the
+      extended forecast, where a reader lands when they have finished reading,
+      in addition to the link beside the zone heading. Per-zone URL is
+      `forecast_e.html?mapID=03&siteID=<siteID>` from the existing
+      `ZONE_SITE_IDS` (strings, leading zeros).
+
+      The second link is the combined bulletin the user found,
+      `marine_bulletins_e.html?Bulletin=fqcn13.cwvr` — verified 2026-09-06 to
+      carry all 23 BC Pacific marine areas, which makes it both a useful
+      compare-all-zones destination and an honest fallback for any zone with
+      no siteID. Its Atom feed stays unused: these products already arrive
+      over the sr3/AMQP push, so the feed is redundant as transport and would
+      only be worth it as a cross-check if the subscription dropped.
+      *Done 2026-09-06.*
+
+- [x] **Buoy-map marker text colours unified** (user 2026-09-06). The rule is
+      now the user's: **colour by the quantity, not the station.** Wave heights
+      blue (`--map-marker-text`), wind speeds near-black (new
+      `--map-marker-wind-text`, `#1a1a1a`, fixed in both themes like its
+      neighbours), and the arrow left as the only thing encoding station type.
+      The wind line under a wave marker is near-black too, so it matches a
+      standalone wind label instead of contrasting with it. Before this a wind
+      station drew a blue "18kt" over a red arrow: three colours, no rule.
+      Pinned by three tests in `tests/js/markers.test.mjs`; verified on the
+      live map in both engines. *Done 2026-09-06.*
+
+- [x] **`target="_blank"` was being stripped from every JS-rendered link**
+      (found 2026-09-06 while adding the lightstation card link). `target` is
+      not in DOMPurify's default allow-list, so every source link built as
+      markup and passed through `setSafeHTML` arrived in the DOM without it
+      and opened in the same tab — the buoy cards' "View Source Data", the
+      forecast zone "View source", the new lightstation link — while their ↗
+      and their aria-labels went on promising a new tab. Static HTML links
+      were unaffected, which is why it went unnoticed.
+
+      `sanitize-html.js` now passes `ADD_ATTR: ["target"]` and installs a
+      DOMPurify `afterSanitizeAttributes` hook stamping
+      `rel="noopener noreferrer"` on any link carrying `target` — allowing
+      `target` back is only safe with the reverse-tabnabbing guard, and the
+      hook is what stops it depending on each call site remembering. Guarded
+      by `tests/playwright/external-links.spec.js`; no existing suite could
+      have caught it (`test:js` never runs DOMPurify, the console spec only
+      watches for errors). *Done 2026-09-06.*
+
+- [x] **Webcam staleness thresholds are wall-clock, and daylight-aware** (user
+      2026-09-06, straight after the Ambleside fix). STALE past **1 h**, DOWN
+      past **3 h**, replacing "3x this cam's update interval" (which put the
+      six cams at four different ages, none meaningful to someone looking at a
+      picture) and a 24 h DOWN threshold (a full day of calling a dead camera
+      merely stale). Nearest precedent on the site is the winds page, 2 h
+      dimmed / 4 h offline; webcams are tighter because they update every
+      10-20 min, so an hour is already three to six missed frames.
+
+      The catch, and most of the work: **four of the six cams stop overnight by
+      design**, so a flat 3 h DOWN would paint them red every night. Their age
+      is now measured from whichever is later, the last frame or the moment the
+      capture window opened, with the window read from the already-published
+      `/data/sunlight_times.json` and margins mirroring `daylight_margin_minutes`
+      (nearest published point per cam: Point Atkinson is ~7 km from Ambleside,
+      White Rock ~9 km from Mud Bay — sunrise varies by minutes over that, well
+      inside a 60-75 min margin). Off duty, a cam is not flagged at all; just
+      after sunrise it can be STALE but not instantly DOWN. Unknown window
+      (missing file, unlisted station) falls back to wall-clock age, which
+      over-reports rather than hiding a dead camera.
+
+      While in there, the twenty lines computing and rendering this existed in
+      two drifted copies (initial render and metadata refresh) — now one
+      `renderTimestamp()`. Guarded by `tests/playwright/webcam-staleness.spec.js`
+      with both the clock and the frame age pinned. *Done 2026-09-06.*
+
+      **Open, deliberately not changed:** `health_check.py` still uses
+      `max(interval x 2, 2 h)` warning / **24 h** error for webcams, so the
+      footer health badge can read fine for 21 hours after a card says DOWN.
+      That 24 h is commented as being for the daylight-only cams, and the check
+      has its own `_webcam_in_scope` daylight logic, so aligning it is a
+      backend decision with alerting consequences rather than a copy of these
+      numbers.
+
+- [x] **Webcam registry drift closed** (user 2026-09-06: "may come back to
+      bite us"). A camera was described in **five** places and they had drifted:
+      `config/stations.json` ["webcams"] (tracked, drives the map pin),
+      `config/webcams.json` (gitignored, drives the fetch),
+      `site/assets/js/webcams-v4.js` (the page cards),
+      `scripts/export/export_sunlight_times.py` (a hardcoded table), and
+      `config/crontab.txt` (the only authority on cadence). What they disagreed
+      about:
+      - **Coordinates, by up to 24 km.** `boundarybay` still held the old
+        Boundary Bay position in webcams.json and the sunlight export after the
+        camera became the White Rock East Beach one; whiterock differed by
+        400 m and coxbay by 3 km.
+      - **Cadence.** Cron runs both Mud Bay cams every **15** minutes; stations
+        .json and webcams-v4.js both said 10, so the page told readers a cadence
+        the pipeline never had.
+      - **Names**, on three of six cams.
+      - The sunlight table's comment claimed it matched `fetch_webcam.py`, which
+        stopped being true when that script moved to webcams.json — and it
+        covered whiterock/boundarybay/coxbay, **almost exactly the wrong three**:
+        the cams that need sunlight times are the daylight-gated ones
+        (ambleside, coxbay, mudbay, mudbay_sw), and three of those were absent.
+
+      Fixed: values reconciled to the tracked registry; the hardcoded sunlight
+      table replaced by `lib.stations.get_all_webcams()` (new accessor), so all
+      six cams now get sunlight times at their own positions. That surfaced one
+      more collision — `whiterock` is both a camera id and a tide station key,
+      and the tide station, added second, was silently overwriting the camera,
+      so anything asking that file where the White Rock camera was got the tide
+      gauge. Webcam keys are now namespaced `webcam_<id>`, which also let the
+      overnight-staleness code drop its nearest-neighbour approximation and use
+      each cam's true position.
+
+      Guarded by `TestWebcamRegistryConsistency` — same roster everywhere, names
+      and positions agreeing between the public and private registries, and
+      **every stated interval checked against what cron actually runs**.
+      Mutation-tested: all five real drift modes caught. *Done 2026-09-06.*
+
+      Left open, deliberately: the duplication itself. The structural fix is for
+      the fetch side to read position and identity from the registry and keep
+      only mechanics in the private file. That changes what a live cron job
+      reads, so it is a decision to take deliberately rather than as a side
+      effect of this cleanup. The tests hold the line until then. Also noted:
+      nothing on the site reads the per-camera `sunlight.json` files any more;
+      the set is frozen at the three already published rather than growing.
+
+- [x] **Lightstation staleness measured per station, not flat** (user
+      2026-09-06, prompted by "we now know the approx publish interval"). The
+      threshold was a flat 12 h in four places and wrong at both ends:
+      - **Too lax** for the 17 stations that report seven times a day, whose
+        longest normal gap is 6 h — they got two whole missed cycles before
+        anything was said. Now 9 h.
+      - **Too strict** for Cape Mudge, Chatham Point and Pulteney Point, which
+        report four times a day in daylight only and are normally silent for
+        **15 h** overnight. They were flagged stale every night for behaving
+        exactly as they always do — 10 such gaps each in the last 30 days. Now
+        18 h. Same shape as the webcam overnight bug found the same day.
+
+      `staleness_threshold_hours()` in `lib/lightstation_schedule.py` derives it
+      from the station's own inferred cadence (longest normal gap + one 3 h
+      reporting cycle), falling back to the flat 12 h for the four stations with
+      too little history to infer from. The export emits `stale_after_hours`,
+      and the card badge and both map popups read it instead of hardcoding
+      ">12h". `health_check.py` uses the same rule so the footer badge and the
+      page cannot disagree. Deleted `FRESHNESS_WINDOW = 21600` from the export —
+      unused, and it documented a 6 h rule that never existed.
+
+      **The age is now the prominent thing on the card** (user: "as long as we
+      indicate hours old prominently, the staleness colour is a nicety"). It was
+      0.85rem muted italic in parentheses at the end of the line — shown, but in
+      the least prominent place on the card. Now it leads, at 1rem semibold,
+      alert-coloured when the station is overdue: "**1h ago** · Sunday Sep 6,
+      14:10". *Done 2026-09-06.*
+
+- [x] **Station labels made readable and unique** (user 2026-09-06: "some of
+      the stations use the same shorthand"). Measured first: **24 of 76
+      stations rendered under a label shared with another**, and today's actual
+      down-list read `La, Entrance, Estevan, Nootka, Langara, McInnes` — "La"
+      being La Perouse Bank.
+
+      Three separate causes, all in `footer.js`:
+      - It kept its **own hardcoded map** keyed by display name, a second
+        source of truth beside `config/stations.json`. Display names are not
+        unique: Point Atkinson, Tsawwassen, Tofino and White Rock are each both
+        a tide gauge and a wind station, and Entrance Island is both a wind
+        station and a lightstation.
+      - Its fallback took the **first word** of the name, so Cape Mudge, Cape
+        Beale and Cape Scott all rendered as "Cape", and three Crescent
+        stations all as "Crescent".
+      - Three of its 24 entries had **drifted and matched nothing** (the cams
+        had been renamed), so those fell through to the first-word fallback.
+
+      Fixed by deleting the map and reading the registry's `short_name`, which
+      already existed and was already consumed by the winds page's mobile
+      column and the Windy push. `health_check.py` grew `display_name()` and
+      now emits `short_name` in every stale/excluded entry and uses it in its
+      log lines, which had the same ambiguity. Two registry values were
+      actively wrong and are fixed on the winds page too: `whiterock_east` said
+      "White Rock" (it is the East Beach station, and it claimed the tide
+      gauge's name — the same silent-wrong-station shape as the Surrey naming
+      trap), and `CYAZ` said "Tofino" for Tofino **Airport**, which is not the
+      harbour. Thirteen more labels added for the places that needed
+      disambiguating or were simply long.
+
+      Guarded by `TestDisplayLabels` (`tests/test_stations.py`) and
+      `TestWebcamDisplayLabels` (`tests/test_webcam_pipeline.py`), the second
+      checking cams against the stations too since they share the one badge.
+      **Exact equality turned out to be too weak a bar** — it passed
+      "Entrance Is." beside "Entrance Island" — so the rule is prefix
+      distinctness after folding case and punctuation. That immediately caught
+      two pairs I had half-fixed by tagging only the tide side
+      ("Tsawwassen" is a literal prefix of "Tsawwassen Tide"), which is why the
+      tide labels are "Tsaw Tide" and "PtAtk Tide". Mutation-tested: 5 of 6
+      deliberate regressions caught, the sixth being a genuinely readable pair.
+      *Done 2026-09-06.*
+
+      Noted, not changed: `config/stations.json` carries a `webcams` group
+      whose names disagree with `config/webcams.json` ("White Rock Pier Webcam"
+      vs "White Rock Pier Cam", "Ambleside Beach" vs "Ambleside (Hollyburn
+      Sailing Club)"). `webcams.json` is canonical and is what health_check
+      reads, so nothing is broken today, but that is a third naming source.
+
+- [x] **Em-dashes removed from UI text sitewide** (user 2026-09-06). 30 in
+      rendered HTML prose, 20 in JS-rendered strings, and 3 in
+      `config/stations.json` `reporting_note` fields, replaced case by case
+      with a colon, comma, semicolon, full stop or parentheses as the sentence
+      wanted — not a blanket swap. Deliberately left alone: the `"—"`
+      missing-value placeholder (not prose, and `stations-map.js` /
+      `chart-utils-v4.js` compare against it), the `—` peak-value placeholders
+      in `storm_surge.html`, en-dashes in ranges like `3–9 km`, and code
+      comments, which are not UI text. *Done 2026-09-06.*
 
 - [ ] **North coast coverage** (added 2026-09-03, prompted by a mariner out of
   Kitimat who emailed about the McInnes Island position error). The
@@ -574,6 +860,26 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       (`refreshWindLabels`, same file) already projects every marker to
       pixels and finds overlapping boxes — that is the input an offset pass
       would need, so build on it rather than starting again.
+
+      **Make the offset dynamic per zoom (user 2026-09-06).** A fixed nudge in
+      map coordinates is the wrong unit: two stations 300 m apart need a large
+      angular separation at zoom 8 and none at zoom 14, so a constant offset
+      either fails to separate them when zoomed out or visibly lies about their
+      positions when zoomed in. The offset has to be computed in *pixels* and
+      recomputed on `zoomend`, which is the same space `refreshWindLabels`
+      already works in — project both markers, and only if their boxes overlap
+      at the current zoom, push them apart along the line joining them, by just
+      enough to clear. At a zoom where they no longer collide the offset falls
+      to zero on its own and every marker sits on its true position.
+
+      Two things to get right. The displacement must be signposted, not silent:
+      a reader deciding where to launch a boat should not be given a marker
+      that is 200 m from where the station is, so a leader line back to the
+      true point (or restoring the true position on hover/open) is part of the
+      feature, not a nicety. And the popup anchor has to follow the moved
+      marker or the popup will point at empty water. Applies to all three maps
+      (`stations-map.js`, `winds-map.js`, `lightstation-map.js`), which each
+      build their own markers but share `shared/markers.js`.
 - [x] **Stop guessing timestamps to find EC data** *(done 2026-08-21)*: the
       FPCN61 poller was walking `dd.weather.gc.ca/.../FP/CWVR/HH/` hourly,
       guessing the last two likely report hours — the one practice MSC's usage

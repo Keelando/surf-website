@@ -85,7 +85,7 @@ export function buildNoDataCard(b, id, meta) {
   html += sourceBadge(meta);
   html += `</h2>
             <p class="buoy-metric buoy-offline-notice">
-              🔴 Station offline — no data available
+              🔴 Station offline: no data available
             </p>`;
   if (stationLink) {
     html += `<p class="buoy-source-link-wrap">
@@ -328,12 +328,12 @@ export function buildSpreadSection(b, id) {
 
   if (peakSpread != null) {
     const { desc, severity } = peakSpreadDescriptor(peakSpread);
-    html += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Spread:</b> ${peakSpread}° <span class="spread-desc ${severity}">(${desc})</span> <span class="spread-note">— dominant swell</span></p>`;
+    html += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Peak Spread:</b> ${peakSpread}° <span class="spread-desc ${severity}">(${desc})</span> <span class="spread-note">(dominant swell)</span></p>`;
   }
 
   if (avgSpread != null) {
     const { desc, severity } = avgSpreadDescriptor(avgSpread);
-    html += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Average Spread:</b> ${avgSpread}° <span class="spread-desc ${severity}">(${desc})</span> <span class="spread-note">— all frequencies</span></p>`;
+    html += `<p class="buoy-metric"><b>&nbsp;&nbsp;&nbsp;&nbsp;Average Spread:</b> ${avgSpread}° <span class="spread-desc ${severity}">(${desc})</span> <span class="spread-note">(all frequencies)</span></p>`;
   }
 
   // Visual angular spread vectors
