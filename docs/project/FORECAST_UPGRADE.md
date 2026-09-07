@@ -145,7 +145,7 @@ already reporting. So it is the same one-line `BUOY_IDS` change CRPILE was.
 Use `get_buoy("46088")` and let the registry supply the coordinates —
 48.333, -123.167. A hand-picked "Hein Bank" point taken from the shoal's own
 position lands 48.35, -123.03, **10.3 km away** and on the wrong side of the
-eastern Strait of Juan de Fuca. That is the silent-wrong-station trap; the
+eastern Juan de Fuca Strait. That is the silent-wrong-station trap; the
 registry is the defence.
 
 It is also the *better* verification target of the two we have. `46088` reports

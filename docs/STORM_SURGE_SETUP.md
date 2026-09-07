@@ -33,7 +33,7 @@ This system fetches storm surge forecasts from Environment Canada's GeoMet WMS s
 - Crescent Beach Channel (49.054°N, -122.897°W) - Boundary Bay, tide predictions
 - Campbell River (50.042°N, -125.247°W) - Discovery Passage, tide observations
 - Neah Bay (48.495°N, -124.728°W) - Pacific entrance, NOAA buoy location
-- New Dungeness (48.333°N, -123.167°W) - Strait of Juan de Fuca, NOAA buoy location
+- New Dungeness (48.333°N, -123.167°W) - Juan de Fuca Strait, NOAA buoy location
 - Tofino (49.154°N, -125.913°W) - Open Pacific coast
 
 **Data source:** GDSPS 15km resolution model via Environment Canada GeoMet

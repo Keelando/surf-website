@@ -288,7 +288,7 @@ async function loadBuoyData() {
       regionGroup.appendChild(cardsGrid);
       container.appendChild(regionGroup);
 
-      // Collapse Boundary Bay and Juan de Fuca by default (keep Strait of Georgia expanded)
+      // Collapse Boundary Bay and Juan de Fuca Strait by default (keep Strait of Georgia expanded)
       if (group.region !== "Strait of Georgia") {
         const toggleBtn = regionHeader.querySelector(".region-toggle-btn");
         if (toggleBtn && cardsGrid) {
