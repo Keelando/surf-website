@@ -140,3 +140,43 @@ export function pickWavePeriod(b, meta) {
   }
   return { value: null, tag: null };
 }
+
+/**
+ * Lightstation region sections, ordered roughly south to north.
+ *
+ * `region` in config/stations.json is the single owner of which section a
+ * light appears in. It used to be read off the observation row instead, and
+ * the two Coast Guard bulletin products disagree — SXCN can only name the area
+ * its whole bulletin covers, so it files the central-coast lights under Hecate
+ * Strait and Trial Island under Strait of Georgia — so nine stations drifted
+ * between sections depending on which feed had written last.
+ *
+ * This is an ORDERING, not a whitelist. `orderRegions()` appends anything not
+ * named here rather than dropping it: iterating a list like this on its own is
+ * exactly how 11 of 23 lightstations became unreachable from the chart
+ * dropdown before 2026-09-03, and a station the registry has not caught up
+ * with (Triple Island reports on bulletins we parse but is not registered yet)
+ * still has to appear.
+ */
+export const LIGHTSTATION_REGION_ORDER = [
+  "STRAIT OF GEORGIA",
+  "JUAN DE FUCA STRAIT",
+  "WEST COAST VANCOUVER ISLAND",
+  "JOHNSTONE & QUEEN CHARLOTTE STRAIT",
+  "CENTRAL COAST",
+  "NORTH COAST & HAIDA GWAII",
+];
+
+/**
+ * Region names present in `grouped`, in display order, unknown ones last.
+ *
+ * @param {Object} grouped - keyed by region name
+ * @returns {string[]}
+ */
+export function orderRegions(grouped) {
+  const known = LIGHTSTATION_REGION_ORDER.filter((region) => region in grouped);
+  const rest = Object.keys(grouped)
+    .filter((region) => !LIGHTSTATION_REGION_ORDER.includes(region))
+    .sort();
+  return [...known, ...rest];
+}

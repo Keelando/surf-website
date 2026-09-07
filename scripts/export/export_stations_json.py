@@ -79,7 +79,17 @@ PUBLIC_STATION_FIELDS = {
         "reporting",
         "reporting_note",
     },
-    "webcams": _COMMON | {"page_url", "update_frequency_minutes", "stream_delay_minutes"},
+    # daylight_only / daylight_margin_minutes are the capture policy
+    # fetch_webcam.py acts on, and webcams-v4.js needs them to tell an
+    # overnight gap from a dead camera. Publishing them keeps one owner.
+    "webcams": _COMMON
+    | {
+        "page_url",
+        "update_frequency_minutes",
+        "stream_delay_minutes",
+        "daylight_only",
+        "daylight_margin_minutes",
+    },
 }
 
 # _metadata is hand-written prose, so it gets its own allowlist. `notes`

@@ -33,7 +33,10 @@ node can import these files in tests; browsers ignore it.
   swell display, precision, sub-hourly) plus the displayed-field priorities
   (`waveHeightField`/`wavePeriodFields`/`pickWavePeriod`, shared by the card's
   compact line and the history table) — replaces inline station-ID checks;
-  see `docs/project/BUOY_CARD_REFACTOR.md`
+  see `docs/project/BUOY_CARD_REFACTOR.md`. Also holds
+  `LIGHTSTATION_REGION_ORDER`/`orderRegions()`, the one place the lightstation
+  page and its chart dropdown agree on section order; the ordering appends
+  unknown regions rather than hiding them
 - `warning-zones.js` — the pure half of the sitewide warning banner: which
   zones may raise one (`DEFAULT_BANNER_ZONES` + `getBannerZones(stored,
   available)`, deliberately narrower than the zones we carry),

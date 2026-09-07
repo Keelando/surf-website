@@ -3,14 +3,15 @@
 Covers the archive-resilience hardening added 2026-06-15 (commit history around
 `902475e`/`c906ea7`): the website must keep updating even when the /mnt/storage
 USB-SATA archive drive is wedged, read-only, or unmounted, and the storage
-metrics exporter must read its camera roster from config/webcams.json.
+metrics exporter must read its camera roster from the merged registry.
 
 Targets:
 - lib.webcam.time_limit          — shared SIGALRM watchdog, raises StorageTimeout
 - fetch_webcam.archive_is_writable — writable / read-only / timeout / unmounted
 - fetch_webcam.archive_frame      — best-effort, never fatal
 - fetch_webcam.main              — website updates even when archive is dead
-- storage_metrics.load_webcam_archives — roster from webcams.json
+- lib.webcam.registry.load_webcams   — merges tracked identity + private fetch config
+- storage_metrics.load_webcam_archives — roster from the merged registry
 - storage_metrics.get_webcam_metrics   — trimmed dict + timeout-bounded reads
 - health_check._load_webcam_config — skips `_`-prefixed meta keys
 - health_check._webcam_in_scope        — daylight-only cams leave the count after dark
@@ -210,11 +211,81 @@ class TestWebsiteDecoupledFromArchive:
         assert len(list(config["archive_dir"].glob("TC_*.jpg"))) == 1
 
 
+# ── lib.webcam.registry (the merged loader) ──────────────────
+
+
+class TestWebcamRegistryLoader:
+    """The two-file split: identity tracked, mechanics private, merged once."""
+
+    @staticmethod
+    def _write(tmp_path, payload):
+        import json
+
+        path = tmp_path / "webcams.json"
+        path.write_text(json.dumps(payload))
+        return path
+
+    def test_merges_identity_with_fetch_mechanics(self, tmp_path):
+        from lib.webcam.registry import load_webcams
+
+        path = self._write(
+            tmp_path,
+            {"_comment": "meta", "whiterock": {"prefix": "WR", "website_dir": "site/data/wrcam"}},
+        )
+        cams = load_webcams(path)
+        assert set(cams) == {"whiterock"}
+        assert cams["whiterock"]["name"] == "White Rock Pier Cam"
+        assert cams["whiterock"]["lat"] == pytest.approx(49.021719)
+        assert cams["whiterock"]["prefix"] == "WR"
+
+    def test_identity_left_in_the_private_file_loses(self, tmp_path):
+        """A stale copy must not win, or the split buys nothing."""
+        from lib.webcam.registry import load_webcams
+
+        path = self._write(
+            tmp_path,
+            {"whiterock": {"prefix": "WR", "name": "Stale Name", "lat": 0.0, "website_dir": "x"}},
+        )
+        cam = load_webcams(path)["whiterock"]
+        assert cam["name"] == "White Rock Pier Cam"
+        assert cam["lat"] != 0.0
+
+    def test_website_dir_is_resolved_against_the_repo(self, tmp_path):
+        from lib.config import PROJECT_ROOT
+        from lib.webcam.registry import load_webcams
+
+        path = self._write(
+            tmp_path, {"whiterock": {"website_dir": "site/data/wrcam", "archive_dir": "/mnt/x"}}
+        )
+        cam = load_webcams(path)["whiterock"]
+        assert cam["website_dir"] == PROJECT_ROOT / "site" / "data" / "wrcam"
+        assert cam["archive_dir"] == Path("/mnt/x")
+
+    def test_unregistered_camera_is_an_error(self, tmp_path):
+        """Silently fetching a camera the public registry never heard of would
+        put an unnamed image directory on the site."""
+        from lib.webcam.registry import load_webcams
+
+        path = self._write(tmp_path, {"ghostcam": {"prefix": "GC", "website_dir": "x"}})
+        with pytest.raises(KeyError, match="ghostcam"):
+            load_webcams(path)
+
+    def test_missing_private_file_fails_loudly(self, tmp_path):
+        """A fresh clone has stations.json but not webcams.json. Half-configured
+        cameras are worse than none."""
+        from lib.webcam.registry import WebcamConfigMissing, load_webcams
+
+        missing = tmp_path / "nope.json"
+        with pytest.raises(WebcamConfigMissing):
+            load_webcams(missing)
+        assert load_webcams(missing, require_private=False) == {}
+
+
 # ── storage_metrics_to_mqtt ──────────────────────────────────
 
 
 class TestLoadWebcamArchives:
-    def test_reads_roster_from_webcams_json(self):
+    def test_reads_roster_from_the_merged_registry(self):
         archives = storage_metrics.load_webcam_archives()
         assert archives, "expected at least one camera"
         # Underscore-prefixed meta keys must be dropped.
@@ -227,31 +298,27 @@ class TestLoadWebcamArchives:
 
     def test_includes_drift_fixed_cameras(self):
         # mudbay_sw and ambleside were restored/renamed when the exporter moved
-        # to reading webcams.json (commit c906ea7); guard against re-drift.
+        # to reading the shared roster (commit c906ea7); guard against re-drift.
         ids = set(storage_metrics.load_webcam_archives())
         assert {"mudbay_sw", "ambleside"} <= ids
 
 
 class TestWebcamRegistryConsistency:
-    """A camera is described in four places and they had drifted apart.
+    """A camera used to be described in four places and they drifted apart.
 
-    - `config/stations.json` ["webcams"] — tracked and public: identity and
-      position. Drives the map pin and the exported /data/stations.json.
-    - `config/webcams.json` — gitignored: the fetch mechanics (URLs, referers,
-      crop, archive paths), which is why it cannot live in the public repo.
-    - `site/assets/js/webcams-v4.js` — the page's own card list.
-    - `config/crontab.txt` — the only authority on how often a camera runs.
+    On 2026-09-06 they disagreed by up to 24 km of position (boundarybay still
+    held the old Boundary Bay coordinates after the camera became the White
+    Rock East Beach one), by three of six names, and by the Mud Bay cams'
+    interval — cron ran them every 15 minutes while two sources said 10, so the
+    page told readers a cadence the pipeline never had.
 
-    What they disagreed about on 2026-09-06, before these tests existed:
-    coordinates differing by up to 24 km (boundarybay still held the old
-    Boundary Bay position after the camera became the White Rock East Beach
-    one), three of six names, and the Mud Bay cams' interval — cron runs them
-    every 15 minutes while two sources said 10, so the page told readers a
-    cadence the pipeline never had.
-
-    The fix for the duplication itself is to have the fetch side read position
-    and identity from the registry; until then these tests are what stops the
-    copies drifting again.
+    The duplication itself is now gone. `config/stations.json` ["webcams"] owns
+    what a camera IS, `config/webcams.json` owns how it is FETCHED, and
+    `lib.webcam.registry.load_webcams` is the only reader of either — so the
+    old name and position assertions have nothing left to compare and were
+    deleted as structurally impossible. What survives is what two files still
+    have to agree on: the roster, and the claim each source makes about a
+    cadence that only `config/crontab.txt` actually sets.
     """
 
     JS_PATH = Path(__file__).parent.parent / "site" / "assets" / "js" / "webcams-v4.js"
@@ -264,16 +331,14 @@ class TestWebcamRegistryConsistency:
         return get_all_webcams()
 
     @staticmethod
-    def _private_cams():
-        return health_check._load_webcam_config()
+    def _merged_cams():
+        from lib.webcam.registry import load_webcams
 
-    def _js_intervals(self):
-        """{cam_id: updateInterval} as the webcams page states it."""
-        text = self.JS_PATH.read_text()
-        return {
-            m.group(1): int(m.group(2))
-            for m in re.finditer(r'id: "(\w+)".*?updateInterval: (\d+)', text, re.S)
-        }
+        return load_webcams()
+
+    def _js_ids(self):
+        """Camera ids the webcams page renders a card for."""
+        return set(re.findall(r'\bid: "(\w+)"', self.JS_PATH.read_text()))
 
     def _cron_intervals(self):
         """{cam_id: minutes} implied by the schedule, or None if irregular."""
@@ -288,52 +353,48 @@ class TestWebcamRegistryConsistency:
         return out
 
     def test_the_same_cameras_exist_everywhere(self):
-        registry, private = set(self._registry_cams()), set(self._private_cams())
-        assert registry == private, (
-            f"only in stations.json: {sorted(registry - private)}; "
-            f"only in webcams.json: {sorted(private - registry)}"
+        registry, merged = set(self._registry_cams()), set(self._merged_cams())
+        assert registry == merged, (
+            f"in stations.json but not fetchable: {sorted(registry - merged)}; "
+            f"fetchable but unregistered: {sorted(merged - registry)}"
         )
-        assert registry <= set(self._js_intervals()), sorted(registry - set(self._js_intervals()))
+        assert registry <= self._js_ids(), sorted(registry - self._js_ids())
 
-    def test_names_agree_between_the_public_and_private_registries(self):
-        private = self._private_cams()
-        mismatches = [
-            f"{cam_id}: stations.json {cam['name']!r} vs webcams.json {private[cam_id]['name']!r}"
-            for cam_id, cam in self._registry_cams().items()
-            if cam_id in private and cam["name"] != private[cam_id]["name"]
+    def test_the_private_file_holds_no_identity_fields(self):
+        """The split only holds if identity cannot be written in two places.
+
+        load_webcams() ignores a stray identity field with a warning, so a
+        drifted copy can never win — but it should not be there at all.
+        """
+        import json
+
+        from lib.webcam.registry import REGISTRY_OWNED_FIELDS, WEBCAM_CONFIG_PATH
+
+        if not WEBCAM_CONFIG_PATH.exists():
+            pytest.skip("private webcam config not present in this checkout")
+        raw = json.loads(WEBCAM_CONFIG_PATH.read_text())
+        strays = [
+            f"{cam_id}: {sorted(REGISTRY_OWNED_FIELDS & set(cfg))}"
+            for cam_id, cfg in raw.items()
+            if not cam_id.startswith("_") and REGISTRY_OWNED_FIELDS & set(cfg)
         ]
-        assert not mismatches, "\n  ".join(mismatches)
-
-    def test_positions_agree_between_the_public_and_private_registries(self):
-        private = self._private_cams()
-        mismatches = []
-        for cam_id, cam in self._registry_cams().items():
-            other = private.get(cam_id)
-            if not other or other.get("lat") is None:
-                continue
-            drift_m = max(abs(cam["lat"] - other["lat"]), abs(cam["lon"] - other["lon"])) * 111_320
-            if drift_m > 1:
-                mismatches.append(
-                    f"{cam_id}: stations.json ({cam['lat']}, {cam['lon']}) vs "
-                    f"webcams.json ({other['lat']}, {other['lon']}) — {drift_m:.0f} m apart"
-                )
-        assert not mismatches, "\n  ".join(mismatches)
+        assert not strays, (
+            "config/stations.json owns these fields; remove them from webcams.json:\n  "
+            + "\n  ".join(strays)
+        )
 
     def test_stated_interval_matches_what_cron_actually_runs(self):
-        """The crontab is the authority; everything else is a claim about it."""
+        """The crontab is the authority; the registry is a claim about it."""
         cron = self._cron_intervals()
-        registry, private, js = self._registry_cams(), self._private_cams(), self._js_intervals()
-        wrong = []
-        for cam_id, minutes in cron.items():
-            if minutes is None:
-                continue  # deliberately irregular schedule; nothing to compare
-            for where, stated in (
-                ("stations.json", registry.get(cam_id, {}).get("update_frequency_minutes")),
-                ("webcams.json", private.get(cam_id, {}).get("interval")),
-                ("webcams-v4.js", js.get(cam_id)),
-            ):
-                if stated is not None and stated != minutes:
-                    wrong.append(f"{cam_id}: cron runs every {minutes} min, {where} says {stated}")
+        registry = self._registry_cams()
+        wrong = [
+            f"{cam_id}: cron runs every {minutes} min, "
+            f"stations.json says {registry[cam_id]['update_frequency_minutes']}"
+            for cam_id, minutes in cron.items()
+            if minutes is not None
+            and cam_id in registry
+            and registry[cam_id].get("update_frequency_minutes") != minutes
+        ]
         assert not wrong, "\n  ".join(wrong)
 
 

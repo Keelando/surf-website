@@ -29,6 +29,7 @@ import paho.mqtt.client as mqtt
 
 from lib.logging_config import setup_logging
 from lib.webcam import time_limit
+from lib.webcam.registry import load_webcams
 
 logger = setup_logging("storage_metrics")
 
@@ -95,18 +96,20 @@ RETIRED_STATE_TOPICS = [f"storage/webcam/hollyburn/{t}" for t in _OLD_WEBCAM_SEN
 
 
 def load_webcam_archives():
-    """Build {cam_id: {path, prefix, name}} from config/webcams.json (single source)."""
-    raw = json.loads((REPO_ROOT / "config" / "webcams.json").read_text())
-    archives = {}
-    for cam_id, cfg in raw.items():
-        if cam_id.startswith("_"):
-            continue
-        archives[cam_id] = {
+    """Build {cam_id: {path, prefix, name}} for every configured camera.
+
+    `name` comes from the tracked registry and the archive path and prefix from
+    the private fetch config; `load_webcams` is the only thing that reads
+    either. See lib/webcam/registry.py.
+    """
+    return {
+        cam_id: {
             "path": Path(cfg["archive_dir"]),
             "prefix": cfg["prefix"],
             "name": cfg["name"],
         }
-    return archives
+        for cam_id, cfg in load_webcams().items()
+    }
 
 
 def get_disk_metrics():

@@ -33,32 +33,24 @@ const DOWN_THRESHOLD_MINUTES = 180;
 // would all show DOWN every night, so their age is measured from whichever is
 // later, the last frame or the moment the capture window opened.
 //
-// The margins mirror `daylight_margin_minutes` in config/webcams.json. The
-// sunrise/sunset comes from /data/sunlight_times.json, which carries an entry
-// per camera at the camera's own position — keyed `webcam_<id>` because
-// `whiterock` is both a camera id and a tide station key and the tide station
-// used to win.
+// `daylightOnly` and `daylightMarginMinutes` come from /data/stations.json,
+// the same registry fields fetch_webcam.py reads, so this page cannot state a
+// window the capture does not use. The sunrise/sunset comes from
+// /data/sunlight_times.json, which carries an entry per camera at the camera's
+// own position — keyed `webcam_<id>` because `whiterock` is both a camera id
+// and a tide station key and the tide station used to win.
 const WEBCAM_SUNLIGHT_PREFIX = "webcam_";
-const daylightMargins = {
-  ambleside: 60,
-  mudbay: 75,
-  mudbay_sw: 75,
-  coxbay: 75,
-};
 
+// What this PAGE adds to a camera: which section it sits in, whose readings to
+// show beside it, whose credit to print, and where its files live. Everything
+// else — name, location, cadence, stream delay, daylight policy — is read from
+// /data/stations.json by hydrateWebcams(), because config/stations.json owns
+// it. See lib/webcam/registry.py for the backend half of the same split.
 const webcams = [
   {
     id: "ambleside",
     region: "english_bay",
-    name: "Ambleside Beach",
-    location: "West Vancouver, BC",
-    dataUrl: "/data/ambleside/latest.json",
-    imageUrl: "/data/ambleside/latest.jpg",
-    slideshowUrl: "/data/ambleside/slideshow_manifest.json",
-    slideshowPath: "/data/ambleside/",
-    updateInterval: 20,
-    streamDelay: 1,
-    daylightOnly: true,
+    dataPath: "/data/ambleside/",
     attribution: {
       text: "Webcam screenshots provided by Hollyburn Sailing Club",
       url: "https://www.hollyburnsailingclub.ca/",
@@ -71,14 +63,7 @@ const webcams = [
   {
     id: "whiterock",
     region: "salish_sea_south",
-    name: "White Rock Pier Cam",
-    location: "White Rock, BC",
-    dataUrl: "/data/wrcam/latest.json",
-    imageUrl: "/data/wrcam/latest.jpg",
-    slideshowUrl: "/data/wrcam/slideshow_manifest.json",
-    slideshowPath: "/data/wrcam/",
-    updateInterval: 10,
-    streamDelay: 6,
+    dataPath: "/data/wrcam/",
     conditions: [
       {
         label: "White Rock East Beach",
@@ -91,14 +76,7 @@ const webcams = [
   {
     id: "boundarybay",
     region: "salish_sea_south",
-    name: "White Rock East Beach",
-    location: "White Rock, BC",
-    dataUrl: "/data/bbcam/latest.json",
-    imageUrl: "/data/bbcam/latest.jpg",
-    slideshowUrl: "/data/bbcam/slideshow_manifest.json",
-    slideshowPath: "/data/bbcam/",
-    updateInterval: 10,
-    streamDelay: 20,
+    dataPath: "/data/bbcam/",
     conditions: [
       {
         label: "White Rock East Beach",
@@ -111,15 +89,7 @@ const webcams = [
   {
     id: "mudbay",
     region: "salish_sea_south",
-    name: "Mud Bay HD (SE)",
-    location: "South Surrey, BC",
-    dataUrl: "/data/mudbay/latest.json",
-    imageUrl: "/data/mudbay/latest.jpg",
-    slideshowUrl: "/data/mudbay/slideshow_manifest.json",
-    slideshowPath: "/data/mudbay/",
-    updateInterval: 15,
-    streamDelay: null,
-    daylightOnly: true,
+    dataPath: "/data/mudbay/",
     conditions: [
       {
         label: "White Rock East Beach",
@@ -132,15 +102,7 @@ const webcams = [
   {
     id: "mudbay_sw",
     region: "salish_sea_south",
-    name: "Mud Bay HD (SW)",
-    location: "South Surrey, BC",
-    dataUrl: "/data/mudbay_sw/latest.json",
-    imageUrl: "/data/mudbay_sw/latest.jpg",
-    slideshowUrl: "/data/mudbay_sw/slideshow_manifest.json",
-    slideshowPath: "/data/mudbay_sw/",
-    updateInterval: 15,
-    streamDelay: null,
-    daylightOnly: true,
+    dataPath: "/data/mudbay_sw/",
     conditions: [
       {
         label: "White Rock East Beach",
@@ -153,20 +115,54 @@ const webcams = [
   {
     id: "coxbay",
     region: "west_coast_vi",
-    name: "Cox Bay",
-    location: "Tofino, BC",
-    dataUrl: "/data/coxbay/latest.json",
-    imageUrl: "/data/coxbay/latest.jpg",
-    slideshowUrl: "/data/coxbay/slideshow_manifest.json",
-    slideshowPath: "/data/coxbay/",
-    updateInterval: 15,
-    streamDelay: 20,
-    daylightOnly: true,
+    dataPath: "/data/coxbay/",
     conditions: [
       { label: "La Perouse Bank", buoyStation: "4600206", fields: ["wind", "waves_detailed"] },
     ],
   },
 ];
+
+/**
+ * Fill each entry above with what config/stations.json says the camera is.
+ *
+ * Mutates in place: the array is captured by the auto-refresh timer and the
+ * slideshow lookups, so replacing it would leave those holding stale objects.
+ * A camera the registry does not list is dropped rather than rendered with
+ * blank headings — the registry is the roster, not a decoration on it.
+ *
+ * @returns {Promise<void>} resolves once `webcams` is safe to render
+ */
+async function hydrateWebcams() {
+  let registry = {};
+  try {
+    const response = await fetch("/data/stations.json");
+    registry = (await response.json()).webcams || {};
+  } catch (error) {
+    console.error("Failed to load station registry for webcams:", error);
+  }
+
+  for (let i = webcams.length - 1; i >= 0; i--) {
+    const webcam = webcams[i];
+    const meta = registry[webcam.id];
+    if (!meta) {
+      console.warn(`Webcam ${webcam.id} is not in stations.json; not rendering it`);
+      webcams.splice(i, 1);
+      continue;
+    }
+    Object.assign(webcam, {
+      name: meta.name,
+      location: meta.location,
+      updateInterval: meta.update_frequency_minutes,
+      streamDelay: meta.stream_delay_minutes ?? null,
+      daylightOnly: Boolean(meta.daylight_only),
+      daylightMarginMinutes: meta.daylight_margin_minutes,
+      dataUrl: webcam.dataPath + "latest.json",
+      imageUrl: webcam.dataPath + "latest.jpg",
+      slideshowUrl: webcam.dataPath + "slideshow_manifest.json",
+      slideshowPath: webcam.dataPath,
+    });
+  }
+}
 
 // ==========================================================================
 // State
@@ -250,7 +246,7 @@ async function fetchSunlightTimes() {
  * @returns {{openedAt: number, closesAt: number, isOpen: boolean}|null}
  */
 function captureWindow(webcam, now) {
-  const marginMinutes = daylightMargins[webcam.id];
+  const marginMinutes = webcam.daylightMarginMinutes;
   if (!webcam.daylightOnly || !marginMinutes || !cachedSunlightTimes) return null;
 
   const station = cachedSunlightTimes.stations?.[WEBCAM_SUNLIGHT_PREFIX + webcam.id];
@@ -760,8 +756,15 @@ async function createWebcamCard(webcam, metadata) {
 
   // Update interval notice
   const updateNotice = createElement("div", "webcam-update-notice");
-  const delayText =
-    webcam.streamDelay === null ? "unknown delay" : `~${webcam.streamDelay} min stream delay`;
+  // A direct-image cam has no stream to buffer, and the registry says so with
+  // 0 rather than by omitting the field. "~0 min stream delay" is not a
+  // sentence, so say what 0 means.
+  let delayText = "unknown delay";
+  if (webcam.streamDelay === 0) {
+    delayText = "no stream delay";
+  } else if (webcam.streamDelay != null) {
+    delayText = `~${webcam.streamDelay} min stream delay`;
+  }
   let noticeText = `Updated every ${webcam.updateInterval || 10} minutes • ${delayText}`;
 
   // Add daylight-only note
@@ -958,6 +961,10 @@ function updateSlideshowDisplay(webcamId) {
 async function loadWebcams() {
   const container = document.getElementById("webcams-container");
   if (!container) return;
+
+  // Before the length check: hydrateWebcams() drops any camera the registry
+  // does not list, so "no webcams" is a conclusion it can reach.
+  await hydrateWebcams();
 
   if (webcams.length === 0) {
     container.innerHTML =

@@ -55,6 +55,7 @@ from lib.daylight import calculate_sunrise_sunset
 from lib.lightstation_schedule import infer_schedule, staleness_threshold_hours
 from lib.logging_config import setup_logging
 from lib.stations import get_all_buoys, get_all_lightstations, get_all_tides, get_all_wind
+from lib.webcam.registry import load_webcams
 from lib.windy import WINDY_PUSH_ENABLED, load_windy_credentials, read_station_status
 
 # Setup logging (console disabled for cron, file only)
@@ -575,36 +576,25 @@ def check_lightstation_freshness() -> List[Dict]:
 
 
 def _load_webcam_config() -> Dict[str, Dict]:
-    """Load webcam config from config/webcams.json (single source of truth).
+    """Load every configured camera, in the shape this module checks.
 
-    Translates the on-disk schema (interval_minutes, check_daylight, website_dir)
-    into the fields this module uses. Returns {} if config is missing.
+    Identity and daylight policy come from config/stations.json, fetch
+    mechanics from the private config/webcams.json, merged by
+    lib.webcam.registry. Returns {} if the private half is missing rather than
+    failing the whole health check over cameras.
     """
-    config_path = Path(__file__).resolve().parents[2] / "config" / "webcams.json"
-    if not config_path.exists():
-        log(f"  ⚠️  webcam config not found at {config_path}")
-        return {}
-
-    with open(config_path) as f:
-        raw = json.load(f)
-
-    project_root = Path(__file__).resolve().parents[2]
     webcams = {}
-    for cam_id, cam in raw.items():
-        # Skip `_`-prefixed meta keys (e.g. `_schedule_note`), matching the
-        # loaders in fetch_webcam.py and storage_metrics_to_mqtt.py.
-        if cam_id.startswith("_"):
-            continue
+    for cam_id, cam in load_webcams(require_private=False).items():
         webcams[cam_id] = {
             "name": cam["name"],
             "short_name": cam.get("short_name"),
-            "path": project_root / cam["website_dir"] / "latest.json",
-            "interval": cam.get("interval_minutes", 10),
+            "path": cam["website_dir"] / "latest.json",
+            "interval": cam.get("interval_minutes") or 10,
             "daylight_only": cam.get("check_daylight", False),
             "disabled": cam.get("disabled_in_cron", False),
             # Position and margin only matter for the daylight-only cams, but
-            # they come from the same keys fetch_webcam.py reads, so the health
-            # check asks the same question the capture did.
+            # they come from the same registry fields fetch_webcam.py reads, so
+            # the health check asks the same question the capture did.
             "lat": cam.get("lat"),
             "lon": cam.get("lon"),
             "daylight_margin_minutes": cam.get("daylight_margin_minutes", 30),

@@ -14,6 +14,7 @@ import {
 } from "./shared/lightstation-schedule.js";
 import { setSafeHTML } from "./shared/safe-html.js";
 import { staleThresholdLabel } from "./shared/staleness.js";
+import { orderRegions } from "./shared/station-meta.js";
 
 // Lightstation metadata keyed by several name/ID formats (module-local;
 // was window.stationMetadata before the ES-module conversion)
@@ -58,17 +59,9 @@ async function loadLightstationData() {
     const container = document.getElementById("lightstations-container");
     container.textContent = "";
 
-    const regionOrder = [
-      "STRAIT OF GEORGIA",
-      "JUAN DE FUCA STRAIT",
-      "WEST COAST VANCOUVER ISLAND",
-      "CENTRAL COAST",
-      "HECATE STRAIT",
-    ];
+    const orderedRegions = orderRegions(regions);
 
-    for (const region of regionOrder) {
-      if (!regions[region]) continue;
-
+    for (const region of orderedRegions) {
       const section = document.createElement("div");
       section.className = "region-section";
       section.setAttribute("data-region", region);
@@ -90,7 +83,8 @@ async function loadLightstationData() {
       stationCount.style.fontSize = "0.8em";
       stationCount.style.fontWeight = "normal";
       stationCount.style.opacity = "0.8";
-      stationCount.textContent = ` (${regions[region].length} stations)`;
+      const count = regions[region].length;
+      stationCount.textContent = ` (${count} station${count === 1 ? "" : "s"})`;
 
       header.textContent = "";
       header.appendChild(toggleArrow);

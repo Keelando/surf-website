@@ -205,6 +205,21 @@ def get_all_lightstations() -> Dict:
     return STATIONS.lightstations
 
 
+def get_lightstation_by_report_name(station_name: str) -> Optional[Dict]:
+    """Look up a lightstation by the name its bulletins use.
+
+    The Coast Guard bulletins (and therefore the `station_name` column in
+    lightstation_data.sqlite) spell a station in upper case: "CAPE MUDGE" for
+    the registry's "Cape Mudge". Everything that joins observations back to
+    registry metadata does that fold, so it lives here once.
+    """
+    wanted = station_name.strip().upper()
+    for metadata in STATIONS.lightstations.values():
+        if metadata["name"].upper() == wanted:
+            return metadata
+    return None
+
+
 def get_all_webcams() -> Dict:
     """Get all webcam positions from the tracked registry."""
     return STATIONS.webcams

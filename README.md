@@ -78,7 +78,7 @@ envcan_wave/
 ├── lib/                  # Shared utilities (config, stations, logging)
 ├── config/
 │   ├── stations.json     # Master station registry (buoys, winds, tides, …)
-│   ├── webcams.json      # Webcam registry (read by fetch + monitoring)
+│   ├── webcams.json      # Webcam FETCH config (identity lives in stations.json)
 │   ├── crontab.txt       # Canonical crontab (install via scripts/install_crontab.sh)
 │   └── sr3/              # Sarracenia configs (source of truth, deployed to ~/.config/sr3/subscribe/)
 ├── docs/                 # Backend documentation

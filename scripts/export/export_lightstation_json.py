@@ -35,6 +35,7 @@ from lib.config import EXPORT_DIR, safe_json_write
 from lib.config import LIGHTSTATION_DATABASE as DB_PATH
 from lib.lightstation_schedule import infer_schedule, staleness_threshold_hours
 from lib.logging_config import setup_logging
+from lib.stations import get_lightstation_by_report_name
 
 logger = setup_logging("lightstation_json_export")
 
@@ -60,6 +61,35 @@ SCHEDULE_LOOKBACK_DAYS = 30
 # so for a dual-bulletin station it flips with arrival order. `source_file`
 # accumulates every product that contributed, which is the stable answer.
 BULLETIN_PRODUCTS = ("SXCN", "FPCN61")
+
+
+# ---------- Region ----------
+#
+# `region` is per-observation in the database, and the two bulletin products
+# disagree about it: SXCN can only name the area its whole bulletin covers, so
+# it files the central-coast lights under HECATE STRAIT and Trial Island under
+# STRAIT OF GEORGIA. Whichever bulletin wrote the newest row used to decide
+# which group a station appeared in on the page, so nine stations drifted
+# between sections as the feeds alternated.
+#
+# config/stations.json carries a per-station `region` that does not move. It is
+# the only thing consulted here; the column stays in the database as a record
+# of what each bulletin claimed, and is not exported.
+def station_region(station_name, fallback=None):
+    """The registry's region for a station, or `fallback` if it is unregistered.
+
+    An unregistered station is a real case — TRIPLE ISLAND arrives on bulletins
+    we parse but has never been added to config/stations.json — so say so once
+    rather than dropping the station or filing it under nothing.
+    """
+    metadata = get_lightstation_by_report_name(station_name)
+    if metadata and metadata.get("region"):
+        return metadata["region"]
+    logger.warning(
+        f"{station_name} is not in config/stations.json; "
+        f"falling back to the region its bulletin claimed ({fallback!r})"
+    )
+    return fallback
 
 
 def query_and_export():
@@ -174,7 +204,7 @@ def query_and_export():
 
             # Build JSON entry
             station_json = {
-                "region": row["region"],
+                "region": station_region(station_name, row["region"]),
                 "wind_speed_kt": row["wind_speed_kt"],
                 "wind_direction": row["wind_direction"],
                 "wind_gusting": bool(row["wind_gusting"]),

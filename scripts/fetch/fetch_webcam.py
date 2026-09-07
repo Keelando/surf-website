@@ -43,6 +43,7 @@ from lib.webcam import (
     manage_slideshow_images,
     time_limit,
 )
+from lib.webcam.registry import load_webcams
 
 DEDUPE_SIDECAR = ".last_fetch.json"
 
@@ -77,40 +78,10 @@ def _sha256_file(path):
             h.update(chunk)
     return h.hexdigest()
 
-# Webcam configurations live in config/webcams.json (gitignored).
-# See config/webcams.example.json for the schema.
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-WEBCAM_CONFIG_PATH = REPO_ROOT / "config" / "webcams.json"
-
-
-def load_webcam_configs():
-    """Load webcam configs from JSON, resolving paths relative to repo root.
-
-    archive_dir is taken as-is (typically an absolute /mnt/storage path).
-    website_dir is resolved relative to the repo root if not already absolute.
-    Keys beginning with `_` (e.g. `_comment`, `_permission_note`) are dropped.
-    """
-    if not WEBCAM_CONFIG_PATH.exists():
-        raise FileNotFoundError(
-            f"Webcam config not found at {WEBCAM_CONFIG_PATH}. "
-            f"Copy config/webcams.example.json to config/webcams.json and edit."
-        )
-    with open(WEBCAM_CONFIG_PATH) as f:
-        raw = json.load(f)
-
-    configs = {}
-    for name, cfg in raw.items():
-        if name.startswith("_"):
-            continue
-        cfg = {k: v for k, v in cfg.items() if not k.startswith("_")}
-        cfg["archive_dir"] = Path(cfg["archive_dir"])
-        website_dir = Path(cfg["website_dir"])
-        cfg["website_dir"] = website_dir if website_dir.is_absolute() else REPO_ROOT / website_dir
-        configs[name] = cfg
-    return configs
-
-
-WEBCAM_CONFIGS = load_webcam_configs()
+# A camera is described in exactly two files: config/stations.json ["webcams"]
+# says what it is, config/webcams.json (gitignored) says how to fetch it.
+# lib/webcam/registry.py merges them; see config/webcams.example.json.
+WEBCAM_CONFIGS = load_webcams()
 
 
 STORAGE_MOUNT = Path("/mnt/storage")

@@ -21,9 +21,11 @@ project: commit straight to `main` (branch by exception, `--ff-only` merges).
   hardcode), `stations.py` (registry access), units, directions, logging,
   `daylight.py` (astral sunrise/sunset), `water_level_stations.py`, `webcam/`
 - `config/` — `stations.json` (canonical station registry, tides included),
-  `webcams.json` (canonical webcam registry, gitignored — schema in
-  `webcams.example.json`), `crontab.txt` (canonical crontab), `sr3/` (AMQP
-  subscription configs, deployed to `~/.config/sr3/subscribe/`)
+  `webcams.json` (webcam *fetch* config only, gitignored — schema in
+  `webcams.example.json`; a camera's identity lives in `stations.json`
+  ["webcams"] and `lib/webcam/registry.py` merges the two),
+  `crontab.txt` (canonical crontab), `sr3/` (AMQP subscription configs,
+  deployed to `~/.config/sr3/subscribe/`)
 - `site/` — static frontend; all pages are ES modules, shared helpers in
   `site/assets/js/shared/` (see its README for the module inventory)
 - `tests/` — pytest (backend + crontab validation), `tests/js/` node unit

@@ -343,59 +343,40 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       in `storm_surge.html`, en-dashes in ranges like `3–9 km`, and code
       comments, which are not UI text. *Done 2026-09-06.*
 
-- [ ] **Collapse the webcam registries to one owner per field** (raised to the
-  top 2026-09-06 at the user's request, straight after the drift audit that
-  found it). A camera is still described in **four** places. On 2026-09-06 they
-  disagreed by up to **24 km of position**, a **wrong cadence** (cron runs both
-  Mud Bay cams every 15 min; two sources said 10, so the page stated a cadence
-  the pipeline never had) and **three of six names**. Those values are
-  reconciled and `TestWebcamRegistryConsistency` now fails on re-drift — but a
-  test that catches divergence is a strictly worse thing to own than a
-  structure that cannot diverge, and every new camera adds four places to keep
-  in step.
+- [x] **Collapse the webcam registries to one owner per field** (*done
+  2026-09-07*). A camera was described in four places; it is now described in
+  two, one owner per field, and `lib/webcam/registry.py` (`load_webcams()`) is
+  the only thing that reads either.
+  - `config/stations.json` ["webcams"] — tracked and public: `name`,
+    `short_name`, `location`, `lat`, `lon`, `source`,
+    `update_frequency_minutes`, `stream_delay_minutes`, `daylight_only`,
+    `daylight_margin_minutes`, `page_url`.
+  - `config/webcams.json` — gitignored: URLs, referers, UA/From, crop,
+    `archive_dir`/`website_dir`, `prefix`, `max_height`, `cron_offset`,
+    `annotate_timestamp`, `dedupe`, `disabled_in_cron`. Nothing else.
 
-  **The split to aim for**, one owner per field:
-  - `config/stations.json` ["webcams"] — tracked, already public, already
-    exported: `name`, `short_name`, `lat`, `lon`, `update_frequency_minutes`,
-    `stream_delay_minutes`, `page_url`. This is *what a camera is*.
-  - `config/webcams.json` — gitignored, and the only reason two files exist at
-    all: `image_url`/`youtube_url`/`yawcam_url`, `image_referer`,
-    `image_user_agent`, `image_from`, `archive_dir`, `website_dir`, `prefix`,
-    `crop`, `max_height`, `check_daylight`, `daylight_margin_minutes`,
-    `cron_offset`, `annotate_timestamp`, `dedupe`, `disabled_in_cron`. This is
-    *how a camera is fetched*, and it is permission-restricted.
+  All four consumers converted in the planned order:
+  `storage_metrics_to_mqtt.load_webcam_archives`,
+  `health_check._load_webcam_config`, `webcams-v4.js` (its array now carries
+  only `id`/`region`/`dataPath`/`attribution`/`conditions` and hydrates the
+  rest from `/data/stations.json`), then `fetch_webcam.py` last — verified with
+  a real capture on both a YouTube cam and a daylight-only direct-image cam.
 
-  **Consumers to convert**, in rising order of blast radius:
-  1. `scripts/export/storage_metrics_to_mqtt.py` — takes only `{path, prefix,
-     name}`; `name` moves to the registry. Lowest risk, do it first.
-  2. `scripts/monitoring/health_check.py` `_load_webcam_config()` — already
-     merges both kinds of field; have it read identity from the registry and
-     mechanics from the private file. It is also where `display_name()` lives,
-     so it is the natural place to prove the merged shape works.
-  3. `site/assets/js/webcams-v4.js` — the fourth copy, and the one a reader
-     sees. It hardcodes `name`, `location`, `updateInterval`, `streamDelay` and
-     the `/data/<dir>/` paths per camera. `/data/stations.json` already carries
-     the first four. The data paths are the awkward part: `website_dir` is a
-     private-file field, so either mirror a public `data_path` into the
-     registry or keep deriving it from the camera id.
-  4. `scripts/fetch/fetch_webcam.py` — **highest risk, do it last.** Six cron
-     jobs depend on it and a bad import stops image capture silently until
-     someone looks at the page. It needs `lat`/`lon` for the daylight check and
-     `name` for logging and the `latest.json` metadata.
+  Three duplications beyond the plan went with it: `source_text` (the fetcher's
+  richer attribution string became the registry's `source`, so `latest.json`
+  and the map agree), the `daylightMargins` map hardcoded in `webcams-v4.js`,
+  and the four per-camera `/data/<dir>/` URLs, now derived from one `dataPath`.
+  `daylight_only`/`daylight_margin_minutes` were added to the export allowlist
+  so the page reads the same capture policy `fetch_webcam.py` acts on.
 
-  **Done when:** `webcams.json` carries no `name`/`lat`/`lon` (or they are
-  ignored with a warning on load); the three positional and naming assertions
-  in `TestWebcamRegistryConsistency` are deleted as structurally impossible,
-  leaving the roster check and the crontab-cadence check, which stay useful;
-  and a camera can be added by editing two files with no field written twice.
-
-  **Watch for:** a fresh clone has `stations.json` but not `webcams.json`, so
-  every loader needs a clear failure when the private file is missing rather
-  than a half-configured camera. And keep the permission-restricted endpoints
-  out of the tracked file — that constraint is the whole reason for the split
-  and is easy to erode once fields start moving. Same family as *Lightstation
-  regions should come from the registry* below: a field stored where it is
-  convenient rather than where it belongs.
+  The three positional and naming assertions in
+  `TestWebcamRegistryConsistency` are gone as structurally impossible; what
+  replaces them is `test_the_private_file_holds_no_identity_fields` (belt and
+  braces — the loader already ignores a stray copy with a warning) plus the
+  roster and crontab-cadence checks, which stay useful because only the
+  crontab actually sets a cadence. `TestWebcamRegistryLoader` covers the merge,
+  the ignored stray, path resolution, an unregistered camera, and the
+  fresh-clone case where the private file is absent.
 
 - [ ] **North coast coverage** (added 2026-09-03, prompted by a mariner out of
   Kitimat who emailed about the McInnes Island position error). The
@@ -419,19 +400,34 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
   Worth keeping in touch with the correspondent: a working mariner in the area
   is a better source on which points matter than a map is.
 
-- [ ] **Lightstation regions should come from the registry** (found
-      2026-09-06, while deduplicating the two bulletin feeds). `region` is
-      stored per observation, and the two products disagree: SXCN can only
-      name the area its whole bulletin covers, so it files the central-coast
-      lights under Hecate Strait and Trial Island under the Strait of
-      Georgia. Whichever bulletin wrote the newest row decides which group a
-      station appears in on the page, so nine stations drift between groups
-      as the feeds alternate. `config/stations.json` already carries a
-      per-station `region` — the export should read it and the column should
-      stop being consulted. One catch: the registry uses `INSIDE PASSAGE` for
-      Boat Bluff, which has no group in `regionOrder` in
-      `site/assets/js/lightstation-page.js`, so that list needs reconciling
-      with the registry's vocabulary first.
+- [x] **Lightstation regions come from the registry** (*done 2026-09-07*).
+      `region` was stored per observation and the two bulletin products
+      disagree — SXCN can only name the area its whole bulletin covers, so it
+      filed the central-coast lights under Hecate Strait and Trial Island under
+      Strait of Georgia, and six stations visibly swung between groups
+      depending on which feed wrote last. Both exports now read
+      `config/stations.json` via `get_lightstation_by_report_name()`; the
+      column stays in the database as a record of what each bulletin claimed
+      and is no longer published.
+
+      The vocabularies were reconciled the other way too. The registry had 13
+      values against the page's 5, so `region` was coarsened to six display
+      groups ordered south to north (Strait of Georgia, Juan de Fuca Strait,
+      West Coast Vancouver Island, **Johnstone & Queen Charlotte Strait** (new
+      section), Central Coast, North Coast & Haida Gwaii). The finer geography
+      that would have been lost — Milbanke Sound, Queen Charlotte Sound/Strait,
+      Inside Passage — moved into each station's `location`, which is where a
+      place belongs; `region` now means "which section of the page".
+
+      The ordering itself was duplicated between `lightstation-page.js` and
+      `lightstation-charts.js`, and both iterated it as a whitelist — the same
+      shape that hid 11 of 23 stations from the dropdown before 2026-09-03.
+      Both now call `orderRegions()` in `shared/station-meta.js`, which appends
+      an unnamed region rather than dropping it. Triple Island proves it works:
+      it reports on bulletins we parse but is not in the registry yet, so it
+      renders in a trailing Hecate Strait section and the export logs a warning
+      naming it. `TestLightstationRegions` keeps the registry vocabulary and
+      the JS ordering in step in both directions.
 
 - [ ] **A "View source" link on every rendered dataset** (added 2026-09-03).
   The forecasts page has had per-zone source links for a while and the

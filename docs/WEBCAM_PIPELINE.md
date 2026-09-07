@@ -142,7 +142,7 @@ Website (webcams.html) displays latest + slideshow carousel
 2. Optionally annotate with timestamp (ImageMagick)
 3. Save to archive directory
 
-**Optional request headers** (set in `config/webcams.json`):
+**Optional request headers** (set in `config/webcams.json`, the fetch half of the config):
 - `image_referer` — `Referer:` header; required by some hosts to serve the image (e.g. Ambleside/Hollyburn)
 - `image_user_agent` — `User-Agent:` override (e.g. `HalibutBank/1.0 (+https://halibutbank.ca)`)
 - `image_from` — `From:` header with operator contact email; good practice for polite bot identification
@@ -263,7 +263,7 @@ python3 fetch_webcam.py mudbay
 python3 fetch_webcam.py ambleside
 ```
 
-**Configuration:** Webcam configs live in `config/webcams.json` (gitignored — keeps endpoints, referers, and permission-gated feeds out of the public repo). The script loads them at startup via `load_webcam_configs()`. See `config/webcams.example.json` for the schema and a sanitized template.
+**Configuration:** A camera is described in exactly two files, one owner per field. `config/stations.json` under `"webcams"` (tracked, public, exported to `/data/stations.json`) says *what a camera is*: `name`, `short_name`, `location`, `lat`, `lon`, `source`, `update_frequency_minutes`, `stream_delay_minutes`, `daylight_only`, `daylight_margin_minutes`, `page_url`. `config/webcams.json` (gitignored — keeps endpoints, referers, and permission-gated feeds out of the public repo) says *how it is fetched*. `lib/webcam/registry.py` merges the two, and `load_webcams()` is the only thing any consumer should call; an identity field left behind in the private file is ignored with a warning rather than honoured. See `config/webcams.example.json` for the schema and a sanitized template.
 
 **Logging:** Centralized via `lib/logging_config.py`
 - Log file: `~/envcan_wave/logs/webcam_<config_name>.log`
@@ -577,23 +577,36 @@ sudo RESTIC_PASSWORD_FILE="/root/.restic_pw" restic -r /mnt/storage/restic-backu
 
 ## Adding a New Webcam
 
-1. **Add a config entry** to `config/webcams.json` (gitignored; see `config/webcams.example.json` for the schema). Paths in `archive_dir` are absolute; `website_dir` is resolved relative to the repo root.
+1. **Add the camera to `config/stations.json`** under `"webcams"` — what it is. This is tracked and public, and it is what the map pin, the footer status badge, the sunlight export, the webcams page and `/api/v1/stations` all read.
 ```json
 "newcam": {
+  "id": "newcam",
   "name": "New Camera Name",
+  "short_name": "New Cam",
+  "location": "Somewhere, BC",
+  "lat": 49.0000,
+  "lon": -123.0000,
+  "source": "New Camera - Source Attribution",
+  "type": "webcam",
+  "update_frequency_minutes": 15,
+  "stream_delay_minutes": 20,
+  "daylight_only": true,
+  "daylight_margin_minutes": 75,
+  "page_url": "/webcams.html#newcam"
+}
+```
+`short_name` shares the footer's down-list with buoys, tide gauges, wind stations and lightstations, so it has to stay prefix-distinct from every other label there — `tests/test_webcam_pipeline.py` enforces it.
+
+2. **Add a config entry** to `config/webcams.json` (gitignored; see `config/webcams.example.json`) — how it is fetched. Every id here must exist in `stations.json` or the load fails. Paths in `archive_dir` are absolute; `website_dir` is resolved relative to the repo root. Do **not** repeat any field from step 1: `load_webcams()` ignores it and logs a warning.
+```json
+"newcam": {
   "youtube_url": "https://www.youtube.com/watch?v=VIDEO_ID",
   "video_id": "VIDEO_ID",
   "archive_dir": "/mnt/storage/newcam_cam",
   "website_dir": "site/data/newcam",
   "prefix": "NC",
   "crop": "in_w:in_h:0:0",
-  "source_text": "New Camera - Source Attribution",
-  "lat": 49.0000,
-  "lon": -123.0000,
   "max_height": 720,
-  "check_daylight": true,
-  "daylight_margin_minutes": 75,
-  "interval_minutes": 15,
   "cron_offset": 10
 }
 ```
@@ -601,28 +614,26 @@ For a **direct-image** source instead of YouTube, swap `youtube_url`/`video_id` 
 
 The "Source:" link written into `latest.json` prefers `source_url`, falling back to `youtube_url` then `image_url`. Set `source_url` to the operator's own public page for the cam whenever the feed URL isn't something a visitor should be sent to (e.g. a raw scraped `.jpg`).
 
-2. **Add cron job**:
+3. **Add cron job** — edit `config/crontab.txt` and apply with `scripts/install_crontab.sh`, never `crontab -e` as the primary copy. The crontab is the *authority* on cadence; `update_frequency_minutes` is a claim about it, and `tests/test_webcam_pipeline.py` fails if the two disagree.
 ```bash
-crontab -e
-
-# Add line (adjust minute offsets based on interval_minutes and cron_offset):
+# Minute list must match update_frequency_minutes, phased by cron_offset:
 10,25,40,55 * * * * /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_webcam.py newcam >> /home/keelando/envcan_wave/logs/webcam_newcam.log 2>&1
 ```
 
-3. **Test manually**:
+4. **Test manually**:
 ```bash
 cd ~/envcan_wave
 source .venv/bin/activate
 python3 scripts/fetch/fetch_webcam.py newcam
 ```
 
-4. **Verify storage created**:
+5. **Verify storage created**:
 ```bash
 ls -lh /mnt/storage/newcam_cam/
 ls -lh site/data/newcam/
 ```
 
-5. **Add to frontend** (`site/webcams.html`)
+6. **Add to the page** — one entry in the `webcams` array in `site/assets/js/webcams-v4.js`, carrying only what the page adds: `id`, `region`, `dataPath`, and optionally `attribution` and `conditions`. Name, location, cadence, stream delay and daylight policy are read from `/data/stations.json` at load; do not restate them here.
 
 ---
 

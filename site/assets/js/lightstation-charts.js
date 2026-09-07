@@ -9,6 +9,7 @@
 
 import { formatDayMonthNumeric, formatNumericDayTime, formatTimeHM } from "./shared/format-time.js";
 import { setSafeHTML } from "./shared/safe-html.js";
+import { orderRegions } from "./shared/station-meta.js";
 
 /**
  * How far back the timeseries export reaches.
@@ -282,33 +283,8 @@ function populateLightstationDropdown() {
     regionGroups[region].push([id, station]);
   });
 
-  // Preferred ordering, south to north — NOT a whitelist. This list used to be
-  // iterated on its own, so a station whose region was not one of these five
-  // simply never got an <option>: 11 of the 23 lightstations were unreachable
-  // from the dropdown, McInnes Island among them (region "MILBANKE SOUND"),
-  // which is why "View Data" on its popup could not select it. Regions are
-  // free text in config/stations.json, so anything not named here is appended
-  // rather than dropped.
-  const PREFERRED_REGION_ORDER = [
-    "STRAIT OF GEORGIA",
-    "JUAN DE FUCA STRAIT",
-    "DISCOVERY PASSAGE",
-    "QUEEN CHARLOTTE STRAIT",
-    "WEST COAST VANCOUVER ISLAND",
-    "QUEEN CHARLOTTE SOUND",
-    "CENTRAL COAST",
-    "MILBANKE SOUND",
-    "SEAFORTH CHANNEL",
-    "INSIDE PASSAGE",
-    "HECATE STRAIT",
-    "NORTH COAST",
-    "HAIDA GWAII",
-  ];
-
-  const remainingRegions = Object.keys(regionGroups)
-    .filter((region) => !PREFERRED_REGION_ORDER.includes(region))
-    .sort();
-  const regionOrder = [...PREFERRED_REGION_ORDER, ...remainingRegions];
+  // Ordered south to north, unknown regions appended — see orderRegions().
+  const regionOrder = orderRegions(regionGroups);
 
   // Create optgroups for each region
   regionOrder.forEach((regionName) => {

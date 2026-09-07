@@ -310,3 +310,50 @@ class TestLightstationCoordinates:
                     f"{sid} {field}={value} has {decimals} decimal places; "
                     "take the value from the CCG List of Lights, Pacific Coast"
                 )
+
+
+class TestLightstationRegions:
+    """`region` in config/stations.json is the only owner of page grouping.
+
+    It used to come from the observation row, and the two Coast Guard bulletin
+    products disagree: SXCN can only name the area its whole bulletin covers,
+    so it files the central-coast lights under HECATE STRAIT and Trial Island
+    under STRAIT OF GEORGIA. Whichever product wrote the newest row decided
+    which section a station appeared in, so nine stations drifted between
+    groups as the feeds alternated. The exports now read the registry and the
+    column is not published.
+
+    That only works if the registry's vocabulary and the page's ordering are
+    the same vocabulary — the registry had thirteen values against the page's
+    five, and seven registry regions had no section at all.
+    """
+
+    import re as _re
+    from pathlib import Path as _Path
+
+    SHARED_JS = _Path(__file__).parent.parent / "site" / "assets" / "js" / "shared" / "station-meta.js"
+
+    @classmethod
+    def _js_region_order(cls):
+        text = cls.SHARED_JS.read_text()
+        block = cls._re.search(
+            r"export const LIGHTSTATION_REGION_ORDER = \[(.*?)\];", text, cls._re.S
+        )
+        assert block, "LIGHTSTATION_REGION_ORDER not found in shared/station-meta.js"
+        return cls._re.findall(r'"([^"]+)"', block.group(1))
+
+    def test_every_station_has_a_region(self):
+        missing = [sid for sid, meta in STATIONS.lightstations.items() if not meta.get("region")]
+        assert not missing, missing
+
+    def test_every_registry_region_has_a_section_on_the_page(self):
+        """A region with no entry in the ordering renders last rather than
+        vanishing, but landing there is drift, not a design."""
+        ordering = set(self._js_region_order())
+        used = {meta["region"] for meta in STATIONS.lightstations.values()}
+        assert used <= ordering, sorted(used - ordering)
+
+    def test_the_ordering_names_no_empty_sections(self):
+        used = {meta["region"] for meta in STATIONS.lightstations.values()}
+        unused = [region for region in self._js_region_order() if region not in used]
+        assert not unused, unused

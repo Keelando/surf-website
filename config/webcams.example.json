@@ -1,27 +1,18 @@
 {
-  "_comment": "Copy this file to config/webcams.json and edit. webcams.json is gitignored — keep endpoints, referers, and any permission-restricted feeds out of the public repo. short_name is the label the footer status badge prints when a cam goes down; that list is shared with buoys, tide gauges, wind stations and lightstations, so it must stay distinct from every name and short_name in config/stations.json as well. tests/test_webcam_pipeline.py enforces it.",
+  "_comment": "Copy this file to config/webcams.json and edit. This file holds only HOW a camera is fetched — endpoints, referers, crop, storage paths — and is gitignored so permission-restricted feeds stay out of the public repo. WHAT a camera is (name, short_name, location, lat, lon, source, update_frequency_minutes, stream_delay_minutes, daylight_only, daylight_margin_minutes, page_url) belongs in the tracked config/stations.json under \"webcams\", and lib/webcam/registry.py merges the two. Adding a camera means editing exactly those two files, with no field written twice; put an identity field here and load_webcams() ignores it with a warning. Every camera id here must also exist in stations.json or the load fails. short_name is the label the footer status badge prints when a cam goes down; that list is shared with buoys, tide gauges, wind stations and lightstations, so it must stay distinct from every other name and short_name in stations.json. tests/test_webcam_pipeline.py enforces it.",
 
   "examplecam_youtube": {
-    "name": "Example YouTube Livestream Cam",
-    "short_name": "EX YT Cam",
     "youtube_url": "https://www.youtube.com/watch?v=YOUR_VIDEO_ID",
     "video_id": "YOUR_VIDEO_ID",
     "archive_dir": "/mnt/storage/example_cam",
     "website_dir": "site/data/example",
     "prefix": "EX",
     "crop": "in_w:in_h:0:0",
-    "source_text": "Example Cam - YouTube Livestream",
-    "lat": 0.0,
-    "lon": 0.0,
     "max_height": 480,
-    "check_daylight": false,
-    "interval_minutes": 10,
     "cron_offset": 0
   },
 
   "examplecam_image": {
-    "name": "Example Direct-Image Cam",
-    "short_name": "EX Cam",
     "image_url": "https://example.com/path/to/cam.jpg",
     "image_referer": "https://example.com/",
     "image_user_agent": "YourBot/1.0 (+https://yoursite.example)",
@@ -30,13 +21,7 @@
     "website_dir": "site/data/example",
     "prefix": "EX",
     "crop": "in_w:in_h:0:0",
-    "source_text": "Example Cam",
     "source_url": "https://example.com/",
-    "lat": 0.0,
-    "lon": 0.0,
-    "check_daylight": true,
-    "daylight_margin_minutes": 60,
-    "interval_minutes": 20,
     "cron_offset": 0,
     "annotate_timestamp": false,
     "_dedupe_note": "Direct-image sources only. A dead camera often keeps serving its last good frame with a 200, so the fetch succeeds and the site calls a week-old picture current. With dedupe on, fetch_webcam.py HEADs for a changed Content-Length and hashes the downloaded bytes; an identical frame is discarded before latest.json is rewritten, so the timestamp stops advancing and the page goes stale on schedule. Leave it on unless the source stamps something unique into every frame.",
