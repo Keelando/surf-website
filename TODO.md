@@ -378,43 +378,68 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
   the ignored stray, path resolution, an unregistered camera, and the
   fresh-clone case where the private file is absent.
 
-- [ ] **Audit the `reporting: false` lightstation flags** (found 2026-09-07
-  while flagging Estevan Point). Two of the four are wrong, and the field is
-  load-bearing: `_reporting_lightstations()` uses it to decide the health
-  check's denominator, so a wrong `false` quietly drops a station that *is*
-  reporting out of both halves of the footer fraction.
-  - **Chatham Point** — flagged `reporting: false`, but has 10 observations in
-    the database, most recently 2026-09-04, arriving on FPCN61. It reports
-    intermittently; it does not fail to report.
-  - **Green Island** — flagged `reporting: false`, but has an observation from
-    2026-09-07. SXCN23 carries it and fills the slot with N/A most cycles, so
-    it is genuinely sparse rather than absent.
-  - **Egg Island, Estevan Point** — correctly flagged; neither has produced a
-    row. Note the limit of that evidence: the database holds a rolling window
-    (it began 2026-08-27) and only a couple of days of raw bulletins are kept,
-    so "has not reached this site" is all the record supports. Estevan Point is
-    *listed* in SXCN25 and the entry reads N/A every time; Egg Island's
-    bulletin is one this site does not subscribe to at all. Neither is evidence
-    that the station never reports.
+- [x] **Audit the `reporting: false` lightstation flags** (*done 2026-09-07*).
+  Two of the four were wrong, and the field is load-bearing:
+  `_reporting_lightstations()` uses it to set the health check's denominator,
+  so a wrong `false` quietly dropped a station that *is* reporting out of both
+  halves of the footer fraction.
+  - **Chatham Point** and **Green Island** both had recent observations
+    (Chatham 10 rows, last 2026-09-04, via FPCN61; Green one on 2026-09-07 via
+    SXCN23). The flag is removed from both. They are sparse, not silent, so
+    they now carry `intermittent: true` instead: counted as stations, logged at
+    `info`, and unable to turn the overall status red. Count went 72 → 74.
+  - **Egg Island** and **Estevan Point** stay flagged; neither has produced a
+    row. The notes now say only what the record supports — the database began
+    2026-08-27 and raw bulletins are kept a day — not that the station never
+    reports.
 
-  Flipping the first two to `true` would put two sparse stations into the stale
-  alerts, so they want `INTERMITTENT_STATIONS` treatment at the same time — and
-  that dict is hardcoded in `health_check.py` alongside a registry that already
-  carries `reporting` and `reporting_note`. Two sources of truth for the same
-  question; move it into the registry rather than adding two more entries to
-  the dict. All four notes also claimed the stations "never appear in the
-  FPCN61 or SXCN bulletins we ingest", which was only ever true of Egg Island.
+  `INTERMITTENT_STATIONS`, a hardcoded dict in `health_check.py`, is gone: it
+  was a second answer to a question `config/stations.json` already had a field
+  for. The registry's `intermittent` flag is the only one now, and the note
+  shown beside a station comes from its own `reporting_note`.
 
-- [ ] **Should the site subscribe to SXCN24?** (found 2026-09-07). Egg Island
-  produces no data because nothing we ingest carries it: it is absent from
-  FPCN61, and `config/sr3/bc_lightstation_obs.conf` deliberately skips SXCN24
-  on the stated grounds that "all its stations are already in FPCN61". That is
-  not true of Egg Island, and Chatham Point — also listed there — reaches us
-  only sparsely. Accepting SXCN24 is a one-line config change and would likely
-  add a station and firm up another. Check first whether the roster comment in
-  that file matches what SXCN24 actually carries; it is our own note, not
-  something verified against the wire. Overlaps with *Parse the FICN31/32/33
-  bulletins* below — same question of which products we take.
+- [x] **Subscribe to SXCN24** (*done 2026-09-07*).
+  `config/sr3/bc_lightstation_obs.conf` skipped it on the stated grounds that
+  "all its stations are already in FPCN61", which is not true of Egg Island —
+  it appears in no product this site read, which is the whole reason it has
+  never produced an observation — and Chatham Point reached us only sparsely.
+  The accept line is added, the config deployed to
+  `~/.config/sr3/subscribe/` and `sr3-bc-lightstation-obs` restarted.
+
+  The parser gained the SXCN24 roster (Chatham, Scarlett, Pine, Egg, Cape
+  Scott, Quatsino, Pulteney) and `SXCN_REGIONS["24"]`, without which the whole
+  bulletin is skipped. **The abbreviations are inferred** from the pattern the
+  other three bulletins follow, not observed — no SXCN24 has been read yet. So
+  `parse_sxcn_station_line` no longer falls through to the raw bulletin name
+  when an abbreviation is unmapped: it logs a warning and skips the row.
+  Storing a phantom "EGG" would file the reading under a station the registry
+  has never heard of and render it as a card that matches nothing, which is a
+  worse failure than a missing row. **Check
+  `logs/lightstation_parse.log` for "Unmapped SXCN station abbreviation" after
+  the first SXCN24 arrives**, and fix the map if one is wrong.
+
+- [ ] **14 days of buoy and wind history on the front end** (user 2026-09-07,
+  explicitly not for today). The data is already there: `BUOY_RETENTION_DAYS`
+  and `WIND_RETENTION_DAYS` are both 30, so SQLite holds a month. The
+  frontend only ever sees 48 hours of it —
+  `site/data/buoy_timeseries_48h.json` (1.2 MB) and
+  `wind_timeseries_48hr.json` (0.4 MB), from `export_24hr_timeseries.py` and
+  `export_wind_24hr_timeseries.py`.
+
+  The obvious version is a bigger window on the same exports, and the obvious
+  problem is payload size: 14 days is roughly 7x, so ~8 MB and ~3 MB, fetched
+  on every page load by every visitor, on pages that currently render fast.
+  Worth thinking about before implementing —
+  - a separate longer-window file fetched only when a reader asks for the
+    longer view, leaving the 48h file as the page's default load;
+  - decimation for the older part of the window (a buoy reporting every 10
+    minutes does not need 10-minute resolution at 12 days old);
+  - both files are already served by `/api/v1`, so whatever shape this takes
+    is a public contract — see `docs/PUBLIC_API.md` and the cache tiers.
+
+  Also decide what the pages actually do with it: the buoy cards and charts
+  are built around a 48-hour axis, and 14 days on the same chart is a
+  different picture, not a longer one.
 
 - [ ] **North coast coverage** (added 2026-09-03, prompted by a mariner out of
   Kitimat who emailed about the McInnes Island position error). The

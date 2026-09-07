@@ -79,10 +79,11 @@ THRESHOLDS = {
     "webcam": {"warning": 2, "error": 24},  # 24h error threshold for daylight-only cams
 }
 
-# Stations known to be intermittent (report but don't flag as critical)
-INTERMITTENT_STATIONS = {
-    "TRIAL_ISLAND": "Lightstation - reports intermittently, extended gaps are normal",
-}
+# Stations known to be intermittent — they report, but sparsely enough that an
+# overdue reading is normal rather than a fault, so they log at `info` and do
+# not turn the overall status red. This used to be a dict here, which made
+# config/stations.json and this file two answers to the same question about the
+# same stations; the registry's `intermittent` flag is now the only one.
 
 VERBOSE = False
 
@@ -541,7 +542,7 @@ def check_lightstation_freshness() -> List[Dict]:
 
             if age > error_hours:
                 severity = "error"
-                if station_id in INTERMITTENT_STATIONS:
+                if metadata.get("intermittent"):
                     severity = "info"
                     log(f"  ℹ️  {display_name(metadata)}: {age:.1f}h old (INTERMITTENT - expected)")
                 else:
@@ -564,8 +565,10 @@ def check_lightstation_freshness() -> List[Dict]:
                 "stale_after_hours": round(error_hours, 1),
             }
 
-            if station_id in INTERMITTENT_STATIONS:
-                stale_entry["note"] = INTERMITTENT_STATIONS[station_id]
+            if metadata.get("intermittent"):
+                stale_entry["note"] = metadata.get(
+                    "reporting_note", "Reports intermittently; extended gaps are normal."
+                )
 
             stale.append(stale_entry)
 

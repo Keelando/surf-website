@@ -1245,9 +1245,9 @@
       "type": "lightstation",
       "update_frequency_hours": 3,
       "established": 1957,
-      "notes": "Critical for Inside Passage navigation, marks confluence of three channels",
-      "reporting": false,
-      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest; kept on the map as a station that exists, excluded from the health-check count."
+      "intermittent": true,
+      "reporting_note": "Reports through FPCN61, but sparsely: long gaps between observations are normal here and are not a sign the station is down.",
+      "notes": "Critical for Inside Passage navigation, marks confluence of three channels"
     },
     "DRYAD_POINT": {
       "id": "DRYAD_POINT",
@@ -1289,9 +1289,9 @@
       "type": "lightstation",
       "update_frequency_hours": 3,
       "established": 1906,
-      "notes": "British Columbia's northernmost lighthouse, marks entrance to Canadian waters from north, Heritage status 2015",
-      "reporting": false,
-      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest; kept on the map as a station that exists, excluded from the health-check count."
+      "intermittent": true,
+      "reporting_note": "Listed in bulletin SXCN23, where the entry usually reads N/A. Observations do arrive, but rarely, so long gaps are normal.",
+      "notes": "British Columbia's northernmost lighthouse, marks entrance to Canadian waters from north, Heritage status 2015"
     },
     "IVORY_ISLAND": {
       "id": "IVORY_ISLAND",
@@ -1382,6 +1382,7 @@
       "type": "lightstation",
       "update_frequency_hours": 3,
       "established": 1906,
+      "intermittent": true,
       "notes": "Built following 1895 wreck of steamer Velos, marks confluence of Juan de Fuca and Haro Straits. Automated but reports may be intermittent."
     }
   },

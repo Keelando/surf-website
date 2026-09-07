@@ -61,6 +61,18 @@ SXCN_STATION_NAMES = {
     "IVORY": "IVORY ISLAND",
     "DRYAD": "DRYAD POINT",
     "ADDENBROKE": "ADDENBROKE ISLAND",
+    # SXCN24 — Central Coast / N. Island. Added 2026-09-07 with the
+    # subscription; the abbreviations follow the same rule as the other
+    # bulletins (drop a generic ISLAND/POINT suffix, keep multi-word proper
+    # names), but they are inferred rather than observed, so anything that does
+    # not match is logged loudly by parse_sxcn_station_line rather than stored.
+    "CHATHAM": "CHATHAM POINT",
+    "SCARLETT": "SCARLETT POINT",
+    "PINE": "PINE ISLAND",
+    "EGG": "EGG ISLAND",
+    "CAPE SCOTT": "CAPE SCOTT",
+    "QUATSINO": "QUATSINO",
+    "PULTENEY": "PULTENEY POINT",
     # SXCN25 — WCVI South / Tofino
     "NOOTKA": "NOOTKA",
     "ESTEVAN": "ESTEVAN POINT",
@@ -76,6 +88,7 @@ SXCN_STATION_NAMES = {
 # SXCN bulletin number → region
 SXCN_REGIONS = {
     "23": "HECATE STRAIT",
+    "24": "CENTRAL COAST",
     "25": "WEST COAST VANCOUVER ISLAND",
     "26": "STRAIT OF GEORGIA",
 }
@@ -459,8 +472,22 @@ def parse_sxcn_station_line(line, region):
     if obs_text == "N/A":
         return None
 
-    # Map abbreviated name to full name
-    station_name = SXCN_STATION_NAMES.get(raw_name, raw_name)
+    # Map abbreviated name to full name.
+    #
+    # An unknown abbreviation is skipped, not stored under whatever the
+    # bulletin called it. Falling through to `raw_name` would file the reading
+    # under a station nothing else on the site knows — the page joins
+    # observations to config/stations.json by name, so a phantom "EGG" would
+    # render as a nameless card and never match the registry entry it belongs
+    # to. Losing a row is recoverable once the warning is read; a phantom
+    # station is not.
+    station_name = SXCN_STATION_NAMES.get(raw_name)
+    if station_name is None:
+        logger.warning(
+            f"Unmapped SXCN station abbreviation {raw_name!r}; skipping. "
+            f"Add it to SXCN_STATION_NAMES if it is a station we carry."
+        )
+        return None
 
     data = {
         "station_name": station_name,
