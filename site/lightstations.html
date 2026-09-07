@@ -31,7 +31,7 @@
   <meta name="twitter:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
 
   <link rel="canonical" href="https://halibutbank.ca/lightstations.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=c011500b2e" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=04f92ac72d" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=3e83e68729" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=19cbab888b" />
@@ -436,8 +436,11 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    /* Lightstation selector card */
-    .ls-selector {
+    /* Card shell shared by the station selector and the reports table, which
+       are two cards rather than one because the trend charts now sit between
+       them: you pick a station, see the shape of the last 72 h, then read the
+       individual reports. */
+    .ls-card {
       background: var(--color-surface);
       border: 1px solid var(--color-border-light);
       border-radius: 8px;
@@ -446,7 +449,7 @@
       margin-bottom: 2rem;
     }
 
-    .ls-selector h2 {
+    .ls-card h2 {
       margin: 0 0 1rem 0;
       padding-bottom: 0.6rem;
       border-bottom: 3px solid var(--color-primary);
@@ -775,8 +778,8 @@
       <p style="text-align: center; padding: 2rem; color: var(--color-text-muted);">Loading lightstation data...</p>
     </div>
 
-    <!-- Station Selector + 24-Hour Data Table -->
-    <section id="lightstation-selector-section" class="ls-selector">
+    <!-- Station selector -->
+    <section id="lightstation-selector-section" class="ls-card">
       <h2>
         Lightstation Reports
         <a class="ls-source-link" href="https://weather.gc.ca/marine/weatherConditions-lightstation_e.html?mapID=02&amp;siteID=16200"
@@ -791,8 +794,32 @@
         </select>
         <a href="#lightstation-map-section" id="show-lightstation-on-map-btn" class="ls-map-btn">Show on Map</a>
       </div>
+    </section>
 
-      <h3 id="lightstation-24hr-title" style="margin: 1.5rem 0 0.75rem; color: var(--color-primary-dark); font-size: 1.15rem;">72-Hour Reports</h3>
+    <!-- Trend charts, before the reports table: the shape of the last 72 h
+         reads faster than 24 rows of it, and a lightstation's value is the
+         trend. The table below answers "what exactly did they report at 4am". -->
+    <section id="lightstation-chart-section" class="ls-section">
+      <h2>72-Hour Trend Charts</h2>
+      <p style="text-align: center; color: var(--color-text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; font-style: italic;">
+        Note: Charts show limited data points due to 3-hour reporting intervals
+      </p>
+
+      <!-- Wind Speed Chart -->
+      <div style="margin-bottom: 2rem;">
+        <div id="lightstation-wind-chart" style="width: 100%; height: 400px;"></div>
+      </div>
+
+      <!-- Wave Height Chart -->
+      <div>
+        <div id="lightstation-wave-chart" style="width: 100%; height: 400px;"></div>
+      </div>
+    </section>
+
+    <!-- Individual reports -->
+    <section id="lightstation-table-section" class="ls-card">
+      <h2 id="lightstation-24hr-title">72-Hour Reports</h2>
+
       <div id="lightstation-data-table-section" class="data-table ls-table-wrap">
         <table id="lightstation-24hr-table" class="ls-table">
           <thead>
@@ -813,23 +840,6 @@
       </div>
     </section>
 
-    <!-- Lightstation Charts Section (Optional - sparse data) -->
-    <section id="lightstation-chart-section" class="ls-section">
-      <h2>72-Hour Trend Charts</h2>
-      <p style="text-align: center; color: var(--color-text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; font-style: italic;">
-        Note: Charts show limited data points due to 3-hour reporting intervals
-      </p>
-
-      <!-- Wind Speed Chart -->
-      <div style="margin-bottom: 2rem;">
-        <div id="lightstation-wind-chart" style="width: 100%; height: 400px;"></div>
-      </div>
-
-      <!-- Wave Height Chart -->
-      <div>
-        <div id="lightstation-wave-chart" style="width: 100%; height: 400px;"></div>
-      </div>
-    </section>
   </div>
 
   <!-- About Section -->
@@ -857,7 +867,7 @@
        and lightstation-map.js. They must NOT get their own script tags — the ?v=
        query would differ from the bare import specifier and the browser would
        execute them twice (module cache is keyed by full URL). -->
-  <script type="module" src="/assets/js/lightstation-page.js?v=4b0a15d46b"></script>
+  <script type="module" src="/assets/js/lightstation-page.js?v=de5253cab9"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

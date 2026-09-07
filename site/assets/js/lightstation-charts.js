@@ -413,10 +413,12 @@ export function viewLightstationChart(stationName) {
   select.value = stationName;
   renderLightstationCharts(stationName);
 
-  // Scroll to data table section (top of the tables/charts area)
-  const tableSection = document.getElementById("lightstation-data-table-section");
-  if (tableSection) {
-    tableSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Land on the charts, which sit above the reports table: the shape of the
+  // last 72 h is the answer to "how is it out there", and the table is one
+  // scroll further for the exact rows.
+  const chartSection = document.getElementById("lightstation-chart-section");
+  if (chartSection) {
+    chartSection.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 

@@ -240,7 +240,7 @@ function addLightstationMapMarker(lightstation) {
       ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${lightstation.notes}</div>` : ""}
     </div>
     <div class="popup-actions">
-      <a href="#lightstation-data-table-section" class="view-data-btn" data-lightstation-id="${lightstation.id}">View Data →</a>
+      <a href="#lightstation-chart-section" class="view-data-btn" data-lightstation-id="${lightstation.id}">View Data →</a>
     </div>
   </div>`;
 

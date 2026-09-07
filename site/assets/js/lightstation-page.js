@@ -280,11 +280,12 @@ function createStationCard(station) {
   navLinks.style.gap = "0.5rem";
   navLinks.style.marginTop = "0.75rem";
 
-  // View historical data link
+  // Same destination and wording as the map popup's "View Data" button
+  // (lightstation-map.js) — one action should not have two names.
   const chartLink = document.createElement("a");
   chartLink.className = "view-chart-link";
-  chartLink.href = "#lightstation-data-table-section";
-  chartLink.textContent = "View historical";
+  chartLink.href = "#lightstation-chart-section";
+  chartLink.textContent = "View Data";
   chartLink.style.flex = "1";
   chartLink.style.textAlign = "center";
   chartLink.style.padding = "0.4rem";
