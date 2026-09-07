@@ -55,6 +55,27 @@ async function loadLightstationData() {
       regions[region].push({ name: stationName, ...stationData });
     }
 
+    // Registry stations with no observation at all still get a card.
+    //
+    // The observation file only carries stations that have reported, so a
+    // lightstation Environment Canada has simply never published a reading for
+    // — Estevan Point, Egg Island — was absent from the page entirely. A
+    // reader could not tell whether it did not exist, was not covered, or was
+    // down. Saying "no reports" is information; saying nothing is not.
+    for (const meta of Object.values(stationMetadata)) {
+      if (meta.type !== "lightstation") continue;
+      const stationName = meta.name.toUpperCase();
+      if (data[stationName]) continue;
+      const region = meta.region || "OTHER";
+      if (!regions[region]) regions[region] = [];
+      if (regions[region].some((s) => s.name === stationName)) continue;
+      regions[region].push({
+        name: stationName,
+        notReporting: true,
+        reportingNote: meta.reporting_note,
+      });
+    }
+
     // Render grouped by region
     const container = document.getElementById("lightstations-container");
     container.textContent = "";
@@ -161,6 +182,77 @@ function handleLightstationHash() {
 }
 
 /**
+ * The "View Data" / "Show on Map" pair at the foot of a station card.
+ *
+ * Extracted so a station with no observations can carry it too: a light that
+ * has never reported still has a position worth finding on the map, and the
+ * charts and table say what is missing in place rather than refusing to open.
+ *
+ * @param {Object} station - card model; only `name` is required
+ * @returns {HTMLDivElement}
+ */
+function buildStationNavLinks(station) {
+  const navLinks = document.createElement("div");
+  navLinks.style.display = "flex";
+  navLinks.style.gap = "0.5rem";
+  navLinks.style.marginTop = "0.75rem";
+
+  // Same destination and wording as the map popup's "View Data" button
+  // (lightstation-map.js) — one action should not have two names.
+  const chartLink = document.createElement("a");
+  chartLink.className = "view-chart-link";
+  chartLink.href = "#lightstation-chart-section";
+  chartLink.textContent = "View Data";
+  chartLink.style.flex = "1";
+  chartLink.style.textAlign = "center";
+  chartLink.style.padding = "0.4rem";
+  chartLink.style.background = "var(--color-surface-alt)";
+  chartLink.style.border = "1px solid var(--color-border-light)";
+  chartLink.style.borderRadius = "4px";
+  chartLink.style.textDecoration = "none";
+  chartLink.style.fontSize = "0.85rem";
+  chartLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    viewLightstationChart(station.name);
+  });
+  navLinks.appendChild(chartLink);
+
+  // Show on Map button
+  const mapLink = document.createElement("a");
+  mapLink.className = "view-chart-link";
+  mapLink.href = "#lightstation-map-section";
+  mapLink.textContent = "📍 Show on Map";
+  mapLink.style.flex = "1";
+  mapLink.style.textAlign = "center";
+  mapLink.style.padding = "0.4rem";
+  mapLink.style.background = "var(--color-surface-alt)";
+  mapLink.style.border = "1px solid var(--color-border-light)";
+  mapLink.style.borderRadius = "4px";
+  mapLink.style.textDecoration = "none";
+  mapLink.style.fontSize = "0.85rem";
+  mapLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    const stationId = stationMetadata[station.name] ? stationMetadata[station.name].id : null;
+
+    if (stationId) {
+      // Scroll to map section
+      const mapSection = document.getElementById("lightstation-map-section");
+      if (mapSection) {
+        mapSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      // Center map on lightstation after scroll
+      setTimeout(() => {
+        centerMapOnLightstation(stationId);
+      }, 800);
+    }
+  });
+  navLinks.appendChild(mapLink);
+
+  return navLinks;
+}
+
+/**
  * Name the bulletin(s) a station's observations arrive in, for the details
  * panel. `bulletins` is written by export_lightstation_json.py.
  *
@@ -184,6 +276,31 @@ function createStationCard(station) {
   const title = document.createElement("h3");
   title.textContent = station.name;
   card.appendChild(title);
+
+  if (station.notReporting) {
+    card.classList.add("lightstation-card-silent");
+
+    const status = document.createElement("div");
+    status.className = "not-reporting-status";
+    status.textContent = "No reports received";
+    card.appendChild(status);
+
+    // Why, in the registry's words. Deliberately not a duration, and
+    // deliberately not "never reports": the database holds a rolling window
+    // and only a couple of days of raw bulletins are kept, so all the record
+    // supports is that nothing has reached this site. How long the station has
+    // been quiet, and whether it reports through a product we do not read, are
+    // both outside what this page can honestly claim.
+    if (station.reportingNote) {
+      const note = document.createElement("p");
+      note.className = "not-reporting-note";
+      note.textContent = station.reportingNote;
+      card.appendChild(note);
+    }
+
+    card.appendChild(buildStationNavLinks(station));
+    return card;
+  }
 
   // Wind
   if (!station.wind_calm) {
@@ -274,65 +391,7 @@ function createStationCard(station) {
     card.appendChild(warning);
   }
 
-  // Navigation links container
-  const navLinks = document.createElement("div");
-  navLinks.style.display = "flex";
-  navLinks.style.gap = "0.5rem";
-  navLinks.style.marginTop = "0.75rem";
-
-  // Same destination and wording as the map popup's "View Data" button
-  // (lightstation-map.js) — one action should not have two names.
-  const chartLink = document.createElement("a");
-  chartLink.className = "view-chart-link";
-  chartLink.href = "#lightstation-chart-section";
-  chartLink.textContent = "View Data";
-  chartLink.style.flex = "1";
-  chartLink.style.textAlign = "center";
-  chartLink.style.padding = "0.4rem";
-  chartLink.style.background = "var(--color-surface-alt)";
-  chartLink.style.border = "1px solid var(--color-border-light)";
-  chartLink.style.borderRadius = "4px";
-  chartLink.style.textDecoration = "none";
-  chartLink.style.fontSize = "0.85rem";
-  chartLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    viewLightstationChart(station.name);
-  });
-  navLinks.appendChild(chartLink);
-
-  // Show on Map button
-  const mapLink = document.createElement("a");
-  mapLink.className = "view-chart-link";
-  mapLink.href = "#lightstation-map-section";
-  mapLink.textContent = "📍 Show on Map";
-  mapLink.style.flex = "1";
-  mapLink.style.textAlign = "center";
-  mapLink.style.padding = "0.4rem";
-  mapLink.style.background = "var(--color-surface-alt)";
-  mapLink.style.border = "1px solid var(--color-border-light)";
-  mapLink.style.borderRadius = "4px";
-  mapLink.style.textDecoration = "none";
-  mapLink.style.fontSize = "0.85rem";
-  mapLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    const stationId = stationMetadata[station.name] ? stationMetadata[station.name].id : null;
-
-    if (stationId) {
-      // Scroll to map section
-      const mapSection = document.getElementById("lightstation-map-section");
-      if (mapSection) {
-        mapSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-
-      // Center map on lightstation after scroll
-      setTimeout(() => {
-        centerMapOnLightstation(stationId);
-      }, 800);
-    }
-  });
-  navLinks.appendChild(mapLink);
-
-  card.appendChild(navLinks);
+  card.appendChild(buildStationNavLinks(station));
 
   // Station details toggle button
   const detailsToggle = document.createElement("div");

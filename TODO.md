@@ -378,6 +378,44 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
   the ignored stray, path resolution, an unregistered camera, and the
   fresh-clone case where the private file is absent.
 
+- [ ] **Audit the `reporting: false` lightstation flags** (found 2026-09-07
+  while flagging Estevan Point). Two of the four are wrong, and the field is
+  load-bearing: `_reporting_lightstations()` uses it to decide the health
+  check's denominator, so a wrong `false` quietly drops a station that *is*
+  reporting out of both halves of the footer fraction.
+  - **Chatham Point** — flagged `reporting: false`, but has 10 observations in
+    the database, most recently 2026-09-04, arriving on FPCN61. It reports
+    intermittently; it does not fail to report.
+  - **Green Island** — flagged `reporting: false`, but has an observation from
+    2026-09-07. SXCN23 carries it and fills the slot with N/A most cycles, so
+    it is genuinely sparse rather than absent.
+  - **Egg Island, Estevan Point** — correctly flagged; neither has produced a
+    row. Note the limit of that evidence: the database holds a rolling window
+    (it began 2026-08-27) and only a couple of days of raw bulletins are kept,
+    so "has not reached this site" is all the record supports. Estevan Point is
+    *listed* in SXCN25 and the entry reads N/A every time; Egg Island's
+    bulletin is one this site does not subscribe to at all. Neither is evidence
+    that the station never reports.
+
+  Flipping the first two to `true` would put two sparse stations into the stale
+  alerts, so they want `INTERMITTENT_STATIONS` treatment at the same time — and
+  that dict is hardcoded in `health_check.py` alongside a registry that already
+  carries `reporting` and `reporting_note`. Two sources of truth for the same
+  question; move it into the registry rather than adding two more entries to
+  the dict. All four notes also claimed the stations "never appear in the
+  FPCN61 or SXCN bulletins we ingest", which was only ever true of Egg Island.
+
+- [ ] **Should the site subscribe to SXCN24?** (found 2026-09-07). Egg Island
+  produces no data because nothing we ingest carries it: it is absent from
+  FPCN61, and `config/sr3/bc_lightstation_obs.conf` deliberately skips SXCN24
+  on the stated grounds that "all its stations are already in FPCN61". That is
+  not true of Egg Island, and Chatham Point — also listed there — reaches us
+  only sparsely. Accepting SXCN24 is a one-line config change and would likely
+  add a station and firm up another. Check first whether the roster comment in
+  that file matches what SXCN24 actually carries; it is our own note, not
+  something verified against the wire. Overlaps with *Parse the FICN31/32/33
+  bulletins* below — same question of which products we take.
+
 - [ ] **North coast coverage** (added 2026-09-03, prompted by a mariner out of
   Kitimat who emailed about the McInnes Island position error). The
   lightstations are currently the *only* north-coast data this site carries,

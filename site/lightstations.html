@@ -378,6 +378,32 @@
       font-size: 1.1rem;
     }
 
+    /* A station Environment Canada lists but has never published a reading
+       for. Deliberately quiet: it is on the page so the roster is complete
+       and so a reader can tell "no data" from "no station", not to compete
+       with the stations that are actually reporting. */
+    .lightstation-card-silent {
+      border-style: dashed;
+      box-shadow: none;
+    }
+
+    .lightstation-card-silent h3 {
+      color: var(--color-text-light);
+    }
+
+    .not-reporting-status {
+      font-weight: 600;
+      color: var(--color-text-light);
+      padding: 0.4rem 0;
+    }
+
+    .not-reporting-note {
+      margin: 0.25rem 0 0 0;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: var(--color-text-muted);
+    }
+
     .condition-row {
       display: flex;
       justify-content: space-between;
@@ -892,7 +918,7 @@
        and lightstation-map.js. They must NOT get their own script tags — the ?v=
        query would differ from the bare import specifier and the browser would
        execute them twice (module cache is keyed by full URL). -->
-  <script type="module" src="/assets/js/lightstation-page.js?v=de5253cab9"></script>
+  <script type="module" src="/assets/js/lightstation-page.js?v=3e92dec37c"></script>
   <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

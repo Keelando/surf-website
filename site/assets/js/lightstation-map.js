@@ -224,7 +224,17 @@ function addLightstationMapMarker(lightstation) {
 
     popupContent += `</div>`;
   } else {
-    popupContent += `<div style="background: var(--color-surface-alt, #f5f5f5); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-text-muted, #999); color: var(--color-text-muted); font-size: 0.9em;">No current data. This station is not reporting in the FPCN61 bulletin.</div>`;
+    // Why there is nothing, in the registry's words where it has any.
+    // The hardcoded line here used to blame FPCN61 by name, which was wrong
+    // twice over: this site ingests SXCN as well, and the same sentence was
+    // printed for a station that had merely gone quiet as for one that has
+    // never reported at all. `reporting_note` in config/stations.json is the
+    // single owner of that explanation — the card says the same thing from
+    // the same field.
+    const silenceNote =
+      lightstation.reporting_note ||
+      "No current data. Nothing has arrived for this station in the bulletins this site reads.";
+    popupContent += `<div style="background: var(--color-surface-alt, #f5f5f5); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-text-muted, #999); color: var(--color-text-muted); font-size: 0.9em;">${silenceNote}</div>`;
   }
 
   // Station details. No "Source" row: it reads "Environment Canada" on all 24

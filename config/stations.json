@@ -1150,6 +1150,8 @@
       "type": "lightstation",
       "update_frequency_hours": 3,
       "established": 1909,
+      "reporting": false,
+      "reporting_note": "Bulletin SXCN25 lists Estevan Point alongside Nootka, Lennard Island and Cape Beale, but the entry has read N/A in every bulletin received here, so no observation has reached this site. FPCN61 does not carry the station. Whether it reports through some other product is not known.",
       "notes": "Iconic rocket-shaped tower with flying buttresses, 102 feet tall"
     },
     "NOOTKA": {
@@ -1274,7 +1276,7 @@
       "established": 1898,
       "notes": "Exposed to full force of Pacific Ocean, one of oldest lighthouses on BC's central coast",
       "reporting": false,
-      "reporting_note": "Never appears in the FPCN61 or SXCN bulletins we ingest; kept on the map as a station that exists, excluded from the health-check count."
+      "reporting_note": "No observation for Egg Island has reached this site. FPCN61 does not carry it, and the SXCN bulletin that covers it is not one this site subscribes to, so its silence here says nothing about whether it reports."
     },
     "GREEN_ISLAND": {
       "id": "GREEN_ISLAND",
