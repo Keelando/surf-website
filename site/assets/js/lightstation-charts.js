@@ -231,9 +231,12 @@ async function loadLightstationTimeseries() {
       renderLightstationCharts(defaultStation);
     }
 
-    // Add change listener to dropdown
-    select.addEventListener("change", (e) => {
-      renderLightstationCharts(e.target.value);
+    // Both dropdowns drive the same render; renderLightstationCharts syncs
+    // the other one back.
+    document.querySelectorAll(".ls-station-select").forEach((el) => {
+      el.addEventListener("change", (e) => {
+        renderLightstationCharts(e.target.value);
+      });
     });
 
     // Add search listener
@@ -257,10 +260,9 @@ async function loadLightstationTimeseries() {
     }
   } catch (error) {
     console.error("Error loading lightstation timeseries:", error);
-    const select = document.getElementById("lightstation-station-select");
-    if (select) {
+    document.querySelectorAll(".ls-station-select").forEach((select) => {
       setSafeHTML(select, '<option value="">Error loading stations</option>');
-    }
+    });
   }
 }
 
@@ -268,10 +270,8 @@ async function loadLightstationTimeseries() {
  * Populate station dropdown grouped by region
  */
 function populateLightstationDropdown() {
-  const select = document.getElementById("lightstation-station-select");
-  if (!select || !allLightstations) return;
-
-  select.textContent = "";
+  const selects = document.querySelectorAll(".ls-station-select");
+  if (!selects.length || !allLightstations) return;
 
   // Group stations by region
   const regionGroups = {};
@@ -285,6 +285,11 @@ function populateLightstationDropdown() {
 
   // Ordered south to north, unknown regions appended — see orderRegions().
   const regionOrder = orderRegions(regionGroups);
+
+  // Built once, then cloned into each selector: the page carries the same
+  // picker above the charts and again below the table, because by the time
+  // you have read a station both are far off the top of the window.
+  const options = document.createDocumentFragment();
 
   // Create optgroups for each region
   regionOrder.forEach((regionName) => {
@@ -302,7 +307,31 @@ function populateLightstationDropdown() {
       optgroup.appendChild(option);
     });
 
-    select.appendChild(optgroup);
+    options.appendChild(optgroup);
+  });
+
+  // Preserve whatever was already chosen; a repopulate must not silently
+  // reset the page to the first station.
+  const current = document.getElementById("lightstation-station-select")?.value;
+  selects.forEach((select) => {
+    select.textContent = "";
+    select.appendChild(options.cloneNode(true));
+    if (current) select.value = current;
+  });
+}
+
+/**
+ * Point every station selector at the same station.
+ *
+ * Called from renderLightstationCharts, so it does not matter which way the
+ * station was chosen — either dropdown, the search box, a card's "View Data"
+ * or a map popup — the two pickers always agree with what is on screen.
+ *
+ * @param {string} stationName
+ */
+function syncStationSelects(stationName) {
+  document.querySelectorAll(".ls-station-select").forEach((select) => {
+    if (select.value !== stationName) select.value = stationName;
   });
 }
 
@@ -314,6 +343,7 @@ export function renderLightstationCharts(stationName) {
 
   const station = lightstationTimeseriesData ? lightstationTimeseriesData[stationName] : null;
   currentLightstationStation = stationName;
+  syncStationSelects(stationName);
   ensureLightstationThemeListener();
 
   // Update reports title with station name

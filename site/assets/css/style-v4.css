@@ -739,6 +739,18 @@ footer .github-link:hover {
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* Lightstation charts: rounded corners on an ECharts canvas.
+   These two are bare divs, not the bordered cards above — but ECharts paints
+   its own `backgroundColor` across the whole canvas, so the white block has
+   hard square corners against the page. A radius on the container only shows
+   if the canvas is clipped to it, hence overflow. 8px is the radius the map
+   and the cards on that page already use. */
+#lightstation-wind-chart,
+#lightstation-wave-chart {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
 /* Active buoy indicator */
 .active-indicator {
   text-align: center;

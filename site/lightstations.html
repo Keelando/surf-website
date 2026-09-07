@@ -31,7 +31,7 @@
   <meta name="twitter:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
 
   <link rel="canonical" href="https://halibutbank.ca/lightstations.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=04f92ac72d" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=2f157183f2" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=3e83e68729" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=19cbab888b" />
@@ -441,12 +441,16 @@
        them: you pick a station, see the shape of the last 72 h, then read the
        individual reports. */
     .ls-card {
+      /* Same width cap and rhythm as .ls-section, so the selector and the
+         reports table line up with the map and the charts instead of running
+         edge to edge on a wide screen. */
+      max-width: 1200px;
+      margin: 2rem auto;
       background: var(--color-surface);
       border: 1px solid var(--color-border-light);
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
       padding: 1.25rem 1.5rem;
-      margin-bottom: 2rem;
     }
 
     .ls-card h2 {
@@ -455,6 +459,12 @@
       border-bottom: 3px solid var(--color-primary);
       color: var(--color-primary-dark);
       font-size: 1.3rem;
+    }
+
+    .ls-selector-repeat {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-border-light);
     }
 
     .ls-selector-controls {
@@ -785,13 +795,16 @@
         <a class="ls-source-link" href="https://weather.gc.ca/marine/weatherConditions-lightstation_e.html?mapID=02&amp;siteID=16200"
            target="_blank" rel="noopener">View source</a>
       </h2>
+      <!-- Dropdown first: it is the complete list, and picking from it is
+           what most visits do. The search box is the shortcut past it, not
+           the way in. -->
       <div id="station-selector" class="ls-selector-controls">
-        <label for="lightstation-station-search">Search:</label>
-        <input type="text" id="lightstation-station-search" placeholder="Type to jump to station...">
         <label for="lightstation-station-select">Station:</label>
-        <select id="lightstation-station-select" size="1">
+        <select id="lightstation-station-select" class="ls-station-select" size="1">
           <option value="">Loading stations...</option>
         </select>
+        <label for="lightstation-station-search">Search:</label>
+        <input type="text" id="lightstation-station-search" placeholder="Type to jump to station...">
         <a href="#lightstation-map-section" id="show-lightstation-on-map-btn" class="ls-map-btn">Show on Map</a>
       </div>
     </section>
@@ -837,6 +850,18 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- The same dropdown again. The table is a screenful on its own and
+           the charts another two above it, so by the time you have read a
+           station the picker is far off the top of the window. Both selects
+           carry .ls-station-select and stay in step; see
+           syncStationSelects() in lightstation-charts.js. -->
+      <div class="ls-selector-controls ls-selector-repeat">
+        <label for="lightstation-station-select-bottom">Another station:</label>
+        <select id="lightstation-station-select-bottom" class="ls-station-select" size="1">
+          <option value="">Loading stations...</option>
+        </select>
       </div>
     </section>
 
