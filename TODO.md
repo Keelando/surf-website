@@ -437,6 +437,13 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
   - both files are already served by `/api/v1`, so whatever shape this takes
     is a public contract — see `docs/PUBLIC_API.md` and the cache tiers.
 
+  **User's steer (2026-09-07):** 14 days on an ordinary page load is too heavy;
+  the shape to aim for is loading the extra history *on demand, for one
+  station*. That points at per-station history files rather than one big
+  bundle — a reader looking at Halibut Bank fetches Halibut Bank's 14 days and
+  nothing else — which also caches better per-station and keeps the default
+  page load exactly as it is today.
+
   Also decide what the pages actually do with it: the buoy cards and charts
   are built around a 48-hour axis, and 14 days on the same chart is a
   different picture, not a longer one.
@@ -508,16 +515,40 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
   the EC lightstation URL needs its `?mapID=02&siteID=16200` query string or
   the page renders an "incorrect web address" banner over the content.
 
-- [ ] **Parse the FICN31/32/33 bulletins** (added 2026-09-03; the subscription
-  config already exists, `docs/DATA_FEEDS.md` has it as "awaiting parser").
-  EC's own public page —
-  <https://weather.gc.ca/marine/weatherConditions-lightstation_e.html> — renders
-  these, and carries materially more than the FPCN61 bulletins we parse:
-  **visibility, cloud cover and layers, and temperature/dewpoint**, none of
-  which this site shows. It also lists **Triple Island**, which is not in
-  `config/stations.json` at all. Worth checking at the same time whether Egg
-  Island, Estevan Point and Green Island (registered here but never yet seen
-  reporting) arrive on those bulletins rather than FPCN61.
+- [ ] **Store the extra lightstation fields we already receive** (rewritten
+  2026-09-07; was "Parse the FICN31/32/33 bulletins", which rested on two
+  wrong premises).
+
+  **Correction first.** There is no FICN subscription: no accept line, no `FI`
+  subtopic in `config/sr3/bc_lightstation_obs.conf`, no
+  `data/lightstation_ficn/`, and not one FICN file ever received. There briefly
+  was one — `3fc5dc3` added it on 2026-04-11 at 19:13 UTC, it received zero
+  messages because `FI` was the wrong topic prefix, and `9bf6498` replaced it
+  with `SX` + `FP` at 21:57 the same evening. The doc section survived those two
+  hours and forty minutes and described the subscription as live-but-pending
+  ever since.
+
+  **And the fields are already arriving.** The reason to want FICN was
+  visibility, cloud cover and temperature. SXCN carries visibility, cloud,
+  pressure and sea-water temperature today, on bulletins we subscribe to and
+  parse — `parse_lightstation.py` reads past them because
+  `lightstation_observation` has no columns to put them in. So this is a schema
+  change and a parser extension, not a new feed:
+
+  - add `visibility`, `cloud_cover`, `pressure_hpa`, `sea_water_temp_c`,
+    `weather` to `lightstation_observation`;
+  - extend the SXCN line parser to fill them (the FPCN61 branch leaves them
+    null — the two products genuinely differ, and the merge at insert has to
+    keep whichever product supplied a field);
+  - decide what the page shows. Visibility is the one a mariner asks for.
+
+  **Triple Island** is the other loose end and is independent of the above: it
+  has been reporting on SXCN23 the whole time but is absent from
+  `config/stations.json`, so it renders in a trailing region section and both
+  lightstation exports log a warning naming it. Registering it is small — take
+  the position from the CCG *List of Lights* PDF, per the coord audit.
+
+  Only reopen FICN if something establishes it carries a field SXCN does not.
 
 - [ ] **Accuracy audit: forecasts and lightstations pages** (added 2026-09-03).
   Both pages re-present someone else's bulletins, and the 2026-09-03 session

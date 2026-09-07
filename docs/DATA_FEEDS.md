@@ -13,8 +13,9 @@ Data arrives via two mechanisms:
   services. See `docs/SR3_MANAGEMENT.md` for operational details.
 
 - **HTTP polling (cron)** — Everything else: NOAA, DFO tides, Surrey FlowWorks,
-  Jericho, White Rock, webcams, and (currently) lightstation FPCN61 bulletins.
-  Fetch scripts in `scripts/fetch/`, scheduled via crontab.
+  Jericho, White Rock and webcams. Fetch scripts in `scripts/fetch/`, scheduled
+  via crontab. Lightstation bulletins used to be here too; that poller was
+  retired on 2026-08-21 and every EC lightstation feed now arrives over AMQP.
 
 ---
 
@@ -191,39 +192,117 @@ which zones we carry; the parser and UI need no edit to add one)
 
 ### Lightstation Bulletins
 
-Marine lightstation observations. Two bulletin families:
+Observations phoned in by lightkeepers, published by Environment Canada as
+plain-text bulletins from CWVR (Vancouver). `config/stations.json` carries 24
+lightstations; a 25th, **Triple Island**, arrives on SXCN23 but has never been
+added to the registry.
 
-**Publishing schedule is not uniform, and "every 3 hours" is only roughly
-true.** FPCN61 runs on two offset cycles — some stations at HH:10 on
-00/03/06/09/12/15/18/21 UTC, others at HH:40 on 02/05/08/11/14/17/20/23 UTC,
-and several appear in both (so their reports alternate ~30 min then ~2.5 h
-apart). Cape Mudge and Pulteney Point publish only four times a day, in
-Pacific daylight hours. No station has published the 08:40 or 09:10 UTC slot
-in the history held, so every cycle has an overnight gap. Rather than declare
-a figure that drifts, `lib/lightstation_schedule.py` infers each station's
-schedule from its own observations and the export ships it on every entry in
-`latest_lightstation.json`; `update_frequency_hours` in `config/stations.json`
-is now only the fallback for a station with too little history.
+Everything below is delivered by one sr3 subscription,
+`config/sr3/bc_lightstation_obs.conf`, into `data/lightstation_bulletins/`,
+parsed by `scripts/parse/parse_lightstation.py` into `lightstation_data.sqlite`.
+That config is the only source of truth for which bulletins we take.
 
-**FPCN61 (current observations)** — sr3 AMQP
-**Subscription:** `config/sr3/bc_lightstation_obs.conf` (`accept .*FPCN61.*`)
-**Delivered to:** `data/lightstation_bulletins/`
-**Parsed by:** `scripts/parse/parse_lightstation.py`
-**Stored in:** `lightstation_data.sqlite`
-**Covers:** 19 stations (Strait of Georgia, Central Coast, Hecate Strait, north WCVI)
+#### The two products we parse
 
-**FICN31/32/33 (regional observations)** — sr3 AMQP (new, pending parser)
-| Bulletin | Region | Key Stations |
-|----------|--------|--------------|
-| FICN31 | North & Central Coast | Langara, Bonilla, McInnes, Cape Scott |
-| FICN32 | Georgia Strait / South Coast | Chrome Island, Merry Island, Trial Island |
-| FICN33 | WCVI South | Lennard Island, Estevan Point, Cape Beale |
+| | FPCN61 | SXCN23 / 24 / 25 / 26 |
+|---|---|---|
+| Format | verbose prose | compact coded |
+| Cadence | ~3-hourly at HH:10 UTC | ~3-hourly at HH:30/HH:40 UTC |
+| Coverage | 19 stations, all regions | regional subsets, four bulletins |
+| Only source for | Cape Mudge, Pulteney Point | Triple Island; and Egg Island, expected on SXCN24 but not yet observed |
 
-**Config:** `config/sr3/bc_lightstation_obs.conf`
-**AMQP subtopic:** `*.WXO-DD.bulletins.alphanumeric.*.FI.CWVR.#`
-**Data dir:** `data/lightstation_ficn/`
-**Status:** Subscription config created, awaiting deployment and parser integration.
-FICN33 is the key bulletin — it contains the west coast VI stations missing from FPCN61.
+SXCN splits by region: **23** North Coast/Hecate, **24** Central Coast/North
+Island, **25** WCVI South, **26** Georgia Strait/South Coast. SXCN24 was
+deliberately skipped until 2026-09-07 on the grounds that FPCN61 already
+carried its stations — which is not true of Egg Island, the reason that station
+had never produced an observation. Whether SXCN24 actually delivers it is
+unconfirmed at the time of writing; the first bulletin had not yet arrived.
+
+Nine stations appear in **both** products, so the same observation arrives
+twice, minutes apart. The parser merges at insert rather than storing two rows;
+the dedupe window is a 20–50 minute offset *band*, not an exact match, because
+off-cycle Coast Guard SPECIALs outside that band are real extra observations.
+See `docs/project/LIGHTSTATION_PARSE_FIXES.md`.
+
+**Station names are abbreviated in SXCN** (`ESTEVAN`, `TRIAL IS`) and expanded
+via `SXCN_STATION_NAMES` in the parser. An abbreviation not in that map is
+logged and **skipped**, never stored under the raw bulletin name — the site
+joins observations to the registry by name, so a phantom station renders as a
+card matching nothing. The SXCN24 abbreviations were inferred from the pattern
+the other three follow, so watch `logs/lightstation_parse.log` for
+`Unmapped SXCN station abbreviation`.
+
+**Fields we receive but discard.** SXCN carries visibility, cloud cover,
+pressure and sea-water temperature; `lightstation_observation` has no columns
+for them, so they are parsed past and dropped. Adding them is a schema change,
+not a new feed — see `docs/project/SXCN50_BUOY_BULLETIN.md`.
+
+#### Not every listed station reports
+
+Three separate things, easy to confuse:
+
+- **`reporting: false`** in `config/stations.json` — nothing has ever reached
+  us for this station, so it is excluded from both halves of the health-check
+  fraction. Currently **Egg Island** and **Estevan Point**. Estevan is *listed*
+  in SXCN25 and the entry reads N/A every time. Note the limit of that
+  evidence: the database holds a rolling 30 days and raw bulletins one day, so
+  "has not reached this site" is all it supports — not that the station never
+  reports.
+- **`intermittent: true`** — reports, but sparsely enough that an overdue
+  reading is normal. Logged at `info`, cannot turn the status red. Currently
+  Chatham Point, Green Island and Trial Island. This flag replaced a hardcoded
+  dict in `health_check.py` on 2026-09-07.
+- **Genuinely late** — everything else, judged against the station's own
+  inferred cadence.
+
+#### Publishing schedule is inferred, not declared
+
+"Every 3 hours" is only roughly true. FPCN61 runs on two offset cycles — some
+stations at HH:10 on 00/03/06/09/12/15/18/21 UTC, others at HH:40 on
+02/05/08/11/14/17/20/23 UTC — and several appear in both, so their reports
+alternate ~30 min then ~2.5 h apart. Cape Mudge and Pulteney Point publish only
+four times a day, in Pacific daylight hours. No station has published the 08:40
+or 09:10 UTC slot in the history held, so every cycle has an overnight gap.
+
+Rather than declare a figure that drifts, `lib/lightstation_schedule.py` infers
+each station's schedule from its own observations and the export ships it on
+every entry in `latest_lightstation.json`. `update_frequency_hours` in
+`config/stations.json` is only the fallback for a station with too little
+history. Staleness thresholds come from the inferred schedule too, so a slow
+station is not called stale for behaving normally.
+
+#### Region is registry-owned, not bulletin-owned
+
+`region` is stored per observation and the two products disagree: SXCN can only
+name the area its whole bulletin covers, so it files the central-coast lights
+under Hecate Strait and Trial Island under Strait of Georgia. Both exports read
+`config/stations.json` instead (`get_lightstation_by_report_name()`); the column
+remains in the database as a record of what each bulletin claimed and is not
+published.
+
+#### FICN31/32/33 — not subscribed
+
+**There is no FICN subscription**: no accept line, no `FI` subtopic in
+`bc_lightstation_obs.conf`, no `data/lightstation_ficn/`, and not one FICN file
+ever received.
+
+It existed for two hours and forty minutes. `3fc5dc3` added it on 2026-04-11 at
+19:13 UTC on the assumption that lightstation bulletins live under the `FI`
+topic prefix; it received zero messages; `9bf6498` replaced the prefix with
+`SX` + `FP` at 21:57 the same evening, which is the subscription still running
+today. This file went on describing FICN as a deployed-but-unparsed feed until
+2026-09-07.
+
+Anything reopening FICN should first establish that it carries a field SXCN
+does not — the visibility, cloud and temperature data usually cited as the
+reason to want it is already arriving on SXCN and being dropped for want of
+columns.
+
+#### SXCN50 — collected, not parsed
+
+An all-BC buoy summary covering 17 buoys, 12 more than the five we track. We
+accept it and the files land in `data/lightstation_bulletins/`, but no parser
+reads them. See `docs/project/SXCN50_BUOY_BULLETIN.md`.
 
 ---
 

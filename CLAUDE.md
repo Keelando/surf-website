@@ -37,7 +37,8 @@ project: commit straight to `main` (branch by exception, `--ff-only` merges).
 fetch → parse → SQLite → export JSON → `site/data/` → Caddy static serving.
 
 Two delivery mechanisms, determined by source (see `docs/DATA_FEEDS.md`):
-**sr3/Sarracenia AMQP push** for Environment Canada feeds (systemd services,
+**sr3/Sarracenia AMQP push** for Environment Canada feeds — buoys, wind,
+marine forecasts and all lightstation bulletins (systemd services,
 `docs/SR3_MANAGEMENT.md`); **cron HTTP polling** for everything else (NOAA,
 DFO, Surrey, Jericho, White Rock, webcams).
 

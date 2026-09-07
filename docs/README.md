@@ -93,7 +93,7 @@ The Salish Sea Marine Monitoring System now includes:
 - **9 Wave Buoys** - Environment Canada, NOAA, and NOAA C-MAN land stations
 - **13 Wind Stations** - Environment Canada, US airports (KBLI, KORS), and JSCA Jericho
 - **12 Tide Stations** - DFO IWLS with observations, predictions, and high/low events
-- **23 Lightstations** - DFO manual weather reports (every 3 hours)
+- **24 Lightstations** - Coast Guard keepers' observations, published by Environment Canada (FPCN61 + SXCN bulletins; cadence varies by station and is inferred, not declared)
 - **5 Webcams** - White Rock Pier, White Rock East Beach, Cox Bay, Mud Bay HD, Ambleside (Hollyburn Sailing Club)
 - **Storm Surge Forecasts** - GeoMet GDSPS with combined water level modeling
 - **Marine Forecasts** - Environment Canada zone forecasts and warnings

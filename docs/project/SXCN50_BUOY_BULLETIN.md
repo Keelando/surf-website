@@ -1,5 +1,23 @@
 # SXCN Bulletin Family — Feature Planning
 
+**Status as of 2026-09-07:** partly shipped. SXCN23/25/26 have been subscribed
+and parsed since 2026-08; SXCN24 was added 2026-09-07 after the "skip" decision
+below turned out to be wrong. What remains undone is the interesting half —
+the extra fields and the buoy bulletin:
+
+| Step | State |
+|---|---|
+| Subscribe SXCN23/25/26 | done |
+| Subscribe SXCN24 | done 2026-09-07 — see the correction below |
+| Lightstation SXCN parser (wind, sea, swell) | done — `parse_lightstation.py` |
+| **Extra fields: visibility, cloud, pressure, sea temp** | **not done** — parsed past and dropped; needs columns on `lightstation_observation` |
+| **Add Triple Island to `stations.json`** | **not done** — it reports on SXCN23 and lands on the page in a trailing region section |
+| **SXCN50 buoy parser** | **not done** — files collected, nothing reads them |
+| **Decide which of the 12 extra buoys to add** | **not done** |
+
+The live description of what we ingest is in `docs/DATA_FEEDS.md`; this file is
+the planning record and the format reference.
+
 ## Discovery (2026-04-11)
 
 Found a family of EC text bulletins from CWVR under the `SX` topic prefix containing lightstation observations and buoy summaries.
@@ -16,7 +34,7 @@ Published: hourly directories, multiple times per day
 | Bulletin | Region | Stations | Action |
 |----------|--------|----------|--------|
 | **SXCN23** | North Coast / Hecate | Green, **Triple (new!)**, Bonilla, Langara, Boat Bluff, McInnes, Ivory, Dryad, Addenbroke | **Subscribe** — adds Triple Island |
-| **SXCN24** | Central Coast / N. Island | Chatham, Scarlett, Pine Island, Egg Island, Cape Scott, Quatsino | **Skip** — all already covered by FPCN61 |
+| **SXCN24** | Central Coast / N. Island | Chatham, Scarlett, Pine Island, Egg Island, Cape Scott, Quatsino | ~~Skip — all already covered by FPCN61~~ → **Subscribed 2026-09-07.** The premise was wrong: FPCN61 does *not* carry Egg Island, which is why that station had never produced a single observation, and Chatham Point reached us only sparsely. |
 | **SXCN25** | WCVI South (Tofino area) | Nootka, Estevan, Lennard, Cape Beale | **Subscribe** — supplements with visibility, cloud, pressure, sea temp |
 | **SXCN26** | Georgia Strait / S. Coast | Chrome, Merry, Entrance, Trial Island | **Subscribe** — supplements with visibility, cloud cover |
 | **SXCN50** | All BC buoys | 17 buoys (Nomads, Dixon, Hecate, Moresby, Dellwood, plus our existing 5) | **Subscribe** — huge expansion potential |
@@ -140,8 +158,8 @@ Needs to be updated to use `SX`:
 ```conf
 subtopic *.WXO-DD.bulletins.alphanumeric.*.SX.CWVR.#
 
-# Only grab the bulletins we want (skip SXCN24)
 accept .*SXCN23.*
+accept .*SXCN24.*
 accept .*SXCN25.*
 accept .*SXCN26.*
 accept .*SXCN50.*
@@ -152,10 +170,17 @@ Or fetch via HTTP polling (like FPCN61) if sr3 topic doesn't work.
 
 ## Implementation Steps
 
-1. **Fix sr3 config** — change topic from `FI` to `SX`, add accept/reject filters
-2. **Verify messages arrive** — restart service, check logs
-3. **Write SXCN lightstation parser** — extract cloud, visibility, wind, sea, swell, pressure, weather
-4. **Write SXCN50 buoy parser** — extract all buoy fields from fixed-width format
-5. **Extend lightstation DB schema** — add columns for visibility, cloud_cover, pressure, sea_water_temp, weather
-6. **Add Triple Island** to stations.json
+1. ~~**Fix sr3 config** — change topic from `FI` to `SX`, add accept/reject filters~~ *Done.*
+2. ~~**Verify messages arrive** — restart service, check logs~~ *Done.*
+3. **Write SXCN lightstation parser** — *partly done*: wind, sea and swell are
+   extracted; cloud, visibility, pressure and weather are parsed past and
+   dropped for want of anywhere to put them (step 5).
+4. **Write SXCN50 buoy parser** — not started. Files are collected.
+5. **Extend lightstation DB schema** — add columns for visibility, cloud_cover,
+   pressure, sea_water_temp, weather. This is the blocker for step 3's
+   remainder, and the reason to prefer SXCN over chasing FICN: the fields are
+   already arriving.
+6. **Add Triple Island** to stations.json — it has been reporting on SXCN23 the
+   whole time. Until it is registered it renders in a trailing region section
+   and both lightstation exports log a warning naming it.
 7. **Decide which new buoys to add** from SXCN50
