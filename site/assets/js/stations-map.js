@@ -11,7 +11,7 @@ import {
   formatWeekdayDayTime,
   getShortAgeString,
 } from "./shared/format-time.js";
-import { formatLightstationWind } from "./shared/lightstation-format.js";
+import { formatLightstationWind, silentStationText } from "./shared/lightstation-format.js";
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { getPopupOptions } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
@@ -945,7 +945,11 @@ function addLightstationMarker(lightstation) {
 
     popupContent += `</div>`;
   } else {
-    popupContent += `<div style="background: var(--color-surface-alt, #f5f5f5); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-text-muted, #999); color: var(--color-text-muted); font-size: 0.9em;">No current data. This station is not reporting in the FPCN61 bulletin.</div>`;
+    // Same wording as the lightstation page's card and popup. The line here
+    // used to blame FPCN61 by name, which was wrong for the SXCN-only stations.
+    const silent = silentStationText();
+    const note = lightstation.reporting_note ? ` ${lightstation.reporting_note}` : "";
+    popupContent += `<div style="background: var(--color-surface-alt, #f5f5f5); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-text-muted, #999); color: var(--color-text-muted); font-size: 0.9em;">${silent.status}. ${silent.lastReport}.${note}</div>`;
   }
 
   // Station details

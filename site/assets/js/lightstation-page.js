@@ -12,7 +12,7 @@ import {
   describeSchedule,
   describeSlots,
 } from "./shared/lightstation-schedule.js";
-import { formatLightstationWind } from "./shared/lightstation-format.js";
+import { formatLightstationWind, silentStationText } from "./shared/lightstation-format.js";
 import { setSafeHTML } from "./shared/safe-html.js";
 import { staleThresholdLabel } from "./shared/staleness.js";
 import { orderRegions } from "./shared/station-meta.js";
@@ -303,10 +303,16 @@ function createStationCard(station) {
   if (station.notReporting) {
     card.classList.add("lightstation-card-silent");
 
+    const silent = silentStationText();
     const status = document.createElement("div");
     status.className = "not-reporting-status";
-    status.textContent = "No reports received";
+    status.textContent = silent.status;
     card.appendChild(status);
+
+    const lastReport = document.createElement("div");
+    lastReport.className = "report-time";
+    lastReport.textContent = silent.lastReport;
+    card.appendChild(lastReport);
 
     // Why, in the registry's words. Deliberately not a duration, and
     // deliberately not "never reports": the database holds a rolling window

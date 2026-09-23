@@ -44,3 +44,20 @@ def test_window_covers_the_slowest_reporting_station():
         f"{hours_back}h is below the 33h p90 gap of the slowest lightstations "
         "(Chrome Island, Entrance Island) plus any useful margin"
     )
+
+
+def test_history_days_match_retention():
+    """The "Last report: more than N days ago" line must name the real window.
+
+    A station gets that line when the database holds no reading for it, so N
+    is LIGHTSTATION_RETENTION_DAYS; a page that said 30 while the purge ran
+    at 14 would overstate what we know.
+    """
+    config = PROJECT_ROOT / "lib" / "config.py"
+    format_js = PROJECT_ROOT / "site" / "assets" / "js" / "shared" / "lightstation-format.js"
+    retention = _single_int(config, r"^LIGHTSTATION_RETENTION_DAYS = (\d+)$")
+    history = _single_int(format_js, r"^export const LIGHTSTATION_HISTORY_DAYS = (\d+);$")
+    assert retention == history, (
+        f"database keeps {retention} days but the page says {history}; "
+        "update LIGHTSTATION_HISTORY_DAYS in site/assets/js/shared/lightstation-format.js"
+    )

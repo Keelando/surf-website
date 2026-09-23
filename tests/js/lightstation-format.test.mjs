@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { formatLightstationWind } from "../../site/assets/js/shared/lightstation-format.js";
+import {
+  formatLightstationWind,
+  silentStationText,
+} from "../../site/assets/js/shared/lightstation-format.js";
 
 test("full wind report", () => {
   assert.equal(
@@ -32,4 +35,10 @@ test("direction without speed says so", () => {
     formatLightstationWind({ wind_direction: "WEST", wind_speed_kt: null }),
     "WEST speed not given",
   );
+});
+
+test("silent station wording does not claim it never reported", () => {
+  const t = silentStationText();
+  assert.equal(t.status, "No new reports");
+  assert.match(t.lastReport, /^Last report: more than \d+ days ago$/);
 });
