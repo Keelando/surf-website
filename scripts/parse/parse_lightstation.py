@@ -61,18 +61,21 @@ SXCN_STATION_NAMES = {
     "IVORY": "IVORY ISLAND",
     "DRYAD": "DRYAD POINT",
     "ADDENBROKE": "ADDENBROKE ISLAND",
-    # SXCN24 — Central Coast / N. Island. Added 2026-09-07 with the
-    # subscription; the abbreviations follow the same rule as the other
-    # bulletins (drop a generic ISLAND/POINT suffix, keep multi-word proper
-    # names), but they are inferred rather than observed, so anything that does
-    # not match is logged loudly by parse_sxcn_station_line rather than stored.
+    # SXCN24 — Central Coast / N. Island. Subscribed 2026-09-07 with the
+    # abbreviations guessed from the other bulletins' rule (drop a generic
+    # ISLAND/POINT suffix); checked against real bulletins 2026-09-23, which
+    # showed the rule does not hold here: PINE ISLAND and EGG ISLAND keep
+    # their suffix, and CAPE MUDGE (also in FPCN61; the cross-bulletin merge
+    # collapses the pair) was missing. Two weeks of Pine Island and Cape Mudge
+    # readings were skipped before the warnings were read.
     "CHATHAM": "CHATHAM POINT",
+    "CAPE MUDGE": "CAPE MUDGE",
+    "PULTENEY": "PULTENEY POINT",
     "SCARLETT": "SCARLETT POINT",
-    "PINE": "PINE ISLAND",
-    "EGG": "EGG ISLAND",
+    "PINE ISLAND": "PINE ISLAND",
+    "EGG ISLAND": "EGG ISLAND",
     "CAPE SCOTT": "CAPE SCOTT",
     "QUATSINO": "QUATSINO",
-    "PULTENEY": "PULTENEY POINT",
     # SXCN25 — WCVI South / Tofino
     "NOOTKA": "NOOTKA",
     "ESTEVAN": "ESTEVAN POINT",
@@ -84,6 +87,9 @@ SXCN_STATION_NAMES = {
     "ENTRANCE": "ENTRANCE ISLAND",
     "TRIAL IS": "TRIAL ISLAND",
 }
+
+# Entries that mean "no observation this cycle"
+SXCN_UNAVAILABLE = {"N/A", "NA", "UNAVAILABLE"}
 
 # SXCN bulletin number → region
 SXCN_REGIONS = {
@@ -468,8 +474,9 @@ def parse_sxcn_station_line(line, region):
     raw_name = match.group(1).strip()
     obs_text = match.group(2).strip()
 
-    # Skip N/A stations
-    if obs_text == "N/A":
+    # Skip stations with no reading. The bulletins spell it several ways:
+    # Egg Island has read "N/A", "NA" and "UNAVAILABLE" in one day of SXCN24.
+    if obs_text.upper() in SXCN_UNAVAILABLE:
         return None
 
     # Map abbreviated name to full name.

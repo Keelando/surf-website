@@ -16,6 +16,7 @@ from scripts.parse.parse_lightstation import (
     is_stale_retransmission,
     parse_report_file,
     parse_station_entry,
+    parse_sxcn_station_line,
 )
 
 # ── Sample report content ──────────────────────────────────────
@@ -457,3 +458,37 @@ class TestCrossBulletinMerge:
         assert len(times) == 4
         gaps = [b - a for a, b in zip(times, times[1:])]
         assert all(gap >= PAIR_OFFSET_MAX_SEC for gap in gaps), gaps
+
+
+# ── SXCN24 station names, as the bulletin actually writes them ────────
+
+
+class TestSxcn24Names:
+    """Lines copied from SXCN24 CWVR bulletins of 2026-09-22/23."""
+
+    @pytest.mark.parametrize(
+        "line, station",
+        [
+            ("CAPE MUDGE    CLDY 15 NW08E 1FT CHP", "CAPE MUDGE"),
+            ("PINE ISLAND   OVC 05F SE18E 5FT MOD LO-MDT W", "PINE ISLAND"),
+            ("CHATHAM       PC 15 NW10E 1FT CHP", "CHATHAM POINT"),
+            ("PULTENEY      OVC 15 E05E RPLD", "PULTENEY POINT"),
+            ("SCARLETT      OVC 10 SE13E 3FT MOD LO NW VSBY SOUTH 02F", "SCARLETT POINT"),
+            ("CAPE SCOTT    CLDY 15 SE15EG 4FT MOD LO SW", "CAPE SCOTT"),
+            ("QUATSINO      PC 15 NE12E 2FT CHP MDT SW", "QUATSINO"),
+        ],
+    )
+    def test_every_sxcn24_station_maps(self, line, station):
+        data = parse_sxcn_station_line(line, "CENTRAL COAST")
+        assert data is not None
+        assert data["station_name"] == station
+
+    def test_pine_island_reading(self):
+        data = parse_sxcn_station_line("PINE ISLAND   OVC 05F SE18E 5FT MOD LO-MDT W", "CENTRAL COAST")
+        assert data["wind_direction"] == "SOUTHEAST"
+        assert data["wind_speed_kt"] == 18.0
+        assert data["sea_height_ft"] == 5
+
+    @pytest.mark.parametrize("text", ["N/A", "NA", "UNAVAILABLE"])
+    def test_egg_island_unavailable_spellings_store_nothing(self, text):
+        assert parse_sxcn_station_line(f"EGG ISLAND    {text}", "CENTRAL COAST") is None
