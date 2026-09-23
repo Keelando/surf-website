@@ -191,6 +191,29 @@ bulletins to backfill what is recoverable
 
 ---
 
+## Bugs 3–8: found by diffing every raw bulletin against what was stored — 2026-09-23
+
+The method, which found all six in one pass: run each raw bulletin on disk
+through the parser and compare every station line with the fields it produced.
+It is cheap (a few hundred lines) and it catches silent drops that no amount
+of reading the regexes did. Worth repeating whenever a new bulletin or phrasing
+appears.
+
+| # | Bug | Scale | Fix |
+|---|---|---|---|
+| 3 | SXCN24 names guessed (`PINE`, `EGG`) — the bulletin writes `PINE ISLAND`, `EGG ISLAND`, and `CAPE MUDGE` was missing | 5,198 "Unmapped" warnings over two weeks; mostly duplicates of FPCN61 readings | `5588462` |
+| 4 | SXCN wind under 10 kt without a leading zero (`NW8E`) and `CLM,` fell through | 7 of 119 lines on disk | `\d{1,3}`, `\bCLM\b` |
+| 5 | SXCN swell `MDT` and ranges (`LO-MDT SW`) missed; FPCN61 `LOW TO MODERATE` stored as MODERATE | 8 of 119 SXCN lines; most Cape Scott / McInnes / Quatsino FPCN61 lines | ranges kept whole; swell searched after the seas group |
+| 6 | DDHHMM from the 31st read on the 1st of a 30-day month → `datetime(…, 4, 31)` raised, bulletin dropped every run | a few bulletins at four month-ends a year | `resolve_ddhhmm()` shared by all three call sites |
+| 7 | WMO corrections (`_CCA_`) could only fill gaps, never replace a wrong value | 2 corrections in one day | corrections overwrite values; flags still only accumulate |
+| 8 | `NA` / `UNAVAILABLE` stored as all-NULL rows | **168 rows**; Chrome, Entrance, Merry Island looked like they reported | `SXCN_UNAVAILABLE`; rows deleted (backup kept); consumers filter on `lib/lightstation_readings.HAS_READING_SQL` |
+
+Knock-on fixes the same day: calm wind is exported as a 0 kt point
+(`calm: true`) rather than dropped (47 readings), the wind chart's line runs
+through gusting readings, the pipeline moved from hourly :05 to :16/:47/:58
+(reports had sat 25–55 min unpublished), and raw bulletins are kept 7 days
+instead of 1 so a fix like these can be re-applied to a week of data.
+
 ## Order taken
 
 1. **Bug 2 first** — one regex, largest data recovery, no schema or

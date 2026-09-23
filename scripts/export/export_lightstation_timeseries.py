@@ -74,6 +74,12 @@ def station_region(station_name, fallback=None):
 # could only answer "no data from the past 24 hours". 72 h clears the slowest
 # observed p90 gap with better than 2x margin.
 #
+# Correction (2026-09-23): those Chrome/Entrance figures were measured from
+# empty "NA"/"UNAVAILABLE" rows the parser used to store; neither station has
+# sent a real reading in the 30-day window since. 72 h still stands on the
+# daylight-only stations (normal overnight gap ~15 h), but the numbers above
+# describe EC's publishing of empty entries, not a lightkeeper's.
+#
 # The cost is payload: 24 h was ~31 KiB and 18 of 23 stations, 72 h is ~96 KiB
 # and 20 of 23. A 7-day window would reach 21 of 23 for ~236 KiB, which is not
 # worth it on a phone for one more station.

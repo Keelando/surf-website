@@ -61,6 +61,41 @@ duplicated observations on 2026-09-06. Write-up:
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+### Queued 2026-09-23 (frontend session), in the order agreed
+
+- [ ] **Performance quick wins, before the redesign.** Lighthouse baseline
+      (live, mobile, 2026-09-23, *before* the caching fix): home **46**,
+      storm surge **57**; LCP 5–6 s, 3.8 s of script time, CLS 0.17 on home.
+      The caching fix (`?v=` assets immutable for a year, rest `no-cache`)
+      is live — re-run Lighthouse first to get a new baseline. Then:
+      the 310 KB hero photo `assets/images/noaa-waves-1989.jpg` (resize +
+      WebP/AVIF, `srcset`); draw below-the-fold charts on scroll
+      (IntersectionObserver) instead of all at load; a trimmed ECharts build
+      (line/scatter/bar + the components used, ~1 MB → ~400 KB raw); layout
+      jumps from the htmx-injected header/nav/footer.
+- [ ] **Map "late" and "down"** instead of one flat `stale` at 3 h. Late =
+      missed ~2 of the station's own expected reports (cadence-derived);
+      down = 12 h+. Plain words, for laypeople ("Down: no report since …"),
+      matching the cards' existing "STATION DOWN". Add a new status field to
+      the exports; **keep `stale`'s meaning** — it is in the public API.
+- [ ] **Forecast + storm-surge pages: short explanations**, one or two
+      sentences above each chart/model, with the RDWPS and verification
+      detail moved into `<details>` blocks. No walls of text on mobile.
+- [ ] **UI overhaul.** Start with ONE home-page mockup (data first: a compact
+      all-station summary up top, map and charts below, hero much smaller,
+      explanations folded away), agree the direction, then roll it out.
+      User: "I have to scroll a lot through some filler to get to the data."
+- [ ] **`reporting_lag` for wind, lightstation and weather.** Only the buoy
+      and tide exports call `record_publication`; the schema and CLAUDE.md
+      assume all of them do.
+- [ ] **Lightstation chart y-axis title reported clipped** (user,
+      2026-09-23). Not reproduced at 360/414/600/660/768/1024/1280 px in
+      Chromium or Firefox — get the width/browser or a screenshot first.
+- [ ] **NOAA buoys "~6 h late"** (user, 2026-09-23). Not reproduced: no NOAA
+      buoy was more than 2.6 h behind in the week's `reporting_lag` data. The
+      map now draws a labelled dot, not 🌊, when a height has no direction,
+      which covers the likely cause (spectral direction lagging the height).
+
 - [x] **Ambleside webcam reported a stale frame as fresh** (user 2026-09-06;
       camera down since ~2026-08-27). The upstream URL kept returning 200 with
       the *same* last-good frame, so the fetch succeeded, `latest.json` was

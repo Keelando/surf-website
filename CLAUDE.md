@@ -46,8 +46,9 @@ Databases in `~/.local/share/` (never in the repo):
 `buoy_data.sqlite`, `wind_data.sqlite`, `tide_data.sqlite`,
 `lightstation_data.sqlite`, `storm_surge_forecast.sqlite`,
 `weather_data.sqlite` (White Rock weather), and `reporting_lag.sqlite`
-(instrument → database → website latency, written by the exports via
-`lib/reporting_lag.py`).
+(instrument → database → website latency, via `lib/reporting_lag.py` —
+so far only the buoy and tide exports write it; wind, lightstation and weather
+are not wired up yet).
 
 ## Critical conventions
 

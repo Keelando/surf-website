@@ -14,6 +14,10 @@ node can import these files in tests; browsers ignore it.
 ## Modules
 
 - `format-time.js` — Pacific-time formatters + `getAgeString`/`getShortAgeString`.
+- `lightstation-format.js` — `formatLightstationWind()`, the one wording of a
+  lightkeeper's wind report for the cards and both map popups ("Calm",
+  "SE 12 kt (gusting)", or null when the report states no wind — never
+  "N/A N/A kt", and 0 kt is a reading, not N/A).
 - `lightstation-schedule.js` — renders the backend-inferred publishing schedule
   (`describeSchedule`, `describeSlots`, `describeNextReport`, `nextReportTime`).
 - `map-popup.js` — `getPopupOptions()`, the single popup width for all three

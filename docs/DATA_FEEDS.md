@@ -207,16 +207,23 @@ That config is the only source of truth for which bulletins we take.
 | | FPCN61 | SXCN23 / 24 / 25 / 26 |
 |---|---|---|
 | Format | verbose prose | compact coded |
-| Cadence | ~3-hourly at HH:10 UTC | ~3-hourly at HH:30/HH:40 UTC |
+| Cadence | ~3-hourly, lands :10–:15 UTC | ~3-hourly, lands mostly :31–:46 UTC, tail to :57 |
 | Coverage | 19 stations, all regions | regional subsets, four bulletins |
-| Only source for | Cape Mudge, Pulteney Point | Triple Island; and Egg Island, expected on SXCN24 but not yet observed |
+| Only source for | — (in the week to 2026-09-23 every FPCN61 station also came on SXCN) | Cape Beale, Lennard Island, Nootka; Triple Island (unregistered) |
 
 SXCN splits by region: **23** North Coast/Hecate, **24** Central Coast/North
-Island, **25** WCVI South, **26** Georgia Strait/South Coast. SXCN24 was
-deliberately skipped until 2026-09-07 on the grounds that FPCN61 already
-carried its stations — which is not true of Egg Island, the reason that station
-had never produced an observation. Whether SXCN24 actually delivers it is
-unconfirmed at the time of writing; the first bulletin had not yet arrived.
+Island, **25** WCVI South, **26** Georgia Strait/South Coast. SXCN24 has been
+subscribed since 2026-09-07 and arriving since 2026-09-08. It lists **Egg
+Island**, but every entry so far reads `N/A`, `NA` or `UNAVAILABLE`, so Egg
+Island keeps `reporting: false`.
+
+**When the pipeline runs.** `scripts/pipelines/lightstation_pipeline.py` runs at
+:16, :47 and :58 (`config/crontab.txt`), times taken from a week of sr3 download
+logs (`sudo journalctl -u sr3-bc-lightstation-obs | grep "downloaded ok"` — the
+journal, not file mtimes, which only cover the retention window). Raw bulletins
+are kept 7 days (`LIGHTSTATION_RAW_RETENTION_DAYS`) so a parser fix can be
+re-applied by simply re-running the parser, which re-reads every file on disk
+and merges idempotently.
 
 Nine stations appear in **both** products, so the same observation arrives
 twice, minutes apart. The parser merges at insert rather than storing two rows;
@@ -228,9 +235,21 @@ See `docs/project/LIGHTSTATION_PARSE_FIXES.md`.
 via `SXCN_STATION_NAMES` in the parser. An abbreviation not in that map is
 logged and **skipped**, never stored under the raw bulletin name — the site
 joins observations to the registry by name, so a phantom station renders as a
-card matching nothing. The SXCN24 abbreviations were inferred from the pattern
-the other three follow, so watch `logs/lightstation_parse.log` for
-`Unmapped SXCN station abbreviation`.
+card matching nothing. There is no reliable abbreviation rule: SXCN24 writes
+`PINE ISLAND`, `EGG ISLAND` and `CAPE MUDGE` in full while the other bulletins
+drop the suffix. Guessed names cost two weeks of skipped readings in September
+2026, so map names from a real bulletin, and grep
+`logs/lightstation_parse.log` for `Unmapped SXCN station abbreviation`.
+
+**"No reading" is spelled several ways** — `N/A`, `NA`, `UNAVAILABLE`
+(`SXCN_UNAVAILABLE`). Until 2026-09-23 the last two were stored as rows with
+every value empty, which made silent stations look as if they reported on
+schedule. Everything that asks "when did this station last report" now filters
+on `lib/lightstation_readings.HAS_READING_SQL`, so a new spelling cannot
+repeat that.
+
+**Corrections** (`…_CCA_…`, `CCB`, …) overwrite the values they state; any
+other second copy of a reading only fills gaps.
 
 **Fields we receive but discard.** SXCN carries visibility, cloud cover,
 pressure and sea-water temperature; `lightstation_observation` has no columns
