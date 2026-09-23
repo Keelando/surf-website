@@ -19,7 +19,7 @@ import { orderRegions } from "./shared/station-meta.js";
  * asserts the two stay in step, because the only thing worse than a stale
  * window is a page that labels it wrongly.
  */
-const WINDOW_HOURS = 72;
+export const WINDOW_HOURS = 72;
 
 /**
  * Lightkeepers report wind direction as a full compass word ("SOUTHEAST").
@@ -504,7 +504,9 @@ function render24HourTable(stationName, station) {
     // Build wind text. "(gusting)" spelled out is a whole extra line on a
     // phone, so it becomes a "G" flag with the long form on hover/AT.
     let windText = "—";
-    if (windData && windData.value !== null) {
+    if (windData?.calm) {
+      windText = "Calm";
+    } else if (windData && windData.value !== null) {
       const direction = abbreviateDirection(directionData ? directionData.value : "");
       const gusting = windData.gusting ? ' <abbr title="gusting">G</abbr>' : "";
       windText = `${direction} ${Math.round(windData.value)} kt${gusting}`.trim();
@@ -568,10 +570,12 @@ function renderWindSpeedChart(stationName, station) {
   const axisColor = theme.axisLine;
   const gridColor = theme.gridLine;
 
-  // Separate gusting vs non-gusting for visual distinction
-  const normalSpeedData = windSpeedData
-    .filter((p) => !p.gusting)
-    .map((p) => [new Date(p.time).getTime(), p.value]);
+  // The line runs through every reading, calm (0 kt) included; gusting ones
+  // are marked on top of it. It used to be drawn from the non-gusting readings
+  // only, so it cut straight past every gust — the windiest points on the
+  // chart were the ones the line ignored.
+  const speedData = windSpeedData.map((p) => [new Date(p.time).getTime(), p.value]);
+  const pointAt = new Map(windSpeedData.map((p) => [new Date(p.time).getTime(), p]));
 
   const gustingSpeedData = windSpeedData
     .filter((p) => p.gusting)
@@ -589,13 +593,15 @@ function renderWindSpeedChart(stationName, station) {
         if (!params || params.length === 0) return "";
         const time = formatNumericDayTime(new Date(params[0].value[0]));
 
-        let tooltipText = `<strong>${time}</strong><br/>`;
-        params.forEach((param) => {
-          if (param.value && param.value[1] != null) {
-            tooltipText += `${param.marker} ${param.seriesName}: ${Math.round(param.value[1])} kt<br/>`;
-          }
-        });
-        return tooltipText;
+        // One line per reading, whichever series the pointer caught: at a gust
+        // both the line and its diamond are under the cursor.
+        const param = params.find((p) => p.value && p.value[1] != null);
+        if (!param) return `<strong>${time}</strong>`;
+        const point = pointAt.get(param.value[0]);
+        const reading = point?.calm
+          ? "Calm"
+          : `${Math.round(param.value[1])} kt${point?.gusting ? " (gusting)" : ""}`;
+        return `<strong>${time}</strong><br/>${param.marker} Wind: ${reading}`;
       },
     },
     legend: {
@@ -646,8 +652,11 @@ function renderWindSpeedChart(stationName, station) {
       {
         name: "Wind Speed",
         type: "line",
-        data: normalSpeedData,
+        data: speedData,
         smooth: true,
+        // Calm readings are real zeros; unconstrained smoothing overshoots
+        // below them and draws negative wind.
+        smoothMonotone: "x",
         lineStyle: {
           width: 2,
           color: colors.primary,
@@ -678,7 +687,10 @@ function renderWindSpeedChart(stationName, station) {
     ],
   };
 
-  windSpeedChart.setOption(option);
+  // notMerge: a station with no data leaves a "No … data available"
+  // subtitle behind, and a plain merge carried it onto the next station's
+  // full chart.
+  windSpeedChart.setOption(option, { notMerge: true });
 }
 
 /**
@@ -839,7 +851,10 @@ function renderWaveHeightChart(stationName, station) {
     ],
   };
 
-  waveHeightChart.setOption(option);
+  // notMerge: a station with no data leaves a "No … data available"
+  // subtitle behind, and a plain merge carried it onto the next station's
+  // full chart.
+  waveHeightChart.setOption(option, { notMerge: true });
 }
 
 // Initialize on page load (module scripts are deferred, so the DOM is

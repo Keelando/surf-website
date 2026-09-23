@@ -3,7 +3,7 @@
  * Region-grouped condition cards for all BC lightstations
  */
 
-import { viewLightstationChart } from "./lightstation-charts.js";
+import { viewLightstationChart, WINDOW_HOURS } from "./lightstation-charts.js";
 import { centerMapOnLightstation } from "./lightstation-map.js";
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
 import {
@@ -12,6 +12,7 @@ import {
   describeSchedule,
   describeSlots,
 } from "./shared/lightstation-schedule.js";
+import { formatLightstationWind } from "./shared/lightstation-format.js";
 import { setSafeHTML } from "./shared/safe-html.js";
 import { staleThresholdLabel } from "./shared/staleness.js";
 import { orderRegions } from "./shared/station-meta.js";
@@ -182,23 +183,11 @@ function handleLightstationHash() {
 }
 
 /**
- * The "View Data" / "Show on Map" pair at the foot of a station card.
- *
- * Extracted so a station with no observations can carry it too: a light that
- * has never reported still has a position worth finding on the map, and the
- * charts and table say what is missing in place rather than refusing to open.
- *
- * @param {Object} station - card model; only `name` is required
- * @returns {HTMLDivElement}
+ * "View Data" link: opens the station's charts and reports table. Same
+ * destination and wording as the map popup's button (lightstation-map.js) —
+ * one action should not have two names.
  */
-function buildStationNavLinks(station) {
-  const navLinks = document.createElement("div");
-  navLinks.style.display = "flex";
-  navLinks.style.gap = "0.5rem";
-  navLinks.style.marginTop = "0.75rem";
-
-  // Same destination and wording as the map popup's "View Data" button
-  // (lightstation-map.js) — one action should not have two names.
+function buildViewDataLink(station) {
   const chartLink = document.createElement("a");
   chartLink.className = "view-chart-link";
   chartLink.href = "#lightstation-chart-section";
@@ -215,7 +204,41 @@ function buildStationNavLinks(station) {
     e.preventDefault();
     viewLightstationChart(station.name);
   });
-  navLinks.appendChild(chartLink);
+  return chartLink;
+}
+
+/**
+ * The "View Data" / "Show on Map" pair at the foot of a station card.
+ *
+ * Extracted so a station with no observations can carry it too: a light that
+ * has never reported still has a position worth finding on the map, and the
+ * charts and table say what is missing in place rather than refusing to open.
+ *
+ * @param {Object} station - card model; only `name` is required
+ * @returns {HTMLDivElement}
+ */
+function buildStationNavLinks(station) {
+  const navLinks = document.createElement("div");
+  navLinks.style.display = "flex";
+  navLinks.style.gap = "0.5rem";
+  navLinks.style.marginTop = "0.75rem";
+
+  // Nothing inside the charts' window means nothing to chart: the button
+  // would open an empty chart and a "no data" table. Disabled instead, with
+  // the reason on hover, so the card says it before the click rather than after.
+  const ageHours = station.observation_time
+    ? (Date.now() - new Date(station.observation_time).getTime()) / 3_600_000
+    : Infinity;
+  if (ageHours > WINDOW_HOURS) {
+    const disabled = document.createElement("span");
+    disabled.className = "view-chart-link-disabled";
+    disabled.setAttribute("aria-disabled", "true");
+    disabled.title = `No reports in the last ${WINDOW_HOURS} hours`;
+    disabled.textContent = "No recent data";
+    navLinks.appendChild(disabled);
+  } else {
+    navLinks.appendChild(buildViewDataLink(station));
+  }
 
   // Show on Map button
   const mapLink = document.createElement("a");
@@ -302,16 +325,9 @@ function createStationCard(station) {
     return card;
   }
 
-  // Wind
-  if (!station.wind_calm) {
-    const windRow = createConditionRow(
-      "Wind",
-      `${station.wind_direction || "N/A"} ${station.wind_speed_kt || "N/A"} kt${station.wind_gusting ? " (gusting)" : ""}${station.wind_estimated ? " (est)" : ""}`,
-    );
-    card.appendChild(windRow);
-  } else {
-    card.appendChild(createConditionRow("Wind", "CALM"));
-  }
+  // Wind. "Not reported" rather than "N/A N/A kt" when the lightkeeper's
+  // report carried no wind (a fog-bound "VISIBILITY ZERO", for instance).
+  card.appendChild(createConditionRow("Wind", formatLightstationWind(station) ?? "Not reported"));
 
   // Sea state
   if (station.sea_height_ft !== null || station.sea_condition) {

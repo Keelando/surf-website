@@ -24,7 +24,7 @@ def _single_int(path: Path, pattern: str) -> int:
 
 def test_export_and_frontend_windows_agree():
     hours_back = _single_int(EXPORT_SCRIPT, r"^HOURS_BACK = (\d+)$")
-    window_hours = _single_int(CHARTS_JS, r"^const WINDOW_HOURS = (\d+);$")
+    window_hours = _single_int(CHARTS_JS, r"^(?:export )?const WINDOW_HOURS = (\d+);$")
     assert hours_back == window_hours, (
         f"export writes a {hours_back}h window but the page says {window_hours}h; "
         "update WINDOW_HOURS in site/assets/js/lightstation-charts.js"

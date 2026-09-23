@@ -11,6 +11,7 @@ import {
   formatWeekdayDayTime,
   getShortAgeString,
 } from "./shared/format-time.js";
+import { formatLightstationWind } from "./shared/lightstation-format.js";
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { getPopupOptions } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
@@ -910,12 +911,10 @@ function addLightstationMarker(lightstation) {
       popupContent += `</div>`;
     }
 
-    // Wind
-    if (!obs.wind_calm) {
-      const windText = `${obs.wind_direction || "N/A"} ${obs.wind_speed_kt || "N/A"} kt${obs.wind_gusting ? " (gusting)" : ""}${obs.wind_estimated ? " (est)" : ""}`;
+    // Wind (omitted when the report states none, e.g. "VISIBILITY ZERO")
+    const windText = formatLightstationWind(obs);
+    if (windText) {
       popupContent += `<div style="margin: 4px 0;"><strong>💨 Wind:</strong> ${windText}</div>`;
-    } else {
-      popupContent += `<div style="margin: 4px 0;"><strong>💨 Wind:</strong> CALM</div>`;
     }
 
     // Sea condition (if available, separate from height)

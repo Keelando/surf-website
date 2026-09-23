@@ -1961,6 +1961,20 @@ header h2 {
   color: var(--color-text-muted);
 }
 
+/* "View Data" on a lightstation card with nothing in the 72 h window. Sized
+   like the live button beside "Show on Map" (whose styles are inline), dashed
+   and muted so it reads as unavailable rather than broken. */
+.view-chart-link-disabled {
+  flex: 1;
+  text-align: center;
+  padding: 0.4rem;
+  border: 1px dashed var(--color-border-light);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
 /* --- Source link footer --- */
 
 /* Shared with the lightstation cards (.ls-card-source-*), which carry the same

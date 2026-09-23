@@ -10,7 +10,8 @@ Format:
     "name": "Cape Mudge",
     "region": "STRAIT OF GEORGIA",
     "timeseries": {
-      "wind_speed_kt": [{"time": "2025-11-25T18:00:00Z", "value": 27.0}, ...],
+      "wind_speed_kt": [{"time": "2025-11-25T18:00:00Z", "value": 27.0, "gusting": false}, ...],
+                        (calm is {"value": 0, "calm": true})
       "wind_direction": [{"time": "2025-11-25T18:00:00Z", "value": "SOUTHEAST"}, ...],
       "sea_height_ft": [{"time": "2025-11-25T18:00:00Z", "value": 4.0}, ...],
       "sea_condition": [{"time": "2025-11-25T18:00:00Z", "value": "MODERATE"}, ...]
@@ -145,8 +146,15 @@ def export_timeseries():
             for row in rows:
                 timestamp = datetime.fromtimestamp(row["observation_time"], tz=timezone.utc).isoformat()
 
-                # Wind speed (null if calm)
-                if not row["wind_calm"] and row["wind_speed_kt"] is not None:
+                # Wind speed. Calm is a reading of 0 kt, not a missing one: it
+                # used to be left out, so the chart drew straight across calm
+                # spells and the table showed "—" where the lightkeeper had
+                # written CALM. `calm` lets the page say so in words.
+                if row["wind_calm"]:
+                    station_data["timeseries"]["wind_speed_kt"].append(
+                        {"time": timestamp, "value": 0, "gusting": False, "calm": True}
+                    )
+                elif row["wind_speed_kt"] is not None:
                     station_data["timeseries"]["wind_speed_kt"].append(
                         {"time": timestamp, "value": row["wind_speed_kt"], "gusting": bool(row["wind_gusting"])}
                     )
