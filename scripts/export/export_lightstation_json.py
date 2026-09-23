@@ -33,6 +33,7 @@ from datetime import datetime, timezone
 # Shared utilities
 from lib.config import EXPORT_DIR, safe_json_write
 from lib.config import LIGHTSTATION_DATABASE as DB_PATH
+from lib.lightstation_readings import HAS_READING_SQL
 from lib.lightstation_schedule import infer_schedule, staleness_threshold_hours
 from lib.logging_config import setup_logging
 from lib.stations import get_lightstation_by_report_name
@@ -106,10 +107,13 @@ def query_and_export():
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
-        # Get all unique station names
-        cur.execute("""
+        # Stations with at least one reading. A station whose rows are all
+        # empty is left out, so the page gives it the "No reports received"
+        # card rather than a blank one — see lib/lightstation_readings.py.
+        cur.execute(f"""
             SELECT DISTINCT station_name
             FROM lightstation_observation
+            WHERE {HAS_READING_SQL}
             ORDER BY station_name
         """)
         stations = [row[0] for row in cur.fetchall()]
@@ -117,12 +121,12 @@ def query_and_export():
         logger.info(f"Exporting data for {len(stations)} lightstation(s)")
 
         for station_name in stations:
-            # Get the most recent observation for this station
+            # The most recent row that actually says something.
             cur.execute(
-                """
+                f"""
                 SELECT *
                 FROM lightstation_observation
-                WHERE station_name = ?
+                WHERE station_name = ? AND {HAS_READING_SQL}
                 ORDER BY observation_time DESC
                 LIMIT 1
             """,
@@ -133,36 +137,6 @@ def query_and_export():
             if not row:
                 continue
 
-            # Check if this observation has null key values
-            # If so, fall back to the most recent observation with non-null data
-            has_data = (
-                row["wind_speed_kt"] is not None
-                or row["wind_calm"]
-                or row["sea_height_ft"] is not None
-                or row["sea_condition"] is not None
-            )
-
-            if not has_data:
-                # Fall back to last observation with actual data
-                cur.execute(
-                    """
-                    SELECT *
-                    FROM lightstation_observation
-                    WHERE station_name = ?
-                      AND (wind_speed_kt IS NOT NULL
-                           OR wind_calm = 1
-                           OR sea_height_ft IS NOT NULL
-                           OR sea_condition IS NOT NULL)
-                    ORDER BY observation_time DESC
-                    LIMIT 1
-                """,
-                    (station_name,),
-                )
-
-                fallback_row = cur.fetchone()
-                if fallback_row:
-                    row = fallback_row
-
             observation_time = row["observation_time"]
             now_ts = datetime.now(timezone.utc).timestamp()
             age_hours = (now_ts - observation_time) / 3600
@@ -171,10 +145,10 @@ def query_and_export():
             # see lib/lightstation_schedule.py for why it is not read from
             # `update_frequency_hours` in the registry.
             cur.execute(
-                """
+                f"""
                 SELECT observation_time
                 FROM lightstation_observation
-                WHERE station_name = ? AND observation_time > ?
+                WHERE station_name = ? AND observation_time > ? AND {HAS_READING_SQL}
             """,
                 (station_name, now_ts - SCHEDULE_LOOKBACK_DAYS * 86400),
             )
@@ -189,11 +163,11 @@ def query_and_export():
 
             # Bulletin membership over the same window (see BULLETIN_PRODUCTS).
             cur.execute(
-                """
+                f"""
                 SELECT source_file
                 FROM lightstation_observation
                 WHERE station_name = ? AND observation_time > ?
-                  AND source_file IS NOT NULL
+                  AND source_file IS NOT NULL AND {HAS_READING_SQL}
             """,
                 (station_name, now_ts - SCHEDULE_LOOKBACK_DAYS * 86400),
             )

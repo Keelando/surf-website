@@ -52,6 +52,7 @@ from lib.config import (
 
 # Add lib to path for imports
 from lib.daylight import calculate_sunrise_sunset
+from lib.lightstation_readings import HAS_READING_SQL
 from lib.lightstation_schedule import infer_schedule, staleness_threshold_hours
 from lib.logging_config import setup_logging
 from lib.stations import get_all_buoys, get_all_lightstations, get_all_tides, get_all_wind
@@ -486,9 +487,12 @@ def check_lightstation_freshness() -> List[Dict]:
         cursor = conn.cursor()
 
         # Build lookup of latest observation per station from DB
-        cursor.execute("""
+        # Readings only: an empty row (a bulletin's "NA") is not a report.
+        # See lib/lightstation_readings.py.
+        cursor.execute(f"""
             SELECT station_name, MAX(observation_time) as last_obs
             FROM lightstation_observation
+            WHERE {HAS_READING_SQL}
             GROUP BY station_name
         """)
         db_stations = {row[0]: row[1] for row in cursor.fetchall()}
@@ -497,7 +501,8 @@ def check_lightstation_freshness() -> List[Dict]:
         # window the export uses, so the two agree about what "overdue" means.
         cutoff = int(now.timestamp()) - 30 * 86400
         cursor.execute(
-            "SELECT station_name, observation_time FROM lightstation_observation " "WHERE observation_time > ?",
+            "SELECT station_name, observation_time FROM lightstation_observation "
+            f"WHERE observation_time > ? AND {HAS_READING_SQL}",
             (cutoff,),
         )
         history: Dict[str, List[int]] = {}
