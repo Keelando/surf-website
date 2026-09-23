@@ -315,11 +315,22 @@ sudo apt install caddy
     }
     header @images Cache-Control "public, max-age=2592000, immutable"
 
-    # No caching for everything else (HTML/CSS/JS/data)
-    @nocache {
-        not path *.jpg *.jpeg *.png *.gif *.webp *.svg
+    # Content-hashed assets (?v= rewritten by the pre-commit hook): 1 year
+    @versioned {
+        path /assets/*
+        query v=*
     }
-    header @nocache Cache-Control "no-store, no-cache, must-revalidate"
+    header @versioned Cache-Control "public, max-age=31536000, immutable"
+
+    # Everything else (HTML/data/unversioned JS): keep, but revalidate (304s)
+    @revalidate {
+        not path *.jpg *.jpeg *.png *.gif *.webp *.svg /api/*
+        not {
+            path /assets/*
+            query v=*
+        }
+    }
+    header @revalidate Cache-Control "no-cache"
 
     # Enable compression
     encode gzip zstd
@@ -371,7 +382,7 @@ curl http://localhost:8090/data/marine_forecast.json | jq . | head
 
 ### Problem
 
-Even with `Cache-Control: no-store`, browsers (especially Firefox) aggressively cache CSS/JS files, causing stale styles after updates.
+Browsers (especially Firefox) aggressively cache CSS/JS files, causing stale styles after updates. (Historical — superseded by content-hash `?v=` params and the caching rules above; see `site/docs/CACHE_BUSTING.md`.)
 
 ### Solution: CSS Versioning
 

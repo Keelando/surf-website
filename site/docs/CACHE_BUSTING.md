@@ -66,8 +66,25 @@ Hit while splitting the 2026-08-26 forecasts-page work (CSS extraction,
 
 - External URLs (`http(s)://`, `//`) are left untouched.
 - Only `<script src>` / `<link href>` in HTML are versioned. Static ES-module
-  `import`s inside JS resolve without query params; they rely on the origin's
-  `Cache-Control: no-store` for non-image assets (Caddyfile), same as before.
+  `import`s inside JS resolve without query params, so they fall under the
+  revalidate rule below and are never cached blind.
+
+## What the server does with the hash
+
+Since 2026-09-23 the Caddyfile relies on this script:
+
+| Request | `Cache-Control` |
+|---|---|
+| `/assets/*` **with** `?v=` | `public, max-age=31536000, immutable` |
+| images (`*.jpg`, `*.png`, …) | `public, max-age=2592000, immutable` (unchanged) |
+| everything else — HTML, `/data/*.json`, unversioned module imports | `no-cache` (keep, but revalidate: an unchanged file is a 304) |
+| `/api/v1/*` | per-feed lifetimes, see `docs/PUBLIC_API.md` |
+
+The year-long rule is only safe because a changed file always gets a new
+`?v=`. **Never hand-write a `?v=` on an `/assets/` URL** — one that the hook
+does not manage would be cached for a year and never update. Before this, every
+response was `no-store` and each visit re-downloaded all of it (ECharts alone
+is 341 KB gzipped).
 - The `-v4` *filename* suffixes (`style-v4.css`, …) are historical naming, no
   longer a cache-busting mechanism. Removing them is on `TODO.md` (naming
   drift), safe to do any time since versions now live in the query string.
