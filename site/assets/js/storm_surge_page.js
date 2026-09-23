@@ -263,7 +263,7 @@ function baseSurgeChartOption(theme, opts) {
         formatter: (value) => signed(value, opts.yDigits),
         color: theme.mutedText,
       },
-      nameTextStyle: { color: theme.text },
+      nameTextStyle: { color: theme.text, align: "left" },
       axisLine: { lineStyle: { color: theme.axisLine } },
       splitLine: { show: true, lineStyle: { color: theme.gridLine } },
     },

@@ -861,7 +861,7 @@ function renderWindChart(stationId) {
         name: "Speed (kt)",
         max: yAxisMax,
         axisLabel: { color: tc.mutedText },
-        nameTextStyle: { color: tc.text },
+        nameTextStyle: { color: tc.text, align: "left" },
         axisLine: { lineStyle: { color: tc.axisLine } },
         splitLine: { lineStyle: { color: tc.gridLine } },
       },

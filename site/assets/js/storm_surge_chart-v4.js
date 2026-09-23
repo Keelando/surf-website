@@ -270,7 +270,7 @@ function updateSurgeChart(stationId) {
         },
         color: mutedText,
       },
-      nameTextStyle: { color: textColor },
+      nameTextStyle: { color: textColor, align: "left" },
       axisLine: { lineStyle: { color: axisColor } },
       splitLine: { show: true, lineStyle: { color: gridColor } },
     },

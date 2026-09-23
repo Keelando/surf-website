@@ -108,7 +108,7 @@ export function renderBuoyWindChart(windChart, buoy) {
         max: yAxisMax, // Set max to accommodate arrows at top
         axisLine: { lineStyle: { color: axisColor } },
         axisLabel: { color: mutedText },
-        nameTextStyle: { color: textColor },
+        nameTextStyle: { color: textColor, align: "left" },
         splitLine: { lineStyle: { color: gridColor } },
       },
       series: [

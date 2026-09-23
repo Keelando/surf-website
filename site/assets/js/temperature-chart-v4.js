@@ -88,7 +88,7 @@ export function renderTemperatureChart(tempChart, buoy) {
         min: yMin,
         max: yMax,
         axisLabel: { formatter: "{value} °C", color: mutedText },
-        nameTextStyle: { color: textColor },
+        nameTextStyle: { color: textColor, align: "left" },
         axisLine: { lineStyle: { color: axisColor } },
         splitLine: { lineStyle: { color: gridColor } },
       },
