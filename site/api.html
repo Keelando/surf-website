@@ -25,8 +25,8 @@
   <meta name="twitter:image" content="https://halibutbank.ca/assets/images/social-preview.png" />
   <meta name="twitter:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
   <link rel="canonical" href="https://halibutbank.ca/api.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=cd45ac7fba" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=7f4bc4d296" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=41df21004d" />
   <link rel="stylesheet" href="/assets/css/api-v4.css?v=9b865af353" />
   <!-- Structured data: dataset description for Google Dataset Search -->
   <script type="application/ld+json">
@@ -167,7 +167,7 @@
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
 
-  <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+  <div class="nav-slot" hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
   <main id="main-content" tabindex="-1">
     <div class="api-wrap">
@@ -356,6 +356,16 @@ if (!halibutBank.stale) {
         perfectly valid timestamp. Freshness is evaluated per field over a two-hour window.
         Always branch on <code>stale</code>.
       </p>
+      <p>
+        <code>stale</code> is a flat three hours for every station. Buoy, wind and
+        lightstation payloads also carry <code>status</code>, judged against each
+        station's own reporting rhythm: <code>"ok"</code>, <code>"late"</code> (it has
+        missed about two of its usual reports) or <code>"down"</code> (silent 12 hours or
+        more). Buoy and wind payloads include the thresholds it was judged against, as
+        <code>late_after_minutes</code> and <code>down_after_minutes</code>. A ten-minute
+        station goes <code>"late"</code> well before three hours, and an hourly one a little
+        after. Use <code>status</code> when you want the station's own normal as the bar.
+      </p>
 
       <h3>Every wind speed is in knots</h3>
       <p>
@@ -512,6 +522,6 @@ if (!halibutBank.stale) {
 
   <div hx-get="/components/footer.html?v=4" hx-trigger="load" hx-swap="outerHTML"></div>
 
-  <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
+  <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

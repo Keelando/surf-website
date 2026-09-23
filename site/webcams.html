@@ -31,8 +31,11 @@
   <meta name="twitter:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
 
   <link rel="canonical" href="https://halibutbank.ca/webcams.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=cd45ac7fba" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
+  <!-- Hero photo (the LCP element): same URLs and media split as style-v4.css -->
+  <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-960.avif" media="(max-width: 768px)" fetchpriority="high" />
+  <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-1600.avif" media="(min-width: 769px)" fetchpriority="high" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=7f4bc4d296" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=41df21004d" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=3e83e68729" />
   <link rel="stylesheet" href="/assets/css/webcams-v4.css?v=177b914c82" />
 </head>
@@ -41,7 +44,7 @@
   <!-- Warning banners container -->
   <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
-  <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+  <div class="nav-slot" hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
   <header>
     <h1>Coastal Webcams</h1>
@@ -49,7 +52,9 @@
 
   <main id="main-content" tabindex="-1">
 
-  <div hx-get="/components/tagline-webcams.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
+  <div class="site-tagline">
+    Live views from coastal locations around the Salish Sea
+  </div>
 
   <div class="container">
     <section class="intro-section collapsed">
@@ -103,6 +108,6 @@
 
   <script type="module" src="/assets/js/warning-banner.js?v=3bff67fbe9"></script>
   <script type="module" src="/assets/js/webcams-v4.js?v=bbaae2055e"></script>
-  <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
+  <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

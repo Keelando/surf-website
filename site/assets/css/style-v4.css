@@ -1042,9 +1042,9 @@ footer .github-link:hover {
 ----------------------------- */
 
 header {
-  background-image:
-    /* Bottom-anchored dark scrim: keeps the photo visible up top while the
-       conditions panel sits on a darkened, legible base. */
+  /* Bottom-anchored dark scrim: keeps the photo visible up top while the
+     conditions panel sits on a darkened, legible base. */
+  --hero-scrim:
     linear-gradient(to bottom,
       rgba(0, 0, 0, 0) 35%,
       rgba(0, 0, 0, 0.45) 75%,
@@ -1053,8 +1053,16 @@ header {
     linear-gradient(135deg,
       rgba(0, 75, 124, 0.5) 0%,
       rgba(0, 102, 161, 0.4) 100%
-    ),
-    url('../images/noaa-waves-1989.jpg');
+    );
+  /* The photo is the page's LCP element. Sized variants (the 1920px JPEG
+     original is 317 KB); each <head> preloads the AVIF that the matching
+     media query below selects, so the URLs here and there must stay in step.
+     The first declaration is the fallback for browsers without typed
+     image-set(). */
+  background-image: var(--hero-scrim), url('/assets/images/noaa-waves-1989-1600.webp');
+  background-image: var(--hero-scrim), image-set(
+    url('/assets/images/noaa-waves-1989-1600.avif') type('image/avif'),
+    url('/assets/images/noaa-waves-1989-1600.webp') type('image/webp'));
   background-position: center 60%;  /* Changed from 'center' */
   background-size: cover;
   background-repeat: no-repeat;
@@ -1073,6 +1081,10 @@ header {
 @media (max-width: 768px) {
   header {
     background-attachment: scroll;
+    background-image: var(--hero-scrim), url('/assets/images/noaa-waves-1989-960.webp');
+    background-image: var(--hero-scrim), image-set(
+      url('/assets/images/noaa-waves-1989-960.avif') type('image/avif'),
+      url('/assets/images/noaa-waves-1989-960.webp') type('image/webp'));
   }
 }
 
@@ -1108,8 +1120,13 @@ header h2 {
   max-width: 760px;
 }
 
-.hero-conditions:empty {
-  display: none;
+/* Reserve the filled panel's height: it is rendered from the buoy fetch, and
+   growing from nothing pushed the whole page down ~96px (CLS 0.12, Lighthouse
+   2026-09-23). Its markup is fixed (a missing value is a dash), so the height
+   is too: measured 136px wide, 197px at ≤600px. Between ~600 and ~700px the
+   groups wrap differently and the panel runs ~217px; that residual is small. */
+.hero-conditions {
+  min-height: 136px;
 }
 
 .hero-station {
@@ -1206,6 +1223,7 @@ header h2 {
 
   .hero-conditions {
     gap: 0.75rem 1.5rem;
+    min-height: 197px;
   }
 
   .hero-stat-value {

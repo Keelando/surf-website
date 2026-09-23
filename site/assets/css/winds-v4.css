@@ -9,6 +9,12 @@
   margin-bottom: 0;
 }
 
+/* Hidden (still laid out) until the conditions table fills; see winds.html. */
+#wind-table-section[aria-busy="true"] .data-table ~ *,
+#wind-table-section[aria-busy="true"] ~ * {
+  visibility: hidden;
+}
+
 /* --- Wind Data Table --- */
 
 .data-table {
@@ -366,13 +372,8 @@
   border-left: 3px solid var(--color-primary);
 }
 
-.popup-wind-card--fresh {
+.popup-wind-card--ok {
   background: var(--color-callout-info-bg, #f0f8ff);
-}
-
-.popup-wind-card--stale {
-  background: var(--color-callout-danger-bg, #fff5f5);
-  border-left-color: var(--color-accent-red);
 }
 
 .popup-wind-card--buoy {
@@ -383,16 +384,32 @@
   border-left-color: var(--color-accent-orange);
 }
 
+/* Reporting status (shared/staleness.js reportStatus). After the type rules
+   so a late or down card's border states its status, not its type. */
+.popup-wind-card--late {
+  background: var(--color-callout-warning-bg, #fff3e0);
+  border-left-color: var(--color-accent-orange);
+}
+
+.popup-wind-card--down {
+  background: var(--color-callout-danger-bg, #fff5f5);
+  border-left-color: var(--color-accent-red);
+}
+
 .popup-wind-header {
   font-weight: 600;
   margin-bottom: 4px;
 }
 
-.popup-wind-header--fresh {
+.popup-wind-header--ok {
   color: var(--color-primary-dark);
 }
 
-.popup-wind-header--stale {
+.popup-wind-header--late {
+  color: var(--color-accent-orange);
+}
+
+.popup-wind-header--down {
   color: var(--color-accent-red);
 }
 

@@ -61,6 +61,21 @@
   --tide-badge-temporary-border: rgba(255, 174, 82, 0.3);
 }
 
+/* Placeholder the htmx-loaded nav replaces: reserve the nav's real height so
+   the page does not jump when it lands (measured 2026-09-23: 49px in the
+   ≤600px slim bar, 71px on a wide screen). Between those widths the links
+   wrap and the nav runs 89–95px; that is the open nav-overflow bug, and the
+   reservation should follow the fix rather than encode the wrap. */
+.nav-slot {
+  min-height: 71px;
+}
+
+@media (max-width: 600px) {
+  .nav-slot {
+    min-height: 49px;
+  }
+}
+
 /* Normalize text sizing across mobile browsers (Chrome vs Firefox) */
 .main-nav,
 .main-nav * {

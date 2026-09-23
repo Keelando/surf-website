@@ -32,11 +32,14 @@
   <meta name="twitter:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
 
   <link rel="canonical" href="https://halibutbank.ca/winds.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=cd45ac7fba" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
+  <!-- Hero photo (the LCP element): same URLs and media split as style-v4.css -->
+  <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-960.avif" media="(max-width: 768px)" fetchpriority="high" />
+  <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-1600.avif" media="(min-width: 769px)" fetchpriority="high" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=7f4bc4d296" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=41df21004d" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=3e83e68729" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=19cbab888b" />
-  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=8c90b44dec" />
+  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=a7b8272846" />
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
@@ -48,7 +51,7 @@
   <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
   <!-- Navigation -->
-  <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+  <div class="nav-slot" hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
   <header>
     <h1>Salish Sea Wind Conditions</h1>
@@ -56,10 +59,15 @@
 
   <main id="main-content" tabindex="-1">
 
-  <div hx-get="/components/tagline-winds.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
+  <div class="site-tagline">
+    Real-time wind observations from coastal weather stations across the Salish Sea and Strait of Georgia.
+  </div>
 
   <!-- Current Conditions Table -->
-  <section id="wind-table-section" class="winds-section">
+  <!-- aria-busy until the table has rendered (wind-stations.js clears it on
+       success and failure): everything below it is hidden meanwhile, so the
+       station list landing does not shove the map off-screen (CLS 0.20). -->
+  <section id="wind-table-section" class="winds-section" aria-busy="true">
     <h2>Current Wind Conditions</h2>
     <p class="sort-hint">
       <em>Click column headers to sort</em>
@@ -173,16 +181,16 @@
   <div hx-get="/components/footer.html?v=4" hx-trigger="load" hx-swap="outerHTML"></div>
 
   <!-- Leaflet JS -->
-  <script src="/assets/vendor/leaflet.js?v=5a640ff863"></script>
+  <script defer src="/assets/vendor/leaflet.js?v=5a640ff863"></script>
 
   <!-- Load logger first for global availability -->
-  <script src="/assets/vendor/echarts.min.js?v=968b4d8c55"></script>
-  <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
+  <script defer src="/assets/vendor/echarts.min.js?v=866f27da86"></script>
+  <script defer src="/assets/js/logger.js?v=1bcd73e2db"></script>
   <script type="module" src="/assets/js/warning-banner.js?v=3bff67fbe9"></script>
-  <script src="/assets/js/chart-utils-v4.js?v=c29ea91170"></script>
+  <script defer src="/assets/js/chart-utils-v4.js?v=e91988b4e4"></script>
   <!-- wind-data.js is imported by both module entry points (no script tag needed) -->
-  <script type="module" src="/assets/js/wind-stations.js?v=4924605a47"></script>
-  <script type="module" src="/assets/js/winds-map.js?v=890d4da81c"></script>
-  <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
+  <script type="module" src="/assets/js/wind-stations.js?v=1eb298f411"></script>
+  <script type="module" src="/assets/js/winds-map.js?v=e284654ec5"></script>
+  <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

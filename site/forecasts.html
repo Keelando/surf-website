@@ -31,10 +31,13 @@
   <meta name="twitter:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
 
   <link rel="canonical" href="https://halibutbank.ca/forecasts.html" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=cd45ac7fba" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
+  <!-- Hero photo (the LCP element): same URLs and media split as style-v4.css -->
+  <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-960.avif" media="(max-width: 768px)" fetchpriority="high" />
+  <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-1600.avif" media="(min-width: 769px)" fetchpriority="high" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=7f4bc4d296" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=41df21004d" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=3e83e68729" />
-  <link rel="stylesheet" href="/assets/css/forecasts-v4.css?v=232d5b5bf4" />
+  <link rel="stylesheet" href="/assets/css/forecasts-v4.css?v=2f74f21e5a" />
 </head>
 
 <body>
@@ -43,7 +46,7 @@
   <div hx-get="/components/warning-banner.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
   <!-- Navigation -->
-  <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+  <div class="nav-slot" hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
   <header>
     <h1>Marine Weather Forecasts</h1>
@@ -51,9 +54,16 @@
 
   <main id="main-content" tabindex="-1">
 
-  <div hx-get="/components/tagline-forecasts.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
+  <div class="site-tagline">
+    Salish Sea - Environment Canada
+  </div>
 
-  <div class="forecast-main-content">
+  <!-- aria-busy until marine_forecast.json has rendered: the warning strip
+       lands above both sections in that same render, so showing their empty
+       headings first only to shove them down ~150px was the page's whole
+       layout-shift score (CLS 0.52, Lighthouse 2026-09-23). forecasts.js
+       clears it on success and failure alike. -->
+  <div class="forecast-main-content" aria-busy="true">
     <!-- Every warning in force anywhere we carry, unfiltered by the reader's
          banner subscription. The sitewide banner is deliberately narrow; this
          is the page where you see the whole picture, and it closes the blind
@@ -217,8 +227,15 @@
         <div id="forecast-verification-metadata"></div>
       </section>
 
+      <!-- The one caveat a reader acts on stays in the open; the how-it-works
+           is opt-in (it ran ~12 lines on a phone). -->
       <p class="wave-forecast-about">
-        <strong>About these models:</strong> RDWPS is Environment Canada's regional
+        Raw model output at one point: a good read on wind-driven seas, a rough one
+        where the Strait's currents and channels dominate.
+      </p>
+      <details class="verification-help wave-forecast-about-more">
+        <summary>About these models</summary>
+        <p>RDWPS is Environment Canada's regional
         wave model. It works out the sea state on a 2.5 km grid and looks 48 hours
         ahead, re-running every six hours as new wind observations come in. The wind
         is a separate model, HRDPS (the 2.5 km atmospheric one), because RDWPS
@@ -229,8 +246,8 @@
         at the selected point. Nothing here is tuned to local knowledge, so treat it
         as a good read on wind-driven seas and a rough one where the Strait's currents
         and channels dominate. The readings on the home page are the check: same spot,
-        actually measured.
-      </p>
+        actually measured.</p>
+      </details>
 
       <!-- Same callout, wording and mailto shape as the wind station table on
            winds.html — a reader who cannot find their spot in either list gets
@@ -303,14 +320,14 @@
   <div hx-get="/components/footer.html?v=4" hx-trigger="load" hx-swap="outerHTML"></div>
 
   <!-- Load logger first for global availability -->
-  <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
+  <script defer src="/assets/js/logger.js?v=1bcd73e2db"></script>
   <script type="module" src="/assets/js/warning-banner.js?v=3bff67fbe9"></script>
-  <script src="/assets/vendor/echarts.min.js?v=968b4d8c55"></script>
-  <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
-  <script src="/assets/js/sanitize-html.js?v=57084326c8"></script>
-  <script src="/assets/js/chart-utils-v4.js?v=c29ea91170"></script>
-  <script type="module" src="/assets/js/forecasts.js?v=a62e9f9a09"></script>
-  <script type="module" src="/assets/js/wave-forecast.js?v=50cc5fe652"></script>
-  <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
+  <script defer src="/assets/vendor/echarts.min.js?v=866f27da86"></script>
+  <script defer src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
+  <script defer src="/assets/js/sanitize-html.js?v=57084326c8"></script>
+  <script defer src="/assets/js/chart-utils-v4.js?v=e91988b4e4"></script>
+  <script type="module" src="/assets/js/forecasts.js?v=e78d415ff6"></script>
+  <script type="module" src="/assets/js/wave-forecast.js?v=37d8b02fb3"></script>
+  <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

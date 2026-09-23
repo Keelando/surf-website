@@ -11,7 +11,7 @@ import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { getPopupOptions } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
 import { stationTypeLabel } from "./shared/station-meta.js";
-import { staleAgeLabel } from "./shared/staleness.js";
+import { reportStatus, statusPopupTheme } from "./shared/staleness.js";
 import { windData } from "./wind-data.js";
 
 // --- Constants ---
@@ -96,8 +96,10 @@ function addWindMarker(station, currentData, isBuoy = false) {
   const windDir = currentData ? currentData.wind_direction_deg || currentData.wind_direction : null;
   if (currentData && windDir !== null && windDir !== undefined) {
     const windSpeed = currentData.wind_speed_kt;
-    const isStale = currentData.stale || false;
-    iconHtml = createDirectionalMarker(windDir, windSpeed, { type: "wind", stale: isStale });
+    iconHtml = createDirectionalMarker(windDir, windSpeed, {
+      type: "wind",
+      status: reportStatus(currentData),
+    });
     iconSize = [26, windSpeed ? 48 : 30];
     iconAnchor = [13, windSpeed ? 38 : 15];
   }
@@ -120,13 +122,18 @@ function addWindMarker(station, currentData, isBuoy = false) {
   let popupContent = `<div class="station-popup"><h3>${station.name}</h3>`;
 
   if (currentData) {
-    const staleClass = currentData.stale ? "popup-wind-card--stale" : "popup-wind-card--fresh";
+    // "ok" | "late" | "down"; the classes carry the colours (winds-v4.css),
+    // the shared theme carries the words.
+    const status = reportStatus(currentData);
+    const statusClass = `popup-wind-card--${status}`;
     const typeClass = isBuoy ? "popup-wind-card--buoy" : "popup-wind-card--station";
-    const headerClass = currentData.stale ? "popup-wind-header--stale" : "popup-wind-header--fresh";
-    const headerText = currentData.stale
-      ? `Last Wind (STALE - ${staleAgeLabel(currentData.observation_time) ?? ">3h"} old):`
-      : "Current Wind:";
-    popupContent += `<div class="popup-wind-card ${staleClass} ${typeClass}">`;
+    const headerClass = `popup-wind-header--${status}`;
+    const { headerText } = statusPopupTheme(status, {
+      label: "Current Wind",
+      staleLabel: "Last Wind",
+      observedAt: currentData.observation_time,
+    });
+    popupContent += `<div class="popup-wind-card ${statusClass} ${typeClass}">`;
     popupContent += `<div class="popup-wind-header ${headerClass}">${headerText}</div>`;
 
     // Wind speed and gust

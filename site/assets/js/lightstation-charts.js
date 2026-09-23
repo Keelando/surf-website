@@ -219,14 +219,13 @@ async function loadLightstationTimeseries() {
     // Populate dropdown
     populateLightstationDropdown();
 
-    // Set default selection (Merry Island, or first station if not found)
+    // Default selection: Merry Island while it is reporting, else the first
+    // station that is (Merry Island sent only N/A from 2026-09-18, and a
+    // first visit opened on two empty charts), else the first station.
     if (allLightstations.length > 0) {
-      // Try to find Merry Island
-      const merryIsland = allLightstations.find(
-        ([id, station]) => station.name === "MERRY ISLAND" || id === "MERRY ISLAND",
-      );
-
-      const defaultStation = merryIsland ? merryIsland[0] : allLightstations[0][0];
+      const reporting = allLightstations.filter(([, station]) => station.hasRecentData);
+      const merryIsland = reporting.find(([id]) => id === "MERRY ISLAND");
+      const defaultStation = (merryIsland ?? reporting[0] ?? allLightstations[0])[0];
       select.value = defaultStation;
       renderLightstationCharts(defaultStation);
     }
@@ -363,19 +362,40 @@ export function renderLightstationCharts(stationName) {
   render24HourTable(stationName, station);
 }
 
+function initChartIn(id) {
+  const el = document.getElementById(id);
+  return el ? echarts.init(el) : null;
+}
+
+/**
+ * Replace the reports table body with one full-width message row.
+ *
+ * Built with DOM calls, not setSafeHTML: DOMPurify parses a bare <tr> outside
+ * a <table> context and strips it, which left the table silently empty.
+ */
+function showEmptyTableRow(tbody, text, alert) {
+  const td = document.createElement("td");
+  td.colSpan = 5;
+  td.className = alert ? "ls-table-empty ls-table-empty-alert" : "ls-table-empty";
+  td.textContent = text;
+  const tr = document.createElement("tr");
+  tr.append(td);
+  tbody.replaceChildren(tr);
+}
+
 /**
  * Show "no data available" message in charts and table
  */
 function showNoDataMessage(stationName) {
   const tbody = document.getElementById("lightstation-24hr-body");
   if (tbody) {
-    setSafeHTML(
-      tbody,
-      `<tr><td colspan="5" class="ls-table-empty ls-table-empty-alert">⚠️ No reports in the past ${WINDOW_HOURS} hours</td></tr>`,
-    );
+    showEmptyTableRow(tbody, `⚠️ No reports in the past ${WINDOW_HOURS} hours`, true);
   }
 
-  // Clear charts
+  // Clear charts. Init them if this is the first station shown, so the
+  // "no reports" title appears instead of two blank boxes.
+  windSpeedChart ??= initChartIn("lightstation-wind-chart");
+  waveHeightChart ??= initChartIn("lightstation-wave-chart");
   if (windSpeedChart) {
     windSpeedChart.clear();
     windSpeedChart.setOption({
@@ -481,10 +501,7 @@ function render24HourTable(stationName, station) {
   const sortedTimes = Array.from(timestamps).sort((a, b) => new Date(b) - new Date(a));
 
   if (sortedTimes.length === 0) {
-    setSafeHTML(
-      tbody,
-      '<tr><td colspan="5" class="ls-table-empty">No data available for this station</td></tr>',
-    );
+    showEmptyTableRow(tbody, "No data available for this station", false);
     return;
   }
 

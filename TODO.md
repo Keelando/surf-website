@@ -63,24 +63,63 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 
 ### Queued 2026-09-23 (frontend session), in the order agreed
 
-- [ ] **Performance quick wins, before the redesign.** Lighthouse baseline
-      (live, mobile, 2026-09-23, *before* the caching fix): home **46**,
-      storm surge **57**; LCP 5–6 s, 3.8 s of script time, CLS 0.17 on home.
-      The caching fix (`?v=` assets immutable for a year, rest `no-cache`)
-      is live — re-run Lighthouse first to get a new baseline. Then:
-      the 310 KB hero photo `assets/images/noaa-waves-1989.jpg` (resize +
-      WebP/AVIF, `srcset`); draw below-the-fold charts on scroll
-      (IntersectionObserver) instead of all at load; a trimmed ECharts build
-      (line/scatter/bar + the components used, ~1 MB → ~400 KB raw); layout
-      jumps from the htmx-injected header/nav/footer.
-- [ ] **Map "late" and "down"** instead of one flat `stale` at 3 h. Late =
-      missed ~2 of the station's own expected reports (cadence-derived);
-      down = 12 h+. Plain words, for laypeople ("Down: no report since …"),
-      matching the cards' existing "STATION DOWN". Add a new status field to
-      the exports; **keep `stale`'s meaning** — it is in the public API.
-- [ ] **Forecast + storm-surge pages: short explanations**, one or two
-      sentences above each chart/model, with the RDWPS and verification
-      detail moved into `<details>` blocks. No walls of text on mobile.
+- [x] **Performance quick wins, before the redesign.** Lighthouse (live,
+      mobile) before → after, 2026-09-23:
+
+      | page          | score   | LCP         | TBT          | CLS         |
+      |---------------|---------|-------------|--------------|-------------|
+      | home          | 45 → 71 | 5.1 → 4.3 s | 900 → 500 ms | 0.17 → 0    |
+      | storm surge   | 63 → 87 | 5.7 → 3.5 s | 570 → 200 ms | 0 → 0.02    |
+      | forecasts     | 43 → 94 | 6.6 → 2.6 s | 440 → 120 ms | 0.54 → 0    |
+      | winds         | 57 → 82 | 6.7 → 3.8 s | 660 → 260 ms | 0.02 → 0    |
+      | lightstations | 54 → 69 | 6.8 → 4.1 s | 970 → 680 ms | 0.02 → 0    |
+
+      What moved it:
+      - **Hero photo**: 317 KB JPEG → 960/1600 px AVIF (53/90 KB) with WebP
+        fallback, chosen by the same media query in `style-v4.css` and a
+        `<link rel="preload" fetchpriority="high">` in every `<head>` (it is
+        the LCP element, and as a CSS background it was undiscoverable).
+      - **`defer` on every classic script** except `theme-manager.js`. Order
+        is preserved (deferred and module scripts share one ordered list);
+        no page has inline JS.
+      - **Trimmed ECharts** (`scripts/build/build_echarts.sh`, entry
+        `scripts/build/echarts-entry.js`): 1,025 → 553 KB raw, 348 → 188 KB
+        gzipped. Line + scatter only; pixel-identical A/B against the full
+        build on every chart. Trap: esbuild's `--global-name` exposes a
+        getter-only namespace, which silently dropped chart-utils'
+        `echarts.init` wrapper (aria + lazy); the entry assigns a plain object.
+      - **Charts draw on scroll**: the `echarts.init` wrapper in
+        `chart-utils-v4.js` queues `setOption`/`clear` until the chart is
+        within 300 px of the viewport. One place, every page. The screenshot
+        spec scrolls each page first.
+      - **CLS → 0 on all five pages**: nav placeholder sized to the real nav
+        (`.nav-slot`, 49/71 px); the seven single-use tagline components
+        inlined; the home hero panel's height reserved; forecasts and winds
+        hide their static sections (`aria-busy`) until the first render
+        instead of showing them and shoving them down.
+      Left: six render-blocking stylesheets (critical-CSS inlining), Leaflet
+      on the home page, and the nav wraps to 89–95 px between 601 and 1279 px
+      (the open nav-overflow bug), where a small shift remains.
+- [x] **Map "late" and "down"**, 2026-09-23. `lib/report_status.py` derives
+      each station's rhythm from its own last 7 days of arrivals
+      (`recorded_at`): late = p90 peak age + 2 × delivery cadence (floor
+      1 h), down = 12 h or 2 × late. Measured: EC hourly 3.1 h, NOAA/Surrey
+      1.7–2.4 h, ten-minute stations 1 h. Buoy + wind exports carry
+      `status`, `late_after_minutes`, `down_after_minutes`; lightstations
+      `status` from their existing cadence threshold; `stale` unchanged
+      (documented on api.html). All three maps: late = amber, marker at
+      0.6; down = red, 0.35, "Down: no report since …". `wind-data.js` had
+      to pass `status` through its normalizer. The home cards still use
+      their own flat 3 h / 12 h (`buoy-card.js`) — a follow-up if wanted.
+- [x] **Forecast + storm-surge explanations**, 2026-09-23: one visible line
+      above each storm-surge chart, the rest in `<details>`; on forecasts
+      the "About these models" paragraph and the provenance block folded,
+      the currents-and-channels caveat kept in the open.
+- [x] **Lightstation page opened on an empty station** (found 2026-09-23):
+      default Merry Island has sent only `N/A` since 2026-09-18, so both
+      charts were blank boxes. Now defaults to Merry Island only while it
+      reports; and the "No reports" row was stripped by DOMPurify (bare
+      `<tr>`), now built with DOM calls.
 - [ ] **UI overhaul.** Start with ONE home-page mockup (data first: a compact
       all-station summary up top, map and charts below, hero much smaller,
       explanations folded away), agree the direction, then roll it out.

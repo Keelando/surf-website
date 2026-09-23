@@ -32,8 +32,11 @@
   <meta name="twitter:image:alt" content="Salish Sea Wave Conditions - live buoys, wind, tides and marine forecasts at halibutbank.ca" />
 
   <link rel="canonical" href="https://halibutbank.ca/" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=cd45ac7fba" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=126b5dab79" />
+  <!-- Hero photo (the LCP element): same URLs and media split as style-v4.css -->
+  <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-960.avif" media="(max-width: 768px)" fetchpriority="high" />
+  <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-1600.avif" media="(min-width: 769px)" fetchpriority="high" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=7f4bc4d296" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=41df21004d" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=19cbab888b" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=3e83e68729" />
 
@@ -107,7 +110,7 @@
   <div id="site-notice-container"></div>
 
   <!-- Navigation -->
-  <div hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 60px;"></div>
+  <div class="nav-slot" hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
   <header class="hero">
     <h1>Salish Sea Wave Conditions</h1>
@@ -116,7 +119,9 @@
 
   <main id="main-content" tabindex="-1">
 
-  <div hx-get="/components/tagline-buoys.html?v=1" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms" style="min-height: 40px;"></div>
+  <div class="site-tagline">
+    Real-time wave, wind, and tide conditions across the Salish Sea, Strait of Georgia, and Juan de Fuca Strait.
+  </div>
 
   <details class="site-intro-details">
     <summary class="site-intro-summary">How to read this data</summary>
@@ -324,21 +329,21 @@
   <div hx-get="/components/footer.html?v=4" hx-trigger="load" hx-swap="outerHTML"></div>
 
   <!-- Leaflet JS -->
-  <script src="/assets/vendor/leaflet.js?v=5a640ff863"></script>
+  <script defer src="/assets/vendor/leaflet.js?v=5a640ff863"></script>
 
-  <script src="/assets/vendor/echarts.min.js?v=968b4d8c55"></script>
-  <script src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
-  <script src="/assets/js/sanitize-html.js?v=57084326c8"></script>
+  <script defer src="/assets/vendor/echarts.min.js?v=866f27da86"></script>
+  <script defer src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
+  <script defer src="/assets/js/sanitize-html.js?v=57084326c8"></script>
   <!-- Load logger first for global availability -->
-  <script src="/assets/js/logger.js?v=1bcd73e2db"></script>
+  <script defer src="/assets/js/logger.js?v=1bcd73e2db"></script>
   <script type="module" src="/assets/js/warning-banner.js?v=3bff67fbe9"></script>
-  <script src="/assets/js/site-notice.js?v=4300cbb31e"></script>
+  <script defer src="/assets/js/site-notice.js?v=4300cbb31e"></script>
   <!-- Load chart utilities first to avoid race conditions -->
-  <script src="/assets/js/chart-utils-v4.js?v=c29ea91170"></script>
+  <script defer src="/assets/js/chart-utils-v4.js?v=e91988b4e4"></script>
   <!-- Module entry points: each pulls in its imports (chart renderers,
        stations-map, shared/) — imported modules must NOT get their own tags -->
   <script type="module" src="/assets/js/main.js?v=eabb925aff"></script>
   <script type="module" src="/assets/js/storm_surge_chart-v4.js?v=62b0521be3"></script>
-  <script src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
+  <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

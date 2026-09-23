@@ -11,7 +11,7 @@
  * shared/README.md for migration status.
  */
 
-import { STALE_MARKER_OPACITY } from "./staleness.js";
+import { STALE_MARKER_OPACITY, statusMarkerOpacity } from "./staleness.js";
 
 /**
  * ECharts symbol path for chart direction arrows.
@@ -38,7 +38,9 @@ export const DIRECTION_ARROW_PATH = "path://M0,15 L-3,-5 L0,0 L3,-5 Z";
  * @param {number|null} value - Wave height (m) or wind speed (kt)
  * @param {Object} [opts]
  * @param {string} [opts.type] - 'wave', 'wind', or 'wave-inferred'
- * @param {boolean} [opts.stale] - Dims the marker when true
+ * @param {"ok"|"late"|"down"} [opts.status] - Reporting status: late dims
+ *   the marker part-way, down fully. Wins over `stale`.
+ * @param {boolean} [opts.stale] - Legacy: dims the marker fully when true
  * @param {number|null} [opts.windSpeed] - Knots, drawn as a second smaller
  *   line under the wave-height label. Ignored on 'wind' markers, whose
  *   primary label is already the wind speed. Callers gate this on zoom: a
@@ -48,7 +50,7 @@ export const DIRECTION_ARROW_PATH = "path://M0,15 L-3,-5 L0,0 L3,-5 Z";
 export function createDirectionalMarker(
   direction,
   value,
-  { type = "wind", stale = false, windSpeed = null } = {},
+  { type = "wind", status = null, stale = false, windSpeed = null } = {},
 ) {
   const isWind = type === "wind";
   // 'wave-inferred': a wave station with no directional sensor, pointed by
@@ -58,7 +60,7 @@ export function createDirectionalMarker(
   const isInferred = type === "wave-inferred";
   const arrowColor = isWind ? "var(--map-arrow-wind, #dc2626)" : "var(--map-arrow-wave, #0077be)";
   const fillColor = isInferred ? "var(--map-marker-bg, #ffffff)" : "currentColor";
-  const opacity = stale ? STALE_MARKER_OPACITY : 1.0;
+  const opacity = status ? statusMarkerOpacity(status) : stale ? STALE_MARKER_OPACITY : 1.0;
 
   // Halo that keeps a transparent-background label readable over map tiles.
   const labelHalo =

@@ -367,6 +367,8 @@ async function loadWindTable() {
       table.innerHTML =
         '<tbody><tr><td colspan="7" class="table-message-cell">Error loading wind data</td></tr></tbody>';
     }
+  } finally {
+    document.getElementById("wind-table-section")?.removeAttribute("aria-busy");
   }
 }
 

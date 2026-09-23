@@ -43,6 +43,12 @@ test("arrow colour follows type", () => {
   assert.match(createDirectionalMarker(0, 1, { type: "wind" }), /--map-arrow-wind/);
 });
 
+test("status dims the marker: down fully, late part-way, and wins over stale", () => {
+  assert.match(createDirectionalMarker(0, 5, { status: "down" }), /opacity: 0\.35/);
+  assert.match(createDirectionalMarker(0, 5, { status: "late" }), /opacity: 0\.6/);
+  assert.match(createDirectionalMarker(0, 5, { status: "ok", stale: true }), /opacity: 1/);
+});
+
 test("stale marker is dimmed; fresh is opaque", () => {
   assert.match(createDirectionalMarker(0, 5, { stale: true }), /opacity: 0\.35/);
   assert.match(createDirectionalMarker(0, 5), /opacity: 1/);

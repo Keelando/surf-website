@@ -799,16 +799,22 @@ function renderMetadata(payload, rows) {
     })
     .join("");
 
+  // Folded away: the run clock under the heading already says which run this
+  // is, and seven lines of provenance under the chart were scroll to get past.
   setSafeHTML(
     el,
-    `
+    `<details class="verification-help">
+    <summary>Station and model run details</summary>
+    <p>
     <strong>Station:</strong> ${payload.station_name} (${payload.station_id})<br/>
     <strong>Location:</strong> ${payload.location.lat.toFixed(3)}°N, ${Math.abs(payload.location.lon).toFixed(3)}°W<br/>
     ${modelLines}
     <strong>Data Retrieved:</strong> ${formatMonthDayTimeTZ(new Date(payload.generated_utc))}<br/>
     <strong>Forecast Period:</strong> ${formatMonthDayTimeTZ(first)} to ${formatMonthDayTimeTZ(last)}<br/>
     <strong>Resolution:</strong> ${rows.length} steps, hourly to 24 h then 3-hourly;
-    the table below samples every ${TABLE_STEP_HOURS} h`,
+    the table below samples every ${TABLE_STEP_HOURS} h
+    </p>
+    </details>`,
   );
 }
 

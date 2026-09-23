@@ -50,6 +50,7 @@ function normalizeBuoyLatest(buoy, stationMeta) {
     pressure_hpa: buoy.pressure ?? null,
     observation_time: windObsTime,
     stale: buoy.stale ?? false,
+    status: buoy.status ?? null, // ok | late | down (shared/staleness.js reportStatus)
     _sourceType: isWindType ? "land" : "buoy",
     _isWindType: isWindType,
   };
@@ -69,6 +70,7 @@ function normalizeWindLatest(station) {
     pressure_hpa: station.pressure_hpa ?? null,
     observation_time: station.observation_time,
     stale: station.stale ?? false,
+    status: station.status ?? null,
     _sourceType: "land",
     _isWindType: true,
   };

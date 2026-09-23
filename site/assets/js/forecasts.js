@@ -165,6 +165,8 @@ async function loadForecasts() {
         <p>Marine forecast data is temporarily unavailable. Please try again later.</p>
       </div>
     `;
+  } finally {
+    document.querySelector(".forecast-main-content")?.removeAttribute("aria-busy");
   }
 }
 

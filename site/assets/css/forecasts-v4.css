@@ -478,6 +478,11 @@ header {
   display: none;
 }
 
+/* Hidden (still laid out) until the forecast has rendered; see forecasts.html. */
+.forecast-main-content[aria-busy="true"] > .forecast-kind {
+  visibility: hidden;
+}
+
 .warning-jump-heading {
   margin: 0 0 0.6rem;
   font-size: 0.85rem;

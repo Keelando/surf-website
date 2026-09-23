@@ -8,7 +8,7 @@ import { formatLightstationWind, silentStationText } from "./shared/lightstation
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { describeNextReport, describeSchedule } from "./shared/lightstation-schedule.js";
 import { getPopupOptions } from "./shared/map-popup.js";
-import { stalePopupTheme, staleThresholdLabel } from "./shared/staleness.js";
+import { reportStatus, staleThresholdLabel, statusPopupTheme } from "./shared/staleness.js";
 import { viewLightstationDataById } from "./lightstation-charts.js";
 
 let lightstationMap = null;
@@ -165,8 +165,7 @@ function addLightstationMapMarker(lightstation) {
 
   if (hasData) {
     const obs = latestLightstationData[lookupName];
-    const isStale = obs.stale || false;
-    const popupTheme = stalePopupTheme(isStale, {
+    const popupTheme = statusPopupTheme(reportStatus(obs), {
       threshold: staleThresholdLabel(obs),
       observedAt: obs.observation_time,
     });
@@ -219,8 +218,8 @@ function addLightstationMapMarker(lightstation) {
     }
 
     // No separate "⚠️ STALE DATA" line here. The block's own header already
-    // reads "Latest Conditions (STALE - >12h old):" in red, on a red-tinted
-    // panel with a red left border, and the report line below states the age
+    // says late or down, in colour, on a tinted panel with a matching left
+    // border, and the report line below states the age
     // — a fourth restatement was the ~50px that pushed the tallest popups
     // (Nootka, Trial Island) past the 70vh cap on a 360x640 phone.
 

@@ -557,13 +557,70 @@ function getMobileOptimizedTooltipConfig() {
 // so instances inject the default into any option that doesn't set its own.
 // This file loads right after the echarts vendor script on every chart page;
 // pages without charts (forecasts) don't load echarts at all, hence the guard.
+//
+// The same wrapper draws each chart only once it nears the viewport. Drawing
+// is most of the page's script time (Lighthouse, 2026-09-23: 2.3 s of the
+// home page's 3.8 s), and most charts sit below the fold. Until the chart's
+// element first comes within LAZY_MARGIN of the viewport, setOption() and
+// clear() calls are queued, then replayed in order; after that they pass
+// straight through. A notMerge option or a clear() supersedes everything
+// queued before it, so the queue stays short however often a page redraws.
+// No page reads chart state back (getOption and friends) before drawing, which
+// is what makes deferring here safe; one that starts to must draw eagerly.
+// An element that is display:none never intersects, so a hidden chart is
+// drawn when it is first shown.
 if (typeof echarts !== "undefined") {
+  const LAZY_MARGIN = "300px 0px";
   const echartsInit = echarts.init.bind(echarts);
+  const flushers = new WeakMap();
+  const observer =
+    "IntersectionObserver" in window
+      ? new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              observer.unobserve(entry.target);
+              flushers.get(entry.target)?.();
+            }
+          },
+          { rootMargin: LAZY_MARGIN },
+        )
+      : null;
+
   echarts.init = (...initArgs) => {
+    // ECharts hands back the live instance for an element it already owns;
+    // that one is wrapped already, and wrapping it twice would queue twice.
+    const existing = initArgs[0] && echarts.getInstanceByDom(initArgs[0]);
+    if (existing) return existing;
     const chart = echartsInit(...initArgs);
+    const dom = chart.getDom();
     const setOption = chart.setOption.bind(chart);
-    chart.setOption = (option, ...rest) =>
-      setOption({ aria: { enabled: true }, ...option }, ...rest);
+    const clear = chart.clear.bind(chart);
+    const draw = (option, ...rest) => setOption({ aria: { enabled: true }, ...option }, ...rest);
+
+    // null once the chart has been drawn (or cannot be deferred).
+    let queue = observer ? [] : null;
+    if (queue) {
+      flushers.set(dom, () => {
+        const pending = queue;
+        queue = null;
+        if (chart.isDisposed()) return;
+        for (const call of pending) call();
+      });
+      observer.observe(dom);
+    }
+
+    chart.setOption = (option, ...rest) => {
+      if (!queue) return draw(option, ...rest);
+      const opts = rest[0];
+      if (opts === true || opts?.notMerge) queue.length = 0;
+      queue.push(() => draw(option, ...rest));
+    };
+    chart.clear = () => {
+      if (!queue) return clear();
+      queue.length = 0;
+      queue.push(clear);
+    };
     return chart;
   };
 }

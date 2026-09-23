@@ -27,8 +27,10 @@ node can import these files in tests; browsers ignore it.
   ("Jul 14, 05:00 PDT (12Z)", Pacific-first — the wave forecast page). Same
   instant, different lead: the Z hour is what model documentation and the
   archive use, the local time is what a reader plans around.
-- `staleness.js` — stale-data presentation (marker opacity, popup theme,
-  `formatDataAge`)
+- `staleness.js` — late/down presentation: `reportStatus` reads the export's
+  per-station `status` (ok/late/down, `lib/report_status.py`) with the legacy
+  `stale` flag as fallback; `statusPopupTheme` and `statusMarkerOpacity` turn
+  it into colours and plain words; plus `formatDataAge`
 - `markers.js` — directional map marker, angular spread vector, ECharts arrow path
 - `map-fullscreen.js` — Leaflet fullscreen control (`addFullscreenControl`),
   used by all three maps; custom rather than a vendored plugin because the

@@ -16,7 +16,7 @@ import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { getPopupOptions } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
 import { isNoaaStation, isWaveStation, stationTypeLabel } from "./shared/station-meta.js";
-import { staleDataWarningHTML, stalePopupTheme, staleThresholdLabel } from "./shared/staleness.js";
+import { reportStatus, staleThresholdLabel, statusPopupTheme } from "./shared/staleness.js";
 
 let stationsMap = null;
 let markersLayer = null;
@@ -385,7 +385,7 @@ function buildBuoyIcon(buoy, { showWind = false } = {}) {
       const waveHeight = data.wave_height_sig;
       // Wind direction: unified field name (wind_direction_deg), fallback to old name for buoys
       const windDirection = data.wind_direction_deg ?? data.wind_direction;
-      const isStale = data.stale || false;
+      const status = reportStatus(data);
       // Wind stations use wind_speed_kt, buoys use wind_speed. Both are
       // already knots. Absent means outside the freshness window (the export
       // drops stale fields), so there is nothing to second-guess here.
@@ -405,7 +405,7 @@ function buildBuoyIcon(buoy, { showWind = false } = {}) {
         // Create directional arrow marker with wave height (BLUE)
         iconHtml = createDirectionalMarker(waveDirection, waveHeight, {
           type: "wave",
-          stale: isStale,
+          status,
           windSpeed: waveWindLabel,
         });
         // Arrow size: 26x30px (fattened), plus whatever the labels take
@@ -426,7 +426,7 @@ function buildBuoyIcon(buoy, { showWind = false } = {}) {
         // direction is the wind's, not a wave measurement (see the popup note)
         iconHtml = createDirectionalMarker(windDirection, waveHeight, {
           type: "wave-inferred",
-          stale: isStale,
+          status,
           windSpeed: waveWindLabel,
         });
         iconSize = [26, 30 + labelHeight];
@@ -438,7 +438,7 @@ function buildBuoyIcon(buoy, { showWind = false } = {}) {
         // Show red wind direction marker
         iconHtml = createDirectionalMarker(windDirection, windSpeed, {
           type: "wind",
-          stale: isStale,
+          status,
         });
         iconSize = [26, windSpeed ? 48 : 30];
         iconAnchor = [13, windSpeed ? 38 : 15];
@@ -448,14 +448,14 @@ function buildBuoyIcon(buoy, { showWind = false } = {}) {
       else if (isWave && waveHeight !== null && waveHeight !== undefined) {
         iconHtml = createDirectionalMarker(null, waveHeight, {
           type: "wave",
-          stale: isStale,
+          status,
           windSpeed: waveWindLabel,
         });
         iconSize = [26, 30 + labelHeight];
         iconAnchor = [13, labelHeight ? 20 + labelHeight : 15];
         windLabelDelta = hasWind && waveWindLabel === null ? WIND_LABEL_HEIGHT_PX : 0;
       } else if (!isWave && hasWind) {
-        iconHtml = createDirectionalMarker(null, windSpeed, { type: "wind", stale: isStale });
+        iconHtml = createDirectionalMarker(null, windSpeed, { type: "wind", status });
         iconSize = [26, 48];
         iconAnchor = [13, 38];
       }
@@ -572,8 +572,7 @@ function addBuoyMarker(buoy) {
   if (popupData) {
     const data = popupData;
     const obsTime = data.observation_time ? new Date(data.observation_time) : null;
-    const isStale = data.stale || false;
-    const popupTheme = stalePopupTheme(isStale, { observedAt: obsTime });
+    const popupTheme = statusPopupTheme(reportStatus(data), { observedAt: obsTime });
 
     popupContent += `<div style="background: ${popupTheme.bg}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${popupTheme.border};">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 4px; color: ${popupTheme.headingColor};">${popupTheme.headerText}</div>`;
@@ -895,8 +894,7 @@ function addLightstationMarker(lightstation) {
 
   if (hasData) {
     const obs = latestLightstationData[lookupName];
-    const isStale = obs.stale || false;
-    const popupTheme = stalePopupTheme(isStale, {
+    const popupTheme = statusPopupTheme(reportStatus(obs), {
       threshold: staleThresholdLabel(obs),
       observedAt: obs.observation_time,
     });
@@ -938,10 +936,8 @@ function addLightstationMarker(lightstation) {
       popupContent += `<div style="font-size: 0.85em; color: var(--color-text-light); margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--color-callout-info-divider, rgba(0,75,124,0.2));">📅 Report: ${obs.report_time_str}</div>`;
     }
 
-    // Staleness warning (already shown in header, but keep for emphasis)
-    if (obs.stale) {
-      popupContent += staleDataWarningHTML();
-    }
+    // No separate "STALE DATA" line: the header states late or down, in
+    // colour, and the report line states the age (see lightstation-map.js).
 
     popupContent += `</div>`;
   } else {
