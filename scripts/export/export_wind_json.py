@@ -30,6 +30,7 @@ from datetime import datetime, timezone
 from lib.config import EXPORT_DIR, WIND_DATABASE, safe_json_write
 from lib.directions import degrees_to_cardinal
 from lib.logging_config import setup_logging
+from lib.report_status import LEGACY_RHYTHM, load_rhythms, status_fields
 from lib.stations import get_all_wind
 
 # Shared utilities
@@ -82,6 +83,15 @@ ALL_FIELDS = [
 ]
 
 
+def whiterock_status(observation_time):
+    """Status fields for White Rock East Beach, from its observation time alone."""
+    try:
+        observed = datetime.fromisoformat(observation_time).timestamp()
+    except (TypeError, ValueError):
+        return {}
+    return status_fields(datetime.now(timezone.utc).timestamp() - observed, LEGACY_RHYTHM)
+
+
 def query_and_export():
     if not WIND_DATABASE.exists():
         logger.warning(f"Wind database not found: {WIND_DATABASE}")
@@ -105,6 +115,9 @@ def query_and_export():
         if not {"station_id", "observation_time"}.issubset(existing_cols):
             logger.error("Table wind_observation missing required columns")
             return
+
+        # Each station's own reporting rhythm, for `status` (lib/report_status.py).
+        rhythms = load_rhythms(conn, "wind_observation", "station_id", datetime.now(timezone.utc).timestamp())
 
         for station_id in WIND_STATIONS_REGISTRY.keys():
             # Get station name from registry (single source of truth)
@@ -140,6 +153,7 @@ def query_and_export():
             now_ts = datetime.now(timezone.utc).timestamp()
             age_minutes = (now_ts - latest_time) / 60
             station_json["stale"] = age_minutes > 180  # >3 hours old
+            station_json.update(status_fields(now_ts - latest_time, rhythms.get(station_id, LEGACY_RHYTHM)))
 
             # Query each field individually - get most recent non-null value within freshness window
             cutoff_time = latest_time - FRESHNESS_WINDOW
@@ -215,6 +229,9 @@ def query_and_export():
                 "name": whiterock_data["station_name"],
                 "observation_time": whiterock_data["observation_time"],
                 "stale": whiterock_data.get("stale", False),
+                # No arrival history carried across from the weather export,
+                # so the legacy thresholds (late 3 h, down 12 h).
+                **whiterock_status(whiterock_data.get("observation_time")),
                 "wind_speed_kt": whiterock_data.get("wind_speed"),
                 "wind_gust_kt": whiterock_data.get("wind_gust"),
                 "wind_direction": whiterock_data.get("wind_direction"),

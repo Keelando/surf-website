@@ -36,6 +36,7 @@ from lib.config import LIGHTSTATION_DATABASE as DB_PATH
 from lib.lightstation_readings import HAS_READING_SQL
 from lib.lightstation_schedule import infer_schedule, staleness_threshold_hours
 from lib.logging_config import setup_logging
+from lib.report_status import report_status, rhythm_from_thresholds
 from lib.stations import get_lightstation_by_report_name
 
 logger = setup_logging("lightstation_json_export")
@@ -192,6 +193,10 @@ def query_and_export():
                 "report_time_str": row["report_time_str"],
                 "stale": is_stale,
                 "stale_after_hours": stale_after_hours,
+                # Late is this station's own stale threshold; down is 12 h, or
+                # twice that for the slow daytime-only stations
+                # (lib/report_status.py).
+                "status": report_status(age_hours * 3600, rhythm_from_thresholds(stale_after_hours * 3600)),
                 "bulletins": bulletins,
                 "schedule": schedule,
             }

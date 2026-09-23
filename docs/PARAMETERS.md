@@ -124,6 +124,9 @@ Complete reference for all data parameters collected and displayed across the sy
     "name": "Halibut Bank",
     "observation_time": "2024-12-29T22:00:00+00:00",
     "stale": false,
+    "status": "ok",
+    "late_after_minutes": 184,
+    "down_after_minutes": 720,
     "wave_height_m": 1.2,
     "wave_period_s": 8.5,
     "wave_direction_deg": 270,
@@ -139,6 +142,11 @@ Complete reference for all data parameters collected and displayed across the sy
 }
 ```
 
+`stale` is the legacy flat "older than 3 hours". `status` (`ok` / `late` /
+`down`) is judged against the station's own reporting rhythm, with the
+thresholds it used alongside; see `lib/report_status.py`. Lightstations carry
+`status` too, with `stale_after_hours` as their late threshold.
+
 ### Wind Stations (`latest_wind.json`)
 
 ```json
@@ -147,6 +155,9 @@ Complete reference for all data parameters collected and displayed across the sy
     "name": "Point Atkinson",
     "observation_time": "2024-12-29T22:00:00+00:00",
     "stale": false,
+    "status": "ok",
+    "late_after_minutes": 186,
+    "down_after_minutes": 720,
     "wind_speed_kt": 12.0,
     "wind_gust_kt": 15.5,
     "wind_direction_deg": 300,

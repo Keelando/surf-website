@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from lib.config import BUOY_DATABASE, BUOY_FRESHNESS_WINDOW, EXPORT_DIR, safe_json_write
 from lib.directions import degrees_to_cardinal
 from lib.logging_config import setup_logging
+from lib.report_status import LEGACY_RHYTHM, load_rhythms, status_fields
 from lib.reporting_lag import record_publication
 from lib.stations import get_all_buoys
 
@@ -91,6 +92,9 @@ def query_and_export():
             logger.error("Table buoy_observation missing required columns")
             return
 
+        # Each buoy's own reporting rhythm, for `status` (lib/report_status.py).
+        rhythms = load_rhythms(conn, "buoy_observation", "buoy_id", datetime.now(timezone.utc).timestamp())
+
         for buoy_id in BUOYS.keys():
             buoy_json = {"name": BUOYS[buoy_id]["name"]}
 
@@ -122,6 +126,7 @@ def query_and_export():
             age_minutes = (now_ts - latest_time) / 60
             age_hours = age_minutes / 60
             buoy_json["stale"] = age_minutes > 180  # >3 hours old (legacy flag)
+            buoy_json.update(status_fields(now_ts - latest_time, rhythms.get(buoy_id, LEGACY_RHYTHM)))
             buoy_json["age_minutes"] = round(age_minutes, 1)
             buoy_json["age_hours"] = round(age_hours, 2)
 
