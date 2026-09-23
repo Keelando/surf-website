@@ -80,10 +80,12 @@
 
 # ==================== LIGHTSTATION REPORTS ====================
 # Lightstation pipeline: parse → export JSON → export 72h timeseries, one
-# ordered process. :13 and :43 trail the bulletins' arrival (FPCN61 lands at
-# ~:10, SXCN at ~:33-:41); the old hourly :05 held every report back 25-55 min.
+# ordered process, timed off observed arrivals (2026-09-23): FPCN61 lands at
+# :10:11-:10:23, regular SXCN at :33-:41, SXCN corrections (CCA) at :45-:46.
+# :14 and :47 leave ~3 min of margin on each; only rare stragglers (one at :56)
+# wait for the next run. The old hourly :05 held every report back 25-55 min.
 # flock guards against a slow run stacking.
-13,43 * * * * /usr/bin/flock -n /tmp/envcan_lightstation_pipeline.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/pipelines/lightstation_pipeline.py >> /home/keelando/envcan_wave/logs/lightstation_pipeline.log 2>&1
+14,47 * * * * /usr/bin/flock -n /tmp/envcan_lightstation_pipeline.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/pipelines/lightstation_pipeline.py >> /home/keelando/envcan_wave/logs/lightstation_pipeline.log 2>&1
 
 # ==================== TIDE DATA ====================
 # Fetch observations (every 30 min)
