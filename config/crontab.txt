@@ -79,9 +79,11 @@
 */10 * * * * /usr/bin/flock -n /tmp/envcan_whiterock.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_whiterock_weather.py >> /home/keelando/envcan_wave/logs/whiterock_weather.log 2>&1
 
 # ==================== LIGHTSTATION REPORTS ====================
-# Lightstation pipeline: fetch → parse → export JSON → export 24hr timeseries,
-# one ordered process (hourly at :05). flock guards against a slow run stacking.
-5 * * * * /usr/bin/flock -n /tmp/envcan_lightstation_pipeline.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/pipelines/lightstation_pipeline.py >> /home/keelando/envcan_wave/logs/lightstation_pipeline.log 2>&1
+# Lightstation pipeline: parse → export JSON → export 72h timeseries, one
+# ordered process. :13 and :43 trail the bulletins' arrival (FPCN61 lands at
+# ~:10, SXCN at ~:33-:41); the old hourly :05 held every report back 25-55 min.
+# flock guards against a slow run stacking.
+13,43 * * * * /usr/bin/flock -n /tmp/envcan_lightstation_pipeline.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/pipelines/lightstation_pipeline.py >> /home/keelando/envcan_wave/logs/lightstation_pipeline.log 2>&1
 
 # ==================== TIDE DATA ====================
 # Fetch observations (every 30 min)
