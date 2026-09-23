@@ -17,6 +17,7 @@ from scripts.parse.parse_lightstation import (
     parse_report_file,
     parse_station_entry,
     parse_sxcn_station_line,
+    resolve_ddhhmm,
 )
 
 # ── Sample report content ──────────────────────────────────────
@@ -460,6 +461,32 @@ class TestCrossBulletinMerge:
         assert all(gap >= PAIR_OFFSET_MAX_SEC for gap in gaps), gaps
 
 
+    def test_correction_replaces_a_wrong_value(self, db):
+        """A CCA that lands after its original overwrites what it states."""
+        original = self.observation("SXCN25_CWVR_231140___52196", self.SXCN_TIME, sea_height_ft=4.0)
+        insert_observations([original])
+        fix = self.observation("SXCN25_CWVR_231140_CCA__43418", self.SXCN_TIME, sea_height_ft=1.0)
+        insert_observations([fix])
+        (row,) = self.rows(db)
+        assert row["sea_height_ft"] == 1.0
+
+    def test_original_after_correction_does_not_undo_it(self, db):
+        """Re-parsing sorts the CCA first; the original must only fill gaps."""
+        fix = self.observation("SXCN25_CWVR_231140_CCA__43418", self.SXCN_TIME, sea_height_ft=1.0)
+        original = self.observation("SXCN25_CWVR_231140___52196", self.SXCN_TIME, sea_height_ft=4.0)
+        insert_observations([fix, original])
+        insert_observations([fix, original])
+        (row,) = self.rows(db)
+        assert row["sea_height_ft"] == 1.0
+
+    def test_correction_does_not_clear_a_gust_flag(self, db):
+        fpcn = self.observation("FPCN61_CWVR_231210___1", self.FPCN_TIME, wind_gusting=1)
+        insert_observations([fpcn])
+        fix = self.observation("SXCN26_CWVR_231140_CCA__2", self.SXCN_TIME, wind_gusting=0)
+        insert_observations([fix])
+        (row,) = self.rows(db)
+        assert row["wind_gusting"] == 1
+
 # ── SXCN24 station names, as the bulletin actually writes them ────────
 
 
@@ -492,3 +519,72 @@ class TestSxcn24Names:
     @pytest.mark.parametrize("text", ["N/A", "NA", "UNAVAILABLE"])
     def test_egg_island_unavailable_spellings_store_nothing(self, text):
         assert parse_sxcn_station_line(f"EGG ISLAND    {text}", "CENTRAL COAST") is None
+
+
+# ── Parsing fixes of 2026-09-23 (all from real bulletin lines) ────────
+
+
+class TestResolveDdhhmm:
+    def test_stamp_from_the_31st_on_the_1st_of_a_30_day_month(self):
+        """31 March read on 1 April must not be tried as 31 April."""
+        now = datetime(2026, 4, 1, 0, 5, tzinfo=timezone.utc)
+        assert resolve_ddhhmm("312340", now) == datetime(2026, 3, 31, 23, 40, tzinfo=timezone.utc)
+
+    def test_ordinary_same_month_stamp(self):
+        now = datetime(2026, 9, 23, 18, 5, tzinfo=timezone.utc)
+        assert resolve_ddhhmm("231740", now) == datetime(2026, 9, 23, 17, 40, tzinfo=timezone.utc)
+
+    def test_future_stamp_rolls_back_a_month(self):
+        now = datetime(2026, 10, 1, 0, 5, tzinfo=timezone.utc)
+        assert resolve_ddhhmm("302340", now) == datetime(2026, 9, 30, 23, 40, tzinfo=timezone.utc)
+
+
+class TestSxcnWind:
+    @pytest.mark.parametrize(
+        "line, direction, speed",
+        [
+            ("LENNARD       PC 15 NW8E 1FT CHP LO SW", "NORTHWEST", 8.0),
+            ("CHATHAM      CLDY 15 SE5E RPLD", "SOUTHEAST", 5.0),
+            ("CAPE BEALE    CLDY 15 W9E 2FT CHP LO W", "WEST", 9.0),
+            ("TRIAL IS      CLDY 15 SW07 RPLD F DSNT E-SE", "SOUTHWEST", 7.0),
+        ],
+    )
+    def test_single_and_double_digit_speeds(self, line, direction, speed):
+        data = parse_sxcn_station_line(line, "X")
+        assert (data["wind_direction"], data["wind_speed_kt"]) == (direction, speed)
+
+    def test_calm_with_trailing_comma(self):
+        data = parse_sxcn_station_line("ADDENBROKE    CLDY 12 CLM, RPLD SHWRS DSNT NW-N", "X")
+        assert data["wind_calm"] == 1
+
+
+class TestSwellRanges:
+    @pytest.mark.parametrize(
+        "line, intensity, direction",
+        [
+            ("CAPE SCOTT    PC 15 S15E 4FT MOD LO-MDT SW", "LOW TO MODERATE", "SOUTHWESTERLY"),
+            ("QUATSINO      PC 15 NE12E 2FT CHP MDT SW OCNL RW-", "MODERATE", "SOUTHWESTERLY"),
+            ("PINE ISLAND  X 1/8F SE12E 3FT MOD MDT W", "MODERATE", "WESTERLY"),
+            ("LENNARD       PC 15 NW8E 1FT CHP LO SW", "LOW", "SOUTHWESTERLY"),
+        ],
+    )
+    def test_sxcn_swell(self, line, intensity, direction):
+        data = parse_sxcn_station_line(line, "X")
+        assert (data["swell_intensity"], data["swell_direction"]) == (intensity, direction)
+
+    def test_sea_state_mod_is_not_read_as_swell(self):
+        data = parse_sxcn_station_line("MCINNES       OVC 15 SE20E 3FT MOD", "X")
+        assert data["sea_condition"] == "MODERATE"
+        assert data["swell_intensity"] is None
+
+    def test_fpcn61_range_is_kept_whole(self):
+        line = (
+            "CAPE SCOTT. ESTIMATED WIND SOUTHEAST 30 KNOTS AND GUSTING. "
+            "SEAS 7 FEET ROUGH. LOW TO MODERATE SOUTHWESTERLY SWELL."
+        )
+        data = parse_station_entry(line, "X")
+        assert (data["swell_intensity"], data["swell_direction"]) == ("LOW TO MODERATE", "SOUTHWESTERLY")
+
+    def test_fpcn61_single_intensity_unchanged(self):
+        data = parse_station_entry("GREEN ISLAND. WIND CALM. SEAS RIPPLED. LOW SOUTHERLY SWELL.", "X")
+        assert (data["swell_intensity"], data["swell_direction"]) == ("LOW", "SOUTHERLY")

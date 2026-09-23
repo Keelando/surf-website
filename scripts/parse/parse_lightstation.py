@@ -120,6 +120,9 @@ SXCN_WIND_DIRS = {
     "NW": "NORTHWEST",
 }
 
+# SXCN swell intensity abbreviations (FPCN61 spells them out)
+SXCN_SWELL_INTENSITIES = {"LO": "LOW", "MOD": "MODERATE", "MDT": "MODERATE", "HVY": "HEAVY"}
+
 # SXCN swell direction abbreviations
 SXCN_SWELL_DIRS = {
     "N": "NORTHERLY",
@@ -170,26 +173,7 @@ def is_stale_retransmission(header_line, report_time_line, reference_time=None):
     if not match:
         return None
 
-    ddhhmm = match.group(1)
-    day, hour, minute = int(ddhhmm[0:2]), int(ddhhmm[2:4]), int(ddhhmm[4:6])
-
-    now_utc = reference_time or datetime.now(timezone.utc)
-
-    # The stamp carries no month or year, so try the current month first and
-    # walk back until the day exists and isn't in the future.
-    dt = None
-    year, month = now_utc.year, now_utc.month
-    for _ in range(3):
-        try:
-            candidate = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
-        except ValueError:
-            candidate = None
-        if candidate is not None and candidate <= now_utc + timedelta(hours=1):
-            dt = candidate
-            break
-        month -= 1
-        if month == 0:
-            month, year = 12, year - 1
+    dt = resolve_ddhhmm(match.group(1), reference_time)
     if dt is None:
         return None
 
@@ -203,65 +187,55 @@ def is_stale_retransmission(header_line, report_time_line, reference_time=None):
     return header_day_name != obs_day_name
 
 
-def parse_report_time(header_line, report_time_line):
+def resolve_ddhhmm(ddhhmm, now_utc=None):
+    """UTC datetime for a WMO DDHHMM stamp, which carries no month or year.
+
+    Tries the current month first and walks back until the day exists and is
+    not in the future. The walk-back is the point: on the 1st of April a stamp
+    from 31 March must not be tried as 31 April — that raised, the bulletin
+    was dropped, and it was re-dropped on every run until it aged off disk.
+
+    Returns:
+        datetime (UTC) or None
     """
-    Parse the report timestamp from header and time lines.
+    day, hour, minute = int(ddhhmm[0:2]), int(ddhhmm[2:4]), int(ddhhmm[4:6])
+    now_utc = now_utc or datetime.now(timezone.utc)
+    year, month = now_utc.year, now_utc.month
+    for _ in range(3):
+        try:
+            candidate = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
+        except ValueError:
+            candidate = None
+        # One hour of grace for clock drift: a bulletin is never from the future.
+        if candidate is not None and candidate <= now_utc + timedelta(hours=1):
+            return candidate
+        month -= 1
+        if month == 0:
+            month, year = 12, year - 1
+    return None
+
+
+def parse_report_time(header_line, report_time_line, now_utc=None):
+    """
+    Parse the report timestamp from the FPCN61 header.
 
     Args:
         header_line: "FPCN61 CWVR 251810" (DDHHMM format)
-        report_time_line: "10 AM Tuesday"
+        report_time_line: "10 AM Tuesday" (unused; kept for the call site)
+        now_utc: Optional reference time (for testing)
 
     Returns:
         Unix timestamp (int) or None
     """
-    try:
-        # Extract DDHHMM from header
-        match = re.search(r"FPCN61\s+CWVR\s+(\d{6})", header_line)
-        if not match:
-            logger.warning(f"Could not parse header: {header_line}")
-            return None
-
-        ddhhmm = match.group(1)
-        day = int(ddhhmm[0:2])
-        hour = int(ddhhmm[2:4])
-        minute = int(ddhhmm[4:6])
-
-        # Get current year/month (reports are always current month)
-        now_utc = datetime.now(timezone.utc)
-        year = now_utc.year
-        month = now_utc.month
-
-        # Create datetime (UTC)
-        dt = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
-
-        # Sanity check: if report date is in the future AT ALL, assume it's from last month
-        # (Reports are current observations, NEVER legitimately in the future)
-        # Allow small buffer (1 hour) for clock drift/timezone edge cases
-        if dt > now_utc + timedelta(hours=1):
-            month -= 1
-            if month == 0:
-                month = 12
-                year -= 1
-            try:
-                dt = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
-            except ValueError:
-                # Day doesn't exist in previous month (e.g., day=31 rolled back to February).
-                # Roll back one more month.
-                month -= 1
-                if month == 0:
-                    month = 12
-                    year -= 1
-                try:
-                    dt = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
-                except ValueError:
-                    logger.warning(f"Cannot determine valid observation date for day={day}, giving up")
-                    return None
-
-        return int(dt.timestamp())
-
-    except Exception as e:
-        logger.error(f"Error parsing report time: {e}")
+    match = re.search(r"FPCN61\s+CWVR\s+(\d{6})", header_line)
+    if not match:
+        logger.warning(f"Could not parse header: {header_line}")
         return None
+    dt = resolve_ddhhmm(match.group(1), now_utc)
+    if dt is None:
+        logger.warning(f"Cannot determine valid observation date for {header_line!r}, giving up")
+        return None
+    return int(dt.timestamp())
 
 
 def parse_station_entry(line, region):
@@ -333,10 +307,15 @@ def parse_station_entry(line, region):
 
     # Extract swell information
     # Pattern: "LOW SOUTHERLY SWELL" or "MODERATE SOUTHWESTERLY SWELL"
-    swell_match = re.search(r"(LOW|MODERATE|HEAVY)\s+([A-Z]+)\s+SWELL", line)
+    # A range is stored whole: "LOW TO MODERATE" used to be recorded as
+    # MODERATE, because the search found the second word first-fit.
+    swell_match = re.search(
+        r"\b(LOW|MODERATE|HEAVY)(?:\s+TO\s+(LOW|MODERATE|HEAVY))?\s+([A-Z]+)\s+SWELL", line
+    )
     if swell_match:
-        data["swell_intensity"] = swell_match.group(1)
-        data["swell_direction"] = swell_match.group(2)
+        low, high = swell_match.group(1), swell_match.group(2)
+        data["swell_intensity"] = f"{low} TO {high}" if high else low
+        data["swell_direction"] = swell_match.group(3)
     # Also check for intensity without direction: "LOW TO MODERATE ... SWELL"
     elif re.search(r"(LOW|MODERATE|HEAVY).*SWELL", line):
         intensity_match = re.search(r"(LOW|MODERATE|HEAVY)", line)
@@ -409,7 +388,7 @@ def parse_report_file(filepath):
         return []
 
 
-def parse_sxcn_time(header_line):
+def parse_sxcn_time(header_line, now_utc=None):
     """
     Parse observation time from SXCN header like "SXCN25 CWVR 112340".
 
@@ -419,31 +398,8 @@ def parse_sxcn_time(header_line):
     match = re.search(r"SXCN\d+\s+CWVR\s+(\d{6})", header_line)
     if not match:
         return None
-
-    ddhhmm = match.group(1)
-    day = int(ddhhmm[0:2])
-    hour = int(ddhhmm[2:4])
-    minute = int(ddhhmm[4:6])
-
-    now_utc = datetime.now(timezone.utc)
-    year, month = now_utc.year, now_utc.month
-
-    try:
-        dt = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
-    except ValueError:
-        return None
-
-    # If in the future, roll back to previous month
-    if dt > now_utc + timedelta(hours=1):
-        month -= 1
-        if month == 0:
-            month, year = 12, year - 1
-        try:
-            dt = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
-        except ValueError:
-            return None
-
-    return int(dt.timestamp())
+    dt = resolve_ddhhmm(match.group(1), now_utc)
+    return int(dt.timestamp()) if dt else None
 
 
 def parse_sxcn_station_line(line, region):
@@ -512,10 +468,13 @@ def parse_sxcn_station_line(line, region):
 
     # Wind: "SW06E", "NW16", "CLM", "E14E"
     # May be jammed against sea height: "SW18E3FT"
-    if " CLM " in f" {obs_text} ":
+    # Speeds under 10 kt are sometimes written without the leading zero
+    # ("NW8E", "SE5E"), and calm sometimes carries punctuation ("CLM,"). Both
+    # used to fall through, leaving the reading with no wind at all.
+    if re.search(r"\bCLM\b", obs_text):
         data["wind_calm"] = 1
     else:
-        wind_match = re.search(r"([NESW]{1,2})(\d{2,3})(E)?", obs_text)
+        wind_match = re.search(r"\b([NESW]{1,2})(\d{1,3})(E)?", obs_text)
         if wind_match:
             direction_abbr = wind_match.group(1)
             data["wind_direction"] = SXCN_WIND_DIRS.get(direction_abbr, direction_abbr)
@@ -524,22 +483,32 @@ def parse_sxcn_station_line(line, region):
                 data["wind_estimated"] = 1
 
     # Seas: "1FT CHP", "3FT MOD", "RPLD", "3FT MDT"
-    if "RPLD" in obs_text:
+    seas_end = 0
+    rpld = re.search(r"\bRPLD\b", obs_text)
+    if rpld:
         data["sea_height_ft"] = 0
         data["sea_condition"] = "RIPPLED"
+        seas_end = rpld.end()
     else:
         seas_match = re.search(r"(\d+)FT\s+(\w+)", obs_text)
         if seas_match:
             data["sea_height_ft"] = float(seas_match.group(1))
             condition_abbr = seas_match.group(2)
             data["sea_condition"] = SXCN_SEA_CONDITIONS.get(condition_abbr, condition_abbr)
+            seas_end = seas_match.end()
 
-    # Swell: "LO SW", "LO S", "LO W", "MOD NW"
-    swell_match = re.search(r"\b(LO|MOD|HVY)\s+([NESW]{1,2})\b", obs_text)
+    # Swell: "LO SW", "MOD NW", "MDT SW", "LO-MDT W". Searched only after the
+    # seas group, so the sea state's own "MOD" is never read as a swell. MDT and
+    # ranges used to be missed outright, dropping Quatsino, Cape Scott and Pine
+    # Island's swell whenever it was moderate.
+    swell_match = re.search(
+        r"\b(LO|MOD|MDT|HVY)(?:-(LO|MOD|MDT|HVY))?\s+([NESW]{1,2})\b", obs_text[seas_end:]
+    )
     if swell_match:
-        intensity_map = {"LO": "LOW", "MOD": "MODERATE", "HVY": "HEAVY"}
-        data["swell_intensity"] = intensity_map.get(swell_match.group(1))
-        data["swell_direction"] = SXCN_SWELL_DIRS.get(swell_match.group(2))
+        low = SXCN_SWELL_INTENSITIES[swell_match.group(1)]
+        high = swell_match.group(2) and SXCN_SWELL_INTENSITIES[swell_match.group(2)]
+        data["swell_intensity"] = f"{low} TO {high}" if high else low
+        data["swell_direction"] = SXCN_SWELL_DIRS.get(swell_match.group(3))
 
     return data
 
@@ -641,6 +610,11 @@ def bulletin_family(source_file):
     return None
 
 
+def is_correction(source_file):
+    """True for a WMO correction bulletin, e.g. SXCN25_CWVR_231140_CCA__43418."""
+    return bool(source_file and re.search(r"_CC[A-Z]_", source_file))
+
+
 def partner_window(family, observation_time):
     """Epoch bounds where the other bulletin's copy of this reading would sit.
 
@@ -706,10 +680,21 @@ def merge_observation(cur, row, obs, keep_time):
     """Fold an observation into an existing row. Returns True if it changed."""
     updates = {}
 
-    for field in MERGE_VALUE_FIELDS:
-        if row[field] is None and obs.get(field) is not None:
-            updates[field] = obs[field]
+    # A correction bulletin (WMO "CCA", "CCB", ...) replaces what it states;
+    # anything else only fills gaps. Without this a correction that arrived
+    # after its original could never fix a wrong value, only a missing one.
+    correcting = is_correction(obs.get("source_file"))
 
+    for field in MERGE_VALUE_FIELDS:
+        incoming = obs.get(field)
+        if incoming is None:
+            continue
+        if row[field] is None or (correcting and row[field] != incoming):
+            updates[field] = incoming
+
+    # Flags only ever accumulate, corrections included: SXCN cannot say
+    # "gusting" at all, so an SXCN correction clearing FPCN61's gust flag would
+    # be erasing something it never had the words for.
     for field in MERGE_FLAG_FIELDS:
         if obs.get(field) and not row[field]:
             updates[field] = 1
