@@ -9,7 +9,12 @@
 
 import { applyCardBorder, buildBuoyCardHTML, wireBuoyCardEvents } from "./buoy-card.js";
 import { buildHistoryTableHTML } from "./buoy-history.js";
-import { applyWaveThreshold, clearWaveThreshold, setTimeRange } from "./charts-v4.js";
+import {
+  applyWaveThreshold,
+  clearWaveThreshold,
+  getBuoyTimeseries,
+  setTimeRange,
+} from "./charts-v4.js";
 import { formatNumericDayTime } from "./shared/format-time.js";
 import { formatDataAge } from "./shared/staleness.js";
 import { centerMapOnBuoy, showSelectedBuoyOnMap, showSelectedSurgeOnMap } from "./stations-map.js";
@@ -427,9 +432,7 @@ async function toggleCardHistory(buoyId) {
     button.disabled = true;
 
     try {
-      const timeseriesData = await fetchWithTimeout(
-        `/data/buoy_timeseries_48h.json?t=${Date.now()}`,
-      );
+      const timeseriesData = await getBuoyTimeseries();
       const buoyData = timeseriesData[buoyId];
 
       if (buoyData && buoyData.timeseries) {

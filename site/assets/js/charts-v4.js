@@ -56,12 +56,38 @@ function filterTimeseriesData(data, hours) {
   return filtered;
 }
 
+// One download of buoy_timeseries_48h.json (~1.4 MB, ~65 KB gzipped) shared
+// by the charts and every card's history table. The history button used to
+// fetch its own cache-busted copy on each click, which was most of why the
+// table was slow to appear.
+const TIMESERIES_MAX_AGE_MS = 10 * 60 * 1000;
+let timeseriesPromise = null;
+let timeseriesFetchedAt = 0;
+
+/**
+ * The 48 h buoy timeseries, fetched at most once per TIMESERIES_MAX_AGE_MS.
+ * A tab left open past that gets a fresh copy on its next request.
+ *
+ * @returns {Promise<Object>}
+ */
+export function getBuoyTimeseries() {
+  if (!timeseriesPromise || Date.now() - timeseriesFetchedAt > TIMESERIES_MAX_AGE_MS) {
+    timeseriesFetchedAt = Date.now();
+    timeseriesPromise = fetchWithTimeout(`/data/buoy_timeseries_48h.json?t=${Date.now()}`);
+    // A failed fetch must not be cached for ten minutes.
+    timeseriesPromise.catch(() => {
+      timeseriesPromise = null;
+    });
+  }
+  return timeseriesPromise;
+}
+
 /**
  * Load chart data from JSON file and initialize
  */
 async function loadChartsData() {
   try {
-    chartData = await fetchWithTimeout(`/data/buoy_timeseries_48h.json?t=${Date.now()}`);
+    chartData = await getBuoyTimeseries();
 
     initCharts();
     const selectedBuoy = document.getElementById("chart-buoy-select").value;
