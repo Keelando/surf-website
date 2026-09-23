@@ -6,7 +6,11 @@
  * scripts loaded before the entry point.
  */
 
-import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
+import {
+  formatMonthDayTimeTZ,
+  formatWeekdayDayTime,
+  getShortAgeString,
+} from "./shared/format-time.js";
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { getPopupOptions } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
@@ -376,10 +380,10 @@ function buildBuoyIcon(buoy, { showWind = false } = {}) {
     if (data) {
       // Try multiple possible field names for wave direction
       const waveDirection =
-        data.wave_direction_avg || data.wave_direction_peak || data.wave_direction;
+        data.wave_direction_avg ?? data.wave_direction_peak ?? data.wave_direction;
       const waveHeight = data.wave_height_sig;
       // Wind direction: unified field name (wind_direction_deg), fallback to old name for buoys
-      const windDirection = data.wind_direction_deg || data.wind_direction;
+      const windDirection = data.wind_direction_deg ?? data.wind_direction;
       const isStale = data.stale || false;
       // Wind stations use wind_speed_kt, buoys use wind_speed. Both are
       // already knots. Absent means outside the freshness window (the export
@@ -437,6 +441,22 @@ function buildBuoyIcon(buoy, { showWind = false } = {}) {
         });
         iconSize = [26, windSpeed ? 48 : 30];
         iconAnchor = [13, windSpeed ? 38 : 15];
+      }
+      // A value but nothing to point it with: a dot, still labelled and still
+      // dimmed when stale. The emoji is reserved for stations with no number.
+      else if (isWave && waveHeight !== null && waveHeight !== undefined) {
+        iconHtml = createDirectionalMarker(null, waveHeight, {
+          type: "wave",
+          stale: isStale,
+          windSpeed: waveWindLabel,
+        });
+        iconSize = [26, 30 + labelHeight];
+        iconAnchor = [13, labelHeight ? 20 + labelHeight : 15];
+        windLabelDelta = hasWind && waveWindLabel === null ? WIND_LABEL_HEIGHT_PX : 0;
+      } else if (!isWave && hasWind) {
+        iconHtml = createDirectionalMarker(null, windSpeed, { type: "wind", stale: isStale });
+        iconSize = [26, 48];
+        iconAnchor = [13, 38];
       }
     }
   } catch (error) {
@@ -552,7 +572,7 @@ function addBuoyMarker(buoy) {
     const data = popupData;
     const obsTime = data.observation_time ? new Date(data.observation_time) : null;
     const isStale = data.stale || false;
-    const popupTheme = stalePopupTheme(isStale);
+    const popupTheme = stalePopupTheme(isStale, { observedAt: obsTime });
 
     popupContent += `<div style="background: ${popupTheme.bg}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${popupTheme.border};">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 4px; color: ${popupTheme.headingColor};">${popupTheme.headerText}</div>`;
@@ -672,15 +692,10 @@ function addBuoyMarker(buoy) {
     }
 
     // Show timestamp
+    // With the date: a stale reading can be from yesterday, and a bare
+    // "22:20" then reads as tonight.
     if (obsTime) {
-      const timeStr = obsTime.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-        timeZone: "America/Vancouver",
-        timeZoneName: "short",
-      });
-      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 4px;">Updated: ${timeStr}</div>`;
+      popupContent += `<div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 4px;">Updated: ${formatMonthDayTimeTZ(obsTime)} (${getShortAgeString(obsTime)})</div>`;
     }
 
     popupContent += `</div>`;
@@ -880,7 +895,10 @@ function addLightstationMarker(lightstation) {
   if (hasData) {
     const obs = latestLightstationData[lookupName];
     const isStale = obs.stale || false;
-    const popupTheme = stalePopupTheme(isStale, { threshold: staleThresholdLabel(obs) });
+    const popupTheme = stalePopupTheme(isStale, {
+      threshold: staleThresholdLabel(obs),
+      observedAt: obs.observation_time,
+    });
 
     popupContent += `<div style="background: ${popupTheme.bg}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${popupTheme.border};">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 6px; color: ${popupTheme.headingColor}; font-size: 0.95em;">${popupTheme.headerText}</div>`;

@@ -12,19 +12,49 @@
 export const STALE_MARKER_OPACITY = 0.35;
 
 /**
+ * How old a stale reading is, for a popup header: "13h" under two days,
+ * "2d 4h" past that. Whole hours, rounded down — "3h" means at least three.
+ *
+ * @param {Date|string} observedAt
+ * @param {Date} [now] - Injectable for tests
+ * @returns {string|null} null when the time is missing or unparseable
+ */
+export function staleAgeLabel(observedAt, now = new Date()) {
+  if (!observedAt) return null;
+  const ageMs = now - (observedAt instanceof Date ? observedAt : new Date(observedAt));
+  if (!Number.isFinite(ageMs)) return null;
+  const hours = Math.max(0, Math.floor(ageMs / 3_600_000));
+  if (hours < 48) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+}
+
+/**
  * Colour theme + header line for a map-popup "Latest Conditions" block.
  *
  * @param {boolean} isStale - Backend-computed stale flag
  * @param {Object} [opts]
  * @param {string} [opts.label] - Header label, e.g. "Latest Conditions"
  * @param {string} [opts.staleLabel] - Label when stale, if different (winds: "Current Wind" / "Last Wind")
- * @param {string} [opts.threshold] - Human-readable threshold, e.g. ">3h"
+ * @param {string} [opts.threshold] - Human-readable threshold, e.g. ">3h";
+ *   only used when `observedAt` is absent
+ * @param {Date|string} [opts.observedAt] - Observation time. When given, a
+ *   stale header states the actual age ("13h old") rather than the threshold
+ *   (">3h old"), which said the same thing about a reading 4 hours and 4 days
+ *   old.
+ * @param {Date} [opts.now] - Injectable for tests
  * @returns {{bg: string, border: string, headingColor: string, headerText: string}}
  */
 export function stalePopupTheme(
   isStale,
-  { label = "Latest Conditions", staleLabel = label, threshold = ">3h" } = {},
+  {
+    label = "Latest Conditions",
+    staleLabel = label,
+    threshold = ">3h",
+    observedAt = null,
+    now = new Date(),
+  } = {},
 ) {
+  const age = staleAgeLabel(observedAt, now) ?? threshold;
   return {
     bg: isStale
       ? "var(--color-callout-danger-bg, #fff5f5)"
@@ -33,7 +63,7 @@ export function stalePopupTheme(
     headingColor: isStale
       ? "var(--color-accent-red)"
       : "var(--map-popup-heading, var(--color-primary-dark))",
-    headerText: isStale ? `${staleLabel} (STALE - ${threshold} old):` : `${label}:`,
+    headerText: isStale ? `${staleLabel} (STALE - ${age} old):` : `${label}:`,
   };
 }
 

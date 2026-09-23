@@ -54,6 +54,21 @@ test("missing value omits the label but keeps the arrow", () => {
   assert.match(html, /<svg/);
 });
 
+test("no direction draws a labelled dot, not an arrow", () => {
+  const html = createDirectionalMarker(null, 1.4, { type: "wave" });
+  assert.match(html, />1\.4m</);
+  assert.match(html, /<circle/);
+  assert.doesNotMatch(html, /rotate\(/);
+});
+
+test("direction-less stale marker is still dimmed", () => {
+  assert.match(createDirectionalMarker(null, 1.4, { type: "wave", stale: true }), /opacity: 0\.35/);
+});
+
+test("direction 0 (due north) is an arrow, not a missing direction", () => {
+  assert.match(createDirectionalMarker(0, 5), /rotate\(0deg\)/);
+});
+
 test("marker svg is hidden from assistive tech", () => {
   assert.match(createDirectionalMarker(0, 5), /aria-hidden="true"/);
 });

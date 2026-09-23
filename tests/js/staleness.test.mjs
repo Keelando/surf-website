@@ -4,6 +4,7 @@ import {
   formatDataAge,
   STALE_MARKER_OPACITY,
   staleDataWarningHTML,
+  staleAgeLabel,
   stalePopupTheme,
 } from "../../site/assets/js/shared/staleness.js";
 
@@ -57,4 +58,30 @@ test("formatDataAge scales minutes to hours to days", () => {
 test("formatDataAge returns null when the age is unknown", () => {
   assert.equal(formatDataAge(null), null);
   assert.equal(formatDataAge(undefined), null);
+});
+
+test("stale header states the actual age when the observation time is known", () => {
+  const now = new Date("2026-09-23T18:00:00Z");
+  const t = stalePopupTheme(true, { observedAt: "2026-09-23T04:40:00Z", now });
+  assert.equal(t.headerText, "Latest Conditions (STALE - 13h old):");
+});
+
+test("observedAt wins over the threshold; threshold is the fallback", () => {
+  const now = new Date("2026-09-23T18:00:00Z");
+  assert.equal(
+    stalePopupTheme(true, { threshold: ">9h", observedAt: "2026-09-23T06:00:00Z", now }).headerText,
+    "Latest Conditions (STALE - 12h old):",
+  );
+  assert.equal(
+    stalePopupTheme(true, { threshold: ">9h", observedAt: null, now }).headerText,
+    "Latest Conditions (STALE - >9h old):",
+  );
+});
+
+test("stale age switches to days past 48 hours", () => {
+  const now = new Date("2026-09-23T18:00:00Z");
+  assert.equal(staleAgeLabel("2026-09-22T00:00:00Z", now), "42h");
+  assert.equal(staleAgeLabel("2026-09-21T14:00:00Z", now), "2d 4h");
+  assert.equal(staleAgeLabel("not a date", now), null);
+  assert.equal(staleAgeLabel(null, now), null);
 });

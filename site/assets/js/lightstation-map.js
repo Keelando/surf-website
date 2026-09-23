@@ -165,7 +165,10 @@ function addLightstationMapMarker(lightstation) {
   if (hasData) {
     const obs = latestLightstationData[lookupName];
     const isStale = obs.stale || false;
-    const popupTheme = stalePopupTheme(isStale, { threshold: staleThresholdLabel(obs) });
+    const popupTheme = stalePopupTheme(isStale, {
+      threshold: staleThresholdLabel(obs),
+      observedAt: obs.observation_time,
+    });
 
     popupContent += `<div style="background: ${popupTheme.bg}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${popupTheme.border};">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 6px; color: ${popupTheme.headingColor}; font-size: 0.95em;">${popupTheme.headerText}</div>`;

@@ -30,7 +30,11 @@ export const DIRECTION_ARROW_PATH = "path://M0,15 L-3,-5 L0,0 L3,-5 Z";
  * lightstation-map.js red-badge label converges here when that page
  * migrates).
  *
- * @param {number} direction - Degrees, meteorological (coming FROM)
+ * @param {number|null} direction - Degrees, meteorological (coming FROM).
+ *   null draws a round dot instead of an arrow: the station has a value to
+ *   show but no direction to point it (a NOAA spectral file running behind
+ *   the heights, a calm wind). Better than the old type-emoji fallback, which
+ *   hid the value and read as "no data" when there was data.
  * @param {number|null} value - Wave height (m) or wind speed (kt)
  * @param {Object} [opts]
  * @param {string} [opts.type] - 'wave', 'wind', or 'wave-inferred'
@@ -100,16 +104,23 @@ export function createDirectionalMarker(
   }
 
   // ECharts-style arrow path, fattened for map visibility; points down at
-  // rotation 0
+  // rotation 0. Without a direction, a dot in the same 26x30 box so the icon
+  // anchors line up either way.
+  const hasDirection = direction !== null && direction !== undefined;
+  const glyph = hasDirection
+    ? `<div style="transform: rotate(${direction}deg); transform-origin: center center;">
+        <svg aria-hidden="true" width="26" height="30" viewBox="-6 -10 12 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); color: ${arrowColor};">
+          <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="${fillColor}" fill-opacity="0.98" stroke="currentColor" stroke-width="${isInferred ? 2 : 1.5}"/>
+        </svg>
+      </div>`
+    : `<svg aria-hidden="true" width="26" height="30" viewBox="-6 -10 12 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); color: ${arrowColor};">
+        <circle cx="0" cy="2" r="4.5" fill="${fillColor}" fill-opacity="0.98" stroke="currentColor" stroke-width="1.5"/>
+      </svg>`;
   return `
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: ${opacity};">
       ${valueLabel}
       ${windLabel}
-      <div style="transform: rotate(${direction}deg); transform-origin: center center;">
-        <svg aria-hidden="true" width="26" height="30" viewBox="-6 -10 12 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); color: ${arrowColor};">
-          <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="${fillColor}" fill-opacity="0.98" stroke="currentColor" stroke-width="${isInferred ? 2 : 1.5}"/>
-        </svg>
-      </div>
+      ${glyph}
     </div>
   `;
 }

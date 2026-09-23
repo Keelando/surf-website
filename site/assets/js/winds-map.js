@@ -6,10 +6,12 @@
  * (classic script, loaded earlier).
  */
 
+import { formatMonthDayTimeTZ, getShortAgeString } from "./shared/format-time.js";
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { getPopupOptions } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
 import { stationTypeLabel } from "./shared/station-meta.js";
+import { staleAgeLabel } from "./shared/staleness.js";
 import { windData } from "./wind-data.js";
 
 // --- Constants ---
@@ -121,7 +123,9 @@ function addWindMarker(station, currentData, isBuoy = false) {
     const staleClass = currentData.stale ? "popup-wind-card--stale" : "popup-wind-card--fresh";
     const typeClass = isBuoy ? "popup-wind-card--buoy" : "popup-wind-card--station";
     const headerClass = currentData.stale ? "popup-wind-header--stale" : "popup-wind-header--fresh";
-    const headerText = currentData.stale ? "Last Wind (STALE - >3h old):" : "Current Wind:";
+    const headerText = currentData.stale
+      ? `Last Wind (STALE - ${staleAgeLabel(currentData.observation_time) ?? ">3h"} old):`
+      : "Current Wind:";
     popupContent += `<div class="popup-wind-card ${staleClass} ${typeClass}">`;
     popupContent += `<div class="popup-wind-header ${headerClass}">${headerText}</div>`;
 
@@ -153,14 +157,7 @@ function addWindMarker(station, currentData, isBuoy = false) {
     // Timestamp
     if (currentData.observation_time) {
       const obsTime = new Date(currentData.observation_time);
-      const timeStr = obsTime.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-        timeZone: "America/Vancouver",
-        timeZoneName: "short",
-      });
-      popupContent += `<div class="popup-timestamp">Updated: ${timeStr}</div>`;
+      popupContent += `<div class="popup-timestamp">Updated: ${formatMonthDayTimeTZ(obsTime)} (${getShortAgeString(obsTime)})</div>`;
     }
 
     popupContent += `</div>`;
