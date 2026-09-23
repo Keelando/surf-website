@@ -109,11 +109,13 @@ WAVE_FORECAST_RETENTION_DAYS = 60
 LIGHTSTATION_RETENTION_DAYS = 30
 
 # How long to keep the raw FPCN61/SXCN bulletin files. Separate from the
-# observations above, and much shorter: once parsed into SQLite a bulletin has
-# no further use, and the crontab already sweeps
-# data/lightstation_bulletins at one day. Splitting the two constants keeps a
-# 30-day observation window from silently implying a 30-day pile of raw text.
-LIGHTSTATION_RAW_RETENTION_DAYS = 1
+# observations above: a bulletin has no use once parsed EXCEPT for re-parsing
+# after a parser fix, and a week of them is ~300 small files (~1-2 MB). One day
+# (the value until 2026-09-23) meant each of that day's fixes could only be
+# re-applied to the last 24 h of readings. The parser's purge is the only sweep
+# of data/lightstation_bulletins; the crontab `find -delete` that also swept it
+# at one day was removed so this constant alone decides.
+LIGHTSTATION_RAW_RETENTION_DAYS = 7
 
 # How long to keep reporting-lag rows. Longer than the observations they
 # describe: the point is spotting slow degradation over weeks, and the rows
