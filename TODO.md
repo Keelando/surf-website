@@ -100,6 +100,13 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       Left: six render-blocking stylesheets (critical-CSS inlining), Leaflet
       on the home page, and the nav wraps to 89–95 px between 601 and 1279 px
       (the open nav-overflow bug), where a small shift remains.
+      **Critical-CSS inlining: measured and deferred, 2026-09-24.** Home was 83 on
+      that run; Lighthouse credits ~0.5–0.65 s to the six blocking resources,
+      but that is simulated slow 4G. The real trace had a 72 ms first byte, the
+      sheets load in parallel (one round trip), and repeat visitors hit the
+      1-year immutable cache. Inlining would also cover the nav + hero the
+      mockup is about to change. Revisit after the redesign if at all;
+      home TBT (400 ms, JS) is the bigger lever.
 - [x] **Map "late" and "down"**, 2026-09-23. `lib/report_status.py` derives
       each station's rhythm from its own last 7 days of arrivals
       (`recorded_at`): late = p90 peak age + 2 × delivery cadence (floor
