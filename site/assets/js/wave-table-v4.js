@@ -60,19 +60,26 @@ export function generateWaveHeightTable(chartData) {
     // - 48hr mode: ~48 rows total → show 24, hide 24
     const halfwayPoint = Math.ceil(totalRows / 2);
 
+    // Units live in the header, not every cell, so the columns size to the
+    // numbers rather than "0.84 m".
+    const unit = '<span class="wave-table-unit">[m]</span>';
+    // Fixed decimals so "1" and "0" read as 1.0 and 0.0 next to their
+    // neighbours. Crescent's pile sensor resolves centimetres, hence 2.
+    const fmt = (v, decimals) => (v != null ? v.toFixed(decimals) : "—");
+
     let tableHTML = `
     <thead>
       <tr>
         <th>Time</th>
-        <th>Halibut Bank</th>
-        <th>English Bay</th>
-        <th>Crescent Beach Ocean</th>
-        <th>Southern Georgia Strait</th>
-        <th>Sentry Shoal</th>
-        <th>La Perouse Bank</th>
-        <th>Neah Bay<br><span style="font-size: 0.8em; font-weight: normal;">(Swell)</span></th>
-        <th>New Dungeness</th>
-        <th>Angeles Point</th>
+        <th>Halibut Bank${unit}</th>
+        <th>English Bay${unit}</th>
+        <th>Crescent Beach Ocean${unit}</th>
+        <th>Southern Georgia Strait${unit}</th>
+        <th>Sentry Shoal${unit}</th>
+        <th>La Perouse Bank${unit}</th>
+        <th>Neah Bay<span class="wave-table-unit">Swell [m]</span></th>
+        <th>New Dungeness${unit}</th>
+        <th>Angeles Point${unit}</th>
       </tr>
     </thead>
     <tbody>
@@ -113,15 +120,15 @@ export function generateWaveHeightTable(chartData) {
       tableHTML += `
       <tr${rowClass}>
         <td><strong>${timeLabel}</strong></td>
-        <td>${values["4600146"] != null ? values["4600146"] + " m" : "—"}</td>
-        <td>${values["4600304"] != null ? values["4600304"] + " m" : "—"}</td>
-        <td>${values["CRPILE"] != null ? values["CRPILE"].toFixed(2) + " m" : "—"}</td>
-        <td>${values["4600303"] != null ? values["4600303"] + " m" : "—"}</td>
-        <td>${values["4600131"] != null ? values["4600131"] + " m" : "—"}</td>
-        <td>${values["4600206"] != null ? values["4600206"] + " m" : "—"}</td>
-        <td>${values["46087"] != null ? values["46087"] + " m" : "—"}</td>
-        <td>${values["46088"] != null ? values["46088"] + " m" : "—"}</td>
-        <td>${values["46267"] != null ? values["46267"] + " m" : "—"}</td>
+        <td>${fmt(values["4600146"], 1)}</td>
+        <td>${fmt(values["4600304"], 1)}</td>
+        <td>${fmt(values["CRPILE"], 2)}</td>
+        <td>${fmt(values["4600303"], 1)}</td>
+        <td>${fmt(values["4600131"], 1)}</td>
+        <td>${fmt(values["4600206"], 1)}</td>
+        <td>${fmt(values["46087"], 1)}</td>
+        <td>${fmt(values["46088"], 1)}</td>
+        <td>${fmt(values["46267"], 1)}</td>
       </tr>
     `;
     });

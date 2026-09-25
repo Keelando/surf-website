@@ -11,9 +11,9 @@
    Strait points sit under 7 s peak period, the open-Pacific ones average
    9-10.5 s. See docs/project/FORECAST_UPGRADE.md.
 
-   Still labelled experimental on the page: validation against the buoys is
-   inconclusive until autumn, which is what the verification panel below the
-   charts exists to make visible rather than assert.
+   The "Experimental" badge came off 2026-09-25: the verification panel below
+   the charts is what shows how well it tracks the buoys, rather than a
+   disclaimer asserting it.
 
    NOT EVERY STATION HAS WIND. Neah Bay and La Perouse Bank opt out of the
    HRDPS fetch (see STATIONS in scripts/fetch/fetch_wave_forecast.py), so

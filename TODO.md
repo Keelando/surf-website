@@ -48,7 +48,9 @@ Deferred by choice (revisit only if they hurt): `health_check.py` split
 ---
 
 **Next feature** (not maintenance): Salish Sea forecast upgrade — RDWPS waves
-+ CIOPS-SalishSea water levels. Plan: `docs/project/FORECAST_UPGRADE.md`.
+are live (Experimental badge dropped 2026-09-25); CIOPS-SalishSea water levels
+are queued behind the UI overhaul (see the backlog item). Plan:
+`docs/project/FORECAST_UPGRADE.md`.
 
 **Next bugfix**: none queued. The Ambleside stale-frame bug is fixed
 (2026-09-06, dedupe), as is the `target="_blank"` stripping it turned up.
@@ -1190,6 +1192,17 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       `smooth: 0.3` and check a steep event against the raw points. Note that
       at 2-hourly sampling the line already reads smooth at 10-day zoom, so
       this may be unnecessary once the taper lands.
+- [ ] **CIOPS-SalishSea storm surge** (queued 2026-09-25, **after the UI
+      overhaul**): the 500 m model beside GDSPS's ~3–9 km, as the fine-grained
+      48 h view on `storm_surge.html`; GDSPS stays the 10-day outlook. Layer
+      `CIOPS-SalishSea_500m_SeaSfcHeight` on the GeoMet WMS we already use.
+      It is **total water level above the geoid, not surge** — derive surge as
+      CIOPS − our DFO harmonic prediction at each station, after a one-off
+      per-station datum offset calibrated against the gauge. Footprint ~1,150
+      req/day (6 stations × 48 hourly steps × 4 runs, ~1.3% of MSC's guidance);
+      taper past 24 h as the GDSPS fetch does, and don't overlap
+      `fetch_storm_surge.py` or the wave fetcher. Background + caveats:
+      `docs/project/FORECAST_MODELS.md` §2.
 - [ ] **Backend data audit** (low, rainy-day): compare captured fields vs
       what EC SWOB-ML / NOAA feeds actually provide; parser-log error sweep;
       schema/index review; per-station completeness stats.

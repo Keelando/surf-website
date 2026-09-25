@@ -827,6 +827,36 @@ footer .github-link:hover {
   background: var(--color-data-row-hover);
 }
 
+/* The wave summary is nine stations wide, so it runs tighter than the shared
+   .data-table: units sit once in the header (see wave-table-v4.js), and the
+   cells lose some padding. Scoped by id — tides and lightstations share
+   .data-table and keep the roomier spacing. */
+#wave-height-table th {
+  padding: 0.45rem 0.5rem;
+  vertical-align: bottom;
+  line-height: 1.25;
+  text-align: center;
+}
+
+#wave-height-table td {
+  padding: 0.3rem 0.5rem;
+}
+
+/* "Fr-25 14h" on one line — wrapped, it doubled the height of every
+   day-change row. */
+#wave-height-table th:first-child,
+#wave-height-table td:first-child {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.wave-table-unit {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
 /* -----------------------------
    About Section
 ----------------------------- */
