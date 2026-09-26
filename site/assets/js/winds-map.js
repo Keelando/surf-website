@@ -182,7 +182,7 @@ function addWindMarker(station, currentData, isBuoy = false) {
     <a href="#" class="view-data-btn" data-wind-station-id="${station.id}">View Wind Chart →</a>
   </div>`;
 
-  marker.bindPopup(popupContent, getPopupOptions());
+  marker.bindPopup(popupContent, getPopupOptions(windsMap));
   marker.addTo(windMarkersLayer);
 
   // Store marker reference

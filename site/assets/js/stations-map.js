@@ -739,7 +739,7 @@ function addBuoyMarker(buoy) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, getPopupOptions());
+  marker.bindPopup(popupContent, getPopupOptions(stationsMap));
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
@@ -858,7 +858,7 @@ function addTideMarker(tide, stationKey) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, getPopupOptions());
+  marker.bindPopup(popupContent, getPopupOptions(stationsMap));
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
@@ -965,7 +965,7 @@ function addLightstationMarker(lightstation) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, getPopupOptions());
+  marker.bindPopup(popupContent, getPopupOptions(stationsMap));
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
@@ -1012,7 +1012,7 @@ function addWebcamMarker(webcam) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, getPopupOptions());
+  marker.bindPopup(popupContent, getPopupOptions(stationsMap));
   marker.addTo(markersLayer);
 
   // Store marker reference for later access

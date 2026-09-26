@@ -50,22 +50,69 @@ const MOBILE_BREAKPOINT_PX = 768;
 const MIN_WIDTH_PX = 200;
 
 /**
- * Popup options for `bindPopup`, sized to the current viewport.
+ * How far from the map's left edge a popup must stay to clear the control
+ * column. Every map stacks zoom + fullscreen top-left: a 34px bar (30px
+ * buttons + 2px border a side) behind Leaflet's 10px margin on desktop, and
+ * a 4px margin on phones (stations-map-v4.css tucks the controls into the
+ * corner there). The rest is a small gap.
+ *
+ * This has to be done by panning, not z-index. Popups live inside
+ * `.leaflet-map-pane`, a transformed element and so its own stacking context
+ * at z-index 400; the controls are its siblings at 1000. No z-index on the
+ * popup can climb out of that pane, and dropping the controls below 400 puts
+ * them under the tiles.
+ */
+const CONTROL_CLEARANCE_PX = 55;
+const MOBILE_CONTROL_CLEARANCE_PX = 44;
+
+/** Leaflet's own `autoPanPadding`, kept for the edges that have no controls. */
+const DEFAULT_PAN_PADDING_PX = 5;
+
+/** Fallback when no map is passed: a phone map spans the viewport minus the
+ *  page's 8px side padding. */
+const MOBILE_MAP_GUTTER_PX = 16;
+
+/**
+ * Popup options for `bindPopup`, sized to the current viewport and map.
  *
  * Read at bind time, which is marker-creation time. A device that changes
  * width mid-session (a rotation) keeps the width it was built with; the
  * budget is a cap rather than a layout, so the result is a popup narrower
  * than it could be, never one that overflows.
  *
- * @returns {{minWidth: number, maxWidth: number}} Equal bounds, so the width
- *   is fixed rather than content-driven.
+ * `autoPanPaddingTopLeft` makes Leaflet pan any popup that would open under
+ * the controls out to their right. That only works if the popup fits in the
+ * map *beside* the control column, so on a phone the width budget also
+ * subtracts the clearance: at 360px the popup gives up ~25px rather than
+ * sit under the zoom buttons. (Leaflet resolves a popup too wide for both
+ * paddings by honouring the left one and clipping the right edge; only
+ * below MIN_WIDTH_PX does the clearance shrink instead.)
+ *
+ * @param {L.Map} [map] - the map the popup belongs to; its real width beats
+ *   the viewport-minus-gutter guess.
+ * @returns {{minWidth: number, maxWidth: number,
+ *   autoPanPaddingTopLeft: [number, number]}} Equal width bounds, so the
+ *   width is fixed rather than content-driven.
  */
-export function getPopupOptions() {
+export function getPopupOptions(map) {
   if (window.innerWidth > MOBILE_BREAKPOINT_PX) {
-    return { minWidth: TARGET_WIDTH_PX, maxWidth: TARGET_WIDTH_PX };
+    return {
+      minWidth: TARGET_WIDTH_PX,
+      maxWidth: TARGET_WIDTH_PX,
+      autoPanPaddingTopLeft: [CONTROL_CLEARANCE_PX, DEFAULT_PAN_PADDING_PX],
+    };
   }
 
+  const mapWidth = map?.getSize().x || window.innerWidth - MOBILE_MAP_GUTTER_PX;
+  const besideControls =
+    mapWidth - MOBILE_CONTROL_CLEARANCE_PX - DEFAULT_PAN_PADDING_PX - MOBILE_CHROME_PX;
   const budget = Math.floor(window.innerWidth * MOBILE_VIEWPORT_FRACTION) - MOBILE_CHROME_PX;
-  const width = Math.max(MIN_WIDTH_PX, Math.min(TARGET_WIDTH_PX, budget));
-  return { minWidth: width, maxWidth: width };
+  const width = Math.max(MIN_WIDTH_PX, Math.min(TARGET_WIDTH_PX, budget, besideControls));
+  const spare = mapWidth - (width + MOBILE_CHROME_PX) - DEFAULT_PAN_PADDING_PX;
+  const clearance = Math.max(DEFAULT_PAN_PADDING_PX, Math.min(MOBILE_CONTROL_CLEARANCE_PX, spare));
+  return {
+    minWidth: width,
+    maxWidth: width,
+    autoPanPaddingTopLeft: [clearance, DEFAULT_PAN_PADDING_PX],
+  };
 }

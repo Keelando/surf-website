@@ -126,6 +126,16 @@
     padding: 0.25rem;
   }
 
+  /* Tuck the zoom + fullscreen column into the corner (Leaflet's default is
+     10px) so popups have more room beside it — shared/map-popup.js pans
+     every popup clear of this column and budgets its width around it
+     (MOBILE_CONTROL_CLEARANCE_PX); keep the two in step. Out-specifies
+     leaflet.css's `.leaflet-left .leaflet-control`, which loads after us. */
+  .leaflet-container .leaflet-top.leaflet-left .leaflet-control {
+    margin-top: 4px;
+    margin-left: 4px;
+  }
+
   .station-popup h3 {
     margin-bottom: 0.35rem;
     font-size: 1rem;

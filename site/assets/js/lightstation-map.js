@@ -256,7 +256,7 @@ function addLightstationMapMarker(lightstation) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, getPopupOptions());
+  marker.bindPopup(popupContent, getPopupOptions(lightstationMap));
 
   // Add permanent label (station name) that shows/hides based on zoom
   marker.bindTooltip(lightstation.name, {
