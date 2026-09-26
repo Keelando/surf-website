@@ -1015,9 +1015,9 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       `.git/info/exclude`, since `.gitignore`'s trailing-slash patterns do
       not match symlinks). Served at `dev.halibutbank.ca` with the same
       security headers as production plus `noindex`. Frontend only: the
-      backend, cron and API stay on `main`. Ship by rebasing `dev` onto
-      `main`, then `git merge --ff-only dev` from `main`. Additive pages
-      still preview as unlisted pages on `main`.
+      backend, cron and API stay on `main`. Workflow, traps and shipping:
+      `docs/DEV_PREVIEW.md`. Additive pages still preview as unlisted
+      pages on `main`.
 - [ ] **Lighthouse performance reports** (medium): automated runs for key
       pages, track perf/a11y/SEO over time.
 - [ ] **Back-to-top button** (low-medium; mobile-first): additive only — no

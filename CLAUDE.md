@@ -11,6 +11,9 @@ Real-time marine weather monitoring for the Salish Sea, live at
 lightstation, storm-surge, marine-forecast, weather, and webcam data; a
 static no-build-step frontend (`site/`) renders the JSON exports. Solo
 project: commit straight to `main` (branch by exception, `--ff-only` merges).
+The exception in use: reworks of *shared* frontend surfaces (nav, shared
+CSS/JS, hero) happen on `dev` in the `~/envcan_wave-dev` worktree, previewed
+at dev.halibutbank.ca — read `docs/DEV_PREVIEW.md` before touching it.
 
 ## Layout
 
@@ -109,6 +112,7 @@ are not wired up yet).
 | `docs/ARCHITECTURE_DETAILED.md` | Database schemas, script details |
 | `docs/MSC_REFERENCE_TABLES.md` | MSC code→name lookups (marine regions, SWOB stations) — dated snapshot, not authoritative |
 | `docs/PUBLIC_API.md` | Public `/api/v1` developer API: alias layer, allowlist guard, cache tiers, Cloudflare rule |
+| `docs/DEV_PREVIEW.md` | `dev` worktree → dev.halibutbank.ca: when to use it vs unlisted pages, traps, shipping (rebase + `--ff-only`) |
 | `site/assets/js/shared/README.md` | Frontend shared-module inventory |
 | `docs/project/` | Active plans (forecast upgrade, pressure page, …) |
 | `TODO.md` | Feature backlog (the 2026-07-19 maintenance items are all done) |
