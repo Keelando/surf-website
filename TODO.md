@@ -133,6 +133,27 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       all-station summary up top, map and charts below, hero much smaller,
       explanations folded away), agree the direction, then roll it out.
       User: "I have to scroll a lot through some filler to get to the data."
+- [ ] **Production deploy step (CI/CD)** (user 2026-09-26, direction
+      agreed, design not started). Today production serves the `main`
+      working tree directly, so any saved edit is live before it is tested
+      or committed. Target:
+      - **dev.halibutbank.ca stays live**: it serves the dev worktree's
+        working tree, the way production works today
+        (`docs/DEV_PREVIEW.md`).
+      - **halibutbank.ca serves only what a deploy step published**: a
+        separate, untouched directory that a single command updates after
+        the full suite (`npm test`, Playwright included) passes. Tag each
+        deploy so a rollback is re-publishing the previous tag.
+      Open questions: what the published directory is (a worktree pinned
+      to the deploy tag, or an rsync'd copy); how `site/data` reaches it
+      (symlink to the exports, as dev does); where the `/api/v1` layer
+      points; whether the nightly auto-backup commit (crontab dump) should
+      trigger anything, since it is config, not frontend; and whether
+      GitHub Actions runs the same suite on push as a second opinion that
+      doesn't depend on this machine (free for public repos; first check
+      whether the tests need `site/data` or the live databases). Skip
+      PRs/branch protection: for a solo project the deploy command is the
+      review gate.
 - [ ] **`reporting_lag` for wind, lightstation and weather.** Only the buoy
       and tide exports call `record_publication`; the schema and CLAUDE.md
       assume all of them do.
