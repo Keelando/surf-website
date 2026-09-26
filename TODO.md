@@ -1007,15 +1007,17 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 - [ ] **Tighten graph margins** (medium): start with the buoys page ECharts
       (grid left/right/top/bottom, container padding), then audit the other
       chart pages. Prefer a shared pattern over per-page one-offs.
-- [ ] **Dev branch + preview subdomain** (medium, DEFERRED 2026-08-15):
-      `dev` branch served at `dev.halibutbank.ca` via a second Caddy site
-      block + git worktree (`git worktree add ~/envcan_wave-dev dev`),
-      symlink `site/data` for live data. Frontend preview only; backend
-      stays on `main`. **Decision:** new/additive features preview as
-      unlisted pages on `main` instead (noindex meta, no nav/sitemap
-      link; promotion = nav + sitemap + drop noindex + add to test
-      suites). Revisit this item only for risky changes to shared or
-      existing surfaces (nav, shared CSS/JS, in-place page reworks).
+- [ ] **Dev branch + preview subdomain** (medium; SET UP 2026-09-26 for the
+      UI overhaul, which reworks the nav, shared CSS and the hero — surfaces
+      an unlisted page cannot isolate). `dev` branch checked out as a git
+      worktree at `~/envcan_wave-dev`; its `site/data`, `.venv` and
+      `node_modules` are symlinks to the main checkout (excluded in
+      `.git/info/exclude`, since `.gitignore`'s trailing-slash patterns do
+      not match symlinks). Served at `dev.halibutbank.ca` with the same
+      security headers as production plus `noindex`. Frontend only: the
+      backend, cron and API stay on `main`. Ship by rebasing `dev` onto
+      `main`, then `git merge --ff-only dev` from `main`. Additive pages
+      still preview as unlisted pages on `main`.
 - [ ] **Lighthouse performance reports** (medium): automated runs for key
       pages, track perf/a11y/SEO over time.
 - [ ] **Back-to-top button** (low-medium; mobile-first): additive only — no
