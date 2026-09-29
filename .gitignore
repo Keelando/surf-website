@@ -19,6 +19,9 @@ logs/
 
 # Environment/credentials
 *.env
+# Private terms the publication scan blocks (docs/SECRETS.md) — a tracked
+# copy would publish exactly what it protects
+config/publish_denylist.txt
 .config/
 
 # MaxMind GeoIP config (contains license key)

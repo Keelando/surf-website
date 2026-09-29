@@ -9,6 +9,16 @@ set -e
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
+# ── Production guard ─────────────────────────────────────────
+# `main` is what halibutbank.ca serves and what cron runs, so it only moves
+# via scripts/deploy.py (a fast-forward, no commit) or the nightly crontab
+# backup (which sets ALLOW_MAIN_COMMIT). Work happens on `dev`.
+if [ "$(git branch --show-current)" = "main" ] && [ -z "${ALLOW_MAIN_COMMIT:-}" ]; then
+    echo "⛔ main is production: commit on dev (~/envcan_wave-dev) and ship"
+    echo "   with scripts/deploy.py. See docs/DEPLOY.md."
+    exit 1
+fi
+
 # ── Secrets: scan staged content ─────────────────────────────
 # First, because a leaked credential is the one failure a later commit can't
 # undo — the repo is public and the 07:17 auto-backup pushes unattended.

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Commit-msg hook: a commit message is published with the commit, and no file
+# scan reads it. Same scan as pre-commit — credentials, private addresses and
+# hostnames, config/publish_denylist.txt terms. scripts/deploy.py re-checks
+# every message in the range it ships.
+#
+# Install: ln -sf ../../scripts/hooks/commit-msg .git/hooks/commit-msg
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+exec "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/hooks/check_secrets.py" --message "$1"

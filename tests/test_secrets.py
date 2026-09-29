@@ -89,3 +89,103 @@ class TestScanner:
         secret = "s0me-Very-Secret-Value"
         assert scan_text("notes.md", f"pasted this: {secret}", {secret})
         assert not scan_text("notes.md", "nothing to see", {secret})
+
+
+class TestPrivateDetails:
+    """Not credentials, but still not for publication (docs/SECRETS.md)."""
+
+    @pytest.fixture
+    def private(self):
+        from check_secrets import PRIVATE_PATTERNS
+
+        return list(PRIVATE_PATTERNS)
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "ssh to 192.168.1.20 first",
+            "the NAS at 10.0.0.5",
+            "docker bridge 172.17.0.1",
+            "tailnet peer 100.101.102.103",
+            "the git remote is on backup-box.local",
+            "see nas.lan:3000",
+        ],
+    )
+    def test_catches(self, text, private):
+        assert scan_text("f.md", text, set(), private), f"missed: {text}"
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "curl http://127.0.0.1:4173/",
+            "version 10.2.3",  # three parts, not an address
+            "lon -123.1210.5",  # digits run on: not a standalone address
+            "ECharts 5.10.0.1 build",
+            "copy .claude/settings.local.json",  # a filename, not a host
+            "i.local=1",  # minified JS property access
+            "a doc at docs.local_notes",
+        ],
+    )
+    def test_allows(self, text, private):
+        assert not scan_text("f.md", text, set(), private), f"false positive: {text}"
+
+    def test_denylist_terms_match_case_insensitively(self, tmp_path, monkeypatch):
+        import check_secrets
+
+        (tmp_path / "config").mkdir()
+        (tmp_path / check_secrets.DENYLIST_FILE).write_text(
+            "# comment\n\nSecretHost\nre:game-?server\n"
+        )
+        monkeypatch.setattr(check_secrets, "REPO_ROOT", tmp_path)
+        patterns = check_secrets.denylist_patterns()
+        assert len(patterns) == 2
+        findings = scan_text("f.md", "ssh secrethost; the GameServer", set(), patterns)
+        assert len(findings) == 2
+        # The finding points at the term's line; it never reprints the term.
+        assert all("secrethost" not in f.lower() for f in findings)
+        assert "line 3" in findings[0]
+
+    def test_denylist_is_not_tracked(self):
+        import check_secrets
+
+        tracked = subprocess.run(
+            ["git", "ls-files", check_secrets.DENYLIST_FILE],
+            capture_output=True, text=True, cwd=REPO_ROOT, check=True,
+        ).stdout
+        assert not tracked, "the denylist is tracked: it would publish what it protects"
+
+
+class TestCommitRange:
+    """--range reads what file scans never see: messages and history."""
+
+    def git(self, repo, *args):
+        return subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+    def test_reads_messages_and_intermediate_diffs(self, tmp_path, monkeypatch):
+        import check_secrets
+
+        repo = tmp_path
+        self.git(repo, "init", "-q")
+        self.git(repo, "config", "user.email", "t@example.com")
+        self.git(repo, "config", "user.name", "t")
+        (repo / "a.txt").write_text("hello\n")
+        self.git(repo, "add", "a.txt")
+        self.git(repo, "commit", "-qm", "base")
+        base = self.git(repo, "rev-parse", "HEAD")
+        # Added then removed: still in the pushed history.
+        (repo / "a.txt").write_text("hello\nhost 192.168.4.4\n")
+        self.git(repo, "commit", "-qam", "add")
+        (repo / "a.txt").write_text("hello\n")
+        self.git(repo, "commit", "-qam", "moved it to nas.lan")
+
+        monkeypatch.setattr(check_secrets, "REPO_ROOT", repo)
+        texts = check_secrets.commit_range_texts(f"{base}..HEAD")
+        findings = [
+            f
+            for label, text in texts
+            for f in scan_text(label, text, set(), list(check_secrets.PRIVATE_PATTERNS))
+        ]
+        assert any("a.txt" in f and "IPv4" in f for f in findings), findings
+        assert any("message" in f and "hostname" in f for f in findings), findings

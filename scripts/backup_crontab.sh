@@ -86,6 +86,14 @@ if (( ${#foreign[@]} > 0 )); then
   exit 1
 fi
 
+# Refuse to publish private details: the same scan the deploy gate runs
+# (private addresses, hostnames, the terms in config/publish_denylist.txt).
+# Comments count: a comment naming a host publishes it as surely as a job.
+if ! "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/hooks/check_secrets.py" --strict "$TMP" >&2; then
+  echo "$CANONICAL left untouched." >&2
+  exit 1
+fi
+
 # Validate: every absolute /path/to/script.{py,sh} referenced must exist.
 missing=()
 while IFS= read -r path; do

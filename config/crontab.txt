@@ -180,16 +180,11 @@
 # untouched so the auto-commit below won't pin a broken state.
 15 7 * * * /home/keelando/envcan_wave/scripts/backup_crontab.sh >> /home/keelando/envcan_wave/logs/crontab_backup.log 2>&1
 
-# Git auto-backup - envcan_wave repo (07:17 UTC / 12:17am PT). Runs pre-commit
-# hooks (no --no-verify); if tests fail, commit aborts and the working tree
-# retains the staged changes for next run / manual review. Also mirrors main to
-# Forgejo (survivor.local) unconditionally — separated by ';' so a down Forgejo
-# never blocks the origin push, and vice versa.
-#
-# As of 2026-08-23 Forgejo mirrors onward to a PRIVATE Codeberg repo on push,
-# so this line reaches two backups and no new public surface. GitHub (origin)
-# remains the only public destination.
-17 7 * * * cd /home/keelando/envcan_wave && { /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) ; /usr/bin/git push forgejo main --tags ; } >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
+# Git auto-backup (07:17 UTC / 12:17am PT): commits the crontab dump above on
+# main (and nothing else), pushes main to GitHub only after the publication
+# check passes, scans what the site serves, and backs up main + dev + tags to
+# the private Forgejo remote. See scripts/git_backup.sh and docs/DEPLOY.md.
+17 7 * * * /home/keelando/envcan_wave/scripts/git_backup.sh >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
 
 # Sync venv with the pinned lock file (07:18 UTC / 12:18am PT, after git
 # backup). Installs from requirements-lock.txt, not pyproject.toml, so

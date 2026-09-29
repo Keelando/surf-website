@@ -1001,7 +1001,7 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
         none of the export-side hygiene can be relaxed.
       - `site/components/about-generic.html` links to the GitHub repo from
         every page's About section; that link would 404 for visitors.
-      - The `forgejo` remote (survivor.local) already mirrors main+tags
+      - The `forgejo` remote (self-hosted) already mirrors main+tags
         nightly, so backup is not a reason to stay on public GitHub.
       - **Changed 2026-08-23: Forgejo mirrors onward to a private Codeberg
         repo on push.** This *helps* the case for going private rather than
