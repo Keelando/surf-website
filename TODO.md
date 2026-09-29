@@ -133,37 +133,64 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       all-station summary up top, map and charts below, hero much smaller,
       explanations folded away), agree the direction, then roll it out.
       User: "I have to scroll a lot through some filler to get to the data."
-- [ ] **Production deploy step (CI/CD)** (user 2026-09-26, direction
-      agreed, design not started). Today production serves the `main`
-      working tree directly, so any saved edit is live before it is tested
-      or committed. Target:
-      - **dev.halibutbank.ca stays live**: it serves the dev worktree's
-        working tree, the way production works today
-        (`docs/DEV_PREVIEW.md`).
-      - **halibutbank.ca serves only what a deploy step published**: a
-        separate, untouched directory that a single command updates after
-        the full suite (`npm test`, Playwright included) passes. Tag each
-        deploy so a rollback is re-publishing the previous tag.
-      Open questions: what the published directory is (a worktree pinned
-      to the deploy tag, or an rsync'd copy); how `site/data` reaches it
-      (symlink to the exports, as dev does); where the `/api/v1` layer
-      points; whether the nightly auto-backup commit (crontab dump) should
-      trigger anything, since it is config, not frontend; and whether
-      GitHub Actions runs the same suite on push as a second opinion that
-      doesn't depend on this machine (free for public repos; first check
-      whether the tests need `site/data` or the live databases). Skip
-      PRs/branch protection: for a solo project the deploy command is the
-      review gate.
+- [ ] **CIOPS-SalishSea storm surge** (queued 2026-09-25; user 2026-09-29:
+      **next straight after the UI overhaul**): the 500 m model beside
+      GDSPS's ~3–9 km, as the fine-grained 48 h view on
+      `storm_surge.html`; GDSPS stays the 10-day outlook. Layer
+      `CIOPS-SalishSea_500m_SeaSfcHeight` on the GeoMet WMS we already use.
+      It is **total water level above the geoid, not surge** — derive surge as
+      CIOPS − our DFO harmonic prediction at each station, after a one-off
+      per-station datum offset calibrated against the gauge. Footprint ~1,150
+      req/day (6 stations × 48 hourly steps × 4 runs, ~1.3% of MSC's guidance);
+      taper past 24 h as the GDSPS fetch does, and don't overlap
+      `fetch_storm_surge.py` or the wave fetcher. Background + caveats:
+      `docs/project/FORECAST_MODELS.md` §2.
+- [ ] **Production deploy step** (user 2026-09-26; design agreed
+      2026-09-29, **build before the UI overhaul ships**). Today production
+      serves the `main` working tree directly, and cron runs the backend
+      from it, so any saved edit — frontend or pipeline — is live before it
+      is tested or committed. Design:
+      - **Swap the worktrees' roles.** `~/envcan_wave-dev` (`dev`) is where
+        all work happens, backend included; dev.halibutbank.ca keeps
+        serving it live. `~/envcan_wave` (`main`) becomes production: never
+        edited by hand, moved only by the deploy. Caddy, cron, sr3,
+        `site/data` and `/api/v1` all stay where they are, so there is no
+        published copy to maintain. A pre-commit guard refuses commits on
+        `main` except from the deploy and the nightly backup.
+      - **One command, no prompts**: `scripts/deploy.sh` (or tell Claude
+        "ship it"). Rebase `dev` on `main` (picks up nightly backup
+        commits) → refresh `?v=` hashes → tests (pytest, JS unit,
+        `test:frontend`, a11y; not the screenshots spec) → publication
+        check (below) → fast-forward `main` → tag → push → apply
+        `config/crontab.txt` / `config/sr3/` if they changed → smoke-check
+        the live site → on failure, move `main` back to the previous tag
+        and re-apply. Any failure before the fast-forward leaves production
+        untouched. Every run writes a report (what shipped, new public
+        files, check results).
+      - **The deploy is the gate on what goes public.** `dev` pushes only
+        to Forgejo (private); GitHub receives `main`, only via the deploy.
+        The publication check runs `check_secrets.py --all` and
+        `--served`, plus two new scans: a **private denylist** of
+        non-credential details (infrastructure, other services on the host,
+        anything the user wants kept out) held in a gitignored file beside
+        `config/.env`, with generic private-address/hostname patterns; and
+        the **commit messages, tag names and author lines** of the range
+        being shipped, which file scans never see.
+      - **Close the nightly bypass.** The 07:17 auto-backup pushes `main`
+        to GitHub on its own and uses `git add -A` (how the digest file
+        leaked). Stage only `config/crontab.txt`, and run the same
+        publication check before its push. `site/data` changes between
+        deploys, so the `--served` + denylist scan also runs nightly and
+        reports to the health check.
+      - **Once the denylist exists**: one sweep of the tree, the live site
+        and full git history, to learn whether anything already leaked.
+      - Later, optional: GitHub Actions running the suite on push to
+        `main` as a second opinion (first check whether the tests need
+        `site/data` or the live databases). No PRs or branch protection:
+        the deploy command is the review gate.
 - [ ] **`reporting_lag` for wind, lightstation and weather.** Only the buoy
       and tide exports call `record_publication`; the schema and CLAUDE.md
       assume all of them do.
-- [ ] **Lightstation chart y-axis title reported clipped** (user,
-      2026-09-23). Not reproduced at 360/414/600/660/768/1024/1280 px in
-      Chromium or Firefox — get the width/browser or a screenshot first.
-- [ ] **NOAA buoys "~6 h late"** (user, 2026-09-23). Not reproduced: no NOAA
-      buoy was more than 2.6 h behind in the week's `reporting_lag` data. The
-      map now draws a labelled dot, not 🌊, when a height has no direction,
-      which covers the likely cause (spectral direction lagging the height).
 
 - [x] **Ambleside webcam reported a stale frame as fresh** (user 2026-09-06;
       camera down since ~2026-08-27). The upstream URL kept returning 200 with
@@ -1215,17 +1242,6 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       `smooth: 0.3` and check a steep event against the raw points. Note that
       at 2-hourly sampling the line already reads smooth at 10-day zoom, so
       this may be unnecessary once the taper lands.
-- [ ] **CIOPS-SalishSea storm surge** (queued 2026-09-25, **after the UI
-      overhaul**): the 500 m model beside GDSPS's ~3–9 km, as the fine-grained
-      48 h view on `storm_surge.html`; GDSPS stays the 10-day outlook. Layer
-      `CIOPS-SalishSea_500m_SeaSfcHeight` on the GeoMet WMS we already use.
-      It is **total water level above the geoid, not surge** — derive surge as
-      CIOPS − our DFO harmonic prediction at each station, after a one-off
-      per-station datum offset calibrated against the gauge. Footprint ~1,150
-      req/day (6 stations × 48 hourly steps × 4 runs, ~1.3% of MSC's guidance);
-      taper past 24 h as the GDSPS fetch does, and don't overlap
-      `fetch_storm_surge.py` or the wave fetcher. Background + caveats:
-      `docs/project/FORECAST_MODELS.md` §2.
 - [ ] **Backend data audit** (low, rainy-day): compare captured fields vs
       what EC SWOB-ML / NOAA feeds actually provide; parser-log error sweep;
       schema/index review; per-station completeness stats.
