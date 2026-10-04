@@ -10,10 +10,27 @@ Real-time marine weather monitoring for the Salish Sea, live at
 <https://halibutbank.ca>. A Python backend collects buoy, wind, tide,
 lightstation, storm-surge, marine-forecast, weather, and webcam data; a
 static no-build-step frontend (`site/`) renders the JSON exports. Solo
-project: commit straight to `main` (branch by exception, `--ff-only` merges).
-The exception in use: reworks of *shared* frontend surfaces (nav, shared
-CSS/JS, hero) happen on `dev` in the `~/envcan_wave-dev` worktree, previewed
-at dev.halibutbank.ca — read `docs/DEV_PREVIEW.md` before touching it.
+project: commit straight to `main`, with one exception below.
+
+## Where a change goes
+
+Production serves the `main` working tree (`~/envcan_wave`) directly: an
+edit there is live the moment it is saved, not when it is committed.
+
+- **`main`**: small self-contained fixes, new unlisted pages, all backend
+  work. Finish and commit promptly.
+- **`dev`** (worktree `~/envcan_wave-dev`, previewed at dev.halibutbank.ca):
+  anything that could leave the live site visibly broken while it is being
+  checked — layout reworks, the nav, shared CSS/JS, a page rebuilt in place.
+  Frontend only; commit as you go. Read `docs/DEV_PREVIEW.md` first.
+- **Never switch branches in `~/envcan_wave`** (checkout, switch, stash,
+  rebase, bisect, `reset --hard`): what it checks out is what the site
+  serves. Another branch gets its own worktree. `scripts/hooks/post-checkout`
+  warns if production lands off `main`.
+- **Ship `dev` only when the user says "ship it"**: rebase `dev` onto `main`,
+  run `scripts/update_asset_versions.py` and `npm test`, then
+  `git merge --ff-only dev` in `~/envcan_wave` and push. If it doesn't
+  fast-forward, stop and ask.
 
 ## Layout
 

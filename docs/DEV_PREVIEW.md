@@ -5,11 +5,22 @@ Set up 2026-09-26 for the UI overhaul.
 
 ## When to use which
 
-| Change | Where it previews |
-|--------|-------------------|
+The test is risk, not file type: **could the change leave the live site
+visibly broken while it is being checked?** Production serves the `main`
+working tree directly, so an edit there is public the moment it is saved.
+
+| Change | Where |
+|--------|-------|
+| Anything that could break visibly while being checked: a layout rework, the nav, `style-v4.css`, `site/assets/js/shared/`, the hero, a page rebuilt in place | The `dev` branch, reviewed at dev.halibutbank.ca. |
+| A **small, self-contained fix** | `main`. Finish it and commit promptly. |
 | A **new page** that nothing links to yet | An unlisted page on `main`: `noindex` meta, no nav link, not in `sitemap.xml`, not in the Playwright/screenshot page lists. Promote it by adding all four. |
-| A change to **shared or existing surfaces**: the nav, `style-v4.css`, `site/assets/js/shared/`, the hero, an in-place page rework | The `dev` branch, served at dev.halibutbank.ca. |
 | **Backend**: fetch, parse, export, cron, sr3, `/api/v1` | Always `main`. There is no dev backend. |
+
+Shared files are risky even for small edits, since they reach every page at
+once. And a broken moment can outlast the edit: browsers cache assets for a
+year under their `?v=` hash, so a visitor who loads a half-edited asset
+keeps it until the hash changes (`update_asset_versions.py`, normally run
+at commit).
 
 The unlisted-page trick cannot protect shared files, since the live pages
 load the same `style-v4.css` and shared modules. A `/beta/` path prefix
@@ -88,9 +99,16 @@ cd ~/envcan_wave-dev          # edit, commit here as usual
    Add a dev dependency on `main`.
 6. **A branch can be checked out in only one worktree.** `git checkout main`
    inside `~/envcan_wave-dev` fails. Do `main` work in `~/envcan_wave`.
+   The same rule is what stops `git checkout dev` in production.
 7. **`dev` goes to Forgejo only.** The nightly backup pushes it to the
    private Forgejo remote with `main` and tags. Never push it to `origin`:
    that publishes the branch, unscanned.
+8. **Never switch branches in `~/envcan_wave`.** Checkout, switch, stash,
+   rebase, bisect and `reset --hard` there change what the live site serves.
+   Another branch gets its own worktree, as `dev` does. Git cannot block a
+   checkout, but `scripts/hooks/post-checkout` prints a warning when the main
+   checkout lands anywhere but `main` (install:
+   `ln -s ../../scripts/hooks/post-checkout .git/hooks/post-checkout`).
 
 ## Shipping dev to production
 

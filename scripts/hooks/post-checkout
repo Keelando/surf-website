@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Warn when the production checkout lands on anything but `main`.
+#
+# halibutbank.ca serves the main checkout's working tree directly, so
+# whatever is checked out there is what the site serves. Git has no hook
+# that runs *before* a checkout, so this cannot stop one; it makes it loud.
+# Linked worktrees (~/envcan_wave-dev) may check out anything.
+#
+# Install: ln -s ../../scripts/hooks/post-checkout .git/hooks/post-checkout
+
+git_dir=$(realpath "$(git rev-parse --git-dir)")
+common_dir=$(realpath "$(git rev-parse --git-common-dir)")
+[[ "$git_dir" == "$common_dir" ]] || exit 0 # a linked worktree
+
+branch=$(git branch --show-current)
+[[ "$branch" == "main" ]] && exit 0
+
+what=${branch:-"a detached commit ($(git rev-parse --short HEAD))"}
+cat >&2 <<EOF
+
+  ==============================================================
+  WARNING: the production checkout is now on $what, not main.
+  halibutbank.ca serves this working tree, so the live site now
+  shows it. Go back with:   git switch main
+  (mid-rebase or bisect: git rebase --abort / git bisect reset)
+  Other branches belong in their own worktree: docs/DEV_PREVIEW.md
+  ==============================================================
+
+EOF
+exit 0
