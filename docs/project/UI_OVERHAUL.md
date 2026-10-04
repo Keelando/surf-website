@@ -102,7 +102,8 @@ line-SVG set; almost no borders or shadows.
 1. **A compact all-station list at the top**, right under the nav. One row
    per station (~48 px on a phone): name, wave height + period, wind speed +
    gust with a direction arrow, and a freshness dot from the export's
-   `status`. Numbers large, labels small and muted. All ten stations
+   `status`. No tide (user: it belongs on the tides page). Numbers large,
+   labels small and muted. All ten stations
    visible, grouped under lightweight text subheads, not collapsible bars
    (10 × ~48 px fits one phone screen).
 2. **Tap a row to expand** details, 12 h history and links inline. No
@@ -136,8 +137,9 @@ change ships together with the frontend that handles it.
 1. **One home-page mockup, data first**, following the brief in the audit
    above. Agree the direction on this one page before touching any other.
    Open questions for the mockup:
-   - What the summary row shows per station (wind, waves, period, tide,
-     status?), and how it collapses on a phone.
+   - ~~What the summary row shows~~: **decided 2026-10-04**, waves (height
+     + period), wind (speed, gust, direction) and status. **No tide**: it
+     lives on the tides page. Still open: how the row fits a 390 px phone.
    - ~~Whether the hero survives~~: **decided 2026-10-04**, the summary
      comes first and the photo becomes its backdrop (brief, item 4).
    - ~~Whether the map stays on the home page~~: **decided 2026-10-04, it
