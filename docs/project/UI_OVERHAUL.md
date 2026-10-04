@@ -110,8 +110,12 @@ line-SVG set; almost no borders or shadows.
 3. **The map directly below the list**, legend folded into a small map
    control. Load Leaflet when the map scrolls near, as the charts already
    do, to recover the home-page TBT the plan flagged.
-4. **The hero shrinks to a slim header, or goes.** Its single-station strip
-   becomes redundant once the list shows every station. (User's call.)
+4. **The data summary is the first thing you see** (user, 2026-10-04). The
+   hero photo is the site's only image, so it stays, but as the backdrop
+   to the summary rather than a block of its own above it: the station list
+   sits on the photo, which replaces the single-station strip. Text on a
+   photo needs a scrim to keep AA contrast (`site/docs/ACCESSIBILITY_AUDIT.md`).
+   A photo gallery comes later, separately (TODO.md).
 5. **One shared time-range toggle** for the charts and table below.
 6. **SVG icons, no emoji**; one font stack, buttons included.
 
@@ -134,7 +138,8 @@ change ships together with the frontend that handles it.
    Open questions for the mockup:
    - What the summary row shows per station (wind, waves, period, tide,
      status?), and how it collapses on a phone.
-   - Whether the hero survives at all, or becomes a slim header.
+   - ~~Whether the hero survives~~: **decided 2026-10-04**, the summary
+     comes first and the photo becomes its backdrop (brief, item 4).
    - ~~Whether the map stays on the home page~~: **decided 2026-10-04, it
      stays.** Lazy-load Leaflet instead (TBT ~400 ms is the biggest
      remaining performance lever).

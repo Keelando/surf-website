@@ -130,7 +130,7 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       reports; and the "No reports" row was stripped by DOMPurify (bare
       `<tr>`), now built with DOM calls.
 - [ ] **UI overhaul.** Start with ONE home-page mockup (data first: a compact
-      all-station summary up top, map and charts below, hero much smaller,
+      all-station summary up top on the hero photo, map and charts below,
       explanations folded away), agree the direction, then roll it out.
       User: "I have to scroll a lot through some filler to get to the data."
       Plan, order, checks and shipping: `docs/project/UI_OVERHAUL.md`. Work
@@ -1006,6 +1006,11 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
         flipping it private would genuinely make the repo private.
       - Reversible in one direction only: private→public later re-exposes
         the whole history, so a future flip back needs the same thinking.
+- [ ] **Photo gallery** (user 2026-10-04, "later"): the hero photo is the
+      site's only image. Where it lives (its own page, or a strip on the
+      home page) and where the photos come from are open. Not part of the
+      UI overhaul. Related: the webcam frames are the site's other
+      imagery, and the wall view below is a cheap way to show more of it.
 - [ ] **"Security cam" wall view for the webcam page** (idea, user
       2026-08-16): a mode that drops all six cams into a dense grid of
       smaller images side by side with a little padding between them, so
