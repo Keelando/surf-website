@@ -110,3 +110,24 @@ GitHub only after the publication scan passes; the scan covers commit
 messages, history ranges, private addresses and a private denylist. See
 `docs/SECRETS.md`. `scripts/deploy.py` is in history (commit `e692287`) if a
 deploy step is ever wanted again.
+
+**What does the deploy step's job now** (2026-10-04). The deploy step was
+meant to keep the production checkout, which the site serves live, safe from
+work in progress. That job now falls to a rule and two built-in guards,
+chosen per lesson 4 over anything custom:
+
+- **The rule** (CLAUDE.md, "Where a change goes"): work that could leave the
+  live site visibly broken while it is being checked goes to the `dev`
+  worktree and is reviewed at the preview site; nobody switches branches in
+  the production checkout, and any other branch gets its own worktree.
+- **Git's own worktree rule:** `dev` cannot be checked out in production
+  while the dev worktree holds it.
+- **`scripts/hooks/post-checkout`** prints a warning whenever the production
+  checkout lands on anything but `main`.
+- **Claude Code sessions started in the production checkout** ask before any
+  checkout, switch, stash, rebase, bisect or `reset --hard` (local settings).
+
+These warn or ask; they do not fail closed in the sense of lesson 1. That is
+deliberate. Lesson 1 is about test code that must never reach production.
+These guards are against a slip by a person or the agent, where making the
+mistake loud is proportionate.
