@@ -99,13 +99,17 @@ line-SVG set; almost no borders or shadows.
 
 ### Brief for the mockup
 
-1. **A compact all-station list at the top**, right under the nav. One row
-   per station (~48 px on a phone): name, wave height + period, wind speed +
+1. **A compact list of the ten wave stations at the top**, right under the
+   nav: the stations that have cards today, not the wind stations,
+   lightstations or tide gauges, which stay on their own pages. One row per
+   station (~48 px on a phone): name, wave height + period, wind speed +
    gust with a direction arrow, and a freshness dot from the export's
    `status`. No tide (user: it belongs on the tides page). Numbers large,
-   labels small and muted. All ten stations
-   visible, grouped under lightweight text subheads, not collapsible bars
-   (10 × ~48 px fits one phone screen).
+   labels small and muted. All ten visible, grouped by region under
+   lightweight text subheads, not collapsible bars (~600 px with subheads,
+   one phone screen; one of today's cards is ~350 px). If ten proves too
+   many on screen, the fallback is Strait of Georgia expanded and the other
+   regions one tap away, still as compact rows.
 2. **Tap a row to expand** details, 12 h history and links inline. No
    always-visible buttons.
 3. **The map directly below the list**, legend folded into a small map

@@ -130,7 +130,7 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       reports; and the "No reports" row was stripped by DOMPurify (bare
       `<tr>`), now built with DOM calls.
 - [ ] **UI overhaul.** Start with ONE home-page mockup (data first: a compact
-      all-station summary up top on the hero photo, map and charts below,
+      summary of the ten wave stations up top on the hero photo, map and charts below,
       explanations folded away), agree the direction, then roll it out.
       User: "I have to scroll a lot through some filler to get to the data."
       Plan, order, checks and shipping: `docs/project/UI_OVERHAUL.md`. Work
