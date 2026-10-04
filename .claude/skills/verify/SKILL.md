@@ -14,7 +14,10 @@ page; behavioral verification needs a driving script.
 1. Serve the site with the repo's own server (same one Playwright uses):
    `python3 tests/playwright/serve.py <port>` (cwd = repo root; serves
    `site/` with the right headers). Pick a port ≠ 4173 to avoid
-   colliding with the test suite's webServer.
+   colliding with the test suite's webServer. **Start it from the driving
+   script** (`spawn("python3", ["tests/playwright/serve.py", port], { cwd:
+   repoRoot })`, kill it at the end), not as a detached background job.
+   See "Firefox can't reach a detached server" below.
 2. Drive with Playwright's library API from a scratch `.mjs` script.
    `@playwright/test` is not resolvable from outside the repo — import
    by absolute path:
@@ -112,6 +115,19 @@ those need real rendering in both engines).
 - Chart pages render into ECharts: assert `<container> canvas` exists.
 
 ## Gotchas
+
+- **Firefox can't reach a detached server** (2026-10-04). A `serve.py`
+  started by the agent as a detached background job (`nohup … &`) served
+  `curl` and Chromium fine, but Firefox never reached it: no Firefox
+  requests in the server log, `page.goto` failed with "Navigation … is
+  interrupted by another navigation to …", and the page never rendered
+  (`.buoy-card` timeout). Same result with `localhost` or `127.0.0.1`,
+  `/` or `/index.html`, the library API or the test runner. The root cause
+  was not found. What works: the script spawns `serve.py` as its own child
+  process, or a Playwright config's `webServer` starts it (which is why
+  `npm run test:frontend` passes in Firefox). **Quick check before debugging
+  a page:** if the browser's requests don't appear in the server's log, the
+  browser isn't reaching the server.
 
 - **Module double-execution**: a module loaded both via
   `<script type="module" src="...?v=X">` AND via a bare import
