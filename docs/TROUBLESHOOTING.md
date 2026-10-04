@@ -510,8 +510,7 @@ sqlite3 ~/.local/share/tide_data.sqlite "PRAGMA journal_mode=WAL;"
 **Diagnosis:**
 ```bash
 # Check git backup logs
-tail -50 ~/envcan_wave/git_backup.log
-tail -50 site/git_backup.log
+tail -50 ~/envcan_wave/logs/git_backup.log
 
 # Test git push manually
 cd ~/envcan_wave
@@ -538,9 +537,16 @@ git config --global credential.helper store
 git push  # Will prompt for credentials
 ```
 
-3. **No changes to commit**
-   - If no files changed, commit fails (this is normal)
-   - Cron will succeed on days with changes
+3. **The publication scan failed** (`ERROR: publication check failed; main NOT
+   pushed to GitHub`). Working as intended: something in an unpushed commit
+   (message, author or added line) or the tracked tree looks like a
+   credential, private address or denylisted term. The log names the commit
+   and line without reprinting the term. Fix it before the next run; see
+   `docs/SECRETS.md`. Forgejo (private) is still backed up.
+
+4. **`WARNING: production checkout has changes that were not committed`**:
+   not a failure. The nightly run commits only `config/crontab.txt`;
+   commit your own work by hand.
 
 ---
 

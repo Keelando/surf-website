@@ -8,6 +8,7 @@ commit made with `--no-verify` (or a hook that was never installed) still
 gets caught by `pytest`.
 """
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -158,9 +159,21 @@ class TestPrivateDetails:
 class TestCommitRange:
     """--range reads what file scans never see: messages and history."""
 
+    @pytest.fixture(autouse=True)
+    def isolated_git(self, monkeypatch):
+        # This suite runs inside the pre-commit hook, where git exports
+        # GIT_DIR / GIT_INDEX_FILE for the REAL repository. Inherited by the
+        # scratch repo below, `git init` re-initialised the real one as bare
+        # and `git config` wrote a fake identity into it (2026-09-29). Strip
+        # every GIT_* variable, and never write config or run hooks.
+        for key in [k for k in os.environ if k.startswith("GIT_")]:
+            monkeypatch.delenv(key)
+
     def git(self, repo, *args):
         return subprocess.run(
-            ["git", *args], cwd=repo, check=True, capture_output=True, text=True
+            ["git", "-c", "user.email=t@example.com", "-c", "user.name=t",
+             "-c", "core.hooksPath=/dev/null", *args],
+            cwd=repo, check=True, capture_output=True, text=True,
         ).stdout.strip()
 
     def test_reads_messages_and_intermediate_diffs(self, tmp_path, monkeypatch):
@@ -168,8 +181,6 @@ class TestCommitRange:
 
         repo = tmp_path
         self.git(repo, "init", "-q")
-        self.git(repo, "config", "user.email", "t@example.com")
-        self.git(repo, "config", "user.name", "t")
         (repo / "a.txt").write_text("hello\n")
         self.git(repo, "add", "a.txt")
         self.git(repo, "commit", "-qm", "base")

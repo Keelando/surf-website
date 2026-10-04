@@ -183,7 +183,7 @@
 # Git auto-backup (07:17 UTC / 12:17am PT): commits the crontab dump above on
 # main (and nothing else), pushes main to GitHub only after the publication
 # check passes, scans what the site serves, and backs up main + dev + tags to
-# the private Forgejo remote. See scripts/git_backup.sh and docs/DEPLOY.md.
+# the private Forgejo remote. See scripts/git_backup.sh.
 17 7 * * * /home/keelando/envcan_wave/scripts/git_backup.sh >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
 
 # Sync venv with the pinned lock file (07:18 UTC / 12:18am PT, after git

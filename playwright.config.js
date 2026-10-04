@@ -1,9 +1,9 @@
 const { defineConfig } = require("@playwright/test");
 const path = require("path");
 
-// PW_PORT gives a run its own server. scripts/deploy.py sets it so the suite
-// can never reuse a stray server on 4173 started from the other checkout,
-// which would test the wrong files and pass (docs/DEPLOY.md, traps).
+// PW_PORT gives a run its own server, so a run in the dev worktree can never
+// reuse a stray server on 4173 started from the main checkout, which would
+// test the wrong files and pass (docs/DEV_PREVIEW.md).
 const PORT = Number(process.env.PW_PORT || 4173);
 
 module.exports = defineConfig({

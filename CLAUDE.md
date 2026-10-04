@@ -64,8 +64,9 @@ are not wired up yet).
   `config/crontab.txt`, `config/webcams.json`) — never duplicate their
   contents into code or docs.
 - Credentials go in `config/.env` (gitignored) and are read via
-  `lib/env.py`. The repo is public and the nightly cron commits unattended,
-  so no secret may enter a tracked file — including `config/crontab.txt`.
+  `lib/env.py`. The repo is public and the nightly cron commits the crontab
+  and pushes unattended (after a publication scan), so no secret may enter a
+  tracked file — including `config/crontab.txt`.
   See `docs/SECRETS.md`.
 - **Two public surfaces, not one.** The git repo publishes *tracked* files;
   `site/data/` publishes *everything Caddy serves*. `site/data/` is
@@ -114,5 +115,6 @@ are not wired up yet).
 | `docs/PUBLIC_API.md` | Public `/api/v1` developer API: alias layer, allowlist guard, cache tiers, Cloudflare rule |
 | `docs/DEV_PREVIEW.md` | `dev` worktree → dev.halibutbank.ca: when to use it vs unlisted pages, traps, shipping (rebase + `--ff-only`) |
 | `site/assets/js/shared/README.md` | Frontend shared-module inventory |
+| `docs/incidents/` | Incident write-ups and their lessons (read before building ops/test tooling) |
 | `docs/project/` | Active plans (forecast upgrade, pressure page, …) |
 | `TODO.md` | Feature backlog (the 2026-07-19 maintenance items are all done) |

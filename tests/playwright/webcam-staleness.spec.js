@@ -7,6 +7,10 @@
 // pinned here — the real files are rewritten by cron every few minutes, so an
 // unpinned run would be testing today's weather.
 //
+// The sunlight file is pinned too. It only holds today ±5 days, so once the
+// real date drifted past the pinned one the page found no capture window,
+// judged every cam as 24/7, and two of these tests failed from then on.
+//
 // The overnight case is the one that matters. Four of the six cams stop at
 // night by design (fetch_webcam.py skips them outside the capture window), so
 // judging them on wall-clock age paints them DOWN every night; their age is
@@ -15,7 +19,25 @@ const { test, expect } = require("@playwright/test");
 
 const DAYLIGHT_ONLY = ["Ambleside", "Mud Bay HD (SE)", "Mud Bay HD (SW)", "Cox Bay"];
 
-/** Freeze Date, and serve every cam a frame of exactly `ageMinutes`. */
+// Early-September sun over the Lower Mainland (UTC): up ~13:35, down ~02:43.
+// Close enough for every cam; the tests only need which side of the window
+// a pinned instant falls on.
+const PINNED_SUNLIGHT = Object.fromEntries(
+  ["2026-09-05", "2026-09-06", "2026-09-07", "2026-09-08"].map((day) => {
+    const next = new Date(Date.parse(`${day}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
+    return [
+      day,
+      {
+        first_light: `${day}T13:03:00+00:00`,
+        sunrise: `${day}T13:35:00+00:00`,
+        sunset: `${next}T02:43:00+00:00`,
+        last_light: `${next}T03:15:00+00:00`,
+      },
+    ];
+  }),
+);
+
+/** Freeze Date, pin the sun, and serve every cam a frame of exactly `ageMinutes`. */
 async function pinPage(page, { nowISO, ageMinutes }) {
   const fixedNow = new Date(nowISO).getTime();
   await page.addInitScript(`{
@@ -27,6 +49,12 @@ async function pinPage(page, { nowISO, ageMinutes }) {
     }
     Date = D;
   }`);
+  await page.route("**/data/sunlight_times.json*", async (route) => {
+    const response = await route.fetch();
+    const body = JSON.parse(await response.text());
+    for (const station of Object.values(body.stations || {})) station.days = PINNED_SUNLIGHT;
+    route.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
+  });
   const stamp = new Date(fixedNow - ageMinutes * 60000).toISOString();
   await page.route("**/data/*/latest.json", async (route) => {
     const response = await route.fetch();

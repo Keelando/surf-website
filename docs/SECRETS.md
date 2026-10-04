@@ -1,6 +1,7 @@
 # Secrets
 
-This repo is public. Nothing secret goes in a tracked file, ever.
+This repo is public. Nothing secret goes in a tracked file, ever, and
+neither do host or network details (see "Not only credentials" below).
 
 ## Two public surfaces
 
@@ -9,8 +10,13 @@ and they fail differently:
 
 | Surface | What's public | Guarded by |
 |---------|---------------|------------|
-| **The git repo** | Every *tracked* file, plus anything the 07:17 cron commits unattended | `.gitignore`, the pre-commit scan, `tests/test_secrets.py` |
-| **`site/`** | Everything Caddy serves at halibutbank.ca, tracked or not | `check_secrets.py --served` |
+| **The git repo** | Every *tracked* file, and every commit's message and author lines | `.gitignore`, the pre-commit and commit-msg scans, `tests/test_secrets.py`, and the publication check before the nightly push to GitHub |
+| **`site/`** | Everything Caddy serves at halibutbank.ca, tracked or not | `check_secrets.py --served`, nightly |
+
+The nightly `scripts/git_backup.sh` runs the full publication check before
+it pushes `main` to GitHub. A manual `git push origin main` does not (yet,
+see TODO), so run `--range origin/main..` first when pushing by hand. `dev`
+goes only to the private Forgejo remote.
 
 The dangerous overlap is `site/data/`: it is **gitignored** — so every
 git-based defence above is blind to it — while every file in it is fetchable
@@ -59,8 +65,8 @@ Other credential stores on this host, outside the repo:
 
 The Windy API key reached the public repo in early 2026. Nobody typed it into
 a tracked file: a whole-repo digest tool (`._codebase_digest.txt`) inlined
-`config/.env` into its output, and the 07:17 auto-backup cron committed and
-pushed that file unattended. It was removed from `HEAD` but remains in
+`config/.env` into its output, and the 07:17 auto-backup cron (then a bare
+`git add -A`) committed and pushed that file unattended. It was removed from `HEAD` but remains in
 history, which is why it must never be reused. The key has since expired —
 Windy's API returns HTTP 410 — and it is **not** being rotated out of history:
 rewriting a public repo's history is disruptive and buys nothing for a dead
@@ -84,25 +90,47 @@ Two lessons shaped the defences below:
 1. **The dangerous files are generated, not written.** Digests, dumps, logs
    and backups copy secrets into new paths. Ignoring one filename does not
    help; the next tool picks a different name.
-2. **Unattended commits remove the human check.** The nightly backup commits
-   whatever is staged, so the guard has to be automatic.
+2. **Unattended commits remove the human check.** The nightly backup used to
+   commit whatever was in the tree, so the guard has to be automatic. It now
+   commits only `config/crontab.txt`, and scans before it pushes.
+
+## Not only credentials
+
+Hostnames, private addresses, tunnel details and the names of other
+services on the host are not secrets, but publishing them tells an attacker
+which doors exist. The scanner catches the generic shapes (private IPv4
+ranges, `.local`/`.lan`/`.internal` hostnames) and every term in
+`config/publish_denylist.txt`: one term per line, case-insensitive, `re:`
+for a regex. That file is gitignored, since a tracked list would publish
+exactly what it protects, and findings name a term by its line number rather
+than reprinting it.
+
+A sweep of the full history on 2026-09-29 found such details in old commits
+and messages (a LAN address, hostnames, another service's name), all since
+removed from the tree. They stay in history: rewriting a public repo's
+history is disruptive and would not unpublish anything already cloned.
 
 ## Defences
 
 | Layer | What it does |
 |-------|--------------|
-| `.gitignore` | `*.env`, `._codebase_digest.txt`, `config/crontab.txt.bak-*` |
-| `scripts/hooks/check_secrets.py` | Scans staged content: any value from `config/.env`, plus JWTs, credential-shaped assignments, AWS keys, private-key blocks |
+| `.gitignore` | `*.env`, `config/publish_denylist.txt`, `._codebase_digest.txt`, `config/crontab.txt.bak-*` |
+| `scripts/hooks/check_secrets.py` | Scans staged content: any value from `config/.env`; JWTs, credential-shaped assignments, AWS keys, private-key blocks; private addresses and hostnames; denylisted terms |
 | `scripts/hooks/pre-commit` | Runs the scan first, before ruff/pytest/eslint |
+| `scripts/hooks/commit-msg` | The same scan over the commit message |
 | `tests/test_secrets.py` | Same scan over every tracked file — catches a `--no-verify` commit or an uninstalled hook |
-| `scripts/backup_crontab.sh` | Refuses to dump a live crontab that assigns a credential-shaped variable |
-| `check_secrets.py --served` | Scans everything Caddy serves from `site/`, including gitignored `site/data/` |
+| `scripts/backup_crontab.sh` | Refuses to dump a live crontab that assigns a credential-shaped variable, runs a job from outside the repo, or fails the scan |
+| `scripts/git_backup.sh` | Before the nightly push to GitHub: `--range` over every commit being pushed (messages, authors, each commit's added lines), `--all`, `--served`, all `--strict` |
+| `check_secrets.py --served` | Scans everything Caddy serves from `site/`, including gitignored `site/data/`; nightly |
 
-Audit both surfaces at any time:
+Audit any surface at any time:
 
 ```bash
-.venv/bin/python scripts/hooks/check_secrets.py --all      # tracked tree
-.venv/bin/python scripts/hooks/check_secrets.py --served   # what the web sees
+S=scripts/hooks/check_secrets.py
+.venv/bin/python $S --strict --all                  # tracked tree
+.venv/bin/python $S --strict --served               # what the web sees
+.venv/bin/python $S --strict --range origin/main..  # unpushed commits
+.venv/bin/python $S --strict --range HEAD           # all of history
 ```
 
 Docs may show the *shape* of a credential line — `<password>`,

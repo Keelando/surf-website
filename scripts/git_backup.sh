@@ -3,15 +3,13 @@
 #
 # 1. Commit the crontab dump on `main` — and nothing else. This used to be
 #    `git add -A`, which is how a generated digest carrying a credential was
-#    published unattended. The production checkout is never edited by hand
-#    (work happens on `dev`, docs/DEPLOY.md), so anything else
-#    dirty here is reported, not committed.
+#    published unattended. Anything else left uncommitted is reported, not
+#    committed: commit your own work.
 # 2. Push `main` to GitHub only after the publication check passes on what
 #    the push would add: the commits' messages, authors and diffs, and the
-#    tracked tree. GitHub is the public surface; this and scripts/deploy.py
-#    are the only two things that push to it.
+#    tracked tree. GitHub is the public surface.
 # 3. Scan everything Caddy serves. `site/data/` changes every few minutes and
-#    no deploy sees it, so this is its nightly check.
+#    no commit ever contains it, so this is its nightly check.
 # 4. Back up `main`, `dev` and tags to Forgejo (private). `dev` never goes to
 #    GitHub.
 #
@@ -35,7 +33,7 @@ fi
 # ── 1. Commit the crontab dump ───────────────────────────────
 git add config/crontab.txt
 if ! git diff --cached --quiet; then
-  if ALLOW_MAIN_COMMIT=1 git commit -q -m "Auto-backup $(date +%Y-%m-%d)"; then
+  if git commit -q -m "Auto-backup $(date +%Y-%m-%d)"; then
     echo "committed config/crontab.txt"
   else
     echo "ERROR: auto-backup commit failed (pre-commit hook); left staged." >&2
@@ -67,7 +65,7 @@ fi
 
 # ── 4. Private backup ────────────────────────────────────────
 # Separate pushes: a down Forgejo must not stop the others, and `dev` is
-# rewritten by the deploy's rebase, so it needs a lease rather than a
+# rebased onto main from time to time, so it needs a lease rather than a
 # fast-forward.
 git push -q forgejo main --tags || status=1
 if git show-ref --verify --quiet refs/heads/dev; then

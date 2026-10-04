@@ -69,8 +69,9 @@ cd ~/envcan_wave-dev          # edit, commit here as usual
    *whichever checkout started it*, and Playwright is configured with
    `reuseExistingServer`. If a server started from `~/envcan_wave` is still
    on port 4173, running the suite in `~/envcan_wave-dev` tests **main's**
-   files and passes. Before testing on dev, make sure nothing is listening:
-   `ss -ltn | grep 4173` should print nothing.
+   files and passes. Before testing on dev, make sure nothing is listening
+   (`ss -ltn | grep 4173` should print nothing), or give the run its own
+   port: `PW_PORT=4180 npm run test:frontend`.
 2. **Rebases skip the pre-commit hook**, so `?v=` hashes can go stale on
    replayed commits. After every rebase run
    `.venv/bin/python scripts/update_asset_versions.py`, and commit if it
@@ -80,15 +81,16 @@ cd ~/envcan_wave-dev          # edit, commit here as usual
    `update_asset_versions.py`, and `git add` the HTML.
 4. **Python in the dev worktree imports `lib/` from the main checkout.** The
    venv is the main checkout's, and its editable install points there.
-   Harmless for a frontend-only branch, but it is another reason backend
-   work stays on `main`.
+   pytest is pinned to the checkout under test (`pythonpath` in
+   `pyproject.toml`), but scripts run by hand are not. Harmless for a
+   frontend-only branch, and another reason backend work stays on `main`.
 5. **Never `npm install` in the dev worktree.** `node_modules` is main's.
    Add a dev dependency on `main`.
 6. **A branch can be checked out in only one worktree.** `git checkout main`
    inside `~/envcan_wave-dev` fails. Do `main` work in `~/envcan_wave`.
-7. **`dev` is not in the nightly backup**, which pushes `main` and tags
-   only. Push it yourself (`git push forgejo dev`) after meaningful work.
-   Pushing to `origin` publishes the branch.
+7. **`dev` goes to Forgejo only.** The nightly backup pushes it to the
+   private Forgejo remote with `main` and tags. Never push it to `origin`:
+   that publishes the branch, unscanned.
 
 ## Shipping dev to production
 

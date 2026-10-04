@@ -133,6 +133,8 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       all-station summary up top, map and charts below, hero much smaller,
       explanations folded away), agree the direction, then roll it out.
       User: "I have to scroll a lot through some filler to get to the data."
+      Plan, order, checks and shipping: `docs/project/UI_OVERHAUL.md`. Work
+      on `dev`, previewed at dev.halibutbank.ca (live 2026-10-03).
 - [ ] **CIOPS-SalishSea storm surge** (queued 2026-09-25; user 2026-09-29:
       **next straight after the UI overhaul**): the 500 m model beside
       GDSPS's ~3–9 km, as the fine-grained 48 h view on
@@ -145,49 +147,42 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       taper past 24 h as the GDSPS fetch does, and don't overlap
       `fetch_storm_surge.py` or the wave fetcher. Background + caveats:
       `docs/project/FORECAST_MODELS.md` §2.
-- [ ] **Production deploy step** (user 2026-09-26; design agreed
-      2026-09-29, **build before the UI overhaul ships**). Today production
-      serves the `main` working tree directly, and cron runs the backend
-      from it, so any saved edit — frontend or pipeline — is live before it
-      is tested or committed. Design:
-      - **Swap the worktrees' roles.** `~/envcan_wave-dev` (`dev`) is where
-        all work happens, backend included; dev.halibutbank.ca keeps
-        serving it live. `~/envcan_wave` (`main`) becomes production: never
-        edited by hand, moved only by the deploy. Caddy, cron, sr3,
-        `site/data` and `/api/v1` all stay where they are, so there is no
-        published copy to maintain. A pre-commit guard refuses commits on
-        `main` except from the deploy and the nightly backup.
-      - **One command, no prompts**: `scripts/deploy.sh` (or tell Claude
-        "ship it"). Rebase `dev` on `main` (picks up nightly backup
-        commits) → refresh `?v=` hashes → tests (pytest, JS unit,
-        `test:frontend`, a11y; not the screenshots spec) → publication
-        check (below) → fast-forward `main` → tag → push → apply
-        `config/crontab.txt` / `config/sr3/` if they changed → smoke-check
-        the live site → on failure, move `main` back to the previous tag
-        and re-apply. Any failure before the fast-forward leaves production
-        untouched. Every run writes a report (what shipped, new public
-        files, check results).
-      - **The deploy is the gate on what goes public.** `dev` pushes only
-        to Forgejo (private); GitHub receives `main`, only via the deploy.
-        The publication check runs `check_secrets.py --all` and
-        `--served`, plus two new scans: a **private denylist** of
-        non-credential details (infrastructure, other services on the host,
-        anything the user wants kept out) held in a gitignored file beside
-        `config/.env`, with generic private-address/hostname patterns; and
-        the **commit messages, tag names and author lines** of the range
-        being shipped, which file scans never see.
-      - **Close the nightly bypass.** The 07:17 auto-backup pushes `main`
-        to GitHub on its own and uses `git add -A` (how the digest file
-        leaked). Stage only `config/crontab.txt`, and run the same
-        publication check before its push. `site/data` changes between
-        deploys, so the `--served` + denylist scan also runs nightly and
-        reports to the health check.
-      - **Once the denylist exists**: one sweep of the tree, the live site
-        and full git history, to learn whether anything already leaked.
-      - Later, optional: GitHub Actions running the suite on push to
-        `main` as a second opinion (first check whether the tests need
-        `site/data` or the live databases). No PRs or branch protection:
-        the deploy command is the review gate.
+- [x] **Production deploy step — dropped 2026-10-04** (user: "I got ahead of
+      myself and overcomplicated it"). Designed 2026-09-29 to swap roles (all
+      work on `dev`, `main` moved only by `scripts/deploy.py`), it was solving
+      a problem this project doesn't have: committing straight to `main` has
+      been fine, and `dev` exists only so the UI overhaul can take its time.
+      Back to the 2026-09-26 setup: `main` is the trunk, `dev` is the overhaul
+      branch previewed at dev.halibutbank.ca, shipped once with rebase +
+      `npm test` + `merge --ff-only` (`docs/DEV_PREVIEW.md`). `deploy.py` and
+      the guard refusing commits on `main` are gone (in history if wanted);
+      a homemade sandbox for testing it was abandoned after it wrote to the
+      real sr3 config dir on its first full run
+      (`docs/incidents/2026-10-03-deploy-sandbox-escape.md`).
+
+      Kept, because they close real holes independent of any deploy:
+      - **Nightly backup** (`scripts/git_backup.sh`): commits only
+        `config/crontab.txt` (not `git add -A`, how the digest leaked), and
+        pushes `main` to GitHub only after the publication scan passes on
+        the commits' messages, authors and diffs and the tracked tree; scans
+        what the site serves; backs up `main`, `dev` and tags to Forgejo.
+      - **Publication scan** (`check_secrets.py`): private denylist
+        (`config/publish_denylist.txt`, gitignored), private-address and
+        hostname patterns, `--range`, `--message` (the `commit-msg` hook),
+        `--strict`.
+
+      Follow-ups:
+  - [ ] **`ALLOW_SECRETS=1` also disables `--strict`**, so a stray export
+        would let the nightly push skip the scan. `--strict` should ignore it.
+  - [ ] **Consider gitleaks** for the generic credential patterns, keeping
+        the private denylist as local custom rules: less homemade code to
+        trust.
+  - [ ] **Alert on a failed nightly check** without publishing it (the
+        health JSON is public). Today it is only in `logs/git_backup.log`
+        and the exit status.
+  - [ ] **`pre-push` hook running the same scan**, so a manual
+        `git push origin main` is checked too (today only the nightly push
+        is). A standard git hook; small.
 - [ ] **`reporting_lag` for wind, lightstation and weather.** Only the buoy
       and tide exports call `record_publication`; the schema and CLAUDE.md
       assume all of them do.

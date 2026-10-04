@@ -126,14 +126,9 @@ See **[WEBCAM_PIPELINE.md](WEBCAM_PIPELINE.md)** for complete documentation.
 # Weekly: Purge logs older than 7 days
 0 0 * * * find /home/keelando/envcan_wave/logs -name "*.log" -type f -mtime +7 -delete
 
-# Daily 11:02 PM: Backup crontab to git repo (runs before git backup)
-2 23 * * * crontab -l > /home/keelando/envcan_wave/config/crontab.txt 2>&1
-
-# Daily 11:03 PM: Auto-commit and push backend repo to git
-3 23 * * * /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/envcan_wave/logs/git_backup.log 2>&1
-
-# Daily 11:04 PM: Auto-commit and push frontend repo to git
-4 23 * * * cd /home/keelando/envcan_wave/site && /usr/bin/git add -A && /usr/bin/git diff --staged --quiet || (/usr/bin/git commit -m "Auto-backup $(date +\%Y-\%m-\%d)" && /usr/bin/git push origin main) >> /home/keelando/envcan_wave/site/git_backup.log 2>&1
+# Nightly: dump the crontab, then the gated git backup (see Backup Strategy)
+15 7 * * * /home/keelando/envcan_wave/scripts/backup_crontab.sh ...
+17 7 * * * /home/keelando/envcan_wave/scripts/git_backup.sh ...
 ```
 
 ### Crontab Management
@@ -560,25 +555,13 @@ Add to crontab for daily health check:
 
 ### Automated Nightly Backups
 
-The system performs automatic backups every night at 11 PM via cron jobs:
-
 **Backup sequence (runs in order, UTC):**
-1. **07:15 UTC** - Validate and dump live crontab to `config/crontab.txt` (via `scripts/backup_crontab.sh`; on missing scripts, writes `config/crontab.txt.broken-<ts>` and leaves canonical untouched)
-2. **07:17 UTC** - Commit and push `~/envcan_wave` to GitHub (pre-commit hooks gate the push)
+1. **07:15 UTC** - Validate and dump live crontab to `config/crontab.txt` (via `scripts/backup_crontab.sh`; on missing scripts, writes `config/crontab.txt.broken-<ts>` and leaves canonical untouched; refuses a crontab that fails the publication scan)
+2. **07:17 UTC** - `scripts/git_backup.sh`: commits **only** `config/crontab.txt` (anything else left uncommitted is reported in the log, not committed), runs the publication scan on the unpushed commits and the tracked tree, pushes `main` to GitHub only if it passes, scans what the site serves, then backs up `main`, `dev` and tags to the private Forgejo remote. See `docs/SECRETS.md`.
 
-**What gets backed up:**
-- **Backend repo** (`~/envcan_wave`):
-  - All Python scripts (parsers, fetchers, exporters)
-  - Configuration files (`config/stations.json`)
-  - **Crontab** (`config/crontab.txt`) - Automatically saved before git push
-  - Documentation (README, CLAUDE.md, docs/)
-  - SQLite databases (via git-lfs if configured, otherwise excluded)
-
-- **Frontend repo** (`~/envcan_wave/site`):
-  - HTML, CSS, JavaScript files
-  - Static assets (images, icons)
-  - JSON data exports (latest buoy/tide/wind/forecast data)
-  - Analytics reports
+**What gets backed up:** everything committed to the repo (one repo since the
+monorepo merge; `site/` is part of it). Commit your own work: the nightly run
+no longer sweeps up uncommitted files, which is how a credential once leaked.
 
 **Not backed up to git:**
 - SQLite databases (`~/.local/share/*.sqlite`) - use manual backup below
@@ -586,17 +569,11 @@ The system performs automatic backups every night at 11 PM via cron jobs:
 - Credentials (`~/.config/buoy_influx_1.env`) - NEVER commit to git
 - Raw XML data (`~/envcan_wave/data/`) - transient, auto-purged after 2 days
 
-**Backup logs:**
-- Backend: `~/envcan_wave/logs/git_backup.log`
-- Frontend: `~/envcan_wave/site/git_backup.log`
+**Backup log:** `~/envcan_wave/logs/git_backup.log` (ends with `=== done (status N) ===`; non-zero means a step failed and says which)
 
 **Check backup status:**
 ```bash
-# View backend backup log
 tail -20 ~/envcan_wave/logs/git_backup.log
-
-# View frontend backup log
-tail -20 ~/envcan_wave/site/git_backup.log
 
 # Check if backup ran today
 ls -lh ~/envcan_wave/config/crontab.txt

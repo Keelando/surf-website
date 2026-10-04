@@ -35,6 +35,10 @@ include = ["lib*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Import lib/ from the checkout under test. The shared venv's editable install
+# points at ~/envcan_wave, so without this pytest in the dev worktree would
+# test main's lib/ instead of its own.
+pythonpath = ["."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
