@@ -3,10 +3,10 @@
 # ==============================================================================
 # Organized by category. Comments explain each job's purpose and timing.
 #
-# To update: edit this file, then run:
-#   scripts/install_crontab.sh --diff-only   # preview diff
-#   scripts/install_crontab.sh               # apply
-# See also: docs/DEPLOYMENT.md § Crontab Management
+# To update: edit /home/keelando/envcan_wave/config/crontab.txt, then run:
+#   /home/keelando/envcan_wave/scripts/install_crontab.sh --diff-only   # preview diff
+#   /home/keelando/envcan_wave/scripts/install_crontab.sh               # apply
+# See also: /home/keelando/envcan_wave/docs/DEPLOYMENT.md § Crontab Management
 #
 # THIS FILE IS A DUMP OF THE WHOLE USER CRONTAB and it is tracked in a public
 # repo. Host jobs that are not part of this project belong in /etc/cron.d/<name>
@@ -193,7 +193,8 @@
 18 7 * * * /home/keelando/envcan_wave/.venv/bin/pip install -q --disable-pip-version-check -r /home/keelando/envcan_wave/requirements-lock.txt >> /home/keelando/envcan_wave/logs/pip_sync.log 2>&1
 
 # Restic system backup (10:33 UTC / 2:33am PT)
-33 10 * * * /home/keelando/backup_surf.sh >> /home/keelando/envcan_wave/logs/restic_backup.log 2>&1
+# MOVED 2026-10-13 to /etc/cron.d/backup-surf (runs as root, no sudo needed)
+# 33 10 * * * /home/keelando/backup_surf.sh >> /home/keelando/envcan_wave/logs/restic_backup.log 2>&1
 
 # Purge logs older than 7 days (daily at midnight)
 19 0 * * * find /home/keelando/envcan_wave/logs -name "*.log" -type f -mtime +7 -delete
@@ -201,7 +202,8 @@
 # ==================== GEOIP DATABASE ====================
 # MaxMind releases GeoLite2 every Tuesday; update Wed + Sat at 03:30 UTC
 # Feeds IP→location lookups for site/scripts/generate_analytics.sh
-30 3 * * 3,6 sudo geoipupdate --config-file /home/keelando/.config/GeoIP.conf >> /home/keelando/envcan_wave/logs/geoipupdate.log 2>&1
+# MOVED 2026-10-13 to the system geoipupdate.timer (runs as root, weekly,
+# reads /etc/GeoIP.conf, logs to journalctl -u geoipupdate).
 
 # PSI sampler (added 2026-08-09). Appends kernel pressure avg10 to
 # /dev/shm/psi-samples.csv; sys_stats_mqtt.py reads it on its next 15-min push to
