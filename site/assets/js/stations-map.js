@@ -572,7 +572,11 @@ function addBuoyMarker(buoy) {
   if (popupData) {
     const data = popupData;
     const obsTime = data.observation_time ? new Date(data.observation_time) : null;
-    const popupTheme = statusPopupTheme(reportStatus(data), { observedAt: obsTime });
+    const popupTheme = statusPopupTheme(reportStatus(data), {
+      observedAt: obsTime,
+      outOfService: data.out_of_service,
+      sourceUrl: buoy.source_url,
+    });
 
     popupContent += `<div style="background: ${popupTheme.bg}; padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ${popupTheme.border};">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 4px; color: ${popupTheme.headingColor};">${popupTheme.headerText}</div>`;

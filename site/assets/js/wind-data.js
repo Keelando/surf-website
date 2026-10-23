@@ -71,6 +71,7 @@ function normalizeWindLatest(station) {
     observation_time: station.observation_time,
     stale: station.stale ?? false,
     status: station.status ?? null,
+    out_of_service: station.out_of_service ?? null, // {since, reason}; overrides status
     _sourceType: "land",
     _isWindType: true,
   };

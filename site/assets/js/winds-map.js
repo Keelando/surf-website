@@ -132,6 +132,8 @@ function addWindMarker(station, currentData, isBuoy = false) {
       label: "Current Wind",
       staleLabel: "Last Wind",
       observedAt: currentData.observation_time,
+      outOfService: currentData.out_of_service,
+      sourceUrl: station.source_url,
     });
     popupContent += `<div class="popup-wind-card ${statusClass} ${typeClass}">`;
     popupContent += `<div class="popup-wind-header ${headerClass}">${headerText}</div>`;
@@ -161,8 +163,9 @@ function addWindMarker(station, currentData, isBuoy = false) {
       popupContent += `<div><strong>Temp:</strong> ${currentData.air_temp_c.toFixed(1)}°C</div>`;
     }
 
-    // Timestamp
-    if (currentData.observation_time) {
+    // Timestamp (not for an out-of-service station: we stopped fetching it,
+    // so its last time only grows older and reads like a late report)
+    if (currentData.observation_time && !currentData.out_of_service) {
       const obsTime = new Date(currentData.observation_time);
       popupContent += `<div class="popup-timestamp">Updated: ${formatMonthDayTimeTZ(obsTime)} (${getShortAgeString(obsTime)})</div>`;
     }

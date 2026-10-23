@@ -5,6 +5,7 @@ import {
   LATE_MARKER_OPACITY,
   reportStatus,
   STALE_MARKER_OPACITY,
+  outOfServiceHTML,
   staleAgeLabel,
   statusMarkerOpacity,
   statusPopupTheme,
@@ -98,4 +99,16 @@ test("stale age switches to days past 48 hours, days only past a week", () => {
   assert.equal(staleAgeLabel("2026-09-10T22:00:00Z", now), "12d");
   assert.equal(staleAgeLabel("not a date", now), null);
   assert.equal(staleAgeLabel(null, now), null);
+});
+
+test("an out-of-service station says so, with the owner's link, whatever its status", () => {
+  const oos = { since: "2026-10-23", reason: "The City reports the equipment is defective." };
+  const html = outOfServiceHTML(oos, "https://example.org/station");
+  assert.match(html, /^Currently down for service\. The City reports/);
+  assert.match(html, /href="https:\/\/example.org\/station" target="_blank"/);
+  assert.equal(outOfServiceHTML({}, null), "Currently down for service.");
+
+  const theme = statusPopupTheme("ok", { outOfService: oos, sourceUrl: "https://example.org/station" });
+  assert.equal(theme.headerText, html);
+  assert.equal(theme.border, "var(--color-accent-red)");
 });

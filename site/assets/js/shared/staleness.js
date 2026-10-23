@@ -63,6 +63,23 @@ export function staleAgeLabel(observedAt, now = new Date()) {
 }
 
 /**
+ * "Currently down for service. <reason> Station page ↗" for a station its
+ * owner has taken out of service (stations.json `out_of_service`, carried
+ * into the export). HTML; render through setSafeHTML.
+ *
+ * @param {{since?: string, reason?: string}} outOfService
+ * @param {string|null} [sourceUrl] - The owner's page for the station
+ * @returns {string}
+ */
+export function outOfServiceHTML(outOfService, sourceUrl = null) {
+  const reason = outOfService?.reason ? ` ${outOfService.reason}` : "";
+  const link = sourceUrl
+    ? ` <a href="${sourceUrl}" target="_blank" rel="noopener">Station page ↗</a>`
+    : "";
+  return `Currently down for service.${reason}${link}`;
+}
+
+/**
  * Colour theme + header line for a map-popup "Latest Conditions" block.
  *
  * Plain words for a lay reader, age first:
@@ -79,6 +96,9 @@ export function staleAgeLabel(observedAt, now = new Date()) {
  *   only used when `observedAt` is absent
  * @param {Date|string} [opts.observedAt] - Observation time
  * @param {Date} [opts.now] - Injectable for tests
+ * @param {Object} [opts.outOfService] - The export's `out_of_service`; when
+ *   set it wins over `status`: the owner's word, not our clock
+ * @param {string} [opts.sourceUrl] - Linked from the out-of-service line
  * @returns {{bg: string, border: string, headingColor: string, headerText: string}}
  */
 export function statusPopupTheme(
@@ -89,8 +109,18 @@ export function statusPopupTheme(
     threshold = ">3h",
     observedAt = null,
     now = new Date(),
+    outOfService = null,
+    sourceUrl = null,
   } = {},
 ) {
+  if (outOfService) {
+    return {
+      bg: "var(--color-callout-danger-bg, #fff5f5)",
+      border: "var(--color-accent-red)",
+      headingColor: "var(--color-accent-red)",
+      headerText: outOfServiceHTML(outOfService, sourceUrl),
+    };
+  }
   if (status === "down") {
     const since = observedAt ? formatWeekdayDayTime(observedAt) : null;
     return {

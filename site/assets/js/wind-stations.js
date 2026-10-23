@@ -11,7 +11,7 @@ import { formatMonthDayTime, formatTimeHM, formatTimeWithDate } from "./shared/f
 import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
 import { windData } from "./wind-data.js";
 import { setSafeHTML } from "./shared/safe-html.js";
-import { staleAgeLabel } from "./shared/staleness.js";
+import { outOfServiceHTML, staleAgeLabel } from "./shared/staleness.js";
 
 /** Escape a string for safe interpolation into an HTML attribute. */
 function escapeAttr(value) {
@@ -163,11 +163,12 @@ function updateSortIndicators(activeHeader) {
 /**
  * Classify latest station data into active vs offline lists by data age
  * @param {Object} latestAll - All latest station readings keyed by ID
- * @returns {{ active: Array, offline: Array }} Station tuples [id, stationData]
+ * @returns {{ active: Array, offline: Array, outOfService: Array }} Station tuples [id, stationData]
  */
 function classifyStations(latestAll) {
   const active = [];
   const offline = [];
+  const outOfService = [];
 
   Object.entries(latestAll)
     .filter(([key]) => key !== "_meta")
@@ -189,9 +190,13 @@ function classifyStations(latestAll) {
         ageHours: ageHours,
         stale: ageHours >= STALE_THRESHOLD_HOURS && ageHours < OFFLINE_THRESHOLD_HOURS,
         type: station._sourceType,
+        out_of_service: station.out_of_service,
       };
 
-      if (ageHours >= OFFLINE_THRESHOLD_HOURS) {
+      // The owner's word beats our clock: out of the table entirely.
+      if (station.out_of_service) {
+        outOfService.push([id, stationData]);
+      } else if (ageHours >= OFFLINE_THRESHOLD_HOURS) {
         offline.push([id, stationData]);
       } else {
         active.push([id, stationData]);
@@ -199,25 +204,42 @@ function classifyStations(latestAll) {
     });
 
   active.sort((a, b) => a[1].name.localeCompare(b[1].name));
-  return { active, offline };
+  return { active, offline, outOfService };
 }
 
 /**
- * Render the offline stations callout box
+ * Render the callouts under the table: stations down for service, then
+ * stations with stale data
  * @param {Array} offlineStations - Station tuples [id, stationData] with ageHours
+ * @param {Array} [outOfServiceStations] - Station tuples taken out of service
  */
-function renderOfflineStationsList(offlineStations) {
+function renderOfflineStationsList(offlineStations, outOfServiceStations = []) {
   const container = document.getElementById("offline-stations-list");
   if (!container) return;
 
-  if (offlineStations.length === 0) {
+  if (offlineStations.length === 0 && outOfServiceStations.length === 0) {
     container.innerHTML = "";
+    return;
+  }
+
+  let html = "";
+  if (outOfServiceStations.length > 0) {
+    html += '<div class="offline-callout"><h3>Down for Service</h3><ul>';
+    outOfServiceStations.forEach(([id, station]) => {
+      const name = station.name.replace(" \u{1F30A}", "");
+      html += `<li><strong>${name}</strong>: ${outOfServiceHTML(station.out_of_service, getStationMeta(id).source_url)}</li>`;
+    });
+    html += "</ul></div>";
+  }
+
+  if (offlineStations.length === 0) {
+    setSafeHTML(container, html);
     return;
   }
 
   offlineStations.sort((a, b) => a[1].name.localeCompare(b[1].name));
 
-  let html = '<div class="offline-callout">';
+  html += '<div class="offline-callout">';
   html += "<h3>Stations with Stale Data (>4 hours)</h3>";
   html += "<p>The following stations have not reported wind data in over 4 hours:</p>";
   html += "<ul>";
@@ -250,7 +272,11 @@ async function loadWindTable() {
     const table = document.getElementById("wind-conditions-table");
     if (!table) return;
 
-    const { active: stations, offline: offlineStations } = classifyStations(latestAll);
+    const {
+      active: stations,
+      offline: offlineStations,
+      outOfService: outOfServiceStations,
+    } = classifyStations(latestAll);
 
     let tableHTML = `
       <thead>
@@ -348,7 +374,7 @@ async function loadWindTable() {
       updateSortIndicators(speedHeader);
     }
 
-    renderOfflineStationsList(offlineStations);
+    renderOfflineStationsList(offlineStations, outOfServiceStations);
 
     // (Dead footer-timestamp updater removed 2026-07-16: it targeted
     // #timestamp, which no longer exists in any page, and checked

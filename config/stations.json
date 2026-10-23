@@ -993,6 +993,10 @@
       ],
       "note": "Coastal weather station at White Rock pier - excellent Boundary Bay coverage",
       "source_url": "https://www.whiterockcity.ca/1000/Weather-Station",
+      "out_of_service": {
+        "since": "2026-10-23",
+        "reason": "The City of White Rock reports the equipment is defective and currently offline."
+      },
       "flag": "🏛️"
     },
     "COLEB": {

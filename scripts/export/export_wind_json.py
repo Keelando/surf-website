@@ -242,6 +242,10 @@ def query_and_export():
                 "dew_point_c": whiterock_data.get("dew_point"),
                 "precipitation_mm": whiterock_data.get("precipitation"),
             }
+            # Out of service by the owner's word: down, whatever the clock says.
+            if whiterock_data.get("out_of_service"):
+                latest_json["whiterock_east"]["status"] = "down"
+                latest_json["whiterock_east"]["out_of_service"] = whiterock_data["out_of_service"]
             # Remove None values
             latest_json["whiterock_east"] = {k: v for k, v in latest_json["whiterock_east"].items() if v is not None}
             logger.debug("Exported whiterock_east (White Rock East Beach)")

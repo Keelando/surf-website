@@ -74,8 +74,11 @@
 # Jericho Sailing Centre wind (every 30 min)
 */30 * * * * /usr/bin/flock -n /tmp/envcan_jericho_wind.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_jericho_wind.py >> /home/keelando/envcan_wave/logs/jericho_fetch.log 2>&1
 
-# White Rock Pier weather (every 10 min)
-*/10 * * * * /usr/bin/flock -n /tmp/envcan_whiterock.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_whiterock_weather.py >> /home/keelando/envcan_wave/logs/whiterock_weather.log 2>&1
+# White Rock Pier weather: OUT OF SERVICE since 2026-10-23 (City reports the
+# equipment defective). Daily --probe only, nothing stored; it logs
+# "BACK ONLINE?" when the sensors move. Then restore:
+# */10 * * * * <same command without --probe>
+23 17 * * * /usr/bin/flock -n /tmp/envcan_whiterock.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_whiterock_weather.py --probe >> /home/keelando/envcan_wave/logs/whiterock_weather.log 2>&1
 
 # ==================== LIGHTSTATION REPORTS ====================
 # Lightstation pipeline: parse → export JSON → export 72h timeseries, one

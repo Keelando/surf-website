@@ -29,7 +29,7 @@ from lib.config import EXPORT_DIR, WIND_DATABASE, safe_json_write
 from lib.config import WEATHER_DATABASE as WHITEROCK_DATABASE
 from lib.frozen_sensor import WHITEROCK_CHECKS, whiterock_frozen
 from lib.logging_config import setup_logging
-from lib.stations import get_all_wind
+from lib.stations import get_all_wind, get_wind_station
 
 # Shared utilities
 from lib.units import kmh_to_knots
@@ -151,7 +151,9 @@ def query_and_export_timeseries():
 
         # Special handling for White Rock East Beach (separate database)
         if station_id == "whiterock_east":
-            if WHITEROCK_DATABASE.exists():
+            if get_wind_station(station_id).get("out_of_service"):
+                logger.info("White Rock East Beach is out of service; no timeseries")
+            elif WHITEROCK_DATABASE.exists():
                 wr_conn = sqlite3.connect(WHITEROCK_DATABASE, timeout=5)
                 wr_conn.row_factory = sqlite3.Row
                 wr_cur = wr_conn.cursor()

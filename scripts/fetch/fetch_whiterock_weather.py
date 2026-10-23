@@ -2,13 +2,23 @@
 """
 White Rock East Beach Weather Station - Direct JSON API Integration
 Fetches from https://maps.whiterockcity.ca/weather/weatherResults.txt
+
+    fetch_whiterock_weather.py           # fetch, store, export (every 10 min)
+    fetch_whiterock_weather.py --probe   # out of service: one look, nothing stored
+
+While the station is out of service (stations.json "out_of_service"), cron
+runs only --probe, once a day. It compares the feed with the last stored
+reading — the values the sensors froze at — and logs one verdict line:
+"STILL DOWN" or "BACK ONLINE?". The second means the sensors are moving
+again: check, then remove the flag and restore the 10-minute cron line.
 """
 
+import argparse
 import json
 import sqlite3
 import ssl
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import certifi
@@ -18,11 +28,32 @@ from requests.adapters import HTTPAdapter
 from lib.config import EXPORT_DIR, PROJECT_ROOT
 from lib.config import WEATHER_DATABASE as SQLITE_PATH
 from lib.frozen_sensor import frozen_iso, hidden_columns, whiterock_frozen
+from lib.stations import get_wind_station
 
 # Configuration
 OUT_PATH = EXPORT_DIR / "whiterock_weather.json"
 API_URL = "https://maps.whiterockcity.ca/weather/weatherResults.txt"
 LOCKFILE = Path("/tmp/whiterock_weather.lock")
+STATION_ID = "whiterock_east"
+# Every field that is a measurement, as opposed to identity or metadata.
+READING_FIELDS = (
+    "temperature",
+    "dew_point",
+    "humidity",
+    "wind_speed",
+    "wind_speed_kt",
+    "wind_direction",
+    "wind_direction_cardinal",
+    "wind_gust",
+    "wind_gust_kt",
+    "wind_gust_direction",
+    "wind_gust_direction_cardinal",
+    "pressure",
+    "heat_index",
+    "wind_chill",
+    "precipitation",
+    "precipitation_rate",
+)
 # The host's chain ends at a root certifi does not carry yet; see the file.
 EXTRA_ROOT = PROJECT_ROOT / "config" / "certs" / "godaddy-tls-root-r1.pem"
 
@@ -229,7 +260,7 @@ def export_json(conn):
     age_minutes = (now.timestamp() - row[0]) / 60
 
     data = {
-        "station_id": "whiterock_east",
+        "station_id": STATION_ID,
         "station_name": "White Rock East Beach",
         "location": "East Beach Promenade, White Rock, BC",
         "observation_time": obs_time.isoformat(),
@@ -273,6 +304,15 @@ def export_json(conn):
     if frozen:
         print(f"⚠️  Frozen sensors withheld: {', '.join(sorted(frozen))}")
 
+    # Out of service by the owner's word (stations.json): the feed may still
+    # publish, but nothing it says is trusted until the flag is removed.
+    out_of_service = (get_wind_station(STATION_ID) or {}).get("out_of_service")
+    if out_of_service:
+        for field in READING_FIELDS:
+            data[field] = None
+        data["out_of_service"] = out_of_service
+        print(f"⚠️  Out of service since {out_of_service.get('since')}: all readings withheld")
+
     # Atomic write
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     tmp = OUT_PATH.with_suffix(".json.tmp")
@@ -282,7 +322,49 @@ def export_json(conn):
     print(f"✅ Exported to {OUT_PATH}")
 
 
+# Sensors the probe watches; any of them changing means the station moved.
+PROBE_FIELDS = ("wind_speed", "wind_direction", "wind_gust", "humidity", "pressure")
+
+
+def probe():
+    """One look at the feed while out of service; logs a verdict, stores nothing."""
+    data = fetch_weather()
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    if not data:
+        print(f"{stamp} PROBE: STILL DOWN (feed unreachable or empty)")
+        return 0
+
+    conn = sqlite3.connect(f"file:{SQLITE_PATH}?mode=ro", uri=True)
+    row = conn.execute(
+        f"SELECT observation_time, {', '.join(PROBE_FIELDS)} FROM whiterock_weather "
+        "ORDER BY observation_time DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+
+    feed_time = datetime.fromtimestamp(data["observation_time"], tz=timezone.utc)
+    if feed_time < datetime.now(timezone.utc) - timedelta(hours=2):
+        print(f"{stamp} PROBE: STILL DOWN (feed last updated {feed_time:%Y-%m-%d %H:%M} UTC)")
+        return 0
+
+    stored = dict(zip(PROBE_FIELDS, row[1:])) if row else {}
+    moved = [f for f in PROBE_FIELDS if data.get(f) is not None and data.get(f) != stored.get(f)]
+    if moved:
+        print(
+            f"{stamp} PROBE: BACK ONLINE? {', '.join(moved)} changed since the freeze "
+            f"({', '.join(f'{f} {stored.get(f)} -> {data.get(f)}' for f in moved)})"
+        )
+    else:
+        print(f"{stamp} PROBE: STILL DOWN (feed publishing, sensors still frozen)")
+    return 0
+
+
 def main():
+    parser = argparse.ArgumentParser(description="White Rock East Beach weather")
+    parser.add_argument("--probe", action="store_true", help="Out-of-service check: one look, nothing stored")
+    args = parser.parse_args()
+    if args.probe:
+        return probe()
+
     print("White Rock East Beach Weather Station")
     print("=" * 50)
 
