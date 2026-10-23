@@ -47,6 +47,7 @@ not copies:
 | `site/data` | The preview shows live exports. It is gitignored, so a fresh worktree has none. |
 | `.venv` | The pre-commit hook calls `.venv/bin/…` relative to the repo root. |
 | `node_modules` | For ESLint, Biome and Playwright. |
+| `biome.json` | The formatter's config. It is gitignored (the `*.json` pattern), so a fresh worktree has none, and `npm run format:js` without it silently reformats **every** JS file with tabs. |
 
 These are listed in `.git/info/exclude` (local, untracked, shared by both
 worktrees). `.gitignore` cannot cover them: its patterns (`site/data/`,
@@ -136,12 +137,13 @@ If `~/envcan_wave-dev` is lost, or the repo is re-cloned (which loses
 
 ```bash
 cd ~/envcan_wave
-printf '/site/data\n/.venv\n/node_modules\n' >> .git/info/exclude
+printf '/site/data\n/.venv\n/node_modules\n' >> .git/info/exclude   # biome.json is already gitignored
 git worktree add ~/envcan_wave-dev dev
 cd ~/envcan_wave-dev
 ln -s ~/envcan_wave/site/data site/data
 ln -s ~/envcan_wave/.venv .venv
 ln -s ~/envcan_wave/node_modules node_modules
+ln -s ~/envcan_wave/biome.json biome.json
 git status --short            # must be empty
 ```
 
