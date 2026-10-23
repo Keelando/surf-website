@@ -195,7 +195,7 @@ function updateSurgeChart(stationId) {
       formatter: (params) => {
         const idx = params[0].dataIndex;
         const time = formatMonthDayTime(times[idx]);
-        const value = params[0].value;
+        const value = values[idx];
         const sign = value >= 0 ? "+" : "";
         return `<b>${time}</b><br/>Storm Surge: ${sign}${value.toFixed(2)} m`;
       },
@@ -208,30 +208,24 @@ function updateSurgeChart(stationId) {
       top: "15%",
       containLabel: true,
     },
+    // A time axis, not a category one: GDSPS is hourly for 72 h, then
+    // 3-hourly on UTC hours that never land on Pacific midnight. Category
+    // spacing gave the first three days over half the width, and the
+    // midnight-only labels stopped after day three.
     xAxis: {
-      type: "category",
-      data: times,
+      type: "time",
+      min: times[0],
+      max: times[times.length - 1],
+      minInterval: 24 * 3600 * 1000,
       axisLabel: {
-        interval: (index) => {
-          // Show labels only at midnight Pacific Time
-          const d = new Date(times[index]);
-          const hour = parseInt(
-            d.toLocaleString("en-US", {
-              hour: "2-digit",
-              hour12: false,
-              timeZone: "America/Vancouver",
-            }),
-          );
-          return hour === 0;
-        },
-        formatter: (value, index) => {
+        formatter: (value) => {
           const d = new Date(value);
-          const day = d.toLocaleString("en-US", { day: "2-digit", timeZone: "America/Vancouver" });
-          const month = d.toLocaleString("en-US", {
-            month: "short",
+          const weekday = d.toLocaleString("en-US", {
+            weekday: "short",
             timeZone: "America/Vancouver",
           });
-          return index === 0 ? `${month} ${day}` : day;
+          const day = d.toLocaleString("en-US", { day: "numeric", timeZone: "America/Vancouver" });
+          return `${weekday} ${day}`;
         },
         rotate: window.innerWidth < 600 ? 45 : 0,
         fontSize: 10,
@@ -239,24 +233,9 @@ function updateSurgeChart(stationId) {
         margin: 10,
         color: mutedText,
       },
-      axisTick: { show: true, alignWithLabel: true },
+      axisTick: { show: true },
       axisLine: { lineStyle: { color: axisColor } },
-      splitLine: {
-        show: true,
-        lineStyle: { color: gridColor },
-        interval: (index) => {
-          // Show gridlines only at midnight Pacific Time
-          const d = new Date(times[index]);
-          const hour = parseInt(
-            d.toLocaleString("en-US", {
-              hour: "2-digit",
-              hour12: false,
-              timeZone: "America/Vancouver",
-            }),
-          );
-          return hour === 0;
-        },
-      },
+      splitLine: { show: true, lineStyle: { color: gridColor } },
     },
     yAxis: {
       type: "value",
@@ -278,7 +257,7 @@ function updateSurgeChart(stationId) {
       {
         name: "Storm Surge",
         type: "line",
-        data: values,
+        data: times.map((time, i) => [time, values[i]]),
         smooth: true,
         symbol: "none",
         itemStyle: { color: colors.primary },
@@ -335,6 +314,21 @@ function ensureSurgeThemeListener() {
   });
 }
 
+/**
+ * "hourly", or "hourly to Oct 26 00:00, then 3-hourly" when the step widens
+ * (GDSPS thins out after 72 h).
+ */
+function describeResolution(times) {
+  const ms = times.map((t) => new Date(t).getTime());
+  const stepName = (h) => (h === 1 ? "hourly" : `${h}-hourly`);
+  const first = (ms[1] - ms[0]) / 3_600_000;
+  const change = ms.findIndex((t, i) => i > 0 && (t - ms[i - 1]) / 3_600_000 !== first);
+  if (!(first > 0)) return `${times.length} points`;
+  if (change === -1) return stepName(first);
+  const later = (ms[change] - ms[change - 1]) / 3_600_000;
+  return `${stepName(first)} to ${formatMonthDayTime(times[change - 1])}, then ${stepName(later)}`;
+}
+
 function updateMetadata(station, times, values, displayName = null) {
   const metaEl = document.getElementById("surge-metadata");
   if (!metaEl) return;
@@ -358,7 +352,7 @@ function updateMetadata(station, times, values, displayName = null) {
     ${modelRunDisplay ? `<strong>Model Run:</strong> ${modelRunDisplay}<br/>` : ""}
     <strong>Data Retrieved:</strong> ${formatMonthDayTimeTZ(generatedTime)}<br/>
     <strong>Forecast Period:</strong> ${formatMonthDayTimeTZ(firstForecast)} to ${formatMonthDayTimeTZ(lastForecast)}<br/>
-    <strong>Resolution:</strong> ${values.length} hours (1-hour intervals)
+    <strong>Resolution:</strong> ${describeResolution(times)}
   `,
   );
 }
