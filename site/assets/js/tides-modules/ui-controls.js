@@ -4,6 +4,7 @@
  */
 
 import { STATION_DISPLAY_NAMES } from "./constants.js";
+import { dayLabel } from "./utils.js";
 
 /**
  * Populate the station dropdown with available stations
@@ -167,75 +168,49 @@ export function setupDayNavigation(tideDataStore, updateChartCallback) {
 
   newNextBtn.addEventListener("click", () => {
     const currentOffset = tideDataStore.getDayOffset();
-    if (currentOffset < 2) {
-      // We have 3 days of data (0-2)
+    if (currentOffset < tideDataStore.getMaxDayOffset()) {
       tideDataStore.setDayOffset(currentOffset + 1);
       updateChartCallback();
     }
   });
 
   updateDayLabel(tideDataStore.getDayOffset());
-  updateNavigationButtons(tideDataStore.getDayOffset());
+  updateNavigationButtons(tideDataStore.getDayOffset(), tideDataStore.getMaxDayOffset());
 }
 
 /**
- * Update the day label display
+ * Update the day labels: the chart's, and the high/low table heading's
  *
- * @param {number} dayOffset - Current day offset (0=today, 1=tomorrow, 2=day after)
+ * @param {number} dayOffset - Current day offset (0=today, 1=tomorrow, ...)
  * @returns {void}
  */
 export function updateDayLabel(dayOffset) {
-  const label = document.getElementById("chart-date-label");
-  const pacific = "America/Vancouver";
-  const now = new Date();
-
-  // Get current year/month/day in Pacific timezone
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: pacific,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const parts = formatter.formatToParts(now);
-  const year = parseInt(parts.find((p) => p.type === "year").value);
-  const month = parseInt(parts.find((p) => p.type === "month").value);
-  const day = parseInt(parts.find((p) => p.type === "day").value);
-
-  // Create date and add offset
-  const targetDate = new Date(year, month - 1, day);
-  targetDate.setDate(targetDate.getDate() + dayOffset);
-
-  const dateStr = targetDate.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-
-  if (dayOffset === 0) {
-    label.textContent = `Today (${dateStr})`;
-  } else if (dayOffset === 1) {
-    label.textContent = `Tomorrow (${dateStr})`;
-  } else {
-    label.textContent = dateStr;
-  }
+  const label = dayLabel(dayOffset);
+  document.getElementById("chart-date-label").textContent = label;
+  const highlowDay = document.getElementById("highlow-day-label");
+  if (highlowDay) highlowDay.textContent = label;
 }
 
 /**
  * Update navigation button states (enabled/disabled)
  *
- * @param {number} dayOffset - Current day offset (0=today, 1=tomorrow, 2=day after)
+ * @param {number} dayOffset - Current day offset (0=today, 1=tomorrow, ...)
+ * @param {number} maxOffset - Last offset the data covers
  * @returns {void}
  */
-export function updateNavigationButtons(dayOffset) {
+export function updateNavigationButtons(dayOffset, maxOffset) {
   const prevBtn = document.getElementById("prev-day-btn");
   const nextBtn = document.getElementById("next-day-btn");
+  const atStart = dayOffset <= 0;
+  const atEnd = dayOffset >= maxOffset;
 
-  prevBtn.disabled = dayOffset === 0;
-  nextBtn.disabled = dayOffset === 2; // We have 3 days of data (0-2)
+  prevBtn.disabled = atStart;
+  nextBtn.disabled = atEnd;
 
-  prevBtn.style.opacity = dayOffset === 0 ? "0.3" : "1";
-  nextBtn.style.opacity = dayOffset === 2 ? "0.3" : "1";
-  prevBtn.style.cursor = dayOffset === 0 ? "not-allowed" : "pointer";
-  nextBtn.style.cursor = dayOffset === 2 ? "not-allowed" : "pointer";
+  prevBtn.style.opacity = atStart ? "0.3" : "1";
+  nextBtn.style.opacity = atEnd ? "0.3" : "1";
+  prevBtn.style.cursor = atStart ? "not-allowed" : "pointer";
+  nextBtn.style.cursor = atEnd ? "not-allowed" : "pointer";
 }
 
 /**

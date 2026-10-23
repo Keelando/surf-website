@@ -4,6 +4,7 @@
  */
 
 import { setSafeHTML } from "../shared/safe-html.js";
+import { dayLabel as formatDayLabel, pacificDate } from "./utils.js";
 
 /**
  * Build the YYYY-MM-DD key used by sunlight_times.json from a Date.
@@ -112,7 +113,7 @@ class SunlightDataStore {
  * Display sunlight times for a station
  *
  * @param {string} stationKey - Station identifier
- * @param {number} dayOffset - Day offset (0=today, 1=tomorrow, 2=day after)
+ * @param {number} dayOffset - Day offset (0=today, 1=tomorrow, ...)
  * @param {SunlightDataStore} sunlightStore - Sunlight data store
  * @param {Object} tideDataStore - Tide data store (for updating day offset)
  * @param {Function} updateChartCallback - Callback to update chart when day changes
@@ -128,23 +129,9 @@ export function displaySunlightTimes(
   const container = document.getElementById("sunlight-widget");
   if (!container) return;
 
-  // Get target date in Pacific timezone based on offset
-  const pacific = "America/Vancouver";
+  // Target date in Pacific timezone based on offset
   const now = new Date();
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: pacific,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const parts = formatter.formatToParts(now);
-  const year = parseInt(parts.find((p) => p.type === "year").value);
-  const month = parseInt(parts.find((p) => p.type === "month").value);
-  const day = parseInt(parts.find((p) => p.type === "day").value);
-
-  // Create target date and apply offset
-  const targetDate = new Date(year, month - 1, day);
-  targetDate.setDate(targetDate.getDate() + dayOffset);
+  const targetDate = pacificDate(dayOffset, now);
 
   const targetDateStr = toDateKey(targetDate);
 
@@ -152,7 +139,7 @@ export function displaySunlightTimes(
   const sunlight = sunlightStore.getForDate(stationKey, targetDateStr);
 
   // And for the day after, to show which way day length is trending. The
-  // export runs 4 days ahead while navigation stops at offset 2, so the
+  // export runs a day past the last day navigation reaches, so the
   // following day is normally present — but a stale export can leave it
   // missing, in which case the change line is simply omitted.
   const nextDate = new Date(targetDate);
@@ -201,19 +188,8 @@ export function displaySunlightTimes(
     daylightSeconds(nextSunlight),
   );
 
-  // Format date label for heading
-  const dateStr = targetDate.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-  let dayLabel = "";
-  if (dayOffset === 0) {
-    dayLabel = `Today (${dateStr})`;
-  } else if (dayOffset === 1) {
-    dayLabel = `Tomorrow (${dateStr})`;
-  } else {
-    dayLabel = dateStr;
-  }
+  // Date label for heading, e.g. "Tomorrow (Sat Oct 24)"
+  const dayLabel = formatDayLabel(dayOffset, now);
 
   // Build modern card-based layout with CSS classes for responsive sizing
   setSafeHTML(
@@ -290,13 +266,16 @@ export function displaySunlightTimes(
 
   if (sunlightPrevBtn && sunlightNextBtn) {
     // Update button states
-    sunlightPrevBtn.disabled = dayOffset === 0;
-    sunlightNextBtn.disabled = dayOffset === 2; // We have 3 days of data (0-2)
+    const maxOffset = tideDataStore.getMaxDayOffset();
+    const atStart = dayOffset <= 0;
+    const atEnd = dayOffset >= maxOffset;
+    sunlightPrevBtn.disabled = atStart;
+    sunlightNextBtn.disabled = atEnd;
 
-    sunlightPrevBtn.style.opacity = dayOffset === 0 ? "0.3" : "1";
-    sunlightNextBtn.style.opacity = dayOffset === 2 ? "0.3" : "1";
-    sunlightPrevBtn.style.cursor = dayOffset === 0 ? "not-allowed" : "pointer";
-    sunlightNextBtn.style.cursor = dayOffset === 2 ? "not-allowed" : "pointer";
+    sunlightPrevBtn.style.opacity = atStart ? "0.3" : "1";
+    sunlightNextBtn.style.opacity = atEnd ? "0.3" : "1";
+    sunlightPrevBtn.style.cursor = atStart ? "not-allowed" : "pointer";
+    sunlightNextBtn.style.cursor = atEnd ? "not-allowed" : "pointer";
 
     // Add click handlers
     sunlightPrevBtn.addEventListener("click", () => {
@@ -309,7 +288,7 @@ export function displaySunlightTimes(
 
     sunlightNextBtn.addEventListener("click", () => {
       const currentOffset = tideDataStore.getDayOffset();
-      if (currentOffset < 2) {
+      if (currentOffset < tideDataStore.getMaxDayOffset()) {
         tideDataStore.setDayOffset(currentOffset + 1);
         updateChartCallback();
       }

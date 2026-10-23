@@ -149,7 +149,7 @@ function updateChartForDay() {
     updateDayLabel(dayOffset);
 
     // Update navigation buttons
-    updateNavigationButtons(dayOffset);
+    updateNavigationButtons(dayOffset, tideDataStore.getMaxDayOffset());
 
     // Update high/low table
     const highlowStation = tideDataStore.getHighLow(stationKey);

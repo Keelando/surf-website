@@ -3,6 +3,8 @@
  * Handles fetching and caching of tide data from JSON endpoints
  */
 
+import { maxDayOffset } from "./utils.js";
+
 /**
  * Data store - holds all loaded tide data
  */
@@ -14,7 +16,7 @@ export class TideDataStore {
     this.combinedWaterLevelData = null;
     this.stationsMetadata = null;
     this.currentStationKey = null;
-    this.currentDayOffset = 0; // 0 = today, 1 = tomorrow, 2 = day after
+    this.currentDayOffset = 0; // 0 = today, 1 = tomorrow, ... up to getMaxDayOffset()
     this.currentGeodeticResiduals = []; // Stores residuals for geodetic stations
   }
 
@@ -185,6 +187,15 @@ export class TideDataStore {
    */
   getDayOffset() {
     return this.currentDayOffset;
+  }
+
+  /**
+   * Last day offset the loaded data covers (6 = a week, today included)
+   *
+   * @returns {number}
+   */
+  getMaxDayOffset() {
+    return maxDayOffset(this.tideTimeseriesData);
   }
 
   /**

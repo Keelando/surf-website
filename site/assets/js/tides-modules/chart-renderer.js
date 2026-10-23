@@ -525,6 +525,7 @@ export function displayTideChart(
       formatter: function (params) {
         const date = new Date(params[0].value[0]);
         const timeStr = date.toLocaleString("en-US", {
+          weekday: "short",
           month: "short",
           day: "numeric",
           hour: "2-digit",
@@ -564,13 +565,22 @@ export function displayTideChart(
             timeZone: PACIFIC_TZ,
           });
 
+          // Midnight (or the first label) names the day, stacked so the
+          // label at the chart's left edge fits the gutter: "Fri" / "Oct 23".
+          // Narrow screens rotate labels, which still clips two lines; there
+          // the weekday alone (the date is in the label above the chart).
           if (hour === "00" || index === 0) {
+            const weekday = date.toLocaleString("en-US", {
+              weekday: "short",
+              timeZone: PACIFIC_TZ,
+            });
+            if (window.innerWidth < 600) return weekday;
             const monthDay = date.toLocaleString("en-US", {
               month: "short",
               day: "numeric",
               timeZone: PACIFIC_TZ,
             });
-            return `${monthDay} ${hour}h`;
+            return `${weekday}\n${monthDay}`;
           }
 
           return `${hour}h`;
@@ -578,6 +588,7 @@ export function displayTideChart(
         hideOverlap: true,
         interval: "auto",
         fontSize: window.innerWidth < 600 ? 9 : 10,
+        lineHeight: 13, // room for the two-line day label
         rotate: window.innerWidth < 600 ? 25 : 0,
         color: mutedText,
       },
