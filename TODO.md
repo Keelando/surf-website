@@ -63,6 +63,13 @@ duplicated observations on 2026-09-06. Write-up:
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+### Queued 2026-10-23
+
+- [ ] **Point forecast: show the peak wave height** (user 2026-10-23). On
+      the wave point-forecast chart (`wave-forecast.js`), mark the maximum
+      wave height over the forecast window with its value and time. In the
+      forecast table, highlight the row that holds that peak.
+
 ### Queued 2026-09-23 (frontend session), in the order agreed
 
 - [x] **Performance quick wins, before the redesign.** Lighthouse (live,
