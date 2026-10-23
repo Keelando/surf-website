@@ -139,6 +139,16 @@ test("the detail panel lists only the values the station sends", () => {
   assert.doesNotMatch(html, /Wind waves/); // NOAA-only
   assert.doesNotMatch(html, /undefined|null|NaN/);
   assert.match(html, /id="sl-history-4600146"/);
+  // Each action carries a line icon.
+  assert.match(html, /data-action="charts"><svg class="icon"/);
+});
+
+test("the source link names its owner and says it opens a new tab", () => {
+  const meta = { ...EC, source_url: "https://example.org/station" };
+  const html = buildStationDetail(halibut, "4600146", meta);
+  assert.match(html, /href="https:\/\/example\.org\/station"/);
+  assert.match(html, /Environment Canada<svg class="icon icon--trailing"/);
+  assert.match(html, /\(opens in a new tab\)/);
 });
 
 test("NOAA dominant-period stations explain the term", () => {
@@ -155,6 +165,15 @@ test("NOAA dominant-period stations explain the term", () => {
 test("a late station's panel says so in plain words", () => {
   const html = buildStationDetail({ ...halibut, status: "late" }, "4600146", EC);
   assert.match(html, /sl-note--late/);
+});
+
+test("a down station's warning comes BEFORE its old readings", () => {
+  const html = buildStationDetail({ ...halibut, status: "down" }, "4600303", EC);
+  const warning = html.indexOf("No report since");
+  assert.ok(warning >= 0);
+  assert.ok(warning < html.indexOf("Sig. height"), "warning must precede the numbers");
+  // The warning carries the time, so no second "Observed" line.
+  assert.doesNotMatch(html, /sl-observed/);
 });
 
 test("the list groups stations by region into columns and skips missing ones", () => {

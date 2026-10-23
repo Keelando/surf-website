@@ -26,10 +26,18 @@ import {
   collectActiveWarnings,
   getBannerZones,
   summarizeBannerWarnings,
-  getWarningIcon,
   getWarningId,
   getWarningSeverityClass,
 } from "./shared/warning-zones.js";
+
+// A line warning triangle in the banner's accent colour (currentColor), in
+// place of the emoji, which rendered differently on every OS. The forecasts
+// page still uses getWarningIcon()'s emoji.
+const WARNING_GLYPH =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 ' +
+  '1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/>' +
+  '<path d="M12 17h.01"/></svg>';
 
 // Helper: Fetch with timeout
 async function fetchWithTimeout(url, timeout = 5000) {
@@ -243,7 +251,6 @@ function createCombinedWarningBanner(warnings) {
   // Determine the highest severity for styling
   const highestSeverity = warnings[0]; // Already sorted by severity
   const severityClass = getWarningSeverityClass(highestSeverity.type);
-  const icon = getWarningIcon(highestSeverity.type);
 
   // Every route into the forecasts page carries the zone in the hash. The page
   // resolves hash before its stored last-choice, so clicking a warning always
@@ -291,7 +298,7 @@ function createCombinedWarningBanner(warnings) {
   return `
     <div class="warning-banner ${severityClass}" role="alert" aria-live="assertive">
       <div class="warning-banner-content">
-        <span class="warning-icon" aria-hidden="true">${icon}</span>
+        <span class="warning-icon" aria-hidden="true">${WARNING_GLYPH}</span>
         <div class="warning-text">
           ${warningText}
         </div>

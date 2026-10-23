@@ -8,29 +8,37 @@
 ----------------------------- */
 
 :root {
-  /* Mostly opaque: the photo shows at the edges and faintly through the
-     blur. 60% was tried and judged too see-through (user, 2026-10-23).
+  /* Instrument-readout face for the numbers: fixed-width digits, so
+     readings sit in steady columns. System fonts only, nothing to download. */
+  --sl-readout-font: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo,
+    Consolas, "Liberation Mono", monospace;
+
+  /* Translucent so the photo reads through; the blur evens it out behind
+     the text. The user's pick after trying 92% and 60% (2026-10-23).
      Contrast was measured on the rendered pixels behind the text, not by
      axe, which cannot judge text over an image. */
-  --summary-panel-bg: rgba(255, 255, 255, 0.92);
+  --summary-panel-bg: rgba(255, 255, 255, 0.72);
   --summary-panel-shadow: 0 12px 32px rgba(0, 20, 40, 0.28);
   --sl-text: #10202f;
-  --sl-muted: #4a5868;
+  --sl-muted: #36424f;
   --sl-heading: #004b7c;
   --sl-rule: rgba(16, 32, 47, 0.1);
   --sl-row-hover: rgba(0, 75, 124, 0.06);
   --sl-row-open: rgba(0, 75, 124, 0.05);
   --sl-ok: #15803d;
-  --sl-late: #92400e;
+  --sl-late: #7c2d12;
   --sl-late-dot: #d97706;
-  --sl-down: #b91c1c;
+  --sl-down: #7f1d1d;
   --sl-down-dot: #dc2626;
   --sl-action-border: rgba(0, 75, 124, 0.3);
   --sl-action-text: #004b7c;
   --sl-focus: #006daf;
-  --sl-region-bg: rgba(0, 60, 100, 0.07);
-  --sl-region-inset: rgba(0, 30, 60, 0.2);
-  --sl-region-highlight: rgba(255, 255, 255, 0.8);
+  --sl-well-bg: rgba(0, 45, 80, 0.06);
+  --sl-well-inset: rgba(0, 30, 60, 0.22);
+  --sl-well-highlight: rgba(255, 255, 255, 0.75);
+  --sl-chevron-bg: rgba(0, 75, 124, 0.12);
+  --summary-panel-edge: rgba(255, 255, 255, 0.7);
+  --summary-panel-bevel: rgba(255, 255, 255, 0.9);
   --home-toggle-bg: #e3eaf0;
   --home-toggle-active-bg: #ffffff;
   --map-key-bg: rgba(255, 255, 255, 0.95);
@@ -39,25 +47,28 @@
 }
 
 [data-theme="dark"] {
-  --summary-panel-bg: rgba(13, 27, 42, 0.88);
+  --summary-panel-bg: rgba(10, 22, 35, 0.74);
   --summary-panel-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   --sl-text: #e8eef5;
-  --sl-muted: #a7b6c9;
-  --sl-heading: #8dd3ff;
+  --sl-muted: #c9d4e1;
+  --sl-heading: #a8ddff;
   --sl-rule: rgba(255, 255, 255, 0.1);
   --sl-row-hover: rgba(255, 255, 255, 0.06);
   --sl-row-open: rgba(255, 255, 255, 0.04);
   --sl-ok: #4ade80;
   --sl-late: #fbbf24;
   --sl-late-dot: #fbbf24;
-  --sl-down: #fca5a5;
+  --sl-down: #fecaca;
   --sl-down-dot: #f87171;
   --sl-action-border: rgba(141, 211, 255, 0.35);
-  --sl-action-text: #8dd3ff;
+  --sl-action-text: #a8ddff;
   --sl-focus: #8dd3ff;
-  --sl-region-bg: rgba(0, 0, 0, 0.28);
-  --sl-region-inset: rgba(0, 0, 0, 0.55);
-  --sl-region-highlight: rgba(255, 255, 255, 0.07);
+  --sl-well-bg: rgba(0, 0, 0, 0.22);
+  --sl-well-inset: rgba(0, 0, 0, 0.55);
+  --sl-well-highlight: rgba(255, 255, 255, 0.07);
+  --sl-chevron-bg: rgba(141, 211, 255, 0.16);
+  --summary-panel-edge: rgba(255, 255, 255, 0.1);
+  --summary-panel-bevel: rgba(255, 255, 255, 0.12);
   --home-toggle-bg: #1f2f45;
   --home-toggle-active-bg: #33496a;
   --map-key-bg: rgba(22, 34, 50, 0.95);
@@ -88,7 +99,7 @@
 .summary {
   /* The photo's water is teal under a grey sky; this layer pulls it toward
      blue. Delete it (and the blend mode) if the photo is replaced. */
-  --summary-tint: linear-gradient(rgba(0, 70, 190, 0.5), rgba(0, 70, 190, 0.5));
+  --summary-tint: linear-gradient(rgba(0, 70, 190, 0.35), rgba(0, 70, 190, 0.35));
   background-color: #1d3a52;
   background-image: var(--summary-tint), url("/assets/images/noaa-waves-1989-1600.webp");
   background-image: var(--summary-tint), image-set(
@@ -117,10 +128,13 @@
   margin: 0 auto;
   padding: 1.25rem 1.25rem 0.75rem;
   background: var(--summary-panel-bg);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  backdrop-filter: blur(24px) saturate(1.3);
+  border: 1px solid var(--summary-panel-edge);
   border-radius: 16px;
-  box-shadow: var(--summary-panel-shadow);
+  box-shadow:
+    var(--summary-panel-shadow),
+    inset 0 1px 0 var(--summary-panel-bevel);
   color: var(--sl-text);
 }
 
@@ -221,7 +235,7 @@
 .sl-labels,
 .sl-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 4.75rem 4.25rem 1rem;
+  grid-template-columns: minmax(0, 1fr) 4.75rem 4rem 1.5rem;
   column-gap: 0.5rem;
   align-items: center;
 }
@@ -246,17 +260,8 @@
   }
 }
 
-/* Each region heading sits in a shallow recessed band: an inner shadow along
-   the top edge and a highlight along the bottom, as if pressed into the
-   panel. */
 .sl-region-title {
-  margin: 0.7rem 0 0.2rem;
-  padding: 0.3rem 0.5rem;
-  border-radius: 6px;
-  background: var(--sl-region-bg);
-  box-shadow:
-    inset 0 1px 3px var(--sl-region-inset),
-    inset 0 -1px 0 var(--sl-region-highlight);
+  margin: 0.75rem 0.5rem 0.3rem;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -268,10 +273,18 @@
   margin-top: 0.3rem;
 }
 
+/* Each region's stations sit in a shallow recessed well: an inner shadow
+   along the top edge and a highlight along the bottom, as if pressed into
+   the panel, so a region reads as one block. */
 .sl-rows {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--sl-well-bg);
+  box-shadow:
+    inset 0 2px 4px var(--sl-well-inset),
+    inset 0 -1px 0 var(--sl-well-highlight);
 }
 
 .sl-item + .sl-item {
@@ -329,16 +342,19 @@
   color: var(--sl-muted);
 }
 
+/* Status lights: each dot glows in its own colour, like a panel LED. */
 .sl-dot {
+  --led: var(--sl-ok);
   flex: none;
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: var(--sl-ok);
+  background: var(--led);
+  box-shadow: 0 0 5px 1px var(--led);
 }
 
 .sl-row--late .sl-dot {
-  background: var(--sl-late-dot);
+  --led: var(--sl-late-dot);
 }
 
 .sl-row--late .sl-age {
@@ -349,7 +365,7 @@
 .sl-row--down .sl-dot,
 .sl-row--out .sl-dot,
 .sl-row--none .sl-dot {
-  background: var(--sl-down-dot);
+  --led: var(--sl-down-dot);
 }
 
 .sl-row--down .sl-age,
@@ -373,15 +389,20 @@
 }
 
 .sl-big {
+  font-family: var(--sl-readout-font);
   font-size: 1.3rem;
   font-weight: 700;
   line-height: 1.1;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
+/* Units are labels, not readings: back to the text face. */
 .sl-unit {
+  font-family: system-ui, sans-serif;
   font-size: 0.75rem;
   font-weight: 500;
+  letter-spacing: 0;
   color: var(--sl-muted);
 }
 
@@ -390,7 +411,8 @@
   align-items: center;
   gap: 0.2rem;
   margin-top: 0.1rem;
-  font-size: 0.75rem;
+  font-family: var(--sl-readout-font);
+  font-size: 0.72rem;
   white-space: nowrap;
   color: var(--sl-muted);
   font-variant-numeric: tabular-nums;
@@ -407,11 +429,26 @@
   color: var(--sl-text);
 }
 
+/* The chevron sits in a tinted disc so the row reads as something to open. */
 .sl-chevron {
-  width: 1rem;
-  height: 1rem;
-  color: var(--sl-muted);
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.3rem;
+  border-radius: 50%;
+  background: var(--sl-chevron-bg);
+  color: var(--sl-action-text);
   transition: transform 0.2s ease;
+}
+
+.sl-row:hover .sl-chevron {
+  background: var(--sl-action-border);
+}
+
+.summary-tagline .sl-chevron {
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0.2rem;
+  vertical-align: -0.25rem;
 }
 
 .sl-row[aria-expanded="true"] .sl-chevron {
@@ -473,7 +510,8 @@
   gap: 0.25rem;
   flex-wrap: wrap;
   margin: 0;
-  font-size: 0.95rem;
+  font-family: var(--sl-readout-font);
+  font-size: 0.92rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -483,11 +521,25 @@
   color: var(--sl-muted);
 }
 
+/* Words beside a reading ("very organized") are text, not readout. */
+.sl-stat dd .sl-muted {
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+}
+
 .sl-note {
   margin: 0.55rem 0 0;
   font-size: 0.78rem;
   line-height: 1.4;
   color: var(--sl-muted);
+}
+
+/* The state note opens the panel, ahead of the numbers it qualifies. */
+.sl-note--state {
+  margin: 0.25rem 0 0.6rem;
+  padding-left: 0.6rem;
+  border-left: 3px solid currentColor;
+  font-weight: 600;
 }
 
 .sl-note--late {
@@ -519,6 +571,20 @@
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
+}
+
+.sl-action .icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.35rem;
+}
+
+/* The external-link arrow trails its label: "Environment Canada ↗". */
+.sl-action .icon--trailing {
+  margin: 0 0 0 0.35rem;
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 .sl-action:hover {

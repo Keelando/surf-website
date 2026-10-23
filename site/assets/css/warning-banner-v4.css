@@ -10,10 +10,8 @@
 }
 
 .warning-banner {
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
   margin: 0;
-  border-left: 4px solid;
-  animation: warningPulse 2s ease-in-out infinite;
 }
 
 .warning-banner-content {
@@ -26,8 +24,13 @@
 }
 
 .warning-icon {
-  font-size: 1.5rem;
+  display: flex;
   flex-shrink: 0;
+}
+
+.warning-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .warning-text {
@@ -40,6 +43,7 @@
 .warning-text strong {
   display: inline;
   margin-right: 0.5rem;
+  letter-spacing: 0.04em;
 }
 
 /* When several zones are warned at once each entry is its own link to that
@@ -80,8 +84,8 @@
 }
 
 .warning-dismiss-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
   font-size: 1.5rem;
   line-height: 1;
@@ -99,7 +103,7 @@
 }
 
 .warning-dismiss-btn:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.18);
   transform: scale(1.1);
 }
 
@@ -107,100 +111,69 @@
   transform: scale(0.95);
 }
 
-/* Storm Warning - Most Severe (48+ knots) - Intense Dark Red */
+/* Severity look: one dark strip, matching the nav, for every warning; the
+   severity shows in an accent colour (left bar, heading, icon, button
+   outline) and a faint wash of it across the strip. The accents are light
+   enough for AA contrast on the dark base. Replaced the saturated
+   orange/amber gradients in the 2026 redesign: white on amber was ~2:1. */
+.warning-banner {
+  --wb-accent: #7dd3fc;
+  --wb-wash: rgba(125, 211, 252, 0.14);
+  background:
+    linear-gradient(to right, var(--wb-wash), rgba(0, 0, 0, 0) 70%),
+    #0f2236;
+  color: #e8eef5;
+  border-left: 4px solid var(--wb-accent);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.warning-banner .warning-icon,
+.warning-banner .warning-text strong {
+  color: var(--wb-accent);
+}
+
+.warning-banner .warning-details-link {
+  background: transparent;
+  color: var(--wb-accent);
+  border: 1px solid var(--wb-accent);
+  border-radius: 999px;
+}
+
+.warning-banner .warning-details-link:hover {
+  background: var(--wb-wash);
+}
+
+/* Storm Warning - Most Severe (48+ knots) */
 .warning-storm {
-  background: linear-gradient(to right, #7f1d1d, #991b1b);
-  color: #fff;
-  border-left: 6px solid #450a0a; /* Very dark red border for urgency */
+  --wb-accent: #fca5a5;
+  --wb-wash: rgba(248, 113, 113, 0.3);
+  border-left-width: 6px;
   animation: stormPulse 2s ease-in-out infinite; /* More urgent animation */
 }
 
-.warning-storm .warning-details-link {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.warning-storm .warning-details-link:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Gale Warning - High Severity (34-47 knots) - Bright Orange */
+/* Gale Warning - High Severity (34-47 knots) */
 .warning-gale {
-  background: linear-gradient(to right, #ea580c, #f97316);
-  color: #fff;
-  border-left: 5px solid #c2410c; /* Dark orange border for high severity */
+  --wb-accent: #fdba74;
+  --wb-wash: rgba(251, 146, 60, 0.24);
+  border-left-width: 5px;
 }
 
-.warning-gale .warning-details-link {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.warning-gale .warning-details-link:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Strong Wind Warning - Moderate Severity (20-33 knots) - Yellow-Amber */
+/* Strong Wind Warning - Moderate Severity (20-33 knots) */
 .warning-strong-wind {
-  background: linear-gradient(to right, #d97706, #f59e0b);
-  color: #fff;
-  border-left: 4px solid #b45309; /* Dark amber border */
+  --wb-accent: #fcd34d;
+  --wb-wash: rgba(251, 191, 36, 0.18);
 }
 
-.warning-strong-wind .warning-details-link {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.warning-strong-wind .warning-details-link:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Waterspout Warning - Purple */
+/* Waterspout Warning */
 .warning-waterspout {
-  background: linear-gradient(to right, #7c3aed, #a855f7);
-  color: #fff;
-  border-left: 4px solid #5b21b6; /* Dark purple border */
+  --wb-accent: #d8b4fe;
+  --wb-wash: rgba(192, 132, 252, 0.22);
 }
 
-.warning-waterspout .warning-details-link {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.warning-waterspout .warning-details-link:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Default Warning Styles - Blue */
+/* Default Warning */
 .warning-default {
-  background: linear-gradient(to right, #1e40af, #2563eb);
-  color: #fff;
-  border-left-color: #1e3a8a;
-}
-
-.warning-default .warning-details-link {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.warning-default .warning-details-link:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Pulse Animation (subtle) - for gale/strong wind */
-@keyframes warningPulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.95;
-  }
+  --wb-accent: #7dd3fc;
+  --wb-wash: rgba(125, 211, 252, 0.14);
 }
 
 /* Storm Pulse Animation (more urgent) - for storm warnings only.
@@ -323,5 +296,5 @@
 
 /* Multiple warnings stacked */
 .warning-banner + .warning-banner {
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }

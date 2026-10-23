@@ -165,18 +165,30 @@ no console errors; axe clean on the summary, map and toggle at 390 and
 reports "needs review", not a failure), so the panel's contrast was measured
 on the rendered pixels instead: shoot the panel with its text made
 transparent, then take the worst background pixel inside each text box. At
-92% light / 88% dark panel opacity, every text node passes in both
-engines, lowest 5.5:1. (2026-10-23: 60% was tried at the user's request,
-judged too see-through, and failed in dark mode in Firefox anyway: white
-surf turned the background mid-grey. Firefox headless shows the photo less
-blurred than Chromium and is the binding case.) Any change to the panel's
-opacity, blur, text colours or the photo's tint needs the measurement redone.
+the user's chosen 72% light / 74% dark panel opacity (blur 24px; 92% read
+as too opaque, 60% too see-through and failed in dark mode in Firefox),
+every text node passes in both engines, lowest 4.8:1. Firefox headless shows
+the photo less blurred than Chromium and is the binding case. Any change to
+the panel's opacity, blur, text colours or the photo's tint needs the
+measurement redone.
 
-Also from the first review: region headings sit in recessed bands (inner
-shadow + bottom highlight) so the regions read as groups, and the photo gets
-a blue overlay layer (`--summary-tint`, `background-blend-mode: overlay`):
-its water is teal under a grey sky. The user may replace the photo instead;
-drop the tint layer then.
+From the first rounds of review (2026-10-23):
+- Each region's stations sit in a recessed well (inner shadow + bottom
+  highlight); the headings are plain text above them.
+- The rows' chevron sits in a tinted disc, and the tagline repeats it ("Tap a
+  station ⌄ for…"): opening a row was not obvious.
+- "Instrument panel" feel: readings in a fixed-width system monospace,
+  status dots glow like LEDs, the panel has a bezel edge. Bigger ideas held
+  back: a compass dial for wind direction, a small bar gauge per reading.
+- A down/late station's warning opens its panel, ahead of the numbers.
+- Line icons (`shared/icons.js`) on the panel's actions, instead of emoji.
+- The photo gets a 35% blue overlay layer (`--summary-tint`) over its teal,
+  grey-skied water; drop it if the photo is replaced.
+- **Warning banners (shared, every page):** one dark navy strip matching the
+  nav, severity shown in an accent colour (bar, heading, icon, button
+  outline) and a faint wash; an SVG triangle replaces the emoji. The old
+  white-on-amber strong-wind banner was ~2:1 contrast; axe is clean on all
+  five severities now.
 No horizontal overflow
 from the summary at 390/768/900/1024/1280 (the 768–1024 overflow is the
 known nav issue, identical on production). CLS with today's wind-warning

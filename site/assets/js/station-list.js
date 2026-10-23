@@ -13,6 +13,7 @@
 
 import { avgSpreadDescriptor, peakSpreadDescriptor } from "./buoy-card.js";
 import { formatWeekdayDayTime } from "./shared/format-time.js";
+import { icon } from "./shared/icons.js";
 import {
   isNoaaStation,
   isPileStation,
@@ -286,21 +287,27 @@ function windAndWeatherStats(b, meta) {
   );
 }
 
-/** Plain-words notes under the numbers: state, backup sensor, caveats. */
-function detailNotes(b, meta, fresh) {
-  const notes = [];
+/**
+ * The station's state, in plain words, for the top of the panel: a reader
+ * has to know the numbers are old BEFORE reading them. "" when it is fine.
+ */
+function stateNote(b, fresh) {
   if (fresh.state === "down" && b.observation_time) {
-    notes.push(
-      `<p class="sl-note sl-note--down">No report since ${formatWeekdayDayTime(b.observation_time)}. These are its last readings, not current conditions.</p>`,
-    );
-  } else if (fresh.state === "late") {
-    notes.push(
-      `<p class="sl-note sl-note--late">This report is later than the station usually sends one; conditions may have changed.</p>`,
-    );
-  } else if (fresh.state === "out") {
-    const reason = b.out_of_service?.reason ? ` ${b.out_of_service.reason}` : "";
-    notes.push(`<p class="sl-note sl-note--down">Out of service.${reason}</p>`);
+    return `<p class="sl-note sl-note--state sl-note--down">No report since ${formatWeekdayDayTime(b.observation_time)}. These are its last readings, not current conditions.</p>`;
   }
+  if (fresh.state === "late") {
+    return `<p class="sl-note sl-note--state sl-note--late">This report is later than the station usually sends one; conditions may have changed.</p>`;
+  }
+  if (fresh.state === "out") {
+    const reason = b.out_of_service?.reason ? ` ${b.out_of_service.reason}` : "";
+    return `<p class="sl-note sl-note--state sl-note--down">Out of service.${reason}</p>`;
+  }
+  return "";
+}
+
+/** Plain-words notes under the numbers: backup sensor, terms, caveats. */
+function detailNotes(b, meta) {
+  const notes = [];
   if (b.wave_sensor) {
     notes.push(
       `<p class="sl-note">Waves from the ${b.wave_sensor} sensor: the station's main wave sensor has no reading.</p>`,
@@ -321,10 +328,10 @@ function detailActions(b, meta) {
   const link = sourceUrl(meta);
   return `
       <div class="sl-actions">
-        <button type="button" class="sl-action" data-action="history" aria-expanded="false">12-hour history</button>
-        ${hasChartData ? `<button type="button" class="sl-action" data-action="charts">Charts</button>` : ""}
-        <button type="button" class="sl-action" data-action="map">Show on map</button>
-        ${link ? `<a class="sl-action" href="${link}" target="_blank" rel="noopener noreferrer">${meta?.source ?? "Source"} ↗</a>` : ""}
+        <button type="button" class="sl-action" data-action="history" aria-expanded="false">${icon("history")}12-hour history</button>
+        ${hasChartData ? `<button type="button" class="sl-action" data-action="charts">${icon("chart")}Charts</button>` : ""}
+        <button type="button" class="sl-action" data-action="map">${icon("map")}Show on map</button>
+        ${link ? `<a class="sl-action" href="${link}" target="_blank" rel="noopener noreferrer">${meta?.source ?? "Source"}${icon("external", "icon--trailing")}<span class="visually-hidden"> (opens in a new tab)</span></a>` : ""}
       </div>`;
 }
 
@@ -334,13 +341,17 @@ export function buildStationDetail(b, id, meta) {
     return `<p class="sl-note">No readings from this station are on hand.</p>${detailActions(b, meta)}`;
   }
   const fresh = freshness(b);
-  const observed = b.observation_time
-    ? `<p class="sl-observed">Observed ${formatWeekdayDayTime(b.observation_time)}</p>`
-    : "";
+  const state = stateNote(b, fresh);
+  // A down station's note already gives the time of its last report.
+  const observed =
+    b.observation_time && fresh.state !== "down"
+      ? `<p class="sl-observed">Observed ${formatWeekdayDayTime(b.observation_time)}</p>`
+      : "";
   return `
+      ${state}
       ${observed}
       <div class="sl-groups">${waveStats(b, meta)}${windAndWeatherStats(b, meta)}</div>
-      ${detailNotes(b, meta, fresh)}
+      ${detailNotes(b, meta)}
       ${detailActions(b, meta)}
       <div class="sl-history" id="sl-history-${id}" hidden></div>`;
 }
