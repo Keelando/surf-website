@@ -249,13 +249,6 @@
   background: var(--webcam-accent);
 }
 
-.slideshow-age-indicator {
-  font-size: 0.8rem;
-  color: var(--webcam-text-muted);
-  font-style: italic;
-  margin-top: 0.25rem;
-}
-
 /* ==========================================================================
    Webcam Info Section
    ========================================================================== */

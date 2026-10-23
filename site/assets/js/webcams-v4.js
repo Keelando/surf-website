@@ -300,6 +300,7 @@ function webcamAge(metadata, webcam) {
 }
 
 function formatAge(ageMinutes) {
+  if (ageMinutes < 1) return "just now";
   if (ageMinutes >= 2880) {
     // >= 48 hours: show days
     const days = Math.round(ageMinutes / 1440);
@@ -314,7 +315,31 @@ function formatAge(ageMinutes) {
 }
 
 /**
- * Write the "Last updated" line and set the card's staleness class.
+ * Minutes since the scene in a frame happened: since we captured it, plus
+ * the camera's stream delay, because the stream was already that far behind
+ * when we grabbed it. Measured from the frame's own timestamp — never from
+ * its position in the slideshow, which skipped and deduplicated frames and
+ * the overnight pause all throw off.
+ *
+ * @param {string} timestamp - The frame's capture time
+ * @param {Object} webcam - Entry from `webcams` (unknown delay counts as 0)
+ * @returns {number|null} null with no usable timestamp
+ */
+function frameAgeMinutes(timestamp, webcam) {
+  const captured = new Date(timestamp).getTime();
+  if (Number.isNaN(captured)) return null;
+  return (Date.now() - captured) / (1000 * 60) + (webcam?.streamDelay ?? 0);
+}
+
+/** "Captured: Oct 5, 2026 19:42 PDT · ~10 min ago" for any frame. */
+function capturedLine(timestamp, webcam) {
+  const age = frameAgeMinutes(timestamp, webcam);
+  const ago = age == null ? "" : ` · ~${formatAge(age)}`;
+  return "Captured: " + formatFullTimestamp(timestamp) + ago;
+}
+
+/**
+ * Write the latest frame's "Captured" line and set the card's staleness class.
  *
  * Both the initial render and the periodic metadata refresh need this and had
  * drifted into two copies of the same twenty lines; the copies are how a
@@ -327,18 +352,20 @@ function formatAge(ageMinutes) {
  */
 function renderTimestamp(card, timestampEl, metadata, webcam) {
   const age = webcamAge(metadata, webcam);
-  let text = "Last updated: " + formatFullTimestamp(metadata.timestamp);
+  let text = capturedLine(metadata.timestamp, webcam);
 
   card.classList.remove("webcam-stale", "webcam-stale-error");
 
   // offDuty: a daylight-only cam outside its capture window is not late, it is
   // done for the day. The card already says "Screen grabs stop at night".
+  // The badge carries no age of its own: the line above already gives the
+  // frame's real age, and a second, differently measured one contradicted it.
   if (age && !age.offDuty && age.ageMinutes > STALE_THRESHOLD_MINUTES) {
     const shown = Math.round(age.ageMinutes);
     const isDown = age.ageMinutes > DOWN_THRESHOLD_MINUTES;
     const severity = isDown ? "stale-error" : "";
     const label = isDown ? "DOWN" : "STALE";
-    text += ` <span class="stale-indicator ${severity}" title="No new frame for ${shown} minutes">${label} (${formatAge(shown)})</span>`;
+    text += ` <span class="stale-indicator ${severity}" title="No new frame for ${shown} minutes">${label}</span>`;
     card.classList.add(isDown ? "webcam-stale-error" : "webcam-stale");
   }
 
@@ -921,24 +948,15 @@ function updateSlideshowDisplay(webcamId) {
 
   image.src = state.basePath + currentImage.path + "?t=" + Date.now();
 
-  // Update timestamp
+  // Update timestamp: the newest frame gets the staleness badge, older ones
+  // just their own age.
   const timestamp = card.querySelector(".webcam-timestamp");
   if (timestamp) {
-    timestamp.textContent = "Captured: " + formatFullTimestamp(currentImage.timestamp);
-
-    // Age indicator
-    let ageIndicator = card.querySelector(".slideshow-age-indicator");
-    if (state.currentIndex > 0) {
-      const webcam = webcams.find((w) => w.id === webcamId);
-      const minutesAgo = state.currentIndex * (webcam?.updateInterval || 10);
-
-      if (!ageIndicator) {
-        ageIndicator = createElement("div", "slideshow-age-indicator");
-        timestamp.parentNode.insertBefore(ageIndicator, timestamp.nextSibling);
-      }
-      ageIndicator.textContent = `(${minutesAgo} minutes ago)`;
-    } else if (ageIndicator) {
-      ageIndicator.remove();
+    const webcam = webcams.find((w) => w.id === webcamId);
+    if (state.currentIndex === 0) {
+      renderTimestamp(card, timestamp, { timestamp: currentImage.timestamp }, webcam);
+    } else {
+      timestamp.textContent = capturedLine(currentImage.timestamp, webcam);
     }
   }
 
@@ -1084,16 +1102,18 @@ function startAutoRefresh() {
         const card = document.querySelector(`[data-webcam-id="${webcam.id}"]`);
         if (!card) return;
 
-        const state = slideshowState[webcam.id];
-        if (!state || state.currentIndex === 0) {
-          const image = card.querySelector(".webcam-image");
-          image.src = webcam.imageUrl + "?t=" + Date.now();
-        }
-
         if (marineData && webcam === webcams[0]) {
           updateConditionsBanner(marineData);
         }
 
+        // Paged back to an older frame: leave the card alone. Reloading the
+        // slideshow resets it to the newest frame's dot and time while the
+        // older picture stays up.
+        const state = slideshowState[webcam.id];
+        if (state && state.currentIndex > 0) return;
+
+        const image = card.querySelector(".webcam-image");
+        image.src = webcam.imageUrl + "?t=" + Date.now();
         loadSlideshow(webcam);
         loadWebcamMetadata(webcam, card);
       });
