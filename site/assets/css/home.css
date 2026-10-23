@@ -11,21 +11,21 @@
   /* Translucent so the photo reads through; the blur evens the photo out
      behind the text. Contrast was measured on the rendered pixels behind
      the text, not by axe, which cannot judge text over an image. */
-  --summary-panel-bg: rgba(255, 255, 255, 0.8);
+  --summary-panel-bg: rgba(255, 255, 255, 0.6);
   --summary-panel-shadow: 0 12px 32px rgba(0, 20, 40, 0.28);
-  --sl-text: #10202f;
-  --sl-muted: #36424f;
-  --sl-heading: #004b7c;
+  --sl-text: #0a1824;
+  --sl-muted: #26323e;
+  --sl-heading: #003658;
   --sl-rule: rgba(16, 32, 47, 0.1);
   --sl-row-hover: rgba(0, 75, 124, 0.06);
   --sl-row-open: rgba(0, 75, 124, 0.05);
   --sl-ok: #15803d;
   --sl-late: #7c2d12;
   --sl-late-dot: #d97706;
-  --sl-down: #991b1b;
+  --sl-down: #6a1515;
   --sl-down-dot: #dc2626;
   --sl-action-border: rgba(0, 75, 124, 0.3);
-  --sl-action-text: #004b7c;
+  --sl-action-text: #003658;
   --sl-focus: #006daf;
   --home-toggle-bg: #e3eaf0;
   --home-toggle-active-bg: #ffffff;
@@ -35,21 +35,23 @@
 }
 
 [data-theme="dark"] {
-  --summary-panel-bg: rgba(10, 22, 35, 0.8);
+  /* 68%, not the 60% light mode gets: below this, surf showing through
+     fails text contrast in Firefox even for near-white text. */
+  --summary-panel-bg: rgba(10, 22, 35, 0.68);
   --summary-panel-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-  --sl-text: #e8eef5;
-  --sl-muted: #c9d4e1;
-  --sl-heading: #a8ddff;
+  --sl-text: #f4f8fb;
+  --sl-muted: #e1e8f0;
+  --sl-heading: #cdeaff;
   --sl-rule: rgba(255, 255, 255, 0.1);
   --sl-row-hover: rgba(255, 255, 255, 0.06);
   --sl-row-open: rgba(255, 255, 255, 0.04);
   --sl-ok: #4ade80;
   --sl-late: #fbbf24;
   --sl-late-dot: #fbbf24;
-  --sl-down: #fecaca;
+  --sl-down: #ffdede;
   --sl-down-dot: #f87171;
   --sl-action-border: rgba(141, 211, 255, 0.35);
-  --sl-action-text: #a8ddff;
+  --sl-action-text: #cdeaff;
   --sl-focus: #8dd3ff;
   --home-toggle-bg: #1f2f45;
   --home-toggle-active-bg: #33496a;
