@@ -90,10 +90,12 @@ test("formatDataAge returns null when the age is unknown", () => {
   assert.equal(formatDataAge(undefined), null);
 });
 
-test("stale age switches to days past 48 hours", () => {
+test("stale age switches to days past 48 hours, days only past a week", () => {
   const now = new Date("2026-09-23T18:00:00Z");
   assert.equal(staleAgeLabel("2026-09-22T00:00:00Z", now), "42h");
   assert.equal(staleAgeLabel("2026-09-21T14:00:00Z", now), "2d 4h");
+  assert.equal(staleAgeLabel("2026-09-16T19:00:00Z", now), "6d 23h");
+  assert.equal(staleAgeLabel("2026-09-10T22:00:00Z", now), "12d");
   assert.equal(staleAgeLabel("not a date", now), null);
   assert.equal(staleAgeLabel(null, now), null);
 });

@@ -11,6 +11,7 @@ import { formatMonthDayTime, formatTimeHM, formatTimeWithDate } from "./shared/f
 import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
 import { windData } from "./wind-data.js";
 import { setSafeHTML } from "./shared/safe-html.js";
+import { staleAgeLabel } from "./shared/staleness.js";
 
 /** Escape a string for safe interpolation into an HTML attribute. */
 function escapeAttr(value) {
@@ -222,15 +223,7 @@ function renderOfflineStationsList(offlineStations) {
   html += "<ul>";
 
   offlineStations.forEach(([id, station]) => {
-    const hours = Math.floor(station.ageHours);
-    const minutes = Math.round((station.ageHours - hours) * 60);
-    let ageText = "";
-    if (hours > 0) {
-      ageText = `${hours}h`;
-      if (minutes > 0) ageText += ` ${minutes}m`;
-    } else {
-      ageText = `${minutes}m`;
-    }
+    const age = staleAgeLabel(station.observation_time);
 
     const offlineMeta = getStationMeta(id);
     let stationLink = station.name.replace(" 🌊", "");
@@ -238,7 +231,7 @@ function renderOfflineStationsList(offlineStations) {
       stationLink = `<a href="${offlineMeta.source_url}" target="_blank" rel="noopener">${stationLink}</a>`;
     }
 
-    html += `<li><strong>${stationLink}</strong> (${ageText} ago)</li>`;
+    html += `<li><strong>${stationLink}</strong> (${age ? `${age} ago` : "no report time"})</li>`;
   });
 
   html += "</ul></div>";

@@ -45,8 +45,8 @@ export function statusMarkerOpacity(status) {
 }
 
 /**
- * How old a stale reading is, for a popup header: "13h" under two days,
- * "2d 4h" past that. Whole hours, rounded down — "3h" means at least three.
+ * How old a stale reading is: "13h" under two days, "2d 4h" up to a week,
+ * "12d" past that. Whole units, rounded down — "3h" means at least three.
  *
  * @param {Date|string} observedAt
  * @param {Date} [now] - Injectable for tests
@@ -58,7 +58,8 @@ export function staleAgeLabel(observedAt, now = new Date()) {
   if (!Number.isFinite(ageMs)) return null;
   const hours = Math.max(0, Math.floor(ageMs / 3_600_000));
   if (hours < 48) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+  if (hours < 7 * 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+  return `${Math.floor(hours / 24)}d`;
 }
 
 /**
