@@ -95,6 +95,13 @@ def no_sleep(monkeypatch):
     monkeypatch.setattr(wf.time, "sleep", lambda _seconds: None)
 
 
+@pytest.fixture
+def fixture_clock(monkeypatch):
+    """Hold "now" a day after the fixture forecast, so the retention purge
+    keeps it — on the real clock it aged past 60 days on 2026-10-17."""
+    monkeypatch.setattr(wf.time, "time", lambda: STEP_EPOCH + 86400)
+
+
 @pytest.fixture(autouse=True)
 def quiet_logger(monkeypatch):
     """Keep test output out of logs/wave_forecast.log.
@@ -376,6 +383,7 @@ def store_wind(readings, counts=None, run_iso=RUN_ISO):
     )
 
 
+@pytest.mark.usefixtures("fixture_clock")
 class TestStoreForecastToDb:
     def test_epochs_are_utc(self, wave_db):
         store_wave(readings_for([("wave_height", STEP_ISO, 0.718, "ok")]))
@@ -493,6 +501,7 @@ class TestStoreForecastToDb:
 # ── schema migration from the pre-2026-08-15 layout ─────────────────
 
 
+@pytest.mark.usefixtures("fixture_clock")
 class TestMigrateDbSchema:
     def _legacy_db(self, path, with_status=False):
         conn = sqlite3.connect(path)
