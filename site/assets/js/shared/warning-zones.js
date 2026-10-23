@@ -221,18 +221,3 @@ export function getWarningSeverityClass(type) {
 
   return "warning-default";
 }
-
-/**
- * Map a warning type to its display icon.
- * @param {string} type - Warning type
- * @returns {string} Emoji
- */
-export function getWarningIcon(type) {
-  const typeLower = String(type || "").toLowerCase();
-
-  if (typeLower.includes("storm")) return "⚠️";
-  if (typeLower.includes("gale")) return "💨";
-  if (typeLower.includes("strong wind") || typeLower.includes("wind")) return "🌬️";
-
-  return "⚠️";
-}

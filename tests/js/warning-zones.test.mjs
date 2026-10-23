@@ -4,7 +4,6 @@ import {
   collectActiveWarnings,
   DEFAULT_BANNER_ZONES,
   getBannerZones,
-  getWarningIcon,
   getWarningId,
   getWarningSeverityClass,
   summarizeBannerWarnings,
@@ -348,12 +347,6 @@ test("severity classes match warning types", () => {
   assert.equal(getWarningSeverityClass(undefined), "warning-default");
 });
 
-test("icons match warning types", () => {
-  assert.equal(getWarningIcon("Storm warning"), "⚠️");
-  assert.equal(getWarningIcon("Gale warning"), "💨");
-  assert.equal(getWarningIcon("Strong wind warning"), "🌬️");
-  assert.equal(getWarningIcon("Anything else"), "⚠️");
-});
 
 const w = (type, zoneKey) => ({ type, zone_key: zoneKey, zone_name: zoneKey });
 

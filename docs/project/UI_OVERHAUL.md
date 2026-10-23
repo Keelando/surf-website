@@ -184,11 +184,14 @@ From the first rounds of review (2026-10-23):
 - Line icons (`shared/icons.js`) on the panel's actions, instead of emoji.
 - The photo gets a 35% blue overlay layer (`--summary-tint`) over its teal,
   grey-skied water; drop it if the photo is replaced.
-- **Warning banners (shared, every page):** one dark navy strip matching the
-  nav, severity shown in an accent colour (bar, heading, icon, button
-  outline) and a faint wash; an SVG triangle replaces the emoji. The old
-  white-on-amber strong-wind banner was ~2:1 contrast; axe is clean on all
-  five severities now.
+- **Warning banners (shared, every page):** each severity class sets a
+  `--wb-*` palette that the banner AND the forecasts page's "Warnings in
+  effect" rows draw from, so the two match. Light theme: a strong tint of the
+  severity, thick coloured bar, deep-shade heading and a filled button. Dark
+  theme: a navy strip matching the nav, the severity in a light accent. An
+  SVG triangle (`icon("warning")`) replaces the emoji in both places, and
+  `getWarningIcon()` is gone. The old white-on-amber banner was ~2:1
+  contrast; axe is clean on all five severities in both themes and engines.
 No horizontal overflow
 from the summary at 390/768/900/1024/1280 (the 768–1024 overflow is the
 known nav issue, identical on production). CLS with today's wind-warning

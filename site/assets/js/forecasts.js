@@ -6,6 +6,7 @@
  * loaded before this one (chart-utils-v4.js, logger.js).
  */
 
+import { icon as lineIcon } from "./shared/icons.js";
 import { setSafeHTML } from "./shared/safe-html.js";
 import { formatForecastTimestamp } from "./shared/format-time.js";
 import {
@@ -17,7 +18,6 @@ import {
 import { renderWarningZoneControls } from "./warning-zone-picker.js";
 import {
   collectActiveWarnings,
-  getWarningIcon,
   getWarningSeverityClass as bannerSeverityClass,
 } from "./shared/warning-zones.js";
 
@@ -330,8 +330,9 @@ function renderWarningJumpStrip(zones) {
     item.className = `warning-jump-group ${bannerSeverityClass(group.type)}`;
 
     const icon = document.createElement("span");
+    icon.className = "warning-jump-icon";
     icon.setAttribute("aria-hidden", "true");
-    icon.textContent = getWarningIcon(group.type);
+    setSafeHTML(icon, lineIcon("warning"));
 
     const type = document.createElement("span");
     type.className = "warning-jump-type";

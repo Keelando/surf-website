@@ -430,7 +430,6 @@ header {
   padding: 0.85rem 1rem;
   background: var(--color-card-muted-bg);
   border: 1px solid var(--color-border-light);
-  border-left: 4px solid var(--color-accent-orange);
   border-radius: 8px;
 }
 
@@ -462,34 +461,41 @@ header {
   list-style: none;
 }
 
+/* Each row is a small copy of the warning banner: the same dark strip, the
+   severity's accent colour on its left edge, its type and its icon, and the
+   same wash, light or dark with the theme. The --wb-* colours come from the severity classes in
+   warning-banner-v4.css, so a reader who has seen a banner recognises the
+   row, and the two cannot drift apart. */
 .warning-jump-group {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.4rem 0.7rem;
+  padding: 0.45rem 0.7rem;
   /* Not a 999px pill: a row with six waters wraps to two lines on a phone,
      and a fully rounded end on a two-line box reads as a mistake. */
-  border-radius: 10px;
+  border-radius: 8px;
+  border-left: 4px solid var(--wb-bar);
+  background:
+    linear-gradient(to right, var(--wb-wash), rgba(0, 0, 0, 0) 70%),
+    var(--wb-bg);
+  box-shadow: inset 0 0 0 1px var(--wb-edge);
   font-size: 0.85rem;
-  color: #fff;
-  background: var(--color-text-muted);
+  color: var(--wb-text);
 }
 
-/* Same severity ramp as the banner, deliberately: a reader who has seen the
-   red banner should recognise the red row as the same warning. Solid
-   rather than the banner's gradient — these are small. */
-/* Each is the dark end of its banner ramp, not the mid tone: the rows
-   carry white text at 12-14px, and the banner's own gale orange (#ea580c)
-   only reaches 3.55:1 against white, under the 4.5:1 AA floor for text
-   this size. These clear it — 8.3, 5.2, 7.1, 9.0 and 8.7 respectively. */
-.warning-jump-group.warning-storm { background: #991b1b; }
-.warning-jump-group.warning-gale { background: #c2410c; }
-.warning-jump-group.warning-strong-wind { background: #92400e; }
-.warning-jump-group.warning-waterspout { background: #5b21b6; }
-.warning-jump-group.warning-default { background: #1e40af; }
+.warning-jump-icon {
+  display: flex;
+  color: var(--wb-ink);
+}
+
+.warning-jump-icon .icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
 
 .warning-jump-type {
+  color: var(--wb-ink);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -498,15 +504,15 @@ header {
   margin-right: 0.15rem;
 }
 
-/* Each warned water, inside its row. The tinted background is what keeps
-   two adjacent zone names from reading as one — a gap alone left "Howe
-   Sound Haro Strait". 15% white over the darkest ramp colour still clears
-   AA for this text size. */
+/* Each warned water, inside its row. The pill outline is what keeps two
+   adjacent zone names from reading as one — a gap alone left "Howe Sound
+   Haro Strait". */
 .warning-jump-item {
   display: inline-block;
-  padding: 0.2rem 0.55rem;
+  padding: 0.15rem 0.55rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--wb-control-border);
+  background: var(--wb-control-bg);
   color: inherit;
   text-decoration: none;
   white-space: nowrap;
@@ -514,15 +520,15 @@ header {
 
 .warning-jump-item:hover,
 .warning-jump-item:focus-visible {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--wb-control-hover);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-/* White, not the page's accent blue: the outline sits on a dark red or
-   amber row, where the accent all but disappears. */
+/* The strip's own text colour, not the page's accent blue, which all but
+   disappears on the dark strip. */
 .warning-jump-item:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--wb-text);
   outline-offset: 2px;
 }
 

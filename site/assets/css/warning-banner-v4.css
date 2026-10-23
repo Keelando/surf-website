@@ -84,9 +84,9 @@
 }
 
 .warning-dismiss-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: var(--wb-control-bg);
+  border: 1px solid var(--wb-control-border);
+  color: var(--wb-text);
   font-size: 1.5rem;
   line-height: 1;
   width: 2rem;
@@ -103,7 +103,7 @@
 }
 
 .warning-dismiss-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--wb-control-hover);
   transform: scale(1.1);
 }
 
@@ -111,68 +111,153 @@
   transform: scale(0.95);
 }
 
-/* Severity look: one dark strip, matching the nav, for every warning; the
-   severity shows in an accent colour (left bar, heading, icon, button
-   outline) and a faint wash of it across the strip. The accents are light
-   enough for AA contrast on the dark base. Replaced the saturated
-   orange/amber gradients in the 2026 redesign: white on amber was ~2:1. */
+/* Severity look. Each severity class sets a palette of --wb-* colours, and
+   the banner (and the forecasts page's warning rows, forecasts-v4.css) are
+   drawn only from those, so the two always match.
+     light theme: a pale strip tinted with the severity, a strong bar on the
+                  left, the type and button in a deep shade of the colour
+     dark theme:  a dark navy strip matching the nav, the severity in a light
+                  accent colour and a faint wash
+   Replaced the saturated orange/amber gradients in the 2026 redesign: their
+   white text on amber was about 2:1. --wb-ink is the text-safe shade (AA on
+   --wb-bg); --wb-bar is decoration only. */
 .warning-banner {
-  --wb-accent: #7dd3fc;
-  --wb-wash: rgba(125, 211, 252, 0.14);
   background:
     linear-gradient(to right, var(--wb-wash), rgba(0, 0, 0, 0) 70%),
-    #0f2236;
-  color: #e8eef5;
-  border-left: 4px solid var(--wb-accent);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    var(--wb-bg);
+  color: var(--wb-text);
+  border-left: 6px solid var(--wb-bar);
+  border-bottom: 1px solid var(--wb-edge);
 }
 
 .warning-banner .warning-icon,
 .warning-banner .warning-text strong {
-  color: var(--wb-accent);
+  color: var(--wb-ink);
 }
 
+/* Light theme: a filled button in the deep shade; dark: an outline. */
 .warning-banner .warning-details-link {
-  background: transparent;
-  color: var(--wb-accent);
-  border: 1px solid var(--wb-accent);
+  background: var(--wb-btn-bg);
+  color: var(--wb-btn-text);
+  border: 1px solid var(--wb-ink);
   border-radius: 999px;
 }
 
 .warning-banner .warning-details-link:hover {
-  background: var(--wb-wash);
+  background: var(--wb-btn-hover);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Shared by every severity, per theme. */
+.warning-banner,
+.warning-jump-group {
+  --wb-text: #1f2937;
+  --wb-btn-bg: var(--wb-ink);
+  --wb-btn-text: #ffffff;
+  /* Not --wb-bar: white on the amber bar is ~3:1. */
+  --wb-btn-hover: var(--wb-ink);
+  --wb-edge: rgba(0, 0, 0, 0.08);
+  --wb-control-bg: rgba(0, 0, 0, 0.05);
+  --wb-control-border: rgba(0, 0, 0, 0.18);
+  --wb-control-hover: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .warning-banner,
+[data-theme="dark"] .warning-jump-group {
+  --wb-bg: #0f2236;
+  --wb-text: #e8eef5;
+  --wb-btn-bg: transparent;
+  --wb-btn-text: var(--wb-ink);
+  --wb-btn-hover: var(--wb-wash);
+  --wb-edge: rgba(255, 255, 255, 0.08);
+  --wb-control-bg: rgba(255, 255, 255, 0.08);
+  --wb-control-border: rgba(255, 255, 255, 0.2);
+  --wb-control-hover: rgba(255, 255, 255, 0.18);
 }
 
 /* Storm Warning - Most Severe (48+ knots) */
 .warning-storm {
-  --wb-accent: #fca5a5;
-  --wb-wash: rgba(248, 113, 113, 0.3);
-  border-left-width: 6px;
+  --wb-bg: #fee2e2;
+  --wb-bar: #dc2626;
+  --wb-ink: #991b1b;
+  --wb-wash: rgba(220, 38, 38, 0.22);
+  --wb-edge: rgba(220, 38, 38, 0.4);
+}
+
+.warning-banner.warning-storm {
+  border-left-width: 8px;
   animation: stormPulse 2s ease-in-out infinite; /* More urgent animation */
 }
 
 /* Gale Warning - High Severity (34-47 knots) */
 .warning-gale {
-  --wb-accent: #fdba74;
-  --wb-wash: rgba(251, 146, 60, 0.24);
-  border-left-width: 5px;
+  --wb-bg: #ffedd5;
+  --wb-bar: #ea580c;
+  --wb-ink: #9a3412;
+  --wb-wash: rgba(234, 88, 12, 0.22);
+  --wb-edge: rgba(234, 88, 12, 0.4);
+}
+
+.warning-banner.warning-gale {
+  border-left-width: 7px;
 }
 
 /* Strong Wind Warning - Moderate Severity (20-33 knots) */
 .warning-strong-wind {
-  --wb-accent: #fcd34d;
-  --wb-wash: rgba(251, 191, 36, 0.18);
+  --wb-bg: #fef3c7;
+  --wb-bar: #d97706;
+  --wb-ink: #92400e;
+  --wb-wash: rgba(217, 119, 6, 0.24);
+  --wb-edge: rgba(217, 119, 6, 0.4);
 }
 
 /* Waterspout Warning */
 .warning-waterspout {
-  --wb-accent: #d8b4fe;
-  --wb-wash: rgba(192, 132, 252, 0.22);
+  --wb-bg: #f3e8ff;
+  --wb-bar: #9333ea;
+  --wb-ink: #6b21a8;
+  --wb-wash: rgba(147, 51, 234, 0.18);
+  --wb-edge: rgba(147, 51, 234, 0.35);
 }
 
 /* Default Warning */
 .warning-default {
-  --wb-accent: #7dd3fc;
+  --wb-bg: #e0f2fe;
+  --wb-bar: #0284c7;
+  --wb-ink: #075985;
+  --wb-wash: rgba(2, 132, 199, 0.18);
+  --wb-edge: rgba(2, 132, 199, 0.35);
+}
+
+/* Dark theme: the light accent does all three jobs, bar, ink and wash. */
+[data-theme="dark"] .warning-storm {
+  --wb-bar: #fca5a5;
+  --wb-ink: #fca5a5;
+  --wb-wash: rgba(248, 113, 113, 0.3);
+}
+
+[data-theme="dark"] .warning-gale {
+  --wb-bar: #fdba74;
+  --wb-ink: #fdba74;
+  --wb-wash: rgba(251, 146, 60, 0.24);
+}
+
+[data-theme="dark"] .warning-strong-wind {
+  --wb-bar: #fcd34d;
+  --wb-ink: #fcd34d;
+  --wb-wash: rgba(251, 191, 36, 0.18);
+}
+
+[data-theme="dark"] .warning-waterspout {
+  --wb-bar: #d8b4fe;
+  --wb-ink: #d8b4fe;
+  --wb-wash: rgba(192, 132, 252, 0.22);
+}
+
+[data-theme="dark"] .warning-default {
+  --wb-bar: #7dd3fc;
+  --wb-ink: #7dd3fc;
   --wb-wash: rgba(125, 211, 252, 0.14);
 }
 
@@ -296,5 +381,5 @@
 
 /* Multiple warnings stacked */
 .warning-banner + .warning-banner {
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--wb-edge);
 }
