@@ -165,13 +165,18 @@ no console errors; axe clean on the summary, map and toggle at 390 and
 reports "needs review", not a failure), so the panel's contrast was measured
 on the rendered pixels instead: shoot the panel with its text made
 transparent, then take the worst background pixel inside each text box. At
-the user asked for 60% in both themes (2026-10-23). Light mode passes at
-60% with darker text; dark mode cannot pass at 60% in Firefox (worst 3.2:1:
-white surf through the panel turns the background mid-grey, so even white
-text falls short) and sits at 68% with brightened text. Every text node then
-passes in both engines, lowest 4.9:1 (Firefox). Firefox headless shows the
-photo less blurred than Chromium and is always the binding case. Any change
-to the panel's opacity, blur or text colours needs the measurement redone.
+92% light / 88% dark panel opacity, every text node passes in both
+engines, lowest 5.5:1. (2026-10-23: 60% was tried at the user's request,
+judged too see-through, and failed in dark mode in Firefox anyway: white
+surf turned the background mid-grey. Firefox headless shows the photo less
+blurred than Chromium and is the binding case.) Any change to the panel's
+opacity, blur, text colours or the photo's tint needs the measurement redone.
+
+Also from the first review: region headings sit in recessed bands (inner
+shadow + bottom highlight) so the regions read as groups, and the photo gets
+a blue overlay layer (`--summary-tint`, `background-blend-mode: overlay`):
+its water is teal under a grey sky. The user may replace the photo instead;
+drop the tint layer then.
 No horizontal overflow
 from the summary at 390/768/900/1024/1280 (the 768–1024 overflow is the
 known nav issue, identical on production). CLS with today's wind-warning
