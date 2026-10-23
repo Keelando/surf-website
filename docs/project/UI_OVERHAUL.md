@@ -190,7 +190,9 @@ From the first rounds of review (2026-10-23):
   severity, thick coloured bar, deep-shade heading and a filled button. Dark
   theme: a navy strip matching the nav, the severity in a light accent. An
   SVG triangle (`icon("warning")`) replaces the emoji in both places, and
-  `getWarningIcon()` is gone. The old white-on-amber banner was ~2:1
+  `getWarningIcon()` is gone. Each zone's own `.warning-card` uses the same
+  palette, so one warning looks the same in banner, row and zone card.
+- The map key folds away on a click/tap anywhere off it, or Escape. The old white-on-amber banner was ~2:1
   contrast; axe is clean on all five severities in both themes and engines.
 No horizontal overflow
 from the summary at 390/768/900/1024/1280 (the 768–1024 overflow is the

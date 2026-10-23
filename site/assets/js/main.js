@@ -277,6 +277,28 @@ function handleHashNavigation() {
 wireStationList();
 loadBuoyData();
 
+// The map key folds away when the reader clicks or taps anywhere off it
+// (the map included) or presses Escape. Capture phase, because Leaflet stops
+// some pointer events on its markers and controls from bubbling.
+function wireMapKey() {
+  const key = document.querySelector(".map-key");
+  if (!key) return;
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (key.open && !key.contains(e.target)) key.open = false;
+    },
+    true,
+  );
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && key.open) {
+      key.open = false;
+      key.querySelector("summary")?.focus();
+    }
+  });
+}
+wireMapKey();
+
 setInterval(loadBuoyData, 5 * 60 * 1000);
 
 // Handle hash navigation when hash changes (clicking map links)

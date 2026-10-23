@@ -501,7 +501,7 @@ function renderWarningCard(warning) {
 
   return `
     <div class="warning-card ${severityClass}">
-      <h3>${warning.type}</h3>
+      <h3>${lineIcon("warning")}${warning.type}</h3>
       <p><strong>Status:</strong> ${warning.status}${issuedText}</p>
     </div>
   `;

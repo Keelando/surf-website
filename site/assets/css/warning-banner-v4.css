@@ -149,9 +149,11 @@
   text-underline-offset: 2px;
 }
 
-/* Shared by every severity, per theme. */
+/* Shared by every severity, per theme. The forecasts page's warning rows
+   and per-zone warning cards draw from the same palette as the banner. */
 .warning-banner,
-.warning-jump-group {
+.warning-jump-group,
+.warning-card {
   --wb-text: #1f2937;
   --wb-btn-bg: var(--wb-ink);
   --wb-btn-text: #ffffff;
@@ -164,7 +166,8 @@
 }
 
 [data-theme="dark"] .warning-banner,
-[data-theme="dark"] .warning-jump-group {
+[data-theme="dark"] .warning-jump-group,
+[data-theme="dark"] .warning-card {
   --wb-bg: #0f2236;
   --wb-text: #e8eef5;
   --wb-btn-bg: transparent;

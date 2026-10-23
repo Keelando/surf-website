@@ -130,42 +130,42 @@ html {
   margin: 0.75rem 0;
 }
 
+/* A zone's own warning: the same palette as the banner and the "Warnings in
+   effect" rows (--wb-* from warning-banner-v4.css), so one warning looks the
+   same in all three places. */
 .warning-card {
-  background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
-  border-left: 4px solid #d97706;
   padding: 0.6rem 0.9rem;
   margin-bottom: 0.5rem;
-  border-radius: 4px;
-}
-
-.warning-card.warning-storm {
-  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-  border-left-color: #b91c1c;
-}
-
-.warning-card.warning-gale {
-  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
-  border-left-color: #ea580c;
+  border-left: 6px solid var(--wb-bar);
+  border-radius: 8px;
+  background:
+    linear-gradient(to right, var(--wb-wash), rgba(0, 0, 0, 0) 70%),
+    var(--wb-bg);
+  box-shadow: inset 0 0 0 1px var(--wb-edge);
+  color: var(--wb-text);
 }
 
 .warning-card h3 {
   margin: 0 0 0.25rem 0;
-  color: #78350f;
-  font-size: 1rem;
+  color: var(--wb-ink);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.warning-card.warning-storm h3,
-.warning-card.warning-gale h3 {
-  color: #7c2d12;
+.warning-card h3 .icon {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .warning-card p {
   margin: 0;
   font-size: 0.9rem;
-  color: #451a03;
+  color: inherit;
 }
 
 .forecast-section {
