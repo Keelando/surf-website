@@ -39,43 +39,12 @@
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=41df21004d" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=ad281cb152" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=3e83e68729" />
+  <link rel="stylesheet" href="/assets/css/home.css?v=77cb6873ac" />
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
   
   <style>
-    header {
-      margin-bottom: 0;
-    }
-
-    /* Time range toggle buttons */
-    .time-range-btn {
-      padding: 0.5rem 1rem;
-      margin: 0 0.25rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 600;
-      transition: all 0.2s;
-      background: var(--color-card-muted-bg);
-      color: var(--color-text-muted);
-    }
-
-    .time-range-btn:hover {
-      background: var(--color-card-muted-hover);
-      transform: translateY(-1px);
-    }
-
-    .time-range-btn.active {
-      background: var(--color-primary);
-      color: var(--color-on-primary);
-    }
-
-    .time-range-btn.active:hover {
-      background: var(--color-primary-light);
-    }
-
     /* Wave table collapsed rows - hidden by default */
     .collapsed-row {
       display: none;
@@ -112,112 +81,96 @@
   <!-- Navigation -->
   <div class="nav-slot" hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
-  <header class="hero">
-    <h1>Salish Sea Wave Conditions</h1>
-    <div id="hero-conditions" class="hero-conditions" aria-live="polite"></div>
-  </header>
-
   <main id="main-content" tabindex="-1">
 
-  <div class="site-tagline">
-    Real-time wave, wind, and tide conditions across the Salish Sea, Strait of Georgia, and Juan de Fuca Strait.
-  </div>
-
-  <details class="site-intro-details">
-    <summary class="site-intro-summary">How to read this data</summary>
-    <div class="site-intro">
-      This site pulls live data from ocean buoys, weather stations, and tide gauges so you can see current sea conditions at a glance, useful for boating, surfing, sailing, or just keeping an eye on the water.
-      <a href="/guide.html">New to marine data? Learn how to read it →</a>
+  <!-- The summary: every wave station, on the hero photo. The station list
+       is built by main.js from latest_buoy_v2.json (station-list.js). -->
+  <section class="summary" aria-labelledby="summary-title">
+    <div class="summary-panel">
+      <div class="summary-head">
+        <h1 id="summary-title" class="summary-title">Salish Sea Wave Conditions</h1>
+        <p class="summary-tagline">Latest waves and wind from ten stations. Tap a station for details and history.</p>
+      </div>
+      <div id="station-list" class="station-list" aria-busy="true">
+        <p class="sl-loading">Loading the latest readings…</p>
+      </div>
+      <p class="summary-foot">
+        <a href="/guide.html">How to read these numbers</a>
+        <a href="/winds.html">Wind stations</a>
+        <a href="/tides.html">Tides</a>
+        <a href="/forecasts.html">Forecasts</a>
+      </p>
     </div>
-  </details>
-
-  <!-- Stations Map Section -->
-  <section id="map-section">
-    <h2>Monitoring Stations</h2>
-    <div class="map-legend">
-      <div class="legend-title" style="font-weight: 600; margin-bottom: 0.5rem; color: var(--color-primary-dark);">Station Types:</div>
-
-      <!-- Directional markers (with current data). Arrow colours match the
-           --map-arrow-* variables in stations-map-v4.css; the hollow arrow is
-           the 'wave-inferred' marker type in shared/markers.js. -->
-      <span class="legend-item">
-        <span class="legend-icon" role="img" aria-label="Solid blue arrow">
-          <svg width="16" height="18" viewBox="-6 -10 12 24" style="vertical-align: middle; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
-            <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="#0077be" fill-opacity="0.98" stroke="#0077be" stroke-width="1.5"/>
-          </svg>
-        </span> Wave station
-      </span>
-
-      <span class="legend-item">
-        <span class="legend-icon" role="img" aria-label="Hollow blue arrow">
-          <svg width="16" height="18" viewBox="-6 -10 12 24" style="vertical-align: middle; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
-            <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="#ffffff" fill-opacity="0.98" stroke="#0077be" stroke-width="2"/>
-          </svg>
-        </span> Wave station (wind-inferred direction)
-      </span>
-
-      <span class="legend-item">
-        <span class="legend-icon" role="img" aria-label="Solid red arrow">
-          <svg width="16" height="18" viewBox="-6 -10 12 24" style="vertical-align: middle; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
-            <path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="#dc2626" fill-opacity="0.98" stroke="#dc2626" stroke-width="1.5"/>
-          </svg>
-        </span> Wind station
-      </span>
-
-      <!-- Static markers -->
-      <span class="legend-item">
-        <span class="legend-icon" role="img" aria-label="Tide station icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
-            <circle cx="12" cy="12" r="10" fill="#9333ea" stroke="#6b21a8" stroke-width="2"/>
-          </svg>
-        </span> Tide station
-      </span>
-
-      <span class="legend-item">
-        <span class="legend-icon" role="img" aria-label="Lighthouse icon">
-          <svg width="16" height="18" viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
-            <circle cx="14" cy="4" r="2.5" fill="#FFD700" stroke="#FFA500" stroke-width="1"/>
-            <path d="M11 7 L10.5 13 L17.5 13 L17 7 Z" fill="#FFFFFF" stroke="#2c3e50" stroke-width="0.5"/>
-            <path d="M10.5 13 L10 19 L18 19 L17.5 13 Z" fill="#E53935" stroke="#2c3e50" stroke-width="0.5"/>
-            <path d="M10 19 L9.5 25 L18.5 25 L18 19 Z" fill="#FFFFFF" stroke="#2c3e50" stroke-width="0.5"/>
-            <rect x="8" y="25" width="12" height="4" rx="1" fill="#C62828" stroke="#2c3e50" stroke-width="0.5"/>
-            <rect x="6" y="29" width="16" height="2" rx="1" fill="#5D4037" stroke="#3e2723" stroke-width="0.5"/>
-          </svg>
-        </span> Lightstation
-      </span>
-
-      <span class="legend-item">
-        <span class="legend-icon" role="img" aria-label="Webcam icon">
-          <svg width="16" height="16" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
-            <circle cx="14" cy="14" r="13" fill="#2c5282" stroke="#1a365d" stroke-width="1.5"/>
-            <rect x="6" y="10" width="16" height="11" rx="1.5" fill="#ffffff" stroke="#1a365d" stroke-width="0.8"/>
-            <circle cx="14" cy="15.5" r="4" fill="#4a5568" stroke="#2d3748" stroke-width="0.8"/>
-            <circle cx="14" cy="15.5" r="2.5" fill="#718096"/>
-            <circle cx="14" cy="15.5" r="1.3" fill="#2d3748"/>
-            <circle cx="18.5" cy="12" r="1" fill="#e53e3e"/>
-          </svg>
-        </span> Webcam
-      </span>
-
-      <!-- Emoji fallbacks (no current data) -->
-      <span class="legend-item"><span class="legend-icon" role="img" aria-label="Wave icon">🌊</span> Wave (no data)</span>
-      <span class="legend-item"><span class="legend-icon" role="img" aria-label="Wind icon">💨</span> Wind (no data)</span>
-    </div>
-    <div id="stations-map"></div>
   </section>
 
-  <section id="buoy-container" aria-live="polite" aria-label="Buoy data cards">
-    <p>Loading latest buoy data…</p>
+  <!-- Stations Map Section. Leaflet loads when the map nears the viewport
+       (stations-map.js); the key folds into a corner of the map. -->
+  <section id="map-section" aria-labelledby="map-title">
+    <h2 id="map-title" class="home-section-title">Stations map</h2>
+    <div class="map-wrap">
+      <div id="stations-map" data-leaflet-src="/assets/vendor/leaflet.js?v=5a640ff863"></div>
+      <details class="map-key">
+        <summary>Key</summary>
+        <!-- Arrow colours match the --map-arrow-* variables in
+             stations-map-v4.css; the hollow arrow is the 'wave-inferred'
+             marker type in shared/markers.js. -->
+        <ul class="map-key-list">
+          <li>
+            <svg class="map-key-icon" viewBox="-6 -10 12 24" aria-hidden="true"><path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="#0077be" stroke="#0077be" stroke-width="1.5"/></svg>
+            Wave station
+          </li>
+          <li>
+            <svg class="map-key-icon" viewBox="-6 -10 12 24" aria-hidden="true"><path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="#ffffff" stroke="#0077be" stroke-width="2"/></svg>
+            Wave station, direction from wind
+          </li>
+          <li>
+            <svg class="map-key-icon" viewBox="-6 -10 12 24" aria-hidden="true"><path d="M0,12 L-5,-8 L0,-5 L5,-8 Z" fill="#dc2626" stroke="#dc2626" stroke-width="1.5"/></svg>
+            Wind station
+          </li>
+          <li>
+            <svg class="map-key-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#9333ea" stroke="#6b21a8" stroke-width="2"/></svg>
+            Tide station
+          </li>
+          <li>
+            <svg class="map-key-icon" viewBox="0 0 28 32" aria-hidden="true">
+              <circle cx="14" cy="4" r="2.5" fill="#FFD700" stroke="#FFA500" stroke-width="1"/>
+              <path d="M11 7 L10.5 13 L17.5 13 L17 7 Z" fill="#FFFFFF" stroke="#2c3e50" stroke-width="0.5"/>
+              <path d="M10.5 13 L10 19 L18 19 L17.5 13 Z" fill="#E53935" stroke="#2c3e50" stroke-width="0.5"/>
+              <path d="M10 19 L9.5 25 L18.5 25 L18 19 Z" fill="#FFFFFF" stroke="#2c3e50" stroke-width="0.5"/>
+              <rect x="8" y="25" width="12" height="4" rx="1" fill="#C62828" stroke="#2c3e50" stroke-width="0.5"/>
+              <rect x="6" y="29" width="16" height="2" rx="1" fill="#5D4037" stroke="#3e2723" stroke-width="0.5"/>
+            </svg>
+            Lightstation
+          </li>
+          <li>
+            <svg class="map-key-icon" viewBox="0 0 28 28" aria-hidden="true">
+              <circle cx="14" cy="14" r="13" fill="#2c5282" stroke="#1a365d" stroke-width="1.5"/>
+              <rect x="6" y="10" width="16" height="11" rx="1.5" fill="#ffffff" stroke="#1a365d" stroke-width="0.8"/>
+              <circle cx="14" cy="15.5" r="4" fill="#4a5568" stroke="#2d3748" stroke-width="0.8"/>
+              <circle cx="14" cy="15.5" r="2.5" fill="#718096"/>
+              <circle cx="14" cy="15.5" r="1.3" fill="#2d3748"/>
+              <circle cx="18.5" cy="12" r="1" fill="#e53e3e"/>
+            </svg>
+            Webcam
+          </li>
+          <!-- The map still draws stations with no current data as emoji
+               (stations-map.js); the key has to match what it draws. -->
+          <li><span class="map-key-icon map-key-emoji" aria-hidden="true">🌊</span> Wave, no data</li>
+          <li><span class="map-key-icon map-key-emoji" aria-hidden="true">💨</span> Wind, no data</li>
+        </ul>
+      </details>
+    </div>
   </section>
 
   <section id="charts-section">
-    <h2>24-Hour Trends</h2>
-
-    <!-- Time Range Toggle (Top) -->
-    <div style="margin: 1rem 0; text-align: center;">
-      <label style="margin-right: 0.5rem; font-weight: 600; color: var(--color-primary-dark);">Time Range:</label>
-      <button class="time-range-btn active" data-hours="24">24 Hours</button>
-      <button class="time-range-btn" data-hours="48">48 Hours</button>
+    <div class="home-section-head">
+      <h2 class="home-section-title">24-Hour Trends</h2>
+      <!-- The one time-range control: it sets the charts and the summary
+           table below (setTimeRange in charts-v4.js). -->
+      <div class="range-toggle" role="group" aria-label="Time range for the charts and table">
+        <button type="button" class="time-range-btn active" data-hours="24" aria-pressed="true">24 h</button>
+        <button type="button" class="time-range-btn" data-hours="48" aria-pressed="false">48 h</button>
+      </div>
     </div>
 
     <div id="wave-comparison-chart" class="w-full h-400"></div>
@@ -264,13 +217,6 @@
       <a href="#stations-map" id="show-buoy-on-map-btn" style="margin-left: 1rem; padding: 0.5rem 1rem; background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; border-radius: 4px; font-size: 0.9rem; display: inline-block;">Show on Map</a>
     </div>
 
-    <!-- Time Range Toggle -->
-    <div style="margin: 1rem 0; text-align: center;">
-      <label style="margin-right: 0.5rem; font-weight: 600; color: var(--color-primary-dark);">Time Range:</label>
-      <button class="time-range-btn active" data-hours="24">24 Hours</button>
-      <button class="time-range-btn" data-hours="48">48 Hours</button>
-    </div>
-
     <div id="wave-chart" class="w-full h-500"></div>
     <!-- New Dungeness second chart (hidden by default) -->
     <div id="wave-period-chart" class="w-full h-500 hidden mt-lg"></div>
@@ -281,13 +227,6 @@
 
   <div id="wave-height-table-section">
     <h2>24-Hour Wave Height Summary</h2>
-
-    <!-- Time Range Toggle (By Table) -->
-    <div style="margin: 1rem 0; text-align: center;">
-      <label style="margin-right: 0.5rem; font-weight: 600; color: var(--color-primary-dark);">Time Range:</label>
-      <button class="time-range-btn active" data-hours="24">24 Hours</button>
-      <button class="time-range-btn" data-hours="48">48 Hours</button>
-    </div>
 
     <div class="data-table">
       <table id="wave-height-table">
@@ -328,9 +267,6 @@
 
   <div hx-get="/components/footer.html?v=4" hx-trigger="load" hx-swap="outerHTML"></div>
 
-  <!-- Leaflet JS -->
-  <script defer src="/assets/vendor/leaflet.js?v=5a640ff863"></script>
-
   <script defer src="/assets/vendor/echarts.min.js?v=866f27da86"></script>
   <script defer src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
   <script defer src="/assets/js/sanitize-html.js?v=57084326c8"></script>
@@ -342,7 +278,7 @@
   <script defer src="/assets/js/chart-utils-v4.js?v=e91988b4e4"></script>
   <!-- Module entry points: each pulls in its imports (chart renderers,
        stations-map, shared/) — imported modules must NOT get their own tags -->
-  <script type="module" src="/assets/js/main.js?v=eabb925aff"></script>
+  <script type="module" src="/assets/js/main.js?v=115228ea80"></script>
   <script type="module" src="/assets/js/storm_surge_chart-v4.js?v=0d1b803e56"></script>
   <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>

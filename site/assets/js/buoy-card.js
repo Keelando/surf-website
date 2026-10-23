@@ -18,6 +18,7 @@ import {
   isNoaaStation,
   isPileStation,
   isSurreyStation,
+  pickWaveDirection,
   pickWavePeriod,
   sourceUrl,
   usesDominantPeriod,
@@ -137,30 +138,6 @@ function periodTag(label) {
 }
 
 /**
- * Which direction pair represents the displayed wave, per station family.
- * This is the one thing the three families genuinely disagree on — height and
- * period now come from the shared station-meta field priorities.
- *
- * @returns {{cardinal: string|null, degrees: number|null|undefined}}
- */
-function waveDirection(b, meta) {
-  if (usesSwellDisplay(meta)) {
-    return { cardinal: b.swell_direction_cardinal ?? null, degrees: b.swell_direction };
-  }
-  if (usesDominantPeriod(meta)) {
-    return {
-      cardinal: b.wave_direction_peak_cardinal ?? b.wave_direction_avg_cardinal ?? null,
-      degrees: b.wave_direction_peak ?? b.wave_direction_avg,
-    };
-  }
-  // EC buoys fall back to swell direction when peak is absent.
-  return {
-    cardinal: b.wave_direction_peak_cardinal ?? b.swell_direction_cardinal ?? null,
-    degrees: b.wave_direction_peak ?? b.swell_direction,
-  };
-}
-
-/**
  * Compact wave line — "Sig Wave: WSW 0.9m @ 4.1s (251°) ➤".
  *
  * Swell-display stations headline swell, everyone else significant height.
@@ -174,7 +151,7 @@ export function buildWaveLine(b, meta) {
   const heightValue = b[waveHeightField(meta)];
   const height = heightValue != null ? heightValue.toFixed(waveHeightPrecision(meta)) : "—";
   const { value: periodValue, tag } = pickWavePeriod(b, meta);
-  const { cardinal, degrees } = waveDirection(b, meta);
+  const { cardinal, degrees } = pickWaveDirection(b, meta);
 
   let waveDisplay = "No data";
   if (height !== "—") {
@@ -292,7 +269,7 @@ export function buildNoaaWaveDetails(b) {
 }
 
 /** Descriptor + severity class for the peak-frequency angular spread. */
-function peakSpreadDescriptor(peakSpread) {
+export function peakSpreadDescriptor(peakSpread) {
   if (peakSpread < 25) return { desc: "very organized", severity: "spread-desc--good" };
   if (peakSpread < 35) return { desc: "organized", severity: "spread-desc--good" };
   if (peakSpread < 45) return { desc: "moderate", severity: "spread-desc--moderate" };
@@ -300,7 +277,7 @@ function peakSpreadDescriptor(peakSpread) {
 }
 
 /** Descriptor + severity class for the all-frequency angular spread. */
-function avgSpreadDescriptor(avgSpread) {
+export function avgSpreadDescriptor(avgSpread) {
   if (avgSpread < 30) return { desc: "very clean", severity: "spread-desc--good" };
   if (avgSpread < 45) return { desc: "clean", severity: "spread-desc--good" };
   if (avgSpread < 60) return { desc: "mixed", severity: "spread-desc--moderate" };

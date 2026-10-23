@@ -197,6 +197,8 @@ test("buildHistoryTableHTML emits the scroll hint hidden", () => {
   const ts = { wave_height_sig: chan([[T(10), 1.1]]) };
   const html = buildHistoryTableHTML(ts, EC, { now: NOW });
   assert.match(html, /class="history-scroll-hint" hidden/);
+  // A table that scrolls sideways must be reachable from the keyboard.
+  assert.match(html, /class="history-scroll" tabindex="0" role="region"/);
 });
 
 test("buildHistoryTableHTML renders with no data at all", () => {

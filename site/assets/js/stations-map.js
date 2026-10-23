@@ -101,7 +101,58 @@ function initStationsMap() {
   markersLayer = L.layerGroup().addTo(stationsMap);
 
   // Load stations and add markers
-  loadStationsAndMarkers();
+  return loadStationsAndMarkers();
+}
+
+// Leaflet is the home page's heaviest script and the map sits below the
+// station list, so it loads only when the map comes within LAZY_MAP_MARGIN of
+// the viewport, or when something asks for the map sooner (a station's "Show
+// on map", a #buoy- link). The script URL is a data attribute on the map
+// element so update_asset_versions.py keeps its ?v= hash current.
+const LAZY_MAP_MARGIN = "150px 0px";
+let mapReady = null;
+
+function loadLeaflet() {
+  if (typeof L !== "undefined") return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = document.getElementById("stations-map").dataset.leafletSrc;
+    script.addEventListener("load", resolve);
+    script.addEventListener("error", () => reject(new Error("Leaflet failed to load")));
+    document.head.appendChild(script);
+  });
+}
+
+/** Resolves once the map exists and its markers are placed. */
+function ensureMap() {
+  if (!mapReady) {
+    mapReady = loadLeaflet()
+      .then(initStationsMap)
+      .catch((err) => {
+        mapReady = null; // let the next request try again
+        logger.error("StationsMap", "Could not start the map", err);
+        throw err;
+      });
+  }
+  return mapReady;
+}
+
+function startMapWhenNear() {
+  const el = document.getElementById("stations-map");
+  if (!el) return;
+  if (!("IntersectionObserver" in window)) {
+    ensureMap().catch(() => {});
+    return;
+  }
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      ensureMap().catch(() => {});
+    },
+    { rootMargin: LAZY_MAP_MARGIN },
+  );
+  observer.observe(el);
 }
 
 // Load stations.json from the envcan_wave directory
@@ -455,7 +506,10 @@ function buildBuoyIcon(buoy, { showWind = false } = {}) {
         iconAnchor = [13, labelHeight ? 20 + labelHeight : 15];
         windLabelDelta = hasWind && waveWindLabel === null ? WIND_LABEL_HEIGHT_PX : 0;
       } else if (!isWave && hasWind) {
-        iconHtml = createDirectionalMarker(null, windSpeed, { type: "wind", status });
+        iconHtml = createDirectionalMarker(null, windSpeed, {
+          type: "wind",
+          status,
+        });
         iconSize = [26, 48];
         iconAnchor = [13, 38];
       }
@@ -1151,7 +1205,14 @@ function loadFallbackStations() {
 
 // Center map on specific buoy and open popup
 export function centerMapOnBuoy(buoyId, retryCount = 0) {
-  if (!stationsMap || !buoyMarkers[buoyId]) {
+  if (!stationsMap) {
+    ensureMap().then(
+      () => centerMapOnBuoy(buoyId, retryCount),
+      () => {},
+    );
+    return;
+  }
+  if (!buoyMarkers[buoyId]) {
     // Retry up to 5 times with 500ms delay
     if (retryCount < 5) {
       logger.debug(
@@ -1182,7 +1243,14 @@ export function centerMapOnBuoy(buoyId, retryCount = 0) {
 
 // Center map on specific tide station and open popup
 function centerMapOnTide(stationKey, retryCount = 0) {
-  if (!stationsMap || !tideMarkers[stationKey]) {
+  if (!stationsMap) {
+    ensureMap().then(
+      () => centerMapOnTide(stationKey, retryCount),
+      () => {},
+    );
+    return;
+  }
+  if (!tideMarkers[stationKey]) {
     // Retry up to 5 times with 500ms delay
     if (retryCount < 5) {
       logger.debug(
@@ -1265,7 +1333,9 @@ export function showSelectedSurgeOnMap(event) {
   showSurgeStationOnMap(select.value, true);
 }
 
-// Check URL hash for station to show on map
+// Check URL hash for station to show on map. #buoy-<id> is not handled here:
+// it opens that station's row in the list (main.js), which is what a popup's
+// "View data" link asks for.
 function checkHashForStation() {
   const hash = window.location.hash;
 
@@ -1281,17 +1351,6 @@ function checkHashForStation() {
         mapSection.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     }, 500);
-  } else if (hash.startsWith("#buoy-")) {
-    const buoyId = hash.substring(6); // Remove '#buoy-'
-    setTimeout(() => {
-      centerMapOnBuoy(buoyId);
-
-      // Scroll to map section
-      const mapSection = document.getElementById("stations-map");
-      if (mapSection) {
-        mapSection.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }, 500);
   } else if (hash.startsWith("#surge-")) {
     const surgeStation = hash.substring(7); // Remove '#surge-'
     setTimeout(() => {
@@ -1300,13 +1359,7 @@ function checkHashForStation() {
   }
 }
 
-// Initialize map when DOM is ready
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => {
-    initStationsMap();
-    checkHashForStation();
-  });
-} else {
-  initStationsMap();
-  checkHashForStation();
-}
+// Start the map when it nears the viewport (module scripts run after the
+// document is parsed, so the map element is already there).
+startMapWhenNear();
+checkHashForStation();

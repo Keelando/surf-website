@@ -274,7 +274,7 @@ export function buildHistoryTableHTML(timeseries, meta, options = {}) {
 
   return `
     ${scrollHint}
-    <div class="history-scroll">
+    <div class="history-scroll" tabindex="0" role="region" aria-label="12-hour history">
       <table class="history-table">
         <thead>
           <tr>

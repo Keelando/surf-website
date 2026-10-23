@@ -1,0 +1,641 @@
+/* -----------------------------
+   Home page: station summary, map key, section heads.
+
+   Home-only, so the redesign can be tried on one page before the shared
+   tokens in style-v4.css change (docs/project/UI_OVERHAUL.md, order step 1).
+   Colours follow the site pattern: a variable on :root, overridden under
+   [data-theme="dark"], and only variables in the rules.
+----------------------------- */
+
+:root {
+  /* Translucent so the photo reads through; the blur evens the photo out
+     behind the text. Contrast was measured on the rendered pixels behind
+     the text, not by axe, which cannot judge text over an image. */
+  --summary-panel-bg: rgba(255, 255, 255, 0.8);
+  --summary-panel-shadow: 0 12px 32px rgba(0, 20, 40, 0.28);
+  --sl-text: #10202f;
+  --sl-muted: #36424f;
+  --sl-heading: #004b7c;
+  --sl-rule: rgba(16, 32, 47, 0.1);
+  --sl-row-hover: rgba(0, 75, 124, 0.06);
+  --sl-row-open: rgba(0, 75, 124, 0.05);
+  --sl-ok: #15803d;
+  --sl-late: #7c2d12;
+  --sl-late-dot: #d97706;
+  --sl-down: #991b1b;
+  --sl-down-dot: #dc2626;
+  --sl-action-border: rgba(0, 75, 124, 0.3);
+  --sl-action-text: #004b7c;
+  --sl-focus: #006daf;
+  --home-toggle-bg: #e3eaf0;
+  --home-toggle-active-bg: #ffffff;
+  --map-key-bg: rgba(255, 255, 255, 0.95);
+  --map-key-text: #10202f;
+  --map-placeholder-bg: #dfe8ee;
+}
+
+[data-theme="dark"] {
+  --summary-panel-bg: rgba(10, 22, 35, 0.8);
+  --summary-panel-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --sl-text: #e8eef5;
+  --sl-muted: #c9d4e1;
+  --sl-heading: #a8ddff;
+  --sl-rule: rgba(255, 255, 255, 0.1);
+  --sl-row-hover: rgba(255, 255, 255, 0.06);
+  --sl-row-open: rgba(255, 255, 255, 0.04);
+  --sl-ok: #4ade80;
+  --sl-late: #fbbf24;
+  --sl-late-dot: #fbbf24;
+  --sl-down: #fecaca;
+  --sl-down-dot: #f87171;
+  --sl-action-border: rgba(141, 211, 255, 0.35);
+  --sl-action-text: #a8ddff;
+  --sl-focus: #8dd3ff;
+  --home-toggle-bg: #1f2f45;
+  --home-toggle-active-bg: #33496a;
+  --map-key-bg: rgba(22, 34, 50, 0.95);
+  --map-key-text: #e8eef5;
+  --map-placeholder-bg: #1c2a3a;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* -----------------------------
+   Summary: the station list on the hero photo
+----------------------------- */
+
+/* The photo is the page's LCP element. Each <head> preloads the AVIF that the
+   matching media query selects, so the URLs here and there must stay in step.
+   The first declaration is the fallback for browsers without typed
+   image-set(). */
+.summary {
+  background-color: #1d3a52;
+  background-image: url("/assets/images/noaa-waves-1989-1600.webp");
+  background-image: image-set(
+    url("/assets/images/noaa-waves-1989-1600.avif") type("image/avif"),
+    url("/assets/images/noaa-waves-1989-1600.webp") type("image/webp")
+  );
+  background-position: center 60%;
+  background-size: cover;
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+@media (max-width: 768px) {
+  .summary {
+    background-image: url("/assets/images/noaa-waves-1989-960.webp");
+    background-image: image-set(
+      url("/assets/images/noaa-waves-1989-960.avif") type("image/avif"),
+      url("/assets/images/noaa-waves-1989-960.webp") type("image/webp")
+    );
+    padding: 0.75rem 0.5rem 1.25rem;
+  }
+}
+
+.summary-panel {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 0.75rem;
+  background: var(--summary-panel-bg);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  backdrop-filter: blur(24px) saturate(1.3);
+  border-radius: 16px;
+  box-shadow: var(--summary-panel-shadow);
+  color: var(--sl-text);
+}
+
+@media (max-width: 768px) {
+  .summary-panel {
+    padding: 0.85rem 0.35rem 0.5rem;
+    border-radius: 12px;
+  }
+}
+
+.summary-head {
+  padding: 0 0.5rem;
+}
+
+.summary-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--sl-text);
+}
+
+.summary-tagline {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--sl-muted);
+}
+
+@media (max-width: 600px) {
+  .summary-title {
+    font-size: 1.2rem;
+  }
+
+  .summary-tagline {
+    font-size: 0.8rem;
+  }
+}
+
+.summary-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.5rem 0.25rem;
+  border-top: 1px solid var(--sl-rule);
+  font-size: 0.8rem;
+}
+
+.summary-foot a {
+  color: var(--sl-action-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.summary-foot a:hover {
+  text-decoration: underline;
+}
+
+/* -----------------------------
+   Station list
+----------------------------- */
+
+.station-list {
+  display: grid;
+  column-gap: 2.5rem;
+  margin-top: 0.75rem;
+}
+
+/* Hold the filled list's height while it loads, so the map below does not
+   jump down when the rows arrive. */
+.station-list[aria-busy="true"] {
+  min-height: 46rem;
+}
+
+@media (min-width: 900px) {
+  .station-list {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .station-list[aria-busy="true"] {
+    min-height: 25.5rem;
+  }
+}
+
+.sl-loading,
+.sl-error {
+  margin: 1rem 0.5rem;
+  font-size: 0.9rem;
+  color: var(--sl-muted);
+}
+
+.sl-column {
+  min-width: 0;
+}
+
+/* Rows and their column labels share one grid, so the numbers line up. */
+.sl-labels,
+.sl-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.75rem 4.25rem 1rem;
+  column-gap: 0.5rem;
+  align-items: center;
+}
+
+.sl-labels {
+  padding: 0 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sl-muted);
+}
+
+.sl-labels span {
+  text-align: right;
+}
+
+/* Stacked on a phone, the second column's labels would repeat mid-list. */
+@media (max-width: 899px) {
+  .sl-column + .sl-column .sl-labels {
+    display: none;
+  }
+}
+
+.sl-region-title {
+  margin: 0.6rem 0.5rem 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sl-heading);
+}
+
+.sl-labels + .sl-region .sl-region-title {
+  margin-top: 0.2rem;
+}
+
+.sl-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sl-item + .sl-item {
+  border-top: 1px solid var(--sl-rule);
+}
+
+.sl-row {
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0.45rem 0.5rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sl-row:hover {
+  background: var(--sl-row-hover);
+}
+
+.sl-row:focus-visible,
+.sl-action:focus-visible,
+.summary-foot a:focus-visible {
+  outline: 2px solid var(--sl-focus);
+  outline-offset: -2px;
+}
+
+.sl-row[aria-expanded="true"] {
+  background: var(--sl-row-open);
+  border-radius: 8px 8px 0 0;
+}
+
+.sl-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sl-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.sl-age {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.1rem;
+  font-size: 0.75rem;
+  color: var(--sl-muted);
+}
+
+.sl-dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--sl-ok);
+}
+
+.sl-row--late .sl-dot {
+  background: var(--sl-late-dot);
+}
+
+.sl-row--late .sl-age {
+  color: var(--sl-late);
+  font-weight: 600;
+}
+
+.sl-row--down .sl-dot,
+.sl-row--out .sl-dot,
+.sl-row--none .sl-dot {
+  background: var(--sl-down-dot);
+}
+
+.sl-row--down .sl-age,
+.sl-row--out .sl-age,
+.sl-row--none .sl-age {
+  color: var(--sl-down);
+  font-weight: 600;
+}
+
+.sl-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 0;
+  text-align: right;
+}
+
+.sl-cell--wide {
+  grid-column: 2 / 4;
+  font-size: 0.78rem;
+}
+
+.sl-big {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sl-unit {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--sl-muted);
+}
+
+.sl-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.1rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: var(--sl-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sl-none {
+  color: var(--sl-muted);
+}
+
+.sl-arrow {
+  flex: none;
+  width: 0.8rem;
+  height: 0.8rem;
+  color: var(--sl-text);
+}
+
+.sl-chevron {
+  width: 1rem;
+  height: 1rem;
+  color: var(--sl-muted);
+  transition: transform 0.2s ease;
+}
+
+.sl-row[aria-expanded="true"] .sl-chevron {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sl-chevron {
+    transition: none;
+  }
+}
+
+/* -----------------------------
+   A row's detail panel
+----------------------------- */
+
+.sl-detail {
+  padding: 0.25rem 0.5rem 0.85rem;
+  background: var(--sl-row-open);
+  border-radius: 0 0 8px 8px;
+}
+
+.sl-observed {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--sl-muted);
+}
+
+.sl-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.sl-group-title {
+  margin: 0 0 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sl-heading);
+}
+
+.sl-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.75rem, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+}
+
+.sl-stat dt {
+  font-size: 0.7rem;
+  color: var(--sl-muted);
+}
+
+.sl-stat dd {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sl-muted {
+  font-weight: 400;
+  color: var(--sl-muted);
+}
+
+.sl-note {
+  margin: 0.55rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--sl-muted);
+}
+
+.sl-note--late {
+  color: var(--sl-late);
+}
+
+.sl-note--down {
+  color: var(--sl-down);
+}
+
+.sl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.sl-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--sl-action-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--sl-action-text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sl-action:hover {
+  background: var(--sl-row-hover);
+}
+
+.sl-action[aria-expanded="true"] {
+  background: var(--sl-row-hover);
+}
+
+.sl-history {
+  margin-top: 0.5rem;
+}
+
+/* The panel's "12-hour history" toggle closes the table; the table's own
+   hide button (buoy-history.js) would be a second control for the same. */
+.sl-history .history-hide-row {
+  display: none;
+}
+
+/* -----------------------------
+   Section heads below the summary
+----------------------------- */
+
+#map-section .home-section-title,
+#charts-section .home-section-title {
+  margin: 0;
+  font-size: 1.15rem;
+  text-align: left;
+  color: var(--color-text);
+}
+
+#map-section .home-section-title {
+  margin-bottom: 0.6rem;
+}
+
+.home-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.range-toggle {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--home-toggle-bg);
+}
+
+.range-toggle .time-range-btn {
+  min-height: 32px;
+  margin: 0;
+  padding: 0.25rem 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.range-toggle .time-range-btn.active {
+  background: var(--home-toggle-active-bg);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.range-toggle .time-range-btn:focus-visible {
+  outline: 2px solid var(--sl-focus);
+  outline-offset: 1px;
+}
+
+/* -----------------------------
+   Map: placeholder until Leaflet loads, and the folded key
+----------------------------- */
+
+.map-wrap {
+  position: relative;
+}
+
+#stations-map {
+  background: var(--map-placeholder-bg);
+}
+
+/* Above Leaflet's panes (400) and level with its controls (1000). */
+.map-key {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 1.6rem;
+  z-index: 1000;
+  max-width: calc(100% - 1rem);
+  border-radius: 8px;
+  background: var(--map-key-bg);
+  color: var(--map-key-text);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
+  font-size: 0.8rem;
+}
+
+.map-key summary {
+  padding: 0.35rem 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.map-key summary:focus-visible {
+  outline: 2px solid var(--sl-focus);
+  outline-offset: 1px;
+  border-radius: 8px;
+}
+
+.map-key-list {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0 0.75rem 0.6rem;
+  list-style: none;
+}
+
+.map-key-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.map-key-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.map-key-emoji {
+  font-size: 0.85rem;
+  line-height: 16px;
+  text-align: center;
+}

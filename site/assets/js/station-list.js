@@ -1,0 +1,378 @@
+/* -----------------------------
+   Home-page station list (ES module)
+
+   One compact row per wave station, grouped by region, that expands in place
+   to the station's details. Replaces the buoy cards on the home page
+   (docs/project/UI_OVERHAUL.md, "Brief for the mockup"). Pure HTML-string
+   builders over a snapshot entry `b` from latest_buoy_v2.json and its
+   stations.json metadata `meta`; main.js keeps the fetching and the wiring.
+
+   Which fields hold the displayed height, period and direction is decided in
+   shared/station-meta.js, the same priorities the history table reads.
+   ----------------------------- */
+
+import { avgSpreadDescriptor, peakSpreadDescriptor } from "./buoy-card.js";
+import { formatWeekdayDayTime } from "./shared/format-time.js";
+import {
+  isNoaaStation,
+  isPileStation,
+  pickWaveDirection,
+  pickWavePeriod,
+  sourceUrl,
+  usesDominantPeriod,
+  usesSwellDisplay,
+  waveHeightField,
+  waveHeightPrecision,
+} from "./shared/station-meta.js";
+import { reportStatus } from "./shared/staleness.js";
+
+/**
+ * The ten wave stations, by region. `column` places the region in the
+ * two-column desktop layout; on a phone the regions simply stack in order.
+ * COLEB is left out: it is wind-only, and lives on the winds page.
+ */
+export const STATION_GROUPS = [
+  {
+    region: "Strait of Georgia",
+    column: 0,
+    stations: ["4600146", "4600304", "4600303", "4600131"],
+  },
+  { region: "Boundary Bay", column: 0, stations: ["CRPILE", "CRCHAN"] },
+  {
+    region: "Juan de Fuca Strait",
+    column: 1,
+    stations: ["46087", "46088", "46267"],
+  },
+  { region: "West Coast Vancouver Island", column: 1, stations: ["4600206"] },
+];
+
+const DASH = "—";
+
+/**
+ * Compass arrow pointing the way the wind or waves are GOING, which for a
+ * meteorological "from" bearing is a down arrow turned by that bearing.
+ * Decorative: the cardinal next to it carries the meaning.
+ */
+export function directionArrow(degrees) {
+  if (degrees == null || !Number.isFinite(Number(degrees))) return "";
+  return (
+    `<svg class="sl-arrow" viewBox="0 0 16 16" aria-hidden="true" ` +
+    `style="transform: rotate(${Math.round(degrees)}deg)">` +
+    `<path d="M8 2v12M4.5 10.5 8 14l3.5-3.5" fill="none" stroke="currentColor" ` +
+    `stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+  );
+}
+
+const CHEVRON =
+  `<svg class="sl-chevron" viewBox="0 0 16 16" aria-hidden="true">` +
+  `<path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" ` +
+  `stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+/** "52m", "4h", "15d": whole units, rounded down. */
+export function compactAge(minutes) {
+  if (minutes == null || !Number.isFinite(minutes)) return null;
+  const m = Math.max(0, Math.floor(minutes));
+  if (m < 60) return `${m}m`;
+  if (m < 48 * 60) return `${Math.floor(m / 60)}h`;
+  return `${Math.floor(m / 1440)}d`;
+}
+
+/**
+ * The row's freshness line and dot state. Age leads; the state word is only
+ * added when something is wrong. The state itself comes from the export's
+ * per-station `status`, judged against the station's own reporting rhythm.
+ *
+ * @returns {{state: "ok"|"late"|"down"|"out"|"none", text: string}}
+ */
+export function freshness(b) {
+  if (b.no_data) return { state: "none", text: "No data" };
+  if (b.out_of_service) return { state: "out", text: "Out of service" };
+  const status = reportStatus(b);
+  const age = compactAge(b.age_minutes);
+  const ago = age ? `${age} ago` : "time unknown";
+  if (status === "ok") return { state: "ok", text: ago };
+  return { state: status, text: `${ago} · ${status}` };
+}
+
+/**
+ * The numbers a row shows, resolved for this station's family.
+ *
+ * @returns {{height: string|null, period: string|null, periodTag: string|null,
+ *   isSwell: boolean, waveCardinal: string|null, waveDegrees: number|null,
+ *   wind: string|null, gust: string|null, windCardinal: string|null,
+ *   windDegrees: number|null}}
+ */
+export function rowReading(b, meta) {
+  const heightValue = b[waveHeightField(meta)];
+  const { value: periodValue, tag } = pickWavePeriod(b, meta);
+  const { cardinal, degrees } = pickWaveDirection(b, meta);
+  const windDegrees = b.wind_direction_deg ?? b.wind_direction ?? null;
+  return {
+    height: heightValue != null ? heightValue.toFixed(waveHeightPrecision(meta)) : null,
+    period: periodValue != null ? periodValue.toFixed(1) : null,
+    periodTag: tag,
+    isSwell: usesSwellDisplay(meta),
+    waveCardinal: cardinal,
+    waveDegrees: degrees ?? null,
+    wind: b.wind_speed != null ? String(Math.round(b.wind_speed)) : null,
+    gust: b.wind_gust != null ? String(Math.round(b.wind_gust)) : null,
+    windCardinal: b.wind_direction_cardinal ?? null,
+    windDegrees,
+  };
+}
+
+/**
+ * The arrow alone, for a row's small line: the cardinal letters cost the width
+ * a phone needs for station names. Screen readers get the cardinal instead,
+ * and the open panel shows both.
+ */
+function directionPart(cardinal, degrees) {
+  const spoken = cardinal ? `<span class="visually-hidden">, from ${cardinal}</span>` : "";
+  return `${directionArrow(degrees)}${spoken}`;
+}
+
+/** The waves cell: height large, period and direction small beneath. */
+function waveCell(r) {
+  if (r.height == null) {
+    return `<span class="sl-cell"><span class="visually-hidden">Waves: </span><span class="sl-big sl-none">${DASH}</span></span>`;
+  }
+  const period = r.period != null ? `${r.period} s${r.isSwell ? " swell" : ""}` : "";
+  const sub = `${period}${directionPart(r.waveCardinal, r.waveDegrees)}`;
+  return (
+    `<span class="sl-cell"><span class="visually-hidden">Waves: </span>` +
+    `<span class="sl-big">${r.height}<span class="sl-unit"> m</span></span>` +
+    `<span class="sl-sub">${sub}</span></span>`
+  );
+}
+
+/** The wind cell: speed large, gust and direction small beneath. */
+function windCell(r) {
+  if (r.wind == null) {
+    return `<span class="sl-cell"><span class="visually-hidden">Wind: </span><span class="sl-big sl-none">${DASH}</span></span>`;
+  }
+  const gust = r.gust != null ? `G ${r.gust}` : "";
+  const sub = `${gust}${directionPart(r.windCardinal, r.windDegrees)}`;
+  return (
+    `<span class="sl-cell"><span class="visually-hidden">Wind: </span>` +
+    `<span class="sl-big">${r.wind}<span class="sl-unit"> kt</span></span>` +
+    `<span class="sl-sub">${sub}</span></span>`
+  );
+}
+
+/**
+ * One station row: a button that toggles its detail panel. A station that is
+ * down shows no numbers in the row: a reading days old next to live ones
+ * reads as current. Its last report is still in the panel, labelled.
+ */
+export function buildStationRow(b, id, meta) {
+  const name = b.name || meta?.name || id;
+  const fresh = freshness(b);
+  const showValues = fresh.state === "ok" || fresh.state === "late";
+
+  let values;
+  if (showValues) {
+    const r = rowReading(b, meta);
+    values = waveCell(r) + windCell(r);
+  } else {
+    // The age line already says how long; the panel says since when.
+    const word = fresh.state === "down" ? "No recent data" : fresh.text;
+    values = `<span class="sl-cell sl-cell--wide sl-none">${word}</span>`;
+  }
+
+  return `
+    <button type="button" class="sl-row sl-row--${fresh.state}" aria-expanded="false" aria-controls="sl-detail-${id}">
+      <span class="sl-name">
+        <span class="sl-title">${name}</span>
+        <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span>${fresh.text}</span>
+      </span>
+      ${values}
+      ${CHEVRON}
+    </button>`;
+}
+
+/** `<div>` of label/value pairs; pairs with a null value are skipped. */
+function statGroup(title, pairs) {
+  const items = pairs
+    .filter(([, value]) => value != null && value !== "")
+    .map(([label, value]) => `<div class="sl-stat"><dt>${label}</dt><dd>${value}</dd></div>`)
+    .join("");
+  if (!items) return "";
+  return `<div class="sl-group"><h3 class="sl-group-title">${title}</h3><dl class="sl-stats">${items}</dl></div>`;
+}
+
+function withUnit(value, unit, decimals) {
+  if (value == null) return null;
+  const v = decimals != null ? Number(value).toFixed(decimals) : value;
+  return `${v}<span class="sl-unit"> ${unit}</span>`;
+}
+
+function bearing(cardinal, degrees) {
+  if (cardinal == null && degrees == null) return null;
+  const deg = degrees != null ? ` <span class="sl-muted">${Math.round(degrees)}°</span>` : "";
+  return `${cardinal ?? ""}${deg}${directionArrow(degrees)}`;
+}
+
+function spread(value, descriptor) {
+  if (value == null) return null;
+  return `${value}° <span class="sl-muted">${descriptor(value).desc}</span>`;
+}
+
+const PERIOD_LABELS = {
+  dominant: "Dominant period",
+  avg: "Average period",
+  peak: "Peak period",
+};
+
+/** The waves group: headline values first, then whatever extras the buoy sends. */
+function waveStats(b, meta) {
+  const precision = waveHeightPrecision(meta);
+  const swell = usesSwellDisplay(meta);
+  const { value: period, tag } = pickWavePeriod(b, meta);
+  const { cardinal, degrees } = pickWaveDirection(b, meta);
+
+  const pairs = [
+    [swell ? "Swell height" : "Sig. height", withUnit(b[waveHeightField(meta)], "m", precision)],
+    [swell ? "Swell period" : (PERIOD_LABELS[tag] ?? "Sig. period"), withUnit(period, "s", 1)],
+    ["Direction", bearing(cardinal, degrees)],
+  ];
+
+  if (isNoaaStation(meta)) {
+    if (!swell) {
+      pairs.push(["Swell", withUnit(b.swell_height, "m", 1)]);
+      pairs.push(["Swell period", withUnit(b.swell_period, "s", 1)]);
+    } else {
+      pairs.push(["Combined height", withUnit(b.wave_height_sig, "m", 1)]);
+    }
+    pairs.push(["Wind waves", withUnit(b.wind_wave_height, "m", 1)]);
+    pairs.push(["Wind-wave period", withUnit(b.wind_wave_period, "s", 1)]);
+    pairs.push(["Wind-wave dir.", bearing(b.wind_wave_direction_cardinal, b.wind_wave_direction)]);
+  } else {
+    // EC buoy families report the high end differently; take whichever exists.
+    const high =
+      b.wave_height_max_avg != null
+        ? ["Avg max height", b.wave_height_max_avg]
+        : b.wave_height_peak != null
+          ? ["Peak height", b.wave_height_peak]
+          : ["Max height", b.wave_height_max];
+    pairs.push([high[0], withUnit(high[1], "m", precision)]);
+    pairs.push(["Avg height", withUnit(b.wave_height_avg, "m", precision)]);
+    if (tag !== "avg") pairs.push(["Avg period", withUnit(b.wave_period_avg, "s", 1)]);
+    if (tag !== "peak") {
+      pairs.push([
+        b.wave_period_peak != null ? "Peak period" : "Largest-wave period",
+        withUnit(b.wave_period_peak ?? b.wave_period_max_wave, "s", 1),
+      ]);
+    }
+    pairs.push(["Peak spread", spread(b.wave_direction_spread_peak, peakSpreadDescriptor)]);
+    pairs.push(["Avg spread", spread(b.wave_direction_spread_avg, avgSpreadDescriptor)]);
+  }
+  return statGroup("Waves", pairs);
+}
+
+/** Wind, then the water/air group. Pile sensors over-report precision. */
+function windAndWeatherStats(b, meta) {
+  const tempDecimals = isPileStation(meta) ? 1 : null;
+  return (
+    statGroup("Wind", [
+      ["Speed", withUnit(b.wind_speed != null ? Math.round(b.wind_speed) : null, "kt")],
+      ["Gust", withUnit(b.wind_gust != null ? Math.round(b.wind_gust) : null, "kt")],
+      ["Direction", bearing(b.wind_direction_cardinal, b.wind_direction_deg ?? b.wind_direction)],
+    ]) +
+    statGroup("Water & air", [
+      ["Sea", withUnit(b.sea_temp, "°C", tempDecimals)],
+      ["Air", withUnit(b.air_temp, "°C", tempDecimals)],
+      ["Pressure", withUnit(b.pressure, "hPa")],
+    ])
+  );
+}
+
+/** Plain-words notes under the numbers: state, backup sensor, caveats. */
+function detailNotes(b, meta, fresh) {
+  const notes = [];
+  if (fresh.state === "down" && b.observation_time) {
+    notes.push(
+      `<p class="sl-note sl-note--down">No report since ${formatWeekdayDayTime(b.observation_time)}. These are its last readings, not current conditions.</p>`,
+    );
+  } else if (fresh.state === "late") {
+    notes.push(
+      `<p class="sl-note sl-note--late">This report is later than the station usually sends one; conditions may have changed.</p>`,
+    );
+  } else if (fresh.state === "out") {
+    const reason = b.out_of_service?.reason ? ` ${b.out_of_service.reason}` : "";
+    notes.push(`<p class="sl-note sl-note--down">Out of service.${reason}</p>`);
+  }
+  if (b.wave_sensor) {
+    notes.push(
+      `<p class="sl-note">Waves from the ${b.wave_sensor} sensor: the station's main wave sensor has no reading.</p>`,
+    );
+  }
+  if (usesDominantPeriod(meta)) {
+    notes.push(
+      `<p class="sl-note">Dominant period: the wave period carrying the most energy (NOAA's term for peak period).</p>`,
+    );
+  }
+  if (meta?.caveat) notes.push(`<p class="sl-note">${meta.caveat}</p>`);
+  return notes.join("");
+}
+
+/** Text actions at the foot of the panel. */
+function detailActions(b, meta) {
+  const hasChartData = b.wave_height_sig != null || b.wind_speed != null;
+  const link = sourceUrl(meta);
+  return `
+      <div class="sl-actions">
+        <button type="button" class="sl-action" data-action="history" aria-expanded="false">12-hour history</button>
+        ${hasChartData ? `<button type="button" class="sl-action" data-action="charts">Charts</button>` : ""}
+        <button type="button" class="sl-action" data-action="map">Show on map</button>
+        ${link ? `<a class="sl-action" href="${link}" target="_blank" rel="noopener noreferrer">${meta?.source ?? "Source"} ↗</a>` : ""}
+      </div>`;
+}
+
+/** The panel a row opens: readings, notes, actions, and the lazy history slot. */
+export function buildStationDetail(b, id, meta) {
+  if (b.no_data) {
+    return `<p class="sl-note">No readings from this station are on hand.</p>${detailActions(b, meta)}`;
+  }
+  const fresh = freshness(b);
+  const observed = b.observation_time
+    ? `<p class="sl-observed">Observed ${formatWeekdayDayTime(b.observation_time)}</p>`
+    : "";
+  return `
+      ${observed}
+      <div class="sl-groups">${waveStats(b, meta)}${windAndWeatherStats(b, meta)}</div>
+      ${detailNotes(b, meta, fresh)}
+      ${detailActions(b, meta)}
+      <div class="sl-history" id="sl-history-${id}" hidden></div>`;
+}
+
+/** The whole list: regions as small headings over their rows, in columns. */
+export function buildStationList(data, stationMeta, groups = STATION_GROUPS) {
+  const columns = [];
+  for (const group of groups) {
+    const rows = group.stations
+      .filter((id) => data[id])
+      .map(
+        (id) => `
+        <li class="sl-item" id="buoy-${id}">
+          ${buildStationRow(data[id], id, stationMeta[id])}
+          <div class="sl-detail" id="sl-detail-${id}" hidden></div>
+        </li>`,
+      )
+      .join("");
+    if (!rows) continue;
+    const headingId = `sl-region-${group.region.toLowerCase().replace(/\s+/g, "-")}`;
+    columns[group.column] =
+      (columns[group.column] ?? "") +
+      `<section class="sl-region" aria-labelledby="${headingId}">
+        <h2 class="sl-region-title" id="${headingId}">${group.region}</h2>
+        <ul class="sl-rows">${rows}</ul>
+      </section>`;
+  }
+  // Column labels, drawn on the same grid as the rows beneath them. Hidden
+  // from screen readers: each cell already names itself.
+  const labels = `<div class="sl-labels" aria-hidden="true"><span></span><span>Waves</span><span>Wind</span><span></span></div>`;
+  return columns
+    .filter(Boolean)
+    .map((html) => `<div class="sl-column">${labels}${html}</div>`)
+    .join("");
+}

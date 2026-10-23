@@ -172,11 +172,9 @@ export function setTimeRange(hours) {
 
   // Update ALL button states (sync all toggle buttons on page)
   document.querySelectorAll(".time-range-btn").forEach((btn) => {
-    if (parseInt(btn.dataset.hours) === hours) {
-      btn.classList.add("active");
-    } else {
-      btn.classList.remove("active");
-    }
+    const active = parseInt(btn.dataset.hours) === hours;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", String(active));
   });
 
   // Update section headers to show current time range

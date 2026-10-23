@@ -1,9 +1,8 @@
 # UI overhaul
 
-Status 2026-10-04: **not started.** The groundwork is done (performance pass,
-late/down status, folded explanations, 2026-09-23), the preview environment
-is live, and the home page has been audited (below). Next is one home-page
-mockup.
+Status 2026-10-23: **draft 1 of the home-page mockup is on `dev`**, live at
+dev.halibutbank.ca, awaiting the user's verdict on the direction. See "Draft 1"
+below for what it does and what it deliberately leaves alone.
 
 ## Why
 
@@ -123,6 +122,73 @@ line-SVG set; almost no borders or shadows.
    A photo gallery comes later, separately (TODO.md).
 5. **One shared time-range toggle** for the charts and table below.
 6. **SVG icons, no emoji**; one font stack, buttons included.
+
+## Draft 1 (2026-10-23, `dev`)
+
+What it does, against the brief:
+
+1. **Station list on the photo.** `site/assets/js/station-list.js` (pure
+   builders, `tests/js/station-list.test.mjs`) renders all ten stations as
+   rows on a near-opaque panel over the hero photo: name, age with a status
+   dot from the export's `status`, wave height + period, wind speed + gust,
+   direction as an arrow (the cardinal is in screen-reader text and the open
+   panel). Regions are small text headings; two columns from 900 px. A down
+   station shows "No recent data" in the row, not days-old numbers; its last
+   readings are in the panel, labelled. Measured: all ten on screen at
+   1280×800 and 900 px; nine of ten on a 390×844 phone (three long names
+   wrap to two lines).
+2. **Tap to expand.** A row is a `<button aria-expanded>`; its panel is built
+   on first open: grouped label/value stats, plain-words notes (late, down,
+   backup sensor, NOAA "dominant", the registry `caveat`), then text actions
+   (12-hour history, Charts, Show on map, source ↗). The history table is the
+   existing `buoy-history.js` builder; its scroller is now keyboard-focusable
+   (axe `scrollable-region-focusable`). Open rows survive the 5-minute refresh.
+3. **Map below the list**, the legend folded into a "Key" toggle in the map's
+   corner. **Leaflet loads when the map comes within 150 px of the viewport**
+   (`stations-map.js` `ensureMap()`), or at once when a row asks for the map.
+   The script URL sits in `data-leaflet-src` on the map element, so
+   `update_asset_versions.py` keeps its hash current. `#buoy-<id>` links
+   (map popups) now open that row instead of scrolling to the map.
+4. **The tagline, the "How to read this data" box and the single-station hero
+   strip are gone**; the guide link and the other data pages sit in a link
+   row at the foot of the panel.
+5. **One time-range toggle** (a 24 h / 48 h segmented control with
+   `aria-pressed`) in the trends heading, instead of three.
+6. No emoji in the summary; one font stack (controls use `font: inherit`).
+
+Home-only styles live in `site/assets/css/home.css`, so `style-v4.css`, the
+nav and the shared modules are untouched until the direction is agreed.
+
+Checked on dev.halibutbank.ca (real CSP), Chromium + Firefox, light + dark:
+no console errors; axe clean on the summary, map and toggle at 390 and
+1280 with rows and history open. **Axe cannot judge text over a photo** (it
+reports "needs review", not a failure), so the panel's contrast was measured
+on the rendered pixels instead: shoot the panel with its text made
+transparent, then take the worst background pixel inside each text box. At
+the user's chosen 80% panel opacity (2026-10-23; 62% failed in dark mode,
+white surf showing through) every text node passes, lowest 5.7:1. Any change
+to the panel's opacity, blur or text colours needs that measurement redone.
+No horizontal overflow
+from the summary at 390/768/900/1024/1280 (the 768–1024 overflow is the
+known nav issue, identical on production). CLS with today's wind-warning
+banner: 0.03 / 0.06 / 0.08 / 0.05 at 390 / 768 / 1024 / 1280, against
+production's 0.03 / 0.10 / 0.11 / 0.07 under the same conditions; what
+remains comes from the banner and nav loading in (step 2).
+
+Left for after the verdict:
+
+- `buoy-card.js` no longer renders anything; only its spread descriptors
+  are still imported. Retire it (and its tests) once the rows are agreed.
+- The chart dropdown's optgroups in `index.html` repeat `STATION_GROUPS`.
+- Below the map is unchanged apart from the toggle: inline styles on the
+  threshold control, the "Individual buoy" divider and the "Show on Map"
+  buttons remain.
+- Map markers for stations with no data are still emoji, so the key keeps
+  two emoji entries to match.
+- `.claude/skills/verify/SKILL.md` describes the old card flows
+  (`.region-header`, `.toggle-details-btn`); update it when this ships.
+  The rows' flows: `.sl-row` toggles `aria-expanded` and `#sl-detail-<id>`,
+  `[data-action=history|charts|map]` inside the panel, `#buoy-<id>` opens a row.
 
 ## Where the work happens
 

@@ -142,6 +142,33 @@ export function pickWavePeriod(b, meta) {
 }
 
 /**
+ * Which direction pair represents the displayed wave, per station family.
+ * This is the one thing the three families genuinely disagree on; height and
+ * period come from the field priorities above.
+ *
+ * @returns {{cardinal: string|null, degrees: number|null|undefined}}
+ */
+export function pickWaveDirection(b, meta) {
+  if (usesSwellDisplay(meta)) {
+    return {
+      cardinal: b?.swell_direction_cardinal ?? null,
+      degrees: b?.swell_direction,
+    };
+  }
+  if (usesDominantPeriod(meta)) {
+    return {
+      cardinal: b?.wave_direction_peak_cardinal ?? b?.wave_direction_avg_cardinal ?? null,
+      degrees: b?.wave_direction_peak ?? b?.wave_direction_avg,
+    };
+  }
+  // EC buoys fall back to swell direction when peak is absent.
+  return {
+    cardinal: b?.wave_direction_peak_cardinal ?? b?.swell_direction_cardinal ?? null,
+    degrees: b?.wave_direction_peak ?? b?.swell_direction,
+  };
+}
+
+/**
  * Lightstation region sections, ordered roughly south to north.
  *
  * `region` in config/stations.json is the single owner of which section a
