@@ -366,6 +366,14 @@ if (!halibutBank.stale) {
         station goes <code>"late"</code> well before three hours, and an hourly one a little
         after. Use <code>status</code> when you want the station's own normal as the bar.
       </p>
+      <p>
+        A sensor can also get stuck: the station keeps reporting on time, but one
+        instrument repeats the same value. <code>/weather/whiterock</code> checks for this
+        and sends <code>null</code> for a stuck sensor's fields. Its
+        <code>frozen_sensors</code> object names each stuck sensor (<code>wind</code>,
+        <code>temperature</code>, <code>humidity</code>, <code>pressure</code>) with the
+        time it stopped changing, and is empty when every sensor is working.
+      </p>
 
       <h3>Every wind speed is in knots</h3>
       <p>

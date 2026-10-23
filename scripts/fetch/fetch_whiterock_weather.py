@@ -6,19 +6,25 @@ Fetches from https://maps.whiterockcity.ca/weather/weatherResults.txt
 
 import json
 import sqlite3
+import ssl
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+import certifi
 import requests
+from requests.adapters import HTTPAdapter
 
-from lib.config import EXPORT_DIR
+from lib.config import EXPORT_DIR, PROJECT_ROOT
 from lib.config import WEATHER_DATABASE as SQLITE_PATH
+from lib.frozen_sensor import frozen_iso, hidden_columns, whiterock_frozen
 
 # Configuration
 OUT_PATH = EXPORT_DIR / "whiterock_weather.json"
 API_URL = "https://maps.whiterockcity.ca/weather/weatherResults.txt"
 LOCKFILE = Path("/tmp/whiterock_weather.lock")
+# The host's chain ends at a root certifi does not carry yet; see the file.
+EXTRA_ROOT = PROJECT_ROOT / "config" / "certs" / "godaddy-tls-root-r1.pem"
 
 # Database setup
 CREATE_TABLE_SQL = """
@@ -50,6 +56,16 @@ CREATE TABLE IF NOT EXISTS whiterock_weather (
     UNIQUE(observation_time)
 );
 """
+
+
+class ExtraRootAdapter(HTTPAdapter):
+    """Verify against certifi's roots plus EXTRA_ROOT — added to, not replacing."""
+
+    def init_poolmanager(self, *args, **kwargs):
+        context = ssl.create_default_context(cafile=certifi.where())
+        context.load_verify_locations(cafile=str(EXTRA_ROOT))
+        kwargs["ssl_context"] = context
+        return super().init_poolmanager(*args, **kwargs)
 
 
 def acquire_lock():
@@ -110,7 +126,9 @@ def fetch_weather():
             "pragma": "no-cache",
             "cache-control": "no-cache",
         }
-        response = requests.get(API_URL, headers=headers, timeout=15)
+        with requests.Session() as session:
+            session.mount("https://", ExtraRootAdapter())
+            response = session.get(API_URL, headers=headers, timeout=15)
         response.raise_for_status()
 
         raw_data = response.json()
@@ -243,6 +261,17 @@ def export_json(conn):
         "data_source": "White Rock City microWeather Station",
         "units": {"temperature": "°C", "wind_speed": "kt", "pressure": "mbar", "precipitation": "mm"},
     }
+
+    # A stuck sensor keeps publishing one value with a fresh timestamp;
+    # withhold it rather than show it, and say which and since when.
+    frozen = whiterock_frozen(conn)
+    for column in hidden_columns(frozen):
+        data[column] = None
+    for alias, column in (("wind_speed_kt", "wind_speed"), ("wind_gust_kt", "wind_gust")):
+        data[alias] = data[column]
+    data["frozen_sensors"] = frozen_iso(frozen)
+    if frozen:
+        print(f"⚠️  Frozen sensors withheld: {', '.join(sorted(frozen))}")
 
     # Atomic write
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)

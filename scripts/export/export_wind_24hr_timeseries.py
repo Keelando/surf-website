@@ -27,6 +27,7 @@ from pathlib import Path
 
 from lib.config import EXPORT_DIR, WIND_DATABASE, safe_json_write
 from lib.config import WEATHER_DATABASE as WHITEROCK_DATABASE
+from lib.frozen_sensor import WHITEROCK_CHECKS, whiterock_frozen
 from lib.logging_config import setup_logging
 from lib.stations import get_all_wind
 
@@ -154,6 +155,11 @@ def query_and_export_timeseries():
                 wr_conn = sqlite3.connect(WHITEROCK_DATABASE, timeout=5)
                 wr_conn.row_factory = sqlite3.Row
                 wr_cur = wr_conn.cursor()
+                # Readings from a stuck sensor are dropped from its freeze on.
+                frozen = whiterock_frozen(wr_conn)
+                frozen_from = {
+                    column: since for name, since in frozen.items() for column in WHITEROCK_CHECKS[name]["hide"]
+                }
 
                 # Map White Rock fields to standard format
                 wr_metrics = {
@@ -170,10 +176,11 @@ def query_and_export_timeseries():
                     SELECT observation_time, {field}
                     FROM whiterock_weather
                     WHERE observation_time >= ?
+                      AND observation_time < ?
                       AND {field} IS NOT NULL
                     ORDER BY observation_time ASC
                     """
-                    wr_cur.execute(sql, (cutoff_time,))
+                    wr_cur.execute(sql, (cutoff_time, frozen_from.get(field, float("inf"))))
                     rows = wr_cur.fetchall()
 
                     if rows:
