@@ -256,7 +256,7 @@ It now filters through `PUBLIC_STATION_FIELDS`, an explicit per-section
 allowlist, so a new registry field stays private until it is named there
 deliberately. Withheld today:
 
-- `channels`, `fallback_channels`, `flowworks_site_id` — internal FlowWorks
+- `channels`, `wave_sensors`, `flowworks_site_id` — internal FlowWorks
   sensor plumbing, meaningless without our credentials
 - `url` — the upstream endpoint we poll. `source_url`, the human-facing
   station page, *is* published; `url` stays private so consumers bind to our

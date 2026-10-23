@@ -95,6 +95,44 @@ function valueAt(samples, time) {
   return samples.find((d) => d.time === time)?.value;
 }
 
+/** Backup sensor that supplied the sample at `time`, or undefined (first choice). */
+function sensorAt(samples, time) {
+  return samples.find((d) => d.time === time)?.sensor;
+}
+
+/**
+ * Stretches of a wave-height series that came from a backup sensor, for
+ * shading on the chart: [{sensor, start, end}], each running from its first
+ * backup point to the point after its last (so a lone point still spans).
+ *
+ * @param {Array<{time: string, sensor?: string}>} points - Time-ordered
+ * @returns {Array<{sensor: string, start: string, end: string}>}
+ */
+export function backupSensorSpans(points) {
+  const spans = [];
+  points.forEach((point, i) => {
+    const last = spans.at(-1);
+    if (point.sensor && last?.sensor === point.sensor && last.open) {
+      last.end = points[i + 1]?.time ?? point.time;
+    } else if (point.sensor) {
+      spans.push({
+        sensor: point.sensor,
+        start: point.time,
+        end: points[i + 1]?.time ?? point.time,
+        open: true,
+      });
+    } else if (last) {
+      last.open = false;
+    }
+  });
+  return spans.map(({ sensor, start, end }) => ({ sensor, start, end }));
+}
+
+/** Backup sensors named by any wave-height row shown, in order of appearance. */
+function backupSensors(times, selected) {
+  return [...new Set(times.map((t) => sensorAt(selected.waveHeight, t)).filter(Boolean))];
+}
+
 /** First non-null value at `time` across the priority-ordered channels. */
 function firstValueAt(channels, time) {
   for (const samples of channels) {
@@ -182,7 +220,7 @@ export function buildHistoryRows(times, selected, meta) {
       <tr>
         <td>${timeCell}</td>
         <td>${wind}</td>
-        <td>${fixedOrDash(valueAt(selected.waveHeight, time), heightDecimals)}</td>
+        <td>${fixedOrDash(valueAt(selected.waveHeight, time), heightDecimals)}${sensorAt(selected.waveHeight, time) ? "*" : ""}</td>
         ${showWindWave ? `<td>${fixedOrDash(valueAt(selected.windWaveHeight, time), heightDecimals)}</td>` : ""}
         <td>${fixedOrDash(firstValueAt(selected.wavePeriods, time), 1)}</td>
         <td>${fixedOrDash(valueAt(selected.seaTemp, time), 1)}</td>
@@ -260,5 +298,19 @@ export function buildHistoryTableHTML(timeseries, meta, options = {}) {
         ▲ Hide History
       </button>
     </div>
+  ${buildBackupSensorNote(backupSensors(times, selected))}
   ${buildHistoryNote(meta)}`;
+}
+
+/**
+ * Note for rows whose waves came from a backup sensor, e.g. the radar at
+ * Crescent Beach Ocean while its Anderaa has no reading. "" when none did.
+ */
+export function buildBackupSensorNote(sensors) {
+  if (sensors.length === 0) return "";
+  return `
+      <div class="history-note">
+        <strong>*</strong> From the station's backup wave sensor (${sensors.join(", ")}): its main sensor had no reading. Sensors read slightly differently, so a step where the source changes may not be the sea.
+      </div>
+    `;
 }

@@ -374,6 +374,15 @@ if (!halibutBank.stale) {
         <code>temperature</code>, <code>humidity</code>, <code>pressure</code>) with the
         time it stopped changing, and is empty when every sensor is working.
       </p>
+      <p>
+        Some stations carry more than one instrument for the same quantity. Crescent
+        Beach Ocean has three wave sensors, tried in a fixed order. When a reading
+        comes from a backup, its buoy payload names it in <code>wave_sensor</code>
+        (e.g. <code>"radar"</code>), and wave-height timeseries points carry
+        <code>sensor</code>. If neither is present, the reading came from the station's
+        main sensor. Instruments read slightly differently, so expect a small step
+        where the source changes.
+      </p>
 
       <h3>Every wind speed is in knots</h3>
       <p>

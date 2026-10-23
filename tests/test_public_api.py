@@ -206,7 +206,7 @@ class TestStationsExportIsFiltered:
 
     PRIVATE_FIELDS = {
         "channels",
-        "fallback_channels",
+        "wave_sensors",
         "flowworks_site_id",
         "url",
         "credentials",

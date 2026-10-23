@@ -8,7 +8,7 @@ Channels actively used by the system. For the full list of all available channel
 > by the fetchers via `lib/stations.py`. This doc is a human-readable companion
 > that explains *why* each channel was chosen — keep it in sync with stations.json,
 > but stations.json wins. This page covers the tide/water-level channels; wave and
-> wind channels (incl. the radar `fallback_channels`) live in stations.json too.
+> wind channels (incl. CRPILE's ordered `wave_sensors`) live in stations.json too.
 
 ---
 

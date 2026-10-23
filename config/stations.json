@@ -218,10 +218,6 @@
         "wind_speed": 1810,
         "wind_direction": 1811,
         "wind_gust": 1814,
-        "wave_height_sig": 2002,
-        "wave_height_peak": 2008,
-        "wave_period_avg": 2009,
-        "wave_period_peak": 2012,
         "sea_temp": 2007,
         "air_temp": 1794,
         "water_level_predicted": 2620,
@@ -230,11 +226,32 @@
         "geodiff_cb_vs_cc": 2129,
         "geodiff_cbvscc_pt": 2126
       },
-      "fallback_channels": {
-        "wave_height_sig": 2158,
-        "wave_period_peak": 2157
-      },
-      "note": "Water levels referenced to CGVD28 GVRD datum. fallback_channels are radar sensors (Hm0_RADAR, Tp_RADAR) used only when the primary Anderaa sensor is offline.",
+      "wave_sensors": [
+        {
+          "name": "Anderaa",
+          "channels": {
+            "wave_height_sig": 2002,
+            "wave_height_peak": 2008,
+            "wave_period_avg": 2009,
+            "wave_period_peak": 2012
+          }
+        },
+        {
+          "name": "radar",
+          "channels": {
+            "wave_height_sig": 2158,
+            "wave_period_peak": 2157
+          }
+        },
+        {
+          "name": "Keller pressure sensor",
+          "channels": {
+            "wave_height_sig": 2003,
+            "wave_period_peak": 2011
+          }
+        }
+      ],
+      "note": "Water levels referenced to CGVD28 GVRD datum. Waves come from wave_sensors in priority order: Anderaa (Hs_Anderra, Hmax_Anderra, Tmean_Anderra, Tpeak_Anderra), then radar (Hm0_RADAR, Tp_RADAR), then Keller pressure sensor (Hs_KellerPT, Tp_Keller); each reading is taken whole from the first sensor with a nonzero Hs.",
       "caveat": "Air temperature reads high on sunny afternoons (unshielded sensor). Wave, wind and water level unaffected.",
       "source_url": "https://developers.flowworks.com/",
       "short_name": "Crescent Bch.",

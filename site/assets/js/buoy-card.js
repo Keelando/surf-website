@@ -183,7 +183,12 @@ export function buildWaveLine(b, meta) {
     const arrowDisplay = degrees != null ? ` ${getDirectionalArrow(degrees, "wave")}` : "";
     const periodDisplay =
       periodValue != null ? ` @ ${periodValue.toFixed(1)}s${tag ? periodTag(tag) : ""}` : "";
-    waveDisplay = `${dirDisplay}${height}m${periodDisplay}${degreesDisplay}${arrowDisplay}`;
+    // A station with several wave sensors names the backup that supplied
+    // this reading; absent means its first choice did.
+    const sensorDisplay = b.wave_sensor
+      ? ` <span class="buoy-period-tag" title="From a backup sensor: the station's main wave sensor has no reading">via ${b.wave_sensor}</span>`
+      : "";
+    waveDisplay = `${dirDisplay}${height}m${periodDisplay}${degreesDisplay}${arrowDisplay}${sensorDisplay}`;
   }
 
   let html = `<p class="buoy-metric buoy-metric--spaced"><b>${waveLabel}</b> ${waveDisplay}</p>`;

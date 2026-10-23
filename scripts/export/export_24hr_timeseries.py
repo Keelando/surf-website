@@ -207,6 +207,15 @@ def query_and_export_timeseries():
                         ORDER BY observation_time ASC
                         """
 
+                    # Wave height points name the backup sensor that supplied
+                    # them (stations with `wave_sensors`); the first choice is NULL.
+                    tag_sensor = metric_key == "wave_height_sig" and "wave_sensor" in existing_cols
+                    if tag_sensor:
+                        sql = sql.replace(
+                            f"SELECT observation_time, {metric_key}",
+                            f"SELECT observation_time, {metric_key}, wave_sensor",
+                        )
+
                     cur.execute(sql, (buoy_id, cutoff_timestamp))
                     rows = cur.fetchall()
 
@@ -221,14 +230,13 @@ def query_and_export_timeseries():
                             else:
                                 value = round(value, 2)
 
-                            timeseries.append(
-                                {
-                                    "time": datetime.fromtimestamp(
-                                        row["observation_time"], tz=timezone.utc
-                                    ).isoformat(),
-                                    "value": value,
-                                }
-                            )
+                            point = {
+                                "time": datetime.fromtimestamp(row["observation_time"], tz=timezone.utc).isoformat(),
+                                "value": value,
+                            }
+                            if tag_sensor and row["wave_sensor"]:
+                                point["sensor"] = row["wave_sensor"]
+                            timeseries.append(point)
 
                         # Auto-detect data frequency and downsample if too frequent
                         # Calculate average interval between consecutive points

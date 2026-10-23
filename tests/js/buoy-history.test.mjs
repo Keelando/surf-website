@@ -6,6 +6,8 @@ import { test } from "node:test";
 globalThis.degreesToCardinal = (deg) => (deg == null ? null : `D${deg}`);
 
 const {
+  backupSensorSpans,
+  buildBackupSensorNote,
   buildHistoryNote,
   buildHistoryRows,
   buildHistoryTableHTML,
@@ -219,4 +221,40 @@ test("a Wind Wave column appears only where the station reports wind waves", () 
   assert.equal(cells.length, 7);
   assert.equal(cells[2], "0.7");
   assert.equal(cells[3], "0.6");
+});
+
+// --- backup wave sensor ----------------------------------------------------
+
+test("rows from a backup wave sensor are starred and explained", () => {
+  const ts = {
+    wave_height_sig: {
+      data: [
+        { time: T(10), value: 0.4 },
+        { time: T(11), value: 0.3, sensor: "radar" },
+      ],
+    },
+  };
+  const html = buildHistoryTableHTML(ts, PILE, { now: NOW });
+  assert.match(html, /0\.30\*/);
+  assert.ok(!html.includes("0.40*"));
+  assert.match(html, /backup wave sensor \(radar\)/);
+
+  const plain = buildHistoryTableHTML({ wave_height_sig: chan([[T(10), 0.4]]) }, PILE, { now: NOW });
+  assert.ok(!plain.includes("backup wave sensor"));
+  assert.equal(buildBackupSensorNote([]), "");
+});
+
+test("backup spans run from the first backup point to the point after the last", () => {
+  const pts = [
+    { time: T(1) },
+    { time: T(2), sensor: "radar" },
+    { time: T(3), sensor: "radar" },
+    { time: T(4) },
+    { time: T(5), sensor: "radar" },
+  ];
+  assert.deepEqual(backupSensorSpans(pts), [
+    { sensor: "radar", start: T(2), end: T(4) },
+    { sensor: "radar", start: T(5), end: T(5) },
+  ]);
+  assert.deepEqual(backupSensorSpans([{ time: T(1) }]), []);
 });

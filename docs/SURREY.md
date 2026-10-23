@@ -153,16 +153,29 @@ partitioned by which fetcher owns them:
 - **Tide fetcher** (`tide_data.sqlite`): `water_level_*`, `tidal_residual`,
   `geodiff_*` (see `TIDE_FIELDS`).
 
-### Wave fallback channels
+### Wave sensors in priority order
 
-CRPILE's primary wave sensor is the Anderaa (`wave_height_sig` = Hs_Anderra,
-`wave_period_peak` = Tpeak_Anderra). When it goes offline, the `fallback_channels`
-block supplies the radar sensor (`Hm0_RADAR`, `Tp_RADAR`). Fallback values are
-written **only where the primary Anderaa value is absent**, so the calibrated
-sensor always wins. A wave height or period of exactly 0 counts as absent
-(`NO_ZERO_FIELDS`): a sensor with no signal reports zeros, not nulls, and from
-2026-10-21 the Anderaa sent only zeros, which blocked the radar until the rule
-was added. To discover available channel IDs at a site, use
+CRPILE has three wave sensors on the pile, listed in `wave_sensors` in
+stations.json in the order they are trusted: the Anderaa (Hs_Anderra,
+Hmax_Anderra, Tmean_Anderra, Tpeak_Anderra), then the radar (Hm0_RADAR,
+Tp_RADAR), then the Keller pressure sensor (Hs_KellerPT, Tp_Keller). Its wave
+fields live there and NOT in `channels` (a test enforces one home per field).
+
+`resolve_wave_readings()` in `fetch_surrey_wave_v2.py` takes each timestamp's
+reading **whole** from the first sensor with a real Hs there, so a height and
+period shown together always come from one sensor. A lower sensor is only
+asked when the ones above left a timestamp without a reading, so a healthy
+Anderaa costs no extra requests. A wave height or period of exactly 0 counts
+as no reading (`NO_ZERO_FIELDS`): a sensor with no signal (dead, or dry at low
+tide) reports zeros, not nulls. From 2026-10-21 the Anderaa sent only zeros.
+
+The `wave_sensor` column records the backup that supplied a reading (NULL =
+the first choice). The exports carry it as `wave_sensor` on the latest reading
+and `sensor` on wave-height timeseries points; the site tags the card ("via
+radar"), stars history rows, and shades the chart. Sensors read slightly
+differently, so a step at a switch may not be the sea.
+
+To discover available channel IDs at a site, use
 `scripts/query_surrey_channels.py <site_id>`.
 
 ### Looking up current channel IDs

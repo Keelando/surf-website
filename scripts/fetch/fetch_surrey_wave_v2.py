@@ -84,9 +84,8 @@ BUOY_FIELDS = {
 WIND_FIELDS = {"wind_speed", "wind_direction", "wind_gust", "air_temp"}
 
 # Wave fields where 0 is not a measurement. A sensor with no signal (dead,
-# or dry on the flats at low tide) reports Hs 0 with period 0, and a stored
-# 0 blocks the fallback channel, which only fills gaps. From 2026-10-21 the
-# CRPILE Anderaa sent nothing but zeros while its radar fallback was live.
+# or dry on the flats at low tide) reports Hs 0 with period 0. From
+# 2026-10-21 the CRPILE Anderaa sent nothing but zeros while its radar was live.
 NO_ZERO_FIELDS = {"wave_height_sig", "wave_height_peak", "wave_period_avg", "wave_period_peak"}
 
 
@@ -210,6 +209,11 @@ def ensure_columns(conn):
             cur.execute(f"ALTER TABLE buoy_observation ADD COLUMN {col} REAL;")
             logger.info(f"Added column: {col}")
 
+    # Which backup wave sensor supplied a reading (NULL = the first-choice one)
+    if "wave_sensor" not in existing:
+        cur.execute("ALTER TABLE buoy_observation ADD COLUMN wave_sensor TEXT;")
+        logger.info("Added column: wave_sensor")
+
     conn.commit()
 
 
@@ -241,12 +245,8 @@ def parse_data_point(point):
         return None, None
 
 
-def upsert_data_buoy(cur, buoy_id, timestamp, field, value, only_if_null=False):
-    """Insert or update a data point in buoy database.
-
-    only_if_null: when True, never overwrite an existing non-null value (used for
-    fallback channels so the primary sensor always wins).
-    """
+def upsert_data_buoy(cur, buoy_id, timestamp, field, value):
+    """Insert or update a data point in buoy database."""
     ts_epoch = int(timestamp.timestamp())
 
     # Check existing value for this field
@@ -260,9 +260,6 @@ def upsert_data_buoy(cur, buoy_id, timestamp, field, value, only_if_null=False):
 
     row = cur.fetchone()
     exists = row is not None
-
-    if only_if_null and exists and row[0] is not None:
-        return False
 
     if exists:
         # Update existing
@@ -336,6 +333,60 @@ def upsert_data_wind(cur, station_id, station_name, timestamp, field, value):
     return cur.rowcount > 0
 
 
+def resolve_wave_readings(api, site_id, sensors, hours):
+    """Wave readings from a station's sensors, taken in priority order.
+
+    Each timestamp's reading comes whole from the first sensor whose Hs there
+    is a real (nonzero) value, so a height and period shown together always
+    share a sensor. A lower-priority sensor is only asked when the ones above
+    it left a timestamp without a reading, so a healthy first-choice sensor
+    costs no extra requests.
+
+    Args:
+        sensors: stations.json `wave_sensors`: [{"name", "channels": {field: id}}]
+
+    Returns:
+        {timestamp: (sensor_index, {field: value or None})} for every timestamp
+        any consulted sensor reported Hs at; sensor_index is None when no
+        sensor had a reading there.
+    """
+    values = []  # per sensor: {field: {timestamp: value}}
+    hs_times = set()
+    chosen = {}  # timestamp -> sensor index
+
+    for index, sensor in enumerate(sensors):
+        fields = {}
+        for field, channel_id in sensor["channels"].items():
+            if field not in BUOY_FIELDS:
+                continue
+            series = fields.setdefault(field, {})
+            for point in api.get_channel_data(site_id, channel_id, hours):
+                timestamp, value = parse_data_point(point)
+                if timestamp is not None and value is not None:
+                    series[timestamp] = value
+            time.sleep(1.0)  # Rate limiting
+        values.append(fields)
+
+        for timestamp, hs in fields.get("wave_height_sig", {}).items():
+            hs_times.add(timestamp)
+            if hs > 0 and timestamp not in chosen:
+                chosen[timestamp] = index
+
+        if hs_times and all(t in chosen for t in hs_times):
+            break  # every timestamp has a reading; spare the rest
+
+    wave_fields = {f for sensor in sensors for f in sensor["channels"] if f in BUOY_FIELDS}
+    readings = {}
+    for timestamp in hs_times:
+        index = chosen.get(timestamp)
+        reading = {}
+        for field in wave_fields:
+            value = values[index].get(field, {}).get(timestamp) if index is not None else None
+            reading[field] = None if value is not None and value <= 0 else value
+        readings[timestamp] = (index, reading)
+    return readings
+
+
 def fetch_and_store(api, station_id, meta, conn, is_wind_station=False, hours=2):
     """Fetch the relevant channels for a station and store to SQLite.
 
@@ -351,19 +402,13 @@ def fetch_and_store(api, station_id, meta, conn, is_wind_station=False, hours=2)
     station_name = meta.get("short_name") or meta["name"]
     allowed = WIND_FIELDS if is_wind_station else BUOY_FIELDS
     channels = {f: cid for f, cid in meta.get("channels", {}).items() if f in allowed}
-    fallback = {f: cid for f, cid in meta.get("fallback_channels", {}).items() if f in allowed}
 
     logger.info(f"Fetching {station_name}...")
 
     cur = conn.cursor()
     total_inserted = 0
 
-    # Primary channels first, then fallback channels (only_if_null) so the primary
-    # sensor always wins and fallbacks only fill gaps.
-    channel_items = [(f, cid, False) for f, cid in channels.items()]
-    channel_items += [(f, cid, True) for f, cid in fallback.items()]
-
-    for field_name, channel_id, only_if_null in channel_items:
+    for field_name, channel_id in channels.items():
         data_points = api.get_channel_data(site_id, channel_id, hours)
 
         if not data_points:
@@ -376,11 +421,8 @@ def fetch_and_store(api, station_id, meta, conn, is_wind_station=False, hours=2)
             if timestamp is None or value is None:
                 continue
 
-            # A zero wave reading is no reading: the primary stores NULL (so the
-            # fallback can fill it), and a zero fallback is skipped.
+            # A zero wave reading is no reading
             if field_name in NO_ZERO_FIELDS and value <= 0:
-                if only_if_null:
-                    continue
                 value = None
 
             # Convert wind speeds from m/s to km/h
@@ -392,7 +434,7 @@ def fetch_and_store(api, station_id, meta, conn, is_wind_station=False, hours=2)
                 if upsert_data_wind(cur, station_id, station_name, timestamp, field_name, value):
                     inserted += 1
             else:
-                if upsert_data_buoy(cur, station_id, timestamp, field_name, value, only_if_null=only_if_null):
+                if upsert_data_buoy(cur, station_id, timestamp, field_name, value):
                     inserted += 1
 
         conn.commit()
@@ -402,6 +444,21 @@ def fetch_and_store(api, station_id, meta, conn, is_wind_station=False, hours=2)
             logger.debug(f"  {field_name}: {inserted} points")
 
         time.sleep(1.0)  # Rate limiting - increased to reduce API load
+
+    # Stations with several wave sensors: one reading per timestamp, from the
+    # first sensor that has one, labelled when it is not the first choice.
+    sensors = [] if is_wind_station else meta.get("wave_sensors", [])
+    if sensors:
+        readings = resolve_wave_readings(api, site_id, sensors, hours)
+        for timestamp, (index, reading) in readings.items():
+            for field_name, value in reading.items():
+                upsert_data_buoy(cur, station_id, timestamp, field_name, value)
+            backup = sensors[index]["name"] if index else None
+            upsert_data_buoy(cur, station_id, timestamp, "wave_sensor", backup)
+            if index:
+                logger.debug(f"  {timestamp:%H:%M} waves from backup: {backup}")
+        conn.commit()
+        total_inserted += len(readings)
 
     return total_inserted
 

@@ -37,7 +37,7 @@ FRONTEND_STATIONS = EXPORT_DIR / "stations.json"
 # note in CLAUDE.md and docs/PUBLIC_API.md.
 #
 # Deliberately NOT published:
-#   channels, fallback_channels, flowworks_site_id
+#   channels, wave_sensors, flowworks_site_id
 #       internal FlowWorks sensor plumbing; meaningless without our credentials
 #   url
 #       the upstream endpoint we poll. source_url (the human-facing station

@@ -166,6 +166,21 @@ def query_and_export():
                             tz=timezone.utc,
                         ).isoformat()
 
+            # Which backup sensor supplied the wave reading, read from the SAME
+            # row as wave_height_sig (absent = the station's first choice).
+            # "Most recent non-null" would pin an hours-old "radar" on a fresh
+            # first-choice reading, since the first choice is stored as NULL.
+            if "wave_sensor" in existing_cols and "wave_height_sig" in buoy_json:
+                hs_time = buoy_json.get("field_times", {}).get("wave_height_sig")
+                hs_ts = datetime.fromisoformat(hs_time).timestamp() if hs_time else latest_time
+                cur.execute(
+                    "SELECT wave_sensor FROM buoy_observation WHERE buoy_id = ? AND observation_time = ?",
+                    (buoy_id, int(hs_ts)),
+                )
+                sensor_row = cur.fetchone()
+                if sensor_row and sensor_row["wave_sensor"]:
+                    buoy_json["wave_sensor"] = sensor_row["wave_sensor"]
+
             # Add cardinal directions for all directional fields
             direction_fields = [
                 "wind_direction",

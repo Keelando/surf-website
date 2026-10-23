@@ -9,6 +9,7 @@
 
 import { formatMonthDayTime } from "./shared/format-time.js";
 import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
+import { backupSensorSpans } from "./buoy-history.js";
 
 // ECharts instance for the NOAA spectral period chart (created on demand)
 let wavePeriodChart = null;
@@ -613,6 +614,18 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts, theme) {
       yAxisIndex: 0,
       itemStyle: { color: colors.primary },
       areaStyle: theme.isDark ? { opacity: 0 } : { opacity: 0.1 },
+      // Shade where a backup wave sensor supplied the reading (Crescent Beach
+      // Ocean's radar while its Anderaa is out), so a step at the switch
+      // isn't read as the sea changing.
+      markArea: {
+        silent: true,
+        itemStyle: { color: theme.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)" },
+        label: { color: theme.mutedText, fontSize: 10, position: "insideTop" },
+        data: backupSensorSpans(waveHeightData).map(({ sensor, start, end }) => [
+          { name: sensor, xAxis: start },
+          { xAxis: end },
+        ]),
+      },
     },
     {
       name: periodLabel,

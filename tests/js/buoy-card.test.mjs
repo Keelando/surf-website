@@ -194,3 +194,10 @@ test("charts button is disabled only when there is nothing to chart", () => {
   assert.doesNotMatch(buildNavLinks({ wind_speed: 5 }), /disabled/);
   assert.match(buildNavLinks({ sea_temp: 9 }), /disabled/);
 });
+
+test("buildWaveLine names a backup wave sensor, and only a backup", () => {
+  const reading = { wave_height_sig: 0.11, wave_period_peak: 4.7 };
+  assert.ok(!buildWaveLine(reading, PILE).includes("buoy-period-tag\" title=\"From a backup"));
+  const html = buildWaveLine({ ...reading, wave_sensor: "radar" }, PILE);
+  assert.match(html, /0\.11m @ 4\.7s.*>via radar<\/span>/);
+});
