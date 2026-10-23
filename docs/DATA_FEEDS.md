@@ -379,10 +379,14 @@ chart.
 
 **URLs:**
 ```
-Met (5-day):   https://www.ndbc.noaa.gov/data/5day2/{ID}_5day.txt
 Met (realtime): https://www.ndbc.noaa.gov/data/realtime2/{ID}.txt
+Met (5-day):   https://www.ndbc.noaa.gov/data/5day2/{ID}_5day.txt   (fallback; lags realtime by a record)
 Spectral:       https://www.ndbc.noaa.gov/data/realtime2/{ID}.spec
 ```
+
+Met and spectral records for one timestamp arrive minutes apart; rows are
+upserted so the later feed fills in the row the earlier one created.
+`--hours N` reloads N hours of met data from the 5-day file.
 
 ---
 

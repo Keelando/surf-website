@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 """
 Fetch NOAA NDBC buoy data and store in local SQLite database.
-Uses 5-day feeds for both .txt (meteorological) and .spec (spectral wave) data.
+Uses the realtime2 .txt (meteorological) and .spec (spectral wave) feeds,
+falling back to the 5-day .txt.
+
+The two feeds land minutes apart, so whichever arrives first creates a
+timestamp's row and the other must fill it in: rows are upserted, never
+insert-or-ignored. Until 2026-10-23 a late .txt was dropped, which left
+NOAA rows with spectral waves but no dominant period or temperatures.
+
+    fetch_noaa_buoy.py               # last 6 hours (cron)
+    fetch_noaa_buoy.py --hours 120   # backfill from the 5-day file
 """
 
+import argparse
 import sqlite3
 from datetime import datetime, timedelta, timezone
 
@@ -23,9 +33,6 @@ logger = setup_logging("noaa", console=False)
 # Get NOAA buoys from the unified station registry
 NOAA_BUOYS = STATION_REGISTRY.get_buoys_by_source("NOAA NDBC")
 STATIONS = {buoy_id: data["name"] for buoy_id, data in NOAA_BUOYS.items()}
-
-# Set True once to backfill fields into existing rows
-UPDATE_EXISTING = False
 
 # ---- Field Mappings ----
 FIELD_MAP_TXT = {
@@ -107,13 +114,19 @@ def is_missing(val, field=None):
 
 
 # ---- Fetch NOAA data ----
-def fetch_noaa_txt(station):
-    """Fetch NOAA meteorological data (5-day feed preferred, realtime2 fallback, last 6h)."""
-    # Try 5-day feed first (more data)
+def fetch_noaa_txt(station, hours=6):
+    """Fetch NOAA meteorological data from the last `hours`.
+
+    realtime2 first: it carries the newest record, which the 5-day file can
+    lag by one. The 5-day file is the fallback, and the source for backfills
+    longer than realtime2 holds.
+    """
     urls = [
-        f"https://www.ndbc.noaa.gov/data/5day2/{station}_5day.txt",
         f"https://www.ndbc.noaa.gov/data/realtime2/{station}.txt",
+        f"https://www.ndbc.noaa.gov/data/5day2/{station}_5day.txt",
     ]
+    if hours > 6:
+        urls.reverse()
 
     for url in urls:
         try:
@@ -123,7 +136,7 @@ def fetch_noaa_txt(station):
             if len(lines) < 3:
                 continue
             header = lines[0].split()
-            cutoff = datetime.now(timezone.utc) - timedelta(hours=6)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
             records = []
             for line in lines[2:]:
                 parts = line.split()
@@ -141,7 +154,7 @@ def fetch_noaa_txt(station):
                     continue
             if records:
                 feed_type = "5day" if "5day2" in url else "realtime2"
-                logger.info(f"Fetched {len(records)} records from .txt ({feed_type}, last 6h)")
+                logger.info(f"Fetched {len(records)} records from .txt ({feed_type}, last {hours}h)")
                 return records
         except Exception as e:
             if url == urls[-1]:  # Last URL failed
@@ -290,16 +303,15 @@ def insert_sqlite(conn, buoy_id, timestamp, fields):
     vals = [buoy_id, timestamp] + [fields[c] for c in fcols] + [f"{buoy_id}_5day"]
     placeholders = ",".join("?" * len(cols))
 
-    if UPDATE_EXISTING:
-        set_clause = ", ".join([f"{c}=excluded.{c}" for c in fcols])
-        sql = f"""
-        INSERT INTO buoy_observation ({','.join(cols)})
-        VALUES ({placeholders})
-        ON CONFLICT(buoy_id, observation_time)
-        DO UPDATE SET {set_clause}
-        """
-    else:
-        sql = f"INSERT OR IGNORE INTO buoy_observation ({','.join(cols)}) VALUES ({placeholders})"
+    # Upsert: only the fields this record carries are written, so a .txt
+    # record fills in the row its .spec twin created and vice versa.
+    set_clause = ", ".join([f"{c}=excluded.{c}" for c in fcols])
+    sql = f"""
+    INSERT INTO buoy_observation ({','.join(cols)})
+    VALUES ({placeholders})
+    ON CONFLICT(buoy_id, observation_time)
+    DO UPDATE SET {set_clause}
+    """
 
     cur.execute(sql, vals)
     conn.commit()
@@ -307,16 +319,20 @@ def insert_sqlite(conn, buoy_id, timestamp, fields):
 
 # ---- Main ----
 def main():
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    parser.add_argument("--hours", type=int, default=6, help="Met records to (re)load, default 6")
+    args = parser.parse_args()
+
     conn = sqlite3.connect(BUOY_DATABASE)
     ensure_columns_exist(conn)
 
     total_inserted = 0
-    total_ignored = 0
+    total_updated = 0
 
     for station_id, station_name in STATIONS.items():
         logger.info(f"Processing {station_name} ({station_id})")
 
-        txt = fetch_noaa_txt(station_id)
+        txt = fetch_noaa_txt(station_id, args.hours)
         spec = fetch_noaa_spec(station_id)
 
         if not txt and not spec:
@@ -328,7 +344,7 @@ def main():
             logger.warning(f"No merged records for {station_id}")
             continue
 
-        ins = ign = 0
+        ins = upd = 0
         for rec in merged:
             cur = conn.cursor()
             cur.execute(
@@ -338,18 +354,18 @@ def main():
             existed = cur.fetchone()[0] > 0
             insert_sqlite(conn, station_id, rec["timestamp"], rec)
             if existed:
-                ign += 1
+                upd += 1
             else:
                 ins += 1
 
-        logger.info(f"Inserted {ins}, ignored {ign} duplicates")
+        logger.info(f"Inserted {ins}, updated {upd}")
         total_inserted += ins
-        total_ignored += ign
+        total_updated += upd
 
     conn.close()
 
     logger.info("=" * 60)
-    logger.info(f"Total: Inserted {total_inserted}, ignored {total_ignored} duplicates")
+    logger.info(f"Total: Inserted {total_inserted}, updated {total_updated}")
     logger.info(f"Database: {BUOY_DATABASE}")
 
 
