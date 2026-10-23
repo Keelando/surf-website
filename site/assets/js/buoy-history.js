@@ -35,7 +35,11 @@ function series(timeseries, field) {
 /**
  * The channels the table reads, resolved for this station.
  *
- * @returns {{wind: Object, waveHeight: Array, wavePeriods: Array, airTemp: Array, seaTemp: Array}}
+ * `windWaveHeight` is empty except at stations that split the sea state into
+ * swell and wind waves (the NOAA buoys' spectral feed); the table only gets
+ * a Wind Wave column where it has something to show.
+ *
+ * @returns {{wind: Object, waveHeight: Array, windWaveHeight: Array, wavePeriods: Array, airTemp: Array, seaTemp: Array}}
  */
 export function selectHistorySeries(timeseries, meta) {
   return {
@@ -45,6 +49,7 @@ export function selectHistorySeries(timeseries, meta) {
       gust: series(timeseries, "wind_gust"),
     },
     waveHeight: series(timeseries, waveHeightField(meta)),
+    windWaveHeight: series(timeseries, "wind_wave_height"),
     // Priority-ordered, same list the compact card line uses.
     wavePeriods: wavePeriodFields(meta).map(({ field }) => series(timeseries, field)),
     airTemp: series(timeseries, "air_temp"),
@@ -158,6 +163,7 @@ function fixedOrDash(value, decimals) {
 /** `<tr>` rows for the given timestamps. */
 export function buildHistoryRows(times, selected, meta) {
   const heightDecimals = waveHeightPrecision(meta);
+  const showWindWave = selected.windWaveHeight.length > 0;
   let previousDate = null;
 
   return times
@@ -177,6 +183,7 @@ export function buildHistoryRows(times, selected, meta) {
         <td>${timeCell}</td>
         <td>${wind}</td>
         <td>${fixedOrDash(valueAt(selected.waveHeight, time), heightDecimals)}</td>
+        ${showWindWave ? `<td>${fixedOrDash(valueAt(selected.windWaveHeight, time), heightDecimals)}</td>` : ""}
         <td>${fixedOrDash(firstValueAt(selected.wavePeriods, time), 1)}</td>
         <td>${fixedOrDash(valueAt(selected.seaTemp, time), 1)}</td>
         <td>${fixedOrDash(valueAt(selected.airTemp, time), 1)}</td>
@@ -194,14 +201,14 @@ export function buildHistoryNote(meta) {
   if (usesSwellDisplay(meta)) {
     return `
       <div class="history-note">
-        <strong>Note:</strong> Neah Bay displays <strong>swell data</strong> (long-period ocean waves from distant storms) rather than combined wave metrics. Wind waves are typically much smaller at this location.
+        <strong>Note:</strong> Neah Bay's Wave Ht and Period are <strong>swell</strong> (long-period ocean waves from distant storms) rather than combined wave metrics. Wind Wave is the locally generated chop, typically much smaller here.
       </div>
     `;
   }
   if (usesDominantPeriod(meta)) {
     return `
       <div class="history-note">
-        <strong>Note:</strong> Height is significant wave height; period is the <strong>dominant period</strong>, NOAA's term for the wave period carrying the most energy (equivalent to peak period).
+        <strong>Note:</strong> Wave Ht is significant wave height, and Wind Wave the part of it raised by local wind; period is the <strong>dominant period</strong>, NOAA's term for the wave period carrying the most energy (equivalent to peak period).
       </div>
     `;
   }
@@ -236,6 +243,7 @@ export function buildHistoryTableHTML(timeseries, meta, options = {}) {
             <th>Time</th>
             ${headerCell("Wind", "kn")}
             ${headerCell("Wave Ht", "m")}
+            ${selected.windWaveHeight.length > 0 ? headerCell("Wind Wave", "m") : ""}
             ${headerCell("Period", "s")}
             ${headerCell("Sea", "°C")}
             ${headerCell("Air", "°C")}

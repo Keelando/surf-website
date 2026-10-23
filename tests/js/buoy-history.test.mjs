@@ -175,7 +175,7 @@ test("buildHistoryRows dashes missing values", () => {
 // --- notes and whole table ----------------------------------------------
 
 test("buildHistoryNote matches the station's period convention", () => {
-  assert.match(buildHistoryNote(NOAA_SWELL), /swell data/);
+  assert.match(buildHistoryNote(NOAA_SWELL), /<strong>swell<\/strong>/);
   assert.match(buildHistoryNote(NOAA_DOMINANT), /dominant period/);
   assert.equal(buildHistoryNote(EC), "");
   assert.equal(buildHistoryNote(PILE), "");
@@ -201,4 +201,22 @@ test("buildHistoryTableHTML renders with no data at all", () => {
   const html = buildHistoryTableHTML({}, EC, { now: NOW });
   assert.match(html, /<tbody>/);
   assert.equal((html.match(/<td>/g) || []).length, 0); // header row only, no body rows
+});
+
+// --- wind-wave column ----------------------------------------------------
+
+test("a Wind Wave column appears only where the station reports wind waves", () => {
+  const base = { wave_height_sig: chan([[T(10), 0.7]]) };
+  const without = buildHistoryTableHTML(base, NOAA_DOMINANT, { now: NOW });
+  assert.ok(!without.includes("Wind Wave<"));
+
+  const ts = { ...base, wind_wave_height: chan([[T(10), 0.6]]) };
+  const html = buildHistoryTableHTML(ts, NOAA_DOMINANT, { now: NOW });
+  assert.ok(html.includes("Wind Wave<"));
+  const row = html.match(/<tr>\s*<td>[^]*?<\/tr>/)[0];
+  const cells = [...row.matchAll(/<td>([^<]*)/g)].map((m) => m[1].trim());
+  // Time, wind, wave height, wind wave, period, sea, air
+  assert.equal(cells.length, 7);
+  assert.equal(cells[2], "0.7");
+  assert.equal(cells[3], "0.6");
 });
