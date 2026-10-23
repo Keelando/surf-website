@@ -159,7 +159,10 @@ CRPILE's primary wave sensor is the Anderaa (`wave_height_sig` = Hs_Anderra,
 `wave_period_peak` = Tpeak_Anderra). When it goes offline, the `fallback_channels`
 block supplies the radar sensor (`Hm0_RADAR`, `Tp_RADAR`). Fallback values are
 written **only where the primary Anderaa value is absent**, so the calibrated
-sensor always wins. To discover available channel IDs at a site, use
+sensor always wins. A wave height or period of exactly 0 counts as absent
+(`NO_ZERO_FIELDS`): a sensor with no signal reports zeros, not nulls, and from
+2026-10-21 the Anderaa sent only zeros, which blocked the radar until the rule
+was added. To discover available channel IDs at a site, use
 `scripts/query_surrey_channels.py <site_id>`.
 
 ### Looking up current channel IDs

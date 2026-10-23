@@ -83,6 +83,12 @@ BUOY_FIELDS = {
 }
 WIND_FIELDS = {"wind_speed", "wind_direction", "wind_gust", "air_temp"}
 
+# Wave fields where 0 is not a measurement. A sensor with no signal (dead,
+# or dry on the flats at low tide) reports Hs 0 with period 0, and a stored
+# 0 blocks the fallback channel, which only fills gaps. From 2026-10-21 the
+# CRPILE Anderaa sent nothing but zeros while its radar fallback was live.
+NO_ZERO_FIELDS = {"wave_height_sig", "wave_height_peak", "wave_period_avg", "wave_period_peak"}
+
 
 def get_surrey_stations():
     """Surrey FlowWorks stations from the registry.
@@ -369,6 +375,13 @@ def fetch_and_store(api, station_id, meta, conn, is_wind_station=False, hours=2)
 
             if timestamp is None or value is None:
                 continue
+
+            # A zero wave reading is no reading: the primary stores NULL (so the
+            # fallback can fill it), and a zero fallback is skipped.
+            if field_name in NO_ZERO_FIELDS and value <= 0:
+                if only_if_null:
+                    continue
+                value = None
 
             # Convert wind speeds from m/s to km/h
             if field_name in ["wind_speed", "wind_gust"]:
