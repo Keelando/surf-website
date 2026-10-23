@@ -15,7 +15,7 @@ import pytz
 from astral import Depression, LocationInfo
 from astral.sun import blue_hour, dawn, dusk, golden_hour, sun
 
-from lib.config import EXPORT_DIR
+from lib.config import EXPORT_DIR, TIDE_FORECAST_DAYS
 from lib.stations import get_all_webcams
 
 # Webcam positions come from the station registry, not a copy here. The copy
@@ -234,22 +234,18 @@ def load_tide_stations():
         return {}
 
 
-def export_all_locations(days_ahead=5):
+def export_all_locations(days_ahead=TIDE_FORECAST_DAYS + 2):
     """
     Export sunlight times for all configured locations (webcams and tide stations).
 
     Args:
-        days_ahead: Number of days to calculate ahead (default: 5). Two of those
-                    are spoken for before the site sees any of them:
+        days_ahead: Number of days to calculate ahead: the tides page's
+                    TIDE_FORECAST_DAYS plus two, each spoken for:
 
                     - Cron runs at 00:14 UTC, which is still the *previous*
                       Pacific day, so the first day emitted is yesterday.
-                    - The tides page day navigation reaches today+2, and the
-                      daylight-change line on that day needs today+3 to
-                      difference against.
-
-                    Four days left the last reachable day with nothing to
-                    compare to; five gives the change line a day of headroom.
+                    - The daylight-change line on the last day the tides page
+                      reaches needs the day after it to difference against.
     """
     local_tz = pytz.timezone("America/Vancouver")
     today = datetime.now(local_tz).date()

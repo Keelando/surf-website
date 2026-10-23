@@ -17,7 +17,7 @@ import time
 import requests
 
 # Shared utilities
-from lib.config import TIDE_DATABASE
+from lib.config import TIDE_DATABASE, TIDE_FORECAST_DAYS
 from lib.logging_config import setup_logging
 from lib.stations import STATIONS
 
@@ -33,6 +33,31 @@ logger = setup_logging(_LOG_NAME)
 
 BASE_URL = "https://api-iwls.dfo-mpo.gc.ca/api/v1/stations"
 HEADERS = {"User-Agent": "keelan_w@hotmail.com"}
+
+# The IWLS data endpoint rejects a from/to span over 7 days ("Constraints
+# not respected", HTTP 400).
+MAX_QUERY_SPAN = datetime.timedelta(days=7)
+
+# Limits, so an upstream outage or a bad constant cannot turn one run into a
+# flood of requests:
+# - Observations catch up from the last stored one, but never from further
+#   back than this. Longer gaps stay gaps. Without the floor, an outage past
+#   7 days made every later request exceed the span limit and fail for good.
+OBS_MAX_CATCHUP = datetime.timedelta(days=2)
+# - Predictions never reach past this, whatever TIDE_FORECAST_DAYS says.
+MAX_PREDICTION_HORIZON = datetime.timedelta(days=14)
+# - At least this long between any two requests...
+MIN_REQUEST_INTERVAL = 1.0  # seconds
+# - ...and at most this many per run. A normal --all run makes 6 per
+#   station (metadata, 1 observation, 2 prediction, 2 high/low windows): 72.
+MAX_REQUESTS_PER_RUN = 100
+
+# Predictions run one day past the last day the tides page shows, so that
+# day is still whole between midnight and the next daily fetch.
+PREDICTION_HORIZON = min(datetime.timedelta(days=TIDE_FORECAST_DAYS + 1), MAX_PREDICTION_HORIZON)
+
+_requests_made = 0
+_last_request_at = 0.0
 
 
 def load_stations():
@@ -135,7 +160,27 @@ def ensure_db():
     return conn
 
 
+def query_windows(start, end, span=MAX_QUERY_SPAN):
+    """Split [start, end] into consecutive windows no longer than `span`."""
+    windows = []
+    while start < end:
+        stop = min(start + span, end)
+        windows.append((start, stop))
+        start = stop
+    return windows
+
+
 def safe_get(url, params=None):
+    """GET JSON, throttled and counted against the per-run budget; None on failure."""
+    global _requests_made, _last_request_at
+    if _requests_made >= MAX_REQUESTS_PER_RUN:
+        logger.error(f"Request budget of {MAX_REQUESTS_PER_RUN} spent; skipping {url}")
+        return None
+    wait = _last_request_at + MIN_REQUEST_INTERVAL - time.monotonic()
+    if wait > 0:
+        time.sleep(wait)
+    _requests_made += 1
+    _last_request_at = time.monotonic()
     try:
         r = requests.get(url, params=params, headers=HEADERS, timeout=15)
         r.raise_for_status()
@@ -311,8 +356,11 @@ def main():
                 last_obs = cur.fetchone()[0]
 
                 if last_obs:
-                    # Fetch only new data since last observation
-                    start = datetime.datetime.fromtimestamp(last_obs, datetime.timezone.utc)
+                    # Fetch only new data since last observation, within the catch-up limit
+                    start = max(
+                        datetime.datetime.fromtimestamp(last_obs, datetime.timezone.utc),
+                        now - OBS_MAX_CATCHUP,
+                    )
                 else:
                     # Bootstrap: fetch last 6 hours on first run (avoid hitting API hard)
                     # Full 10-day history will accumulate over time
@@ -333,49 +381,44 @@ def main():
                         logger.info(f"Observations added {added} rows")
                 time.sleep(1.0)  # Brief sleep between data types
 
-        # Fetch predictions (wlp) - current time + 4 days ahead
-        # Extended to 4 days to ensure coverage through midnight + 1 hour Pacific
-        # on day N+2 (accounts for UTC/Pacific timezone offset)
+        # Fetch predictions (wlp) - now to the horizon, in API-sized windows
         # Note: DFO API rejects requests with 'from' dates in the past for predictions
         if args.predictions or args.all:
             if "wlp" in codes:
-                start = now
-                end = now + datetime.timedelta(days=4)
-                url = f"{BASE_URL}/{sid}/data"
-                params = {
-                    "time-series-code": "wlp",
-                    "from": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "to": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                }
-                data = safe_get(url, params)
-                if data:
-                    values = data if isinstance(data, list) else data.get("values", [])
-                    if values:
-                        added = insert_predictions(cur, key, sid, values)
-                        total_added += added
-                        logger.info(f"Predictions added {added} rows")
-                time.sleep(1.0)  # Brief sleep between data types
+                for start, end in query_windows(now, now + PREDICTION_HORIZON):
+                    url = f"{BASE_URL}/{sid}/data"
+                    params = {
+                        "time-series-code": "wlp",
+                        "from": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "to": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    }
+                    data = safe_get(url, params)
+                    if data:
+                        values = data if isinstance(data, list) else data.get("values", [])
+                        if values:
+                            added = insert_predictions(cur, key, sid, values)
+                            total_added += added
+                            logger.info(f"Predictions added {added} rows")
+                    time.sleep(1.0)  # Brief sleep between requests
 
-        # Fetch high/low events (wlp-hilo) - 4-day window (matches prediction range)
-        # Extended to 4 days to ensure coverage through midnight + 1 hour Pacific
-        # on day N+2 (accounts for UTC/Pacific timezone offset)
+        # Fetch high/low events (wlp-hilo) - same horizon as the predictions
         if args.highlow or args.all:
             if "wlp-hilo" in codes:
-                start = now - datetime.timedelta(hours=12)
-                end = now + datetime.timedelta(days=4)
-                url = f"{BASE_URL}/{sid}/data"
-                params = {
-                    "time-series-code": "wlp-hilo",
-                    "from": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "to": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                }
-                data = safe_get(url, params)
-                if data:
-                    values = data if isinstance(data, list) else data.get("values", [])
-                    if values:
-                        added = insert_highlow(cur, key, sid, values)
-                        total_added += added
-                        logger.info(f"High/low events added {added} rows")
+                for start, end in query_windows(now - datetime.timedelta(hours=12), now + PREDICTION_HORIZON):
+                    url = f"{BASE_URL}/{sid}/data"
+                    params = {
+                        "time-series-code": "wlp-hilo",
+                        "from": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "to": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    }
+                    data = safe_get(url, params)
+                    if data:
+                        values = data if isinstance(data, list) else data.get("values", [])
+                        if values:
+                            added = insert_highlow(cur, key, sid, values)
+                            total_added += added
+                            logger.info(f"High/low events added {added} rows")
+                    time.sleep(1.0)  # Brief sleep between requests
 
         time.sleep(3.0)  # Rate limiting between stations - gentle on DFO API
 

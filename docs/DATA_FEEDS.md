@@ -403,9 +403,15 @@ Tide observations and predictions for DFO water level stations.
 **Series codes:**
 | Code | Description | Fetch schedule |
 |------|-------------|----------------|
-| `wlo` | Real-time observations (6-min intervals) | Every 30 min |
-| `wlp` | Astronomical tide predictions | Daily at 00:10 UTC |
-| `wlp-hilo` | Pre-calculated high/low events | Daily at 00:15 UTC |
+| `wlo` | Real-time observations (6-min intervals) | Every 30 min, from the last stored one (catch-up capped at 2 days) |
+| `wlp` | Astronomical tide predictions | Daily at 10:06 UTC, `TIDE_FORECAST_DAYS` + 1 days ahead |
+| `wlp-hilo` | Pre-calculated high/low events | Daily at 10:11 UTC, same horizon |
+
+**Limits:** the data endpoint rejects a from/to span over 7 days (HTTP 400),
+so longer ranges are split into 7-day windows. `tide_to_sqlite.py` also
+spaces requests at least 1 s apart, stops at 100 requests per run, and never
+looks more than 14 days ahead. DFO publishes no rate limit we know of; a
+normal day is about 1,224 requests, half of them per-run station metadata.
 
 ---
 

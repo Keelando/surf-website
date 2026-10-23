@@ -85,6 +85,11 @@ TIDE_OBS_RETENTION_DAYS = 11
 # How long to keep tide predictions
 TIDE_PRED_RETENTION_DAYS = 3
 
+# Calendar days the tides page pages through, today included. The prediction
+# fetches reach one day past this so the last day is whole even between
+# midnight and the daily fetch, and the sunlight export two (see there).
+TIDE_FORECAST_DAYS = 7
+
 # How long to keep high/low tide events
 TIDE_HIGHLOW_RETENTION_DAYS = 3
 

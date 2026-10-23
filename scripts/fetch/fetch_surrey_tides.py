@@ -16,12 +16,13 @@ IMPORTANT DATUM NOTES:
 
 import argparse
 import sqlite3
+import time
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import requests
 
-from lib.config import TIDE_DATABASE
+from lib.config import TIDE_DATABASE, TIDE_FORECAST_DAYS
 from lib.env import require_env
 from lib.logging_config import setup_logging
 from lib.stations import get_buoy
@@ -31,6 +32,12 @@ logger = setup_logging("surrey_tide_sync")
 # ---- Configuration ----
 
 API_BASE = "https://developers.flowworks.com/fwapi/v2"
+
+# Limits, so a bad constant cannot turn one run into a flood of requests.
+# Every window here is anchored to "now", so an outage cannot grow one.
+MAX_WINDOW_HOURS = 14 * 24  # no channel query spans more than this
+MIN_REQUEST_INTERVAL = 1.0  # seconds between any two data requests
+MAX_REQUESTS_PER_RUN = 40  # a normal --all run makes about 15
 
 
 # Surrey FlowWorks API credentials (environment, else config/.env)
@@ -99,6 +106,8 @@ class FlowWorksAPI:
         self.password = password
         self.token = None
         self.token_expiry = None
+        self.requests_made = 0
+        self.last_request_at = 0.0
 
     def authenticate(self):
         """Get JWT token from FlowWorks API v2."""
@@ -157,6 +166,12 @@ class FlowWorksAPI:
         """
         url = f"{self.base_url}/sites/{site_id}/channels/{channel_id}/data"
 
+        if self.requests_made >= MAX_REQUESTS_PER_RUN:
+            logger.error(f"Request budget of {MAX_REQUESTS_PER_RUN} spent; skipping channel {channel_id}")
+            return []
+        hours_past = min(hours_past, MAX_WINDOW_HOURS)
+        hours_future = min(hours_future, MAX_WINDOW_HOURS)
+
         # Surrey API expects Pacific time (no TZ indicator)
         now = datetime.now(ZoneInfo("America/Vancouver"))
 
@@ -174,6 +189,12 @@ class FlowWorksAPI:
             "startDateFilter": start.strftime("%Y-%m-%dT%H:%M:%S"),
             "endDateFilter": end.strftime("%Y-%m-%dT%H:%M:%S"),
         }
+
+        wait = self.last_request_at + MIN_REQUEST_INTERVAL - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        self.requests_made += 1
+        self.last_request_at = time.monotonic()
 
         try:
             response = requests.get(url, headers=self._get_headers(), params=params, timeout=15)
@@ -215,14 +236,14 @@ def parse_data_point(point):
         return None, None
 
 
-def fetch_predictions(api, station_config, tide_conn, hours_future=96):
+def fetch_predictions(api, station_config, tide_conn, hours_future=(TIDE_FORECAST_DAYS + 1) * 24):
     """
     Fetch water_level_predicted from Surrey API and store to tide_prediction table.
 
     Fetches predictions to match DFO pattern:
     - 2 hours PAST to current time (to cover current prediction at 20-min boundaries)
-    - Current time + 4 days ahead (96 hours forward)
-    - Ensures coverage for: current time + present calendar day + 2 full days + timezone margin
+    - One day past the last day the tides page shows (TIDE_FORECAST_DAYS), so
+      that day stays whole between midnight and the next daily fetch
     """
     site_id = station_config["site_id"]
     channel_id = station_config["channels"]["water_level_predicted"]
@@ -479,10 +500,9 @@ def main():
         for station_key, station_config in SURREY_STATIONS.items():
             logger.info(f"Processing {station_config['display_name']}...")
 
-            # Fetch predictions (4 days forward - matches DFO pattern)
-            # Covers: present calendar day + 2 full days + timezone margin
+            # Fetch predictions (same horizon as the DFO stations)
             if args.predictions or args.all:
-                pred_count = fetch_predictions(api, station_config, tide_conn, hours_future=96)
+                pred_count = fetch_predictions(api, station_config, tide_conn)
                 total_pred += pred_count
 
             # Fetch observations (24 hours backward - running every 20 min).

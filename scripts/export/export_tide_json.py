@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 # Shared utilities
-from lib.config import EXPORT_DIR, TIDE_DATABASE, safe_json_write
+from lib.config import EXPORT_DIR, TIDE_DATABASE, TIDE_FORECAST_DAYS, safe_json_write
 from lib.logging_config import setup_logging
 from lib.reporting_lag import record_publication
 from lib.stations import STATIONS
@@ -273,7 +273,7 @@ def export_latest(conn, station_metadata):
 
 def export_timeseries(conn, station_metadata):
     """
-    Export timeseries data for charts - 3 full calendar days (today, tomorrow, day after).
+    Export timeseries data for charts - TIDE_FORECAST_DAYS full calendar days from today.
     Downsampled to 15-minute intervals.
     Includes both predictions and observations separately.
     This allows the frontend to navigate between days for all stations, even those without storm surge data.
@@ -287,8 +287,8 @@ def export_timeseries(conn, station_metadata):
     # Start from today's midnight in Pacific time
     day_start = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    # End at end of day after tomorrow (3 full days total)
-    day_end = day_start + timedelta(days=3)
+    # End at the end of the last day the page shows
+    day_end = day_start + timedelta(days=TIDE_FORECAST_DAYS)
 
     # Add 2-hour padding on both ends for smooth chart display
     query_start = day_start - timedelta(hours=2)
@@ -424,7 +424,7 @@ def export_timeseries(conn, station_metadata):
             "type": "timeseries",
             "start_day": day_start.strftime("%Y-%m-%d"),
             "end_day": (day_end - timedelta(days=1)).strftime("%Y-%m-%d"),
-            "days_included": 3,
+            "days_included": TIDE_FORECAST_DAYS,
             "query_start": query_start.isoformat(),
             "query_end": query_end.isoformat(),
             "timezone": "America/Vancouver",
@@ -443,7 +443,7 @@ def export_highlow(conn, station_metadata):
     """
     Export high/low tide events for text display.
     Uses tide_highlow table.
-    Exports 3 full calendar days: today, tomorrow, and day after tomorrow.
+    Exports TIDE_FORECAST_DAYS full calendar days from today.
     """
     cur = conn.cursor()
 
@@ -452,10 +452,9 @@ def export_highlow(conn, station_metadata):
 
     # Start from beginning of today (Pacific)
     today_start = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
-    # End at 2 hours past midnight on day 3 (captures early morning tides on final day)
-    # This ensures we get the complete tide cycle for day after tomorrow
+    # End 2 hours past the last day's midnight, to complete its tide cycle
     query_start = today_start
-    query_end = today_start + timedelta(days=3, hours=2)
+    query_end = today_start + timedelta(days=TIDE_FORECAST_DAYS, hours=2)
 
     # Convert to UTC timestamps
     start_ts = int(query_start.astimezone(timezone.utc).timestamp())
@@ -518,10 +517,8 @@ def export_highlow(conn, station_metadata):
             "query_start": query_start.isoformat(),
             "query_end": query_end.isoformat(),
             "timezone": "America/Vancouver",
-            "window": (
-                "3 full calendar days (today, tomorrow, day after tomorrow) + " "2hr buffer for complete tide cycles"
-            ),
-            "days_included": 3,
+            "window": f"{TIDE_FORECAST_DAYS} full calendar days from today + 2hr buffer for complete tide cycles",
+            "days_included": TIDE_FORECAST_DAYS,
         },
         "stations": highlow_data,
     }
