@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Halibut Bank mark, 16px cut: deeper body, eyes snapped to whole pixels. Also /favicon.svg. -->
+  <rect width="32" height="32" rx="8" fill="#0a7381"/>
+  <path d="M30.4 15.4C30 13.2 28.6 11.2 26.4 10.2L23.8 9.2C21 7.2 18.2 5.8 15.6 5.6C12.6 6.2 10 9.4 7.8 12.6L6.6 13.6L1.8 9.6Q4.6 16 1.8 22.4L6.6 18.4L7.8 19.4C10 22.6 12.6 25.8 15.6 26.4C18.2 26.2 21 24.8 23.8 22.8L26.4 21.8C28.6 20.8 30 18.8 30.4 16.6Q30.6 16 30.4 15.4Z" fill="#fff"/>
+  <rect x="22" y="12" width="2" height="2" rx="0.5" fill="#0a7381"/>
+  <rect x="26" y="14" width="2" height="2" rx="0.5" fill="#0a7381"/>
+</svg>

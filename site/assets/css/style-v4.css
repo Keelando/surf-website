@@ -370,6 +370,20 @@ footer {
   flex-wrap: wrap;
 }
 
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: inherit;
+  font-weight: var(--weight-bold);
+  text-decoration: none;
+}
+
+.footer-brand img {
+  flex: none;
+  border-radius: 5px;
+}
+
 .system-status-badge {
   display: inline-flex;
   align-items: center;

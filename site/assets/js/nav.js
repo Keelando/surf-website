@@ -242,22 +242,18 @@
   }
 
   // ---- Header wave ---------------------------------------------------------
-  // The band along the bottom of the header is drawn from Halibut Bank's
-  // latest report: wave height, against what is rough there
+  // The band along the bottom of the header is one sinusoid drawn from
+  // Halibut Bank's latest report: wave height, against what is rough there
   // (shared/wave-scale.js), sets the amplitude; wave period the speed of the
   // drift. Decoration only; the numbers live in the station list.
 
   const WAVE_STATION = "4600146";
   const WAVE_HEIGHT_PX = 12;
-  // Long enough to cover the widest screen plus the drift, at any wavelength.
+  // One sinusoid, as on the brand board: wavelength and centreline in px.
+  const WAVE_WAVELENGTH_PX = 200;
+  const WAVE_CENTRE_PX = 6.5;
+  // Long enough to cover the widest screen plus one wavelength of drift.
   const WAVE_LENGTH_PX = 4000;
-  // Back layer to front: wavelength (px), centreline (px from the top), share
-  // of the amplitude, and drift duration as a multiple of the base period.
-  const WAVE_LAYERS = [
-    { wavelength: 230, centre: 6, share: 0.7, speed: 1.3 },
-    { wavelength: 160, centre: 7, share: 0.85, speed: 1 },
-    { wavelength: 110, centre: 7.5, share: 1, speed: 0.8 },
-  ];
   // What a calm sea looks like, and what the band shows when the buoy is
   // late, down or missing: no error state in the header. `amp` is the
   // amplitude factor (0.2–1.2) that shared/wave-scale.js would give.
@@ -289,17 +285,15 @@
 
   function drawWave(svg, reading) {
     const { amp } = reading;
-    // At the top of the clamp the front layer's troughs just touch the
-    // band's bottom edge and the back layer's crests stay 3 px below its top.
-    const maxCrest = 4.5;
-    svg.style.setProperty("--wave-period", `${(reading.period * 1.5).toFixed(2)}s`);
-    svg.querySelectorAll(".nav-wave-layer").forEach((layer, i) => {
-      const spec = WAVE_LAYERS[i];
-      layer.firstChild.setAttribute(
-        "d",
-        wavePath(spec.wavelength, spec.centre, maxCrest * (amp / 1.2) * spec.share),
-      );
-    });
+    // At the top of the clamp the troughs just touch the band's bottom edge.
+    const maxCrest = 5;
+    // The band slides one wavelength per cycle, so the loop is seamless;
+    // a longer swell period drifts slower.
+    svg.style.setProperty("--wave-period", `${(reading.period * 3).toFixed(2)}s`);
+    svg.style.setProperty("--wave-shift", `${-WAVE_WAVELENGTH_PX}px`);
+    svg
+      .querySelector(".nav-wave-layer path")
+      .setAttribute("d", wavePath(WAVE_WAVELENGTH_PX, WAVE_CENTRE_PX, maxCrest * (amp / 1.2)));
   }
 
   function buildWave() {
@@ -307,13 +301,10 @@
     svg.setAttribute("class", "nav-wave");
     svg.setAttribute("aria-hidden", "true");
     svg.setAttribute("focusable", "false");
-    for (const spec of WAVE_LAYERS) {
-      const layer = document.createElementNS(SVG_NS, "g");
-      layer.setAttribute("class", "nav-wave-layer");
-      layer.style.setProperty("--wave-speed", String(spec.speed));
-      layer.appendChild(document.createElementNS(SVG_NS, "path"));
-      svg.appendChild(layer);
-    }
+    const layer = document.createElementNS(SVG_NS, "g");
+    layer.setAttribute("class", "nav-wave-layer");
+    layer.appendChild(document.createElementNS(SVG_NS, "path"));
+    svg.appendChild(layer);
     drawWave(svg, CALM);
     return svg;
   }

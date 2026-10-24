@@ -14,9 +14,8 @@
   );
   --nav-border-color: #67d8e0;
   /* The live wave along the bottom of the bar. The bar is navy in both
-     themes, so one colour each serves both. */
+     themes, so one colour serves both. */
   --nav-wave-color: #67d8e0;
-  --nav-wave-warn: #fbbf24;
   --nav-status-bg: rgba(0, 0, 0, 0.22);
   --nav-link-color: #ffffff;
   --nav-link-hover-bg: rgba(255, 255, 255, 0.15);
@@ -155,6 +154,27 @@
   height: 28px;
 }
 
+/* The descriptor under the name: desktop only, the phone bar shows the name
+   alone. The name's line-height is tightened so the pair stays within the
+   bar's height. */
+.nav-brand-name {
+  line-height: 1.15;
+}
+
+.nav-brand-sub {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: var(--weight-regular);
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+@media (max-width: 899px) {
+  .nav-brand-sub {
+    display: none;
+  }
+}
+
 .nav-brand:focus-visible {
   outline: 2px solid var(--theme-toggle-focus);
   outline-offset: 2px;
@@ -198,37 +218,17 @@
   overflow: hidden;
   pointer-events: none;
   color: var(--nav-wave-color);
-  transition: color 0.6s ease;
-}
-
-html[data-marine-warning] .nav-wave {
-  color: var(--nav-wave-warn);
 }
 
 .nav-wave path {
   fill: currentColor;
+  fill-opacity: 0.55;
 }
 
-/* Back to front: fainter behind, so the layers read as depth. Each drifts a
-   short way and back; the period of the swell at Halibut Bank sets the pace
-   (--wave-period, from nav.js), and the middle layer runs against the
-   others. */
+/* Slides one wavelength per cycle (--wave-shift), at a pace set by the swell
+   period at Halibut Bank (--wave-period); both from nav.js. */
 .nav-wave-layer {
-  animation: nav-wave-drift calc(var(--wave-period, 6s) * var(--wave-speed, 1)) ease-in-out
-    infinite alternate;
-}
-
-.nav-wave-layer:nth-child(1) {
-  opacity: 0.3;
-}
-
-.nav-wave-layer:nth-child(2) {
-  opacity: 0.5;
-  animation-direction: alternate-reverse;
-}
-
-.nav-wave-layer:nth-child(3) {
-  opacity: 0.9;
+  animation: nav-wave-drift var(--wave-period, 12s) linear infinite;
 }
 
 @keyframes nav-wave-drift {
@@ -237,17 +237,13 @@ html[data-marine-warning] .nav-wave {
   }
 
   to {
-    transform: translateX(-40px);
+    transform: translateX(var(--wave-shift, -200px));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-wave-layer {
     animation: none;
-  }
-
-  .nav-wave {
-    transition: none;
   }
 }
 

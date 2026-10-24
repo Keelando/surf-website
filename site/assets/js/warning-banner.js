@@ -163,11 +163,6 @@ async function displayWarningBanners(containerId = "warning-banner-container") {
 
     const warnings = collectActiveWarnings(data, bannerZones);
 
-    // The header wave (nav-tide-styles-v4.css) turns amber while a warning
-    // is in effect. Before the dismissal filter: hiding the banner does not
-    // end the warning.
-    document.documentElement.toggleAttribute("data-marine-warning", warnings.length > 0);
-
     // Filter out dismissed warnings
     const activeWarnings = warnings.filter((warning) => {
       const warningId = getWarningId(warning);

@@ -161,13 +161,16 @@
   padding: 0 0.5rem;
 }
 
+/* A descriptor, not a headline: the nav carries the name, so the page's h1
+   stays small and quiet rather than competing with the brand. */
 .summary-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  color: var(--sl-text);
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sl-muted);
 }
 
 .summary-tagline {
