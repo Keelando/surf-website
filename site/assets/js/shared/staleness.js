@@ -2,8 +2,9 @@
  * Shared staleness-presentation helpers (ES module).
  *
  * Staleness itself is computed by the backend (each JSON export carries a
- * `stale` flag, and buoy/wind/lightstation exports a per-station `status`);
- * these helpers only standardize how late and down stations LOOK.
+ * `stale` flag, and buoy/wind/lightstation exports a per-station `status`
+ * with its thresholds); these helpers re-apply it to the live clock and
+ * standardize how late and down stations LOOK.
  * Canonical replacements for blocks inlined in stations-map.js (buoy +
  * lightstation popups), lightstation-map.js, and winds-map.js — see
  * shared/README.md for migration status.
@@ -22,19 +23,51 @@ export const LATE_MARKER_OPACITY = 0.6;
 
 const STATUSES = new Set(["ok", "late", "down"]);
 
+/** Severity order, so a judgement can only ever move toward "down". */
+const SEVERITY = { ok: 0, late: 1, down: 2 };
+
+/**
+ * Minutes since the station's newest reading, measured against `now`.
+ *
+ * The export's `age_minutes` is a snapshot from when the file was written:
+ * a page left open, or a pipeline that stalls, would keep showing "22m ago"
+ * forever. `observation_time` does not go stale, so it wins when present.
+ *
+ * @param {Object} data - One station's latest-observation entry
+ * @param {number} [now] - Epoch ms; injectable for tests
+ * @returns {number|null}
+ */
+export function liveAgeMinutes(data, now = Date.now()) {
+  const observed = data?.observation_time ? Date.parse(data.observation_time) : Number.NaN;
+  if (Number.isFinite(observed)) return Math.max(0, (now - observed) / 60_000);
+  return Number.isFinite(data?.age_minutes) ? data.age_minutes : null;
+}
+
 /**
  * A station's reporting status: "ok", "late" or "down".
  *
  * The export judges it against the station's own rhythm (lib/report_status.py)
- * and ships it as `status`. A payload without one (an older cached file)
- * falls back to the legacy flat flag: stale reads as late, never down.
+ * and ships it as `status`, with the thresholds it used (`late_after_minutes`,
+ * `down_after_minutes`). Those are re-applied here to the live age, with the
+ * same strict comparison, so the dot keeps up with the clock between exports.
+ * Never kinder than the export: time only moves forward, and an export may
+ * mark a station down for reasons of its own.
+ *
+ * A payload without a status (an older cached file) falls back to the legacy
+ * flat flag: stale reads as late, never down.
  *
  * @param {Object} data - One station's latest-observation entry
+ * @param {number} [now] - Epoch ms; injectable for tests
  * @returns {"ok"|"late"|"down"}
  */
-export function reportStatus(data) {
-  if (STATUSES.has(data?.status)) return data.status;
-  return data?.stale ? "late" : "ok";
+export function reportStatus(data, now = Date.now()) {
+  const exported = STATUSES.has(data?.status) ? data.status : data?.stale ? "late" : "ok";
+  const age = liveAgeMinutes(data, now);
+  const late = data?.late_after_minutes;
+  const down = data?.down_after_minutes;
+  if (age === null || !Number.isFinite(late) || !Number.isFinite(down)) return exported;
+  const live = age > down ? "down" : age > late ? "late" : "ok";
+  return SEVERITY[live] > SEVERITY[exported] ? live : exported;
 }
 
 /** Marker opacity for a reporting status. */

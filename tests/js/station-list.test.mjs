@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { readFileSync } from "node:fs";
+import { mock, test } from "node:test";
+
+// Ages are measured against the clock now, not read from the export's
+// snapshot, so the clock is pinned: 49 minutes after the fixture's reading.
+const NOW = Date.parse("2026-10-23T22:54:00Z");
+mock.timers.enable({ apis: ["Date"], now: NOW });
+const MIN = 60_000;
 
 // station-list.js imports buoy-card.js, which reaches for the arrow/cardinal
 // helpers that chart-utils-v4.js puts on the page as a classic script.
@@ -14,6 +21,7 @@ const {
   compactAge,
   directionArrow,
   freshness,
+  refreshAges,
   rowReading,
   flatSwellLine,
   swellGeometry,
@@ -49,12 +57,20 @@ const halibut = {
   pressure: 1026.8,
 };
 
-test("compactAge rounds down to whole minutes, hours, then days", () => {
+test("compactAge: minutes, then hours and minutes through the second hour, then hours, then days", () => {
+  assert.equal(compactAge(0), "0m");
   assert.equal(compactAge(49.9), "49m");
+  assert.equal(compactAge(59.99), "59m");
   assert.equal(compactAge(60), "1h");
+  assert.equal(compactAge(61), "1h 1m");
+  assert.equal(compactAge(85), "1h 25m");
+  assert.equal(compactAge(119.9), "1h 59m");
+  assert.equal(compactAge(120), "2h");
   assert.equal(compactAge(47 * 60 + 59), "47h");
   assert.equal(compactAge(48 * 60), "2d");
+  assert.equal(compactAge(-5), "0m"); // a clock a little ahead of ours
   assert.equal(compactAge(null), null);
+  assert.equal(compactAge(Number.NaN), null);
 });
 
 test("freshness leads with the age and names only a problem", () => {
@@ -74,6 +90,108 @@ test("freshness leads with the age and names only a problem", () => {
 
 test("freshness falls back to the legacy stale flag without a status", () => {
   assert.equal(freshness({ stale: true, age_minutes: 300 }).state, "late");
+});
+
+// ---- Sanity: the age and the dot follow the clock, not the export --------
+//
+// An hourly EC buoy as exported: thresholds from its own rhythm (186 min late,
+// 372 down after the 12 h floor is applied in the real data; small numbers
+// here keep the boundaries readable).
+const timed = (minutesAgo, extra = {}) => ({
+  name: "Test",
+  observation_time: new Date(NOW - minutesAgo * MIN).toISOString(),
+  status: "ok",
+  age_minutes: 3, // a stale snapshot: the export ran long ago
+  late_after_minutes: 186,
+  down_after_minutes: 744,
+  ...extra,
+});
+
+test("the age is measured from observation_time, not the export's age_minutes", () => {
+  assert.equal(freshness(timed(25)).text, "25m ago");
+  assert.equal(freshness(timed(85)).text, "1h 25m ago");
+  assert.equal(freshness(timed(150)).text, "2h ago");
+  // No observation_time: the snapshot is all there is.
+  assert.equal(freshness({ status: "ok", age_minutes: 12 }).text, "12m ago");
+});
+
+test("the dot turns late and down exactly at the station's own thresholds", () => {
+  // Strictly greater than, as lib/report_status.py compares.
+  assert.equal(freshness(timed(186)).state, "ok");
+  assert.equal(freshness(timed(187)).state, "late");
+  assert.equal(freshness(timed(187)).text, "3h ago · late");
+  assert.equal(freshness(timed(744)).state, "late");
+  assert.equal(freshness(timed(745)).state, "down");
+  assert.equal(freshness(timed(745)).text, "12h ago · down");
+});
+
+test("an export that stopped updating cannot keep a station green", () => {
+  // Exported as "ok, 3 minutes old", but the reading is now 5 h old.
+  assert.deepEqual(freshness(timed(300)), { state: "late", text: "5h ago · late" });
+});
+
+test("the live clock never makes a station look better than the export said", () => {
+  // Exported down for a reason of its own (an override, a clock skew upstream).
+  assert.equal(freshness(timed(10, { status: "down" })).state, "down");
+  assert.equal(freshness(timed(10, { status: "late" })).state, "late");
+});
+
+test("refreshAges updates the text in place and reports a state change", () => {
+  const data = { A: timed(59), B: timed(100) };
+  const fakeItem = (id, state) => {
+    const text = { textContent: "" };
+    const row = { classList: { contains: (c) => c === `sl-row--${state}` } };
+    return {
+      id: `buoy-${id}`,
+      text,
+      querySelector: (sel) => (sel === ".sl-row" ? row : sel === ".sl-age-text" ? text : null),
+    };
+  };
+  const items = [fakeItem("A", "ok"), fakeItem("B", "ok")];
+  const container = { querySelectorAll: () => items };
+
+  assert.equal(refreshAges(container, data), false);
+  assert.equal(items[0].text.textContent, "59m ago");
+  assert.equal(items[1].text.textContent, "1h 40m ago");
+
+  // Ninety minutes on, B (now 190 min) has crossed its late threshold.
+  assert.equal(refreshAges(container, data, NOW + 90 * MIN), true);
+  assert.equal(items[1].text.textContent, "3h ago · late");
+});
+
+test("every dot state has its own colour, in both themes", () => {
+  // Each state freshness() can return must set the dot's --led, late and
+  // down must differ from ok and from each other, and every token must be
+  // defined for light and dark, or the dot says nothing.
+  const css = readFileSync(new URL("../../site/assets/css/home.css", import.meta.url), "utf8");
+  const led = (selector) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const block = new RegExp(`${escaped}[^{]*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+    return /--led:\s*var\((--[\w-]+)\)/.exec(block)?.[1] ?? null;
+  };
+  const tokens = {
+    ok: led(".sl-dot "),
+    late: led(".sl-row--late .sl-dot"),
+    down: led(".sl-row--down .sl-dot"),
+    out: led(".sl-row--out .sl-dot"),
+    none: led(".sl-row--none .sl-dot"),
+  };
+  assert.deepEqual(tokens, {
+    ok: "--sl-ok",
+    late: "--sl-late-dot",
+    down: "--sl-down-dot",
+    out: "--sl-down-dot",
+    none: "--sl-down-dot",
+  });
+
+  const values = (token) => [...css.matchAll(new RegExp(`${token}:\\s*([^;]+);`, "g"))].map((m) => m[1]);
+  for (const token of ["--sl-ok", "--sl-late-dot", "--sl-down-dot"]) {
+    assert.equal(values(token).length, 2, `${token} has a light and a dark value`);
+  }
+  for (const theme of [0, 1]) {
+    const [ok, late, down] = ["--sl-ok", "--sl-late-dot", "--sl-down-dot"].map((t) => values(t)[theme]);
+    assert.equal(new Set([ok, late, down]).size, 3, `three distinct dot colours (theme ${theme})`);
+  }
 });
 
 test("rowReading follows each station family's field priorities", () => {

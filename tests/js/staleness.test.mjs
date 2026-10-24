@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   formatDataAge,
   LATE_MARKER_OPACITY,
+  liveAgeMinutes,
   reportStatus,
   STALE_MARKER_OPACITY,
   outOfServiceHTML,
@@ -66,6 +67,32 @@ test("reportStatus reads the export's status, else the legacy stale flag", () =>
   assert.equal(reportStatus({ stale: false }), "ok");
   assert.equal(reportStatus({ status: "bogus", stale: true }), "late");
   assert.equal(reportStatus(null), "ok");
+});
+
+test("reportStatus re-applies the export's thresholds to the live clock", () => {
+  const now = Date.parse("2026-10-24T12:00:00Z");
+  const entry = (minutesAgo, status = "ok") => ({
+    status,
+    observation_time: new Date(now - minutesAgo * 60_000).toISOString(),
+    late_after_minutes: 60,
+    down_after_minutes: 720,
+  });
+  assert.equal(reportStatus(entry(60), now), "ok"); // strictly greater, as in Python
+  assert.equal(reportStatus(entry(61), now), "late");
+  assert.equal(reportStatus(entry(721), now), "down");
+  // Never kinder than the export.
+  assert.equal(reportStatus(entry(5, "down"), now), "down");
+  // Without thresholds (an older payload), the export's word stands.
+  assert.equal(reportStatus({ status: "ok", observation_time: entry(900).observation_time }, now), "ok");
+});
+
+test("liveAgeMinutes prefers observation_time over the snapshot", () => {
+  const now = Date.parse("2026-10-24T12:00:00Z");
+  assert.equal(liveAgeMinutes({ observation_time: "2026-10-24T11:30:00Z", age_minutes: 2 }, now), 30);
+  assert.equal(liveAgeMinutes({ age_minutes: 2 }, now), 2);
+  assert.equal(liveAgeMinutes({ observation_time: "garbage", age_minutes: 7 }, now), 7);
+  assert.equal(liveAgeMinutes({}, now), null);
+  assert.equal(liveAgeMinutes({ observation_time: "2026-10-24T12:05:00Z" }, now), 0);
 });
 
 test("marker opacity: down dims fully, late part-way", () => {

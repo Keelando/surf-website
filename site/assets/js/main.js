@@ -14,7 +14,7 @@ import {
   setTimeRange,
 } from "./charts-v4.js";
 import { setSafeHTML } from "./shared/safe-html.js";
-import { buildStationDetail, buildStationList } from "./station-list.js";
+import { buildStationDetail, buildStationList, refreshAges } from "./station-list.js";
 import { centerMapOnBuoy, showSelectedBuoyOnMap, showSelectedSurgeOnMap } from "./stations-map.js";
 
 // Station metadata from stations.json (single source of truth for
@@ -114,6 +114,27 @@ function openState(container) {
   };
 }
 
+// Rebuild the list, keeping open rows, open histories and focus.
+function renderStationList(container, data) {
+  const { rows, histories } = openState(container);
+  const focusedId = document.activeElement?.closest?.("#station-list .sl-item")?.id;
+
+  setSafeHTML(container, buildStationList(data, stationMeta));
+
+  for (const id of rows) toggleRow(id, true);
+  for (const id of histories) toggleHistory(id, true);
+  if (focusedId) document.querySelector(`#${focusedId} .sl-row`)?.focus();
+}
+
+// Ages count up between the five-minute fetches: "1h 25m" has to be right to
+// the minute. Only the text changes, unless a station crosses into late or
+// down, which changes what its row shows and so rebuilds the list.
+function tickAges() {
+  const container = document.getElementById("station-list");
+  if (!container || !latestSnapshot) return;
+  if (refreshAges(container, latestSnapshot)) renderStationList(container, latestSnapshot);
+}
+
 async function loadBuoyData() {
   const container = document.getElementById("station-list");
   if (!container) return;
@@ -131,15 +152,8 @@ async function loadBuoyData() {
     if (stationsData?.buoys) stationMeta = stationsData.buoys;
     latestSnapshot = data;
 
-    const { rows, histories } = openState(container);
-    const focusedId = document.activeElement?.closest?.("#station-list .sl-item")?.id;
-
-    setSafeHTML(container, buildStationList(data, stationMeta));
+    renderStationList(container, data);
     container.removeAttribute("aria-busy");
-
-    for (const id of rows) toggleRow(id, true);
-    for (const id of histories) toggleHistory(id, true);
-    if (focusedId) document.querySelector(`#${focusedId} .sl-row`)?.focus();
 
     handleHashNavigation();
   } catch (err) {
@@ -309,6 +323,7 @@ function wireMapKey() {
 wireMapKey();
 
 setInterval(loadBuoyData, 5 * 60 * 1000);
+setInterval(tickAges, 60 * 1000);
 
 // Handle hash navigation when hash changes (clicking map links)
 window.addEventListener("hashchange", handleHashNavigation);

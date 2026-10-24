@@ -25,7 +25,7 @@ import {
   waveHeightField,
   waveHeightPrecision,
 } from "./shared/station-meta.js";
-import { reportStatus } from "./shared/staleness.js";
+import { liveAgeMinutes, reportStatus } from "./shared/staleness.js";
 import { waveAmplitude } from "./shared/wave-scale.js";
 
 /**
@@ -70,40 +70,64 @@ const CHEVRON =
   `<path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" ` +
   `stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-/** "52m", "4h", "15d": whole units, rounded down. */
+/**
+ * "52m", "1h 25m", "4h", "15d": whole units, rounded down. Minutes are kept
+ * through the second hour because that is where an hourly station is either
+ * on time or late, and "1h" alone hid a 59-minute difference.
+ */
 export function compactAge(minutes) {
   if (minutes == null || !Number.isFinite(minutes)) return null;
   const m = Math.max(0, Math.floor(minutes));
   if (m < 60) return `${m}m`;
+  if (m < 120) return m === 60 ? "1h" : `1h ${m - 60}m`;
   if (m < 48 * 60) return `${Math.floor(m / 60)}h`;
   return `${Math.floor(m / 1440)}d`;
 }
 
 /**
  * The row's freshness line and dot state. Age leads; the state word is only
- * added when something is wrong. The state itself comes from the export's
- * per-station `status`, judged against the station's own reporting rhythm.
+ * added when something is wrong. Both are measured against `now`
+ * (shared/staleness.js), so neither goes stale while the page stays open.
  *
+ * @param {Object} b - One station's latest-observation entry
+ * @param {number} [now] - Epoch ms; injectable for tests
  * @returns {{state: "ok"|"late"|"down"|"out"|"none", text: string}}
  */
-export function freshness(b) {
+export function freshness(b, now = Date.now()) {
   if (b.no_data) return { state: "none", text: "No data" };
   if (b.out_of_service) return { state: "out", text: "Out of service" };
-  const status = reportStatus(b);
-  const age = compactAge(b.age_minutes);
+  const status = reportStatus(b, now);
+  const age = compactAge(liveAgeMinutes(b, now));
   const ago = age ? `${age} ago` : "time unknown";
   if (status === "ok") return { state: "ok", text: ago };
   return { state: status, text: `${ago} · ${status}` };
 }
 
 /**
- * The numbers a row shows, resolved for this station's family.
+ * Bring every row's age line up to `now` without rebuilding the list, so
+ * open rows and their charts are left alone. Returns true when a row's state
+ * changed (ok to late, say): its numbers and notes depend on the state, so
+ * the caller rebuilds the list then.
  *
- * @returns {{height: string|null, period: string|null, periodTag: string|null,
- *   isSwell: boolean, waveCardinal: string|null, waveDegrees: number|null,
- *   wind: string|null, gust: string|null, windCardinal: string|null,
- *   windDegrees: number|null}}
+ * @param {ParentNode} container - The #station-list element
+ * @param {Object} data - The latest_buoy_v2.json payload the rows came from
+ * @param {number} [now]
+ * @returns {boolean}
  */
+export function refreshAges(container, data, now = Date.now()) {
+  let stateChanged = false;
+  for (const item of container.querySelectorAll(".sl-item")) {
+    const b = data?.[item.id.replace(/^buoy-/, "")];
+    const row = item.querySelector(".sl-row");
+    const text = item.querySelector(".sl-age-text");
+    if (!b || !row || !text) continue;
+    const fresh = freshness(b, now);
+    if (!row.classList.contains(`sl-row--${fresh.state}`)) stateChanged = true;
+    text.textContent = fresh.text;
+  }
+  return stateChanged;
+}
+
 export function rowReading(b, meta) {
   const heightValue = b[waveHeightField(meta)];
   const { value: periodValue, tag } = pickWavePeriod(b, meta);
@@ -246,7 +270,7 @@ export function buildStationRow(b, id, meta) {
     <button type="button" class="sl-row sl-row--${fresh.state}" aria-expanded="false" aria-controls="sl-detail-${id}">
       <span class="sl-name">
         <span class="sl-title">${name}</span>
-        <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span>${fresh.text}</span>
+        <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span><span class="sl-age-text">${fresh.text}</span></span>
       </span>
       ${values}
       ${CHEVRON}
