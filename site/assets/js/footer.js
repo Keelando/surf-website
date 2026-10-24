@@ -31,6 +31,18 @@
     return rankA >= rankB ? a : b;
   }
 
+  // The same page on the other site: the preview (dev.halibutbank.ca) and
+  // production serve the same paths, so a reader lands where they were.
+  const PREVIEW_HOST = "dev.halibutbank.ca";
+  const PRODUCTION_HOST = "halibutbank.ca";
+  const designSwitch = document.getElementById("design-switch");
+  if (designSwitch) {
+    const onPreview = window.location.hostname === PREVIEW_HOST;
+    const target = onPreview ? PRODUCTION_HOST : PREVIEW_HOST;
+    designSwitch.href = `https://${target}${window.location.pathname}${window.location.hash}`;
+    if (onPreview) designSwitch.textContent = "Back to the current site";
+  }
+
   fetch("/data/system_health.json")
     .then((res) => res.json())
     .then((data) => {

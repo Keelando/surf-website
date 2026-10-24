@@ -255,6 +255,24 @@ footer {
   margin-bottom: 1.25rem;
 }
 
+/* "Preview the new design (beta)": small, first in the footer. */
+.design-switch {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+}
+
+.design-switch a {
+  color: inherit;
+  opacity: 0.85;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.design-switch a:hover,
+.design-switch a:focus-visible {
+  opacity: 1;
+}
+
 .footer-section:last-child {
   margin-bottom: 0;
 }
