@@ -319,48 +319,32 @@
   color: var(--color-border);
 }
 
-/* --- Offline stations callout --- */
+/* --- Stations left out of the table: a footnote, not a card --- */
 
-.offline-callout {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: var(--color-callout-warning-bg);
+.offline-note {
+  margin-top: 0.75rem;
+  padding: 0.4rem 0.75rem;
   border-left: 3px solid var(--color-status-warning);
+  background: var(--color-callout-warning-bg);
   border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.45;
 }
 
-.offline-callout h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
+.offline-note-label {
+  font-weight: 600;
   color: var(--color-warning-text);
 }
 
-.offline-callout p {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.9rem;
-  color: var(--color-warning-text);
-}
-
-.offline-callout ul {
+.offline-note ul {
   margin: 0;
-  padding-left: 1.5rem;
+  padding: 0;
+  list-style: none;
 }
 
-.offline-callout li {
-  margin-bottom: 0.25rem;
-  break-inside: avoid;
-}
-
-.offline-callout a {
+.offline-note a {
   color: var(--color-accent-blue);
   text-decoration: none;
-}
-
-@media (min-width: 769px) {
-  .offline-callout ul {
-    columns: 2;
-    column-gap: 2rem;
-  }
 }
 
 /* --- Map popup wind data card --- */

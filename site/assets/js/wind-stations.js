@@ -208,8 +208,9 @@ function classifyStations(latestAll) {
 }
 
 /**
- * Render the callouts under the table: stations down for service, then
- * stations with stale data
+ * Render the note under the table: one line per station left out of it,
+ * down for service first, then stale. Kept small on purpose; the table is
+ * the page, these are footnotes to it.
  * @param {Array} offlineStations - Station tuples [id, stationData] with ageHours
  * @param {Array} [outOfServiceStations] - Station tuples taken out of service
  */
@@ -222,42 +223,27 @@ function renderOfflineStationsList(offlineStations, outOfServiceStations = []) {
     return;
   }
 
-  let html = "";
-  if (outOfServiceStations.length > 0) {
-    html += '<div class="offline-callout"><h3>Down for Service</h3><ul>';
-    outOfServiceStations.forEach(([id, station]) => {
-      const name = station.name.replace(" \u{1F30A}", "");
-      html += `<li><strong>${name}</strong>: ${outOfServiceHTML(station.out_of_service, getStationMeta(id).source_url)}</li>`;
-    });
-    html += "</ul></div>";
-  }
-
-  if (offlineStations.length === 0) {
-    setSafeHTML(container, html);
-    return;
-  }
-
-  offlineStations.sort((a, b) => a[1].name.localeCompare(b[1].name));
-
-  html += '<div class="offline-callout">';
-  html += "<h3>Stations with Stale Data (>4 hours)</h3>";
-  html += "<p>The following stations have not reported wind data in over 4 hours:</p>";
-  html += "<ul>";
-
-  offlineStations.forEach(([id, station]) => {
-    const age = staleAgeLabel(station.observation_time);
-
-    const offlineMeta = getStationMeta(id);
-    let stationLink = station.name.replace(" 🌊", "");
-    if (offlineMeta.source_url) {
-      stationLink = `<a href="${offlineMeta.source_url}" target="_blank" rel="noopener">${stationLink}</a>`;
-    }
-
-    html += `<li><strong>${stationLink}</strong> (${age ? `${age} ago` : "no report time"})</li>`;
+  const items = outOfServiceStations.map(([id, station]) => {
+    const name = station.name.replace(" \u{1F30A}", "");
+    return `<li><strong>${name}</strong>: ${outOfServiceHTML(station.out_of_service, getStationMeta(id).source_url)}</li>`;
   });
 
-  html += "</ul></div>";
-  setSafeHTML(container, html);
+  [...offlineStations]
+    .sort((a, b) => a[1].name.localeCompare(b[1].name))
+    .forEach(([id, station]) => {
+      const age = staleAgeLabel(station.observation_time);
+      const offlineMeta = getStationMeta(id);
+      let stationLink = station.name.replace(" 🌊", "");
+      if (offlineMeta.source_url) {
+        stationLink = `<a href="${offlineMeta.source_url}" target="_blank" rel="noopener">${stationLink}</a>`;
+      }
+      items.push(`<li><strong>${stationLink}</strong>: no report for ${age ?? "over 4h"}</li>`);
+    });
+
+  setSafeHTML(
+    container,
+    `<div class="offline-note"><span class="offline-note-label">Not in the table</span><ul>${items.join("")}</ul></div>`,
+  );
 }
 
 /**
