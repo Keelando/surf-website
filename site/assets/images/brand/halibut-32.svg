@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <!-- Halibut Bank mark, 32px and up: the longer body and the high arched
-       lateral line over the pectoral fin. Pacific halibut are right-eyed,
+       lateral line over the pectoral fin, stopping short of the eyes (run on into
+       them, it reads as an eyebrow at 48-64px). Pacific halibut are right-eyed,
        so with the eyed side up the head points right. -->
   <rect width="32" height="32" rx="8" fill="#0a7381"/>
   <path d="M29.2 15.6C28.9 14.4 28 13.2 26.6 12.4L24.6 11.6C21.8 9.6 18.6 7.9 16 7.7C13 8.3 10.4 11.2 8.2 14.1L6.9 14.6L2.8 10.9Q5.5 16 2.8 21.1L6.9 17.4L8.2 17.9C10.4 20.8 13 23.7 16 24.3C18.6 24.1 21.8 22.4 24.6 20.4L26.8 19.4C28.1 18.6 28.9 17.6 29.2 16.4Q29.4 16 29.2 15.6Z" fill="#fff"/>
-  <path d="M23.2 15.8C22.6 13.2 19.6 12.4 18 14C17.2 14.8 16.6 15.8 15.4 16H8.6" fill="none" stroke="#0a7381" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M22.2 15.9C21.8 13.6 19.6 12.8 18.1 14.1C17.2 14.9 16.6 15.8 15.4 16H8.6" fill="none" stroke="#0a7381" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="25.2" cy="13.4" r="1.2" fill="#0a7381"/>
   <circle cx="27.1" cy="15.4" r="1.2" fill="#0a7381"/>
 </svg>

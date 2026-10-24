@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Rasterize the halibut mark (site/assets/images/brand/*.svg) into the icon
-// files browsers ask for by convention: favicon.svg, favicon.ico (16/32/48)
-// and apple-touch-icon.png (180). Re-run after editing a mark:
+// files browsers ask for by convention: favicon.svg, favicon.ico (16/32/48),
+// apple-touch-icon.png (180, iOS) and the web manifest's icons (192/512, plus
+// maskable ones for Android launchers). Re-run after editing a mark:
 //
 //   node scripts/utils/render_brand_icons.mjs
 //
@@ -17,6 +18,16 @@ import { chromium } from "playwright";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const BRAND = join(ROOT, "site", "assets", "images", "brand");
 const SITE = join(ROOT, "site");
+
+// Web manifest icons (site/manifest.webmanifest lists the same files).
+// "any" is the rounded-square mark as drawn; "maskable" is full bleed with the
+// fish shrunk into the safe circle, since Android crops to its own shape.
+const MANIFEST_ICONS = [
+  { file: "icon-192.png", size: 192, svg: "halibut-32.svg" },
+  { file: "icon-512.png", size: 512, svg: "halibut-32.svg" },
+  { file: "icon-maskable-192.png", size: 192, svg: "halibut-maskable.svg" },
+  { file: "icon-maskable-512.png", size: 512, svg: "halibut-maskable.svg" },
+];
 
 const ICO_SIZES = [
   { size: 16, svg: "halibut-16.svg" },
@@ -73,10 +84,20 @@ try {
 
   writeFileSync(join(SITE, "apple-touch-icon.png"), await render(page, "halibut-touch.svg", 180));
 
+  for (const { file, size, svg } of MANIFEST_ICONS) {
+    writeFileSync(join(SITE, file), await render(page, svg, size));
+  }
+
   // Browsers draw the SVG favicon at 16 CSS px, so it is the 16px cut.
   copyFileSync(join(BRAND, "halibut-16.svg"), join(SITE, "favicon.svg"));
 
-  console.log("wrote site/favicon.ico, site/favicon.svg, site/apple-touch-icon.png");
+  const written = [
+    "favicon.ico",
+    "favicon.svg",
+    "apple-touch-icon.png",
+    ...MANIFEST_ICONS.map((icon) => icon.file),
+  ];
+  console.log(`wrote ${written.map((f) => `site/${f}`).join(", ")}`);
 } finally {
   await browser.close();
 }
