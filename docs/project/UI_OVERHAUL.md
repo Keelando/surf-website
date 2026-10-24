@@ -216,6 +216,43 @@ Left for after the verdict:
   The rows' flows: `.sl-row` toggles `aria-expanded` and `#sl-detail-<id>`,
   `[data-action=history|charts|map]` inside the panel, `#buoy-<id>` opens a row.
 
+## Round 3: cohesion and a brand (2026-10-24, `dev`)
+
+From the user's UI refresh spec. Done:
+
+- **Tokens** on `:root` in `style-v4.css`: `--radius` (12px; circles 50%),
+  `--space-1…5`, one accent (`--accent`, teal) for what can be clicked,
+  `--warn` (amber) for warnings only, `--text-lg/md/sm`, two weights,
+  `--font-readout`. Used by the nav and the new home rules; the rest of the
+  site moves over page by page, not in one sweep.
+- **Brand board** at `/brand.html`: an untracked file in the dev worktree only (so it cannot ship; the page tests require every tracked page to be in the sitemap):
+  three candidate marks (swell, buoy, halibut), palette, type. The nav uses
+  mark A as a placeholder until one is picked. Open: one name everywhere
+  ("Halibut Bank" in the nav, "Salish Sea Wave Conditions" in titles, social
+  cards and structured data).
+- **Live header wave** (`nav.js`) replaces the blue rule: three layered sine
+  bands drawn from Halibut Bank's height (amplitude) and period (drift
+  speed), calm default when the buoy is late or down, amber while a warning
+  is in effect (`data-marine-warning` on `<html>`, set by
+  `warning-banner.js` before the dismissal filter).
+- **Per-station scale** (`shared/wave-scale.js`): a height that is "getting
+  feisty" for each buoy (Strait of Georgia 1 m and La Perouse 2.5 m are the
+  user's calls; the rest from 30-day percentiles). Display only, not in
+  `stations.json`, so not on the public API.
+- **Nav:** mark + name on the left, links left-aligned, toggle and clock as
+  one status cluster, icon-only round theme toggle labelled with what it
+  does. The hamburger now runs to 899px: below 900 the one-row bar no longer
+  fits, and the 601–1279px wrap bug is gone.
+- **Home:** on a phone the title is screen-reader only and the tagline gone,
+  so the first station is ~60px higher. Swell lines in each row (static;
+  only the open row's moves; dashed flat when down; hidden on phones).
+  Footer links set apart by rules. The map key also folds on a click inside
+  it (on `click`, not `pointerdown`: closing it mid-press crashed Chromium).
+
+Not done, on purpose: the phone warning chip (the banner is already one
+compact line and the user likes it), and a stronger panel blur (24px was
+tuned with the panel opacity; a no-blur fallback was added instead).
+
 ## Where the work happens
 
 On the `dev` branch in `~/envcan_wave-dev`, previewed live at

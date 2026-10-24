@@ -1,5 +1,13 @@
 <nav class="main-nav">
-  <a href="/" class="nav-brand" aria-label="Halibut Bank home">Halibut Bank</a>
+  <a href="/" class="nav-brand" aria-label="Halibut Bank home">
+    <!-- Placeholder mark (brand board option A, /brand.html on dev). -->
+    <svg class="nav-brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="8" fill="#0a7381"/>
+      <path d="M5 12.5c3.7-4 7.3-4 11 0s7.3 4 11 0" fill="none" stroke="#fff" stroke-width="2.75" stroke-linecap="round"/>
+      <path d="M5 20.5c3.7-4 7.3-4 11 0s7.3 4 11 0" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="2.75" stroke-linecap="round"/>
+    </svg>
+    <span class="nav-brand-name">Halibut Bank</span>
+  </a>
   <div class="nav-scroll" id="nav-menu">
     <div class="nav-links">
       <a href="/" class="nav-link" data-page="buoys">Buoys</a>
@@ -12,9 +20,11 @@
     </div>
   </div>
   <div class="nav-actions">
-    <button class="theme-toggle" aria-label="Toggle dark mode">
-      <span class="theme-toggle-icon">☀</span>
-      <span class="theme-toggle-text">Light</span>
+    <!-- The icon shows the theme in force (CSS picks it from data-theme);
+         the label, set by nav.js, says what a press does. -->
+    <button type="button" class="theme-toggle" aria-label="Switch theme">
+      <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
     </button>
     <div class="nav-clock" id="nav-clock"></div>
   </div>
@@ -30,4 +40,4 @@
   </button>
 </nav>
 
-<script src="/assets/js/nav.js?v=a789e01771"></script>
+<script src="/assets/js/nav.js?v=a020a9454b"></script>

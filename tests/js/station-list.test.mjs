@@ -15,6 +15,9 @@ const {
   directionArrow,
   freshness,
   rowReading,
+  flatSwellLine,
+  swellGeometry,
+  swellLine,
 } = await import("../../site/assets/js/station-list.js");
 
 const EC = { source: "Environment Canada", type: "wave_buoy" };
@@ -121,6 +124,43 @@ test("a down row shows no numbers: days-old readings would pass for live", () =>
   assert.match(html, /sl-row--down/);
   assert.match(html, /No recent data/);
   assert.doesNotMatch(html, /sl-big/);
+});
+
+test("swell amplitude is relative to what is rough at that station", () => {
+  // 1 m is rough in the Strait of Georgia and a quiet day at La Perouse.
+  const georgia = swellGeometry(1, 5, 270, "4600146").amplitude;
+  const laPerouse = swellGeometry(1, 5, 270, "4600206").amplitude;
+  assert.ok(georgia > laPerouse);
+  assert.equal(georgia, swellGeometry(2.5, 5, 270, "4600206").amplitude);
+});
+
+test("swell geometry: height sets amplitude, period wavelength, bearing drift", () => {
+  const calm = swellGeometry(0.1, 3, 270);
+  const rough = swellGeometry(3, 10, 270);
+  assert.ok(rough.amplitude > calm.amplitude);
+  // Clamped at both ends: a flat calm still shows, a storm stays in the box.
+  assert.ok(swellGeometry(0, 3, 0).amplitude > 0);
+  assert.equal(swellGeometry(3, 3, 0).amplitude, swellGeometry(9, 3, 0).amplitude);
+  assert.ok(rough.wavelength > calm.wavelength);
+  assert.equal(swellGeometry(1, 0.5, 0).wavelength, 14);
+  assert.equal(swellGeometry(1, 30, 0).wavelength, 72);
+  // Same convention as the row's arrow: from the west travels right.
+  assert.equal(swellGeometry(1, 5, 270).drift, 1);
+  assert.equal(swellGeometry(1, 5, 90).drift, -1);
+  assert.equal(swellGeometry(1, 5, 0).drift, 0);
+  assert.equal(swellGeometry(1, 5, null).drift, 0);
+  assert.equal(swellGeometry(null, 5, 90), null);
+});
+
+test("a row's swell line is decorative, and flat and dashed when down", () => {
+  const fresh = buildStationRow(halibut, "4600146", EC);
+  assert.match(fresh, /<svg class="sl-swell"[^>]*aria-hidden="true"/);
+  assert.match(fresh, /sl-swell-wave/);
+  const down = buildStationRow({ ...halibut, status: "down", age_minutes: 22607 }, "x", EC);
+  assert.match(down, /sl-swell-flat/);
+  assert.doesNotMatch(down, /sl-swell-wave/);
+  assert.equal(swellLine(null, 4, 90, "4600146"), "");
+  assert.match(flatSwellLine(), /aria-hidden="true"/);
 });
 
 test("a row with no wind reading shows a dash, not 'NaN'", () => {

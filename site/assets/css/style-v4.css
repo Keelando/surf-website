@@ -5,6 +5,29 @@
 :root {
   color-scheme: light;
 
+  /* Design tokens (docs/project/UI_OVERHAUL.md, "Design system"). New and
+     reworked rules use these; older rules move over page by page.
+     One radius (circles use 50%), one spacing scale, one accent for what can
+     be clicked, amber for warnings and nothing else, two weights, three
+     sizes. */
+  --radius: 12px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 48px;
+  --accent: #0a7381;
+  --accent-soft: rgba(10, 115, 129, 0.14);
+  --warn: #b45309;
+  --brand-navy: #0b2a45;
+  --text-lg: 1.3rem;
+  --text-md: 0.95rem;
+  --text-sm: 0.75rem;
+  --weight-regular: 400;
+  --weight-bold: 700;
+  --font-readout: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
   /* Primary Colors */
   --color-primary-dark: #004b7c;
   --color-primary: #006daf;
@@ -119,6 +142,9 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
+  --accent: #67d8e0;
+  --accent-soft: rgba(103, 216, 224, 0.16);
+  --warn: #fbbf24;
   --color-primary-dark: #4a9fd8;
   --color-primary: #4db8f0;
   --color-primary-light: #5ec4f5;

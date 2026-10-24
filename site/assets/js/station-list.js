@@ -26,6 +26,7 @@ import {
   waveHeightPrecision,
 } from "./shared/station-meta.js";
 import { reportStatus } from "./shared/staleness.js";
+import { waveAmplitude } from "./shared/wave-scale.js";
 
 /**
  * The ten wave stations, by region. `column` places the region in the
@@ -160,6 +161,60 @@ function windCell(r) {
   );
 }
 
+// The swell line's box, in px (the SVG is drawn 1:1).
+const SWELL_WIDTH = 96;
+const SWELL_HEIGHT = 20;
+
+/**
+ * Geometry of a row's swell line: amplitude from wave height measured against
+ * what is rough for this station (shared/wave-scale.js, as the header wave),
+ * wavelength from period (a long period draws wide lazy rollers, a short one
+ * tight chop), and the way it drifts from the direction arrow's horizontal
+ * component. Null when there is no height to draw.
+ *
+ * @returns {{amplitude: number, wavelength: number, drift: -1|0|1}|null}
+ */
+export function swellGeometry(height, period, degrees, stationId) {
+  if (height == null || !Number.isFinite(height)) return null;
+  const factor = waveAmplitude(height, stationId);
+  const p = period != null && Number.isFinite(period) && period > 0 ? period : 4;
+  // The arrow is a down arrow turned clockwise by the "from" bearing, so its
+  // on-screen x component is -sin(bearing): waves from the west drift right.
+  const x = degrees != null && Number.isFinite(degrees) ? -Math.sin((degrees * Math.PI) / 180) : 0;
+  return {
+    amplitude: Math.round((((SWELL_HEIGHT / 2 - 2) * factor) / 1.2) * 10) / 10,
+    wavelength: Math.round(Math.min(72, Math.max(14, p * 6))),
+    drift: Math.abs(x) < 0.2 ? 0 : x > 0 ? 1 : -1,
+  };
+}
+
+const SWELL_OPEN = `<svg class="sl-swell" width="${SWELL_WIDTH}" height="${SWELL_HEIGHT}" viewBox="0 0 ${SWELL_WIDTH} ${SWELL_HEIGHT}" aria-hidden="true" focusable="false">`;
+
+/** A station with no current reading: a flat dashed line. */
+export function flatSwellLine() {
+  return `${SWELL_OPEN}<path class="sl-swell-flat" d="M0 ${SWELL_HEIGHT / 2}H${SWELL_WIDTH}"/></svg>`;
+}
+
+/**
+ * A faint sine line behind the row's spare width. Decorative, so hidden from
+ * screen readers; "" when there is no height reading. It is static; only the
+ * open row's line moves (home.css).
+ */
+export function swellLine(height, period, degrees, stationId) {
+  const mid = SWELL_HEIGHT / 2;
+  const g = swellGeometry(height, period, degrees, stationId);
+  if (!g) return "";
+  // One wavelength spare at each end, so the line can travel a full
+  // wavelength either way without its ends showing.
+  const half = g.wavelength / 2;
+  let d = `M${-g.wavelength} ${mid}Q${-g.wavelength + half / 2} ${mid - 2 * g.amplitude} ${-half} ${mid}`;
+  for (let x = 0; x <= SWELL_WIDTH + g.wavelength; x += half) d += `T${x} ${mid}`;
+  return (
+    `${SWELL_OPEN}<path class="sl-swell-wave" data-drift="${g.drift}" ` +
+    `style="--swell-shift: ${g.drift * g.wavelength}px; --swell-period: ${((period ?? 4) * 1.5).toFixed(1)}s" d="${d}"/></svg>`
+  );
+}
+
 /**
  * One station row: a button that toggles its detail panel. A station that is
  * down shows no numbers in the row: a reading days old next to live ones
@@ -171,9 +226,16 @@ export function buildStationRow(b, id, meta) {
   const showValues = fresh.state === "ok" || fresh.state === "late";
 
   let values;
+  let swell = flatSwellLine();
   if (showValues) {
     const r = rowReading(b, meta);
     values = waveCell(r) + windCell(r);
+    swell = swellLine(
+      r.height != null ? Number(r.height) : null,
+      r.period != null ? Number(r.period) : null,
+      r.waveDegrees,
+      id,
+    );
   } else {
     // The age line already says how long; the panel says since when.
     const word = fresh.state === "down" ? "No recent data" : fresh.text;
@@ -188,6 +250,7 @@ export function buildStationRow(b, id, meta) {
       </span>
       ${values}
       ${CHEVRON}
+      ${swell}
     </button>`;
 }
 

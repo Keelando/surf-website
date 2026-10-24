@@ -18,11 +18,13 @@
      Contrast was measured on the rendered pixels behind the text, not by
      axe, which cannot judge text over an image. */
   --summary-panel-bg: rgba(255, 255, 255, 0.72);
+  --summary-panel-fallback-bg: rgba(244, 248, 251, 0.96);
   --summary-panel-shadow: 0 12px 32px rgba(0, 20, 40, 0.28);
   --sl-text: #10202f;
   --sl-muted: #36424f;
   --sl-heading: #004b7c;
   --sl-rule: rgba(16, 32, 47, 0.1);
+  --sl-foot-rule: rgba(16, 32, 47, 0.3);
   --sl-row-hover: rgba(0, 75, 124, 0.06);
   --sl-row-open: rgba(0, 75, 124, 0.05);
   --sl-ok: #15803d;
@@ -48,11 +50,13 @@
 
 [data-theme="dark"] {
   --summary-panel-bg: rgba(10, 22, 35, 0.74);
+  --summary-panel-fallback-bg: rgba(10, 22, 35, 0.95);
   --summary-panel-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   --sl-text: #e8eef5;
   --sl-muted: #c9d4e1;
   --sl-heading: #a8ddff;
   --sl-rule: rgba(255, 255, 255, 0.1);
+  --sl-foot-rule: rgba(255, 255, 255, 0.3);
   --sl-row-hover: rgba(255, 255, 255, 0.06);
   --sl-row-open: rgba(255, 255, 255, 0.04);
   --sl-ok: #4ade80;
@@ -138,6 +142,14 @@
   color: var(--sl-text);
 }
 
+/* Without backdrop-filter the photo would show through at full detail behind
+   the numbers: go nearly opaque instead. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .summary-panel {
+    background: var(--summary-panel-fallback-bg);
+  }
+}
+
 @media (max-width: 768px) {
   .summary-panel {
     padding: 0.85rem 0.35rem 0.5rem;
@@ -164,22 +176,42 @@
   color: var(--sl-muted);
 }
 
+/* On a phone the header already says "Halibut Bank" and the rows explain
+   themselves: the title stays for screen readers and the tagline goes, so the
+   first station sits near the top of the screen. */
 @media (max-width: 600px) {
-  .summary-title {
-    font-size: 1.2rem;
+  .summary-head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .summary-tagline {
-    font-size: 0.8rem;
+    display: none;
+  }
+
+  .station-list {
+    margin-top: 0;
+  }
+
+  .summary-panel {
+    padding-top: var(--space-2);
   }
 }
 
+/* The panel's way out to the rest of the site. Each link is its own item,
+   set apart by a short vertical rule. */
 .summary-foot {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.25rem;
-  margin: 0.75rem 0 0;
-  padding: 0.6rem 0.5rem 0.25rem;
+  align-items: center;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) var(--space-2) var(--space-1);
   border-top: 1px solid var(--sl-rule);
   font-size: 0.8rem;
 }
@@ -188,6 +220,34 @@
   color: var(--sl-action-text);
   font-weight: 600;
   text-decoration: none;
+  padding: var(--space-1) var(--space-3);
+}
+
+.summary-foot a:first-child {
+  padding-left: 0;
+}
+
+.summary-foot a + a {
+  border-left: 1px solid var(--sl-foot-rule);
+}
+
+/* A phone wraps the row, and a rule would start the second line: two
+   columns instead, the rule only between the pair on each line. */
+@media (max-width: 600px) {
+  .summary-foot {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    row-gap: var(--space-2);
+  }
+
+  .summary-foot a {
+    padding-left: var(--space-3);
+  }
+
+  .summary-foot a:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 
 .summary-foot a:hover {
@@ -322,9 +382,80 @@
 }
 
 .sl-name {
+  /* Placed explicitly so the swell line can share its cell. */
+  grid-column: 1;
+  grid-row: 1;
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+/* -----------------------------
+   Swell lines: a faint sine in the spare width at the right of the name
+   column, drawn from the station's own height, period and direction
+   (station-list.js swellLine). Decoration under the numbers, never instead
+   of them. Static except in the open row.
+----------------------------- */
+
+.sl-swell {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+  margin-right: var(--space-2);
+  overflow: hidden;
+  pointer-events: none;
+  /* Soft ends, so the line fades in and out of the row. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+}
+
+.sl-swell path {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.sl-swell-wave {
+  stroke: var(--accent);
+  opacity: 0.45;
+}
+
+/* No current reading: a flat, dashed, muted line. */
+.sl-swell-flat {
+  stroke: var(--sl-muted);
+  stroke-dasharray: 3 4;
+  opacity: 0.4;
+}
+
+.sl-row[aria-expanded="true"] .sl-swell-wave {
+  opacity: 0.7;
+  animation: sl-swell-travel var(--swell-period, 6s) linear infinite;
+}
+
+@keyframes sl-swell-travel {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(var(--swell-shift, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sl-row[aria-expanded="true"] .sl-swell-wave {
+    animation: none;
+  }
+}
+
+/* A phone's name column is all name: no room for the line. */
+@media (max-width: 600px) {
+  .sl-swell {
+    display: none;
+  }
 }
 
 .sl-title {

@@ -57,6 +57,12 @@ node can import these files in tests; browsers ignore it.
   with a fake and `warning-zones.js` stays storage-free. Added 2026-08-23 with
   the per-zone opt-in (`docs/project/WARNING_ZONE_OPT_IN.md`). Tests:
   `tests/js/warning-preferences.test.mjs`
+- `wave-scale.js` — `waveAmplitude(height, stationId)`: how big a wave is for
+  that station, for the decorative wave lines only (header band in `nav.js`,
+  which loads it by dynamic `import()` as a classic script; row swell lines in
+  `station-list.js`). Per-station "rough" heights live here, not in
+  `stations.json`. Added 2026-10-24 on `dev`. Tests:
+  `tests/js/wave-scale.test.mjs`
 - `safe-html.js` — `setSafeHTML(element, html)`: sanitized `innerHTML` via the
   `setSanitizedHTML` global that the classic `sanitize-html.js` publishes.
   Extracted 2026-08-26 from **thirteen** copies that had already split into two

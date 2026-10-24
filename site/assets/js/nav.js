@@ -1,11 +1,5 @@
 // Navigation initialization (runs whenever the nav HTMX fragment is swapped in)
 (function () {
-  const LABELS = {
-    system: "System",
-    light: "Light",
-    dark: "Dark",
-  };
-
   function highlightActivePage() {
     const path = window.location.pathname;
     let activePage = "buoys";
@@ -39,7 +33,7 @@
     document.querySelectorAll("nav.main-nav").forEach((nav, index) => {
       nav.setAttribute("aria-label", index === 0 ? "Main navigation" : "Footer navigation");
       // The same fragment is injected top and bottom, so the copies are
-      // otherwise indistinguishable. Tag the footer one: below 600px the
+      // otherwise indistinguishable. Tag the footer one: below 900px the
       // header nav is sticky and always on screen, which makes a second
       // hamburger down here redundant, and CSS needs a handle to hide it.
       nav.classList.toggle("main-nav-footer", index > 0);
@@ -92,28 +86,16 @@
     return current === "dark" ? "light" : "dark";
   }
 
+  // The icon is CSS's job (it follows data-theme); the label says what a
+  // press does. No aria-pressed: a button whose label changes with its state
+  // must not also announce a pressed state, or it reads as "Switch to dark
+  // mode, pressed".
   function updateToggle(button) {
     if (!button) return;
-    const { theme, preference } = getThemeState();
-    const nextPreference = getNextPreference(preference);
-
-    const iconSpan = button.querySelector(".theme-toggle-icon");
-    const textSpan = button.querySelector(".theme-toggle-text");
-
-    if (iconSpan) {
-      iconSpan.textContent = preference === "system" ? "⚙" : theme === "dark" ? "☾" : "☀";
-    }
-
-    if (textSpan) {
-      textSpan.textContent = LABELS[preference] || preference;
-    }
-
-    const ariaPressed = preference === "dark" ? "true" : preference === "light" ? "false" : "mixed";
-    button.setAttribute("aria-pressed", ariaPressed);
-    button.setAttribute(
-      "aria-label",
-      `Theme: ${LABELS[preference] || preference}. Switch to ${LABELS[nextPreference]} mode`,
-    );
+    const { preference } = getThemeState();
+    const next = getNextPreference(preference);
+    button.removeAttribute("aria-pressed");
+    button.setAttribute("aria-label", `Switch to ${next} mode`);
   }
 
   function initThemeToggle() {
@@ -259,12 +241,121 @@
     }
   }
 
+  // ---- Header wave ---------------------------------------------------------
+  // The band along the bottom of the header is drawn from Halibut Bank's
+  // latest report: wave height, against what is rough there
+  // (shared/wave-scale.js), sets the amplitude; wave period the speed of the
+  // drift. Decoration only; the numbers live in the station list.
+
+  const WAVE_STATION = "4600146";
+  const WAVE_HEIGHT_PX = 12;
+  // Long enough to cover the widest screen plus the drift, at any wavelength.
+  const WAVE_LENGTH_PX = 4000;
+  // Back layer to front: wavelength (px), centreline (px from the top), share
+  // of the amplitude, and drift duration as a multiple of the base period.
+  const WAVE_LAYERS = [
+    { wavelength: 230, centre: 6, share: 0.7, speed: 1.3 },
+    { wavelength: 160, centre: 7, share: 0.85, speed: 1 },
+    { wavelength: 110, centre: 7.5, share: 1, speed: 0.8 },
+  ];
+  // What a calm sea looks like, and what the band shows when the buoy is
+  // late, down or missing: no error state in the header. `amp` is the
+  // amplitude factor (0.2–1.2) that shared/wave-scale.js would give.
+  const CALM = { amp: 0.3, period: 4 };
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  /**
+   * A filled sine band: quadratic half-waves along the centreline, closed
+   * along the bottom edge. `a` is the crest height in px.
+   */
+  function wavePath(wavelength, centre, a) {
+    const half = wavelength / 2;
+    let d = `M${-wavelength} ${centre} Q${-wavelength + half / 2} ${centre - 2 * a} ${-half} ${centre}`;
+    for (let x = 0; x <= WAVE_LENGTH_PX; x += half) d += ` T${x} ${centre}`;
+    return `${d} V${WAVE_HEIGHT_PX} H${-wavelength} Z`;
+  }
+
+  /** Amplitude and period to draw, or the calm default when the report is unusable. */
+  function waveReading(entry, waveAmplitude) {
+    if (!entry || entry.no_data || entry.out_of_service || entry.status !== "ok") return CALM;
+    const height = entry.wave_height_sig;
+    if (height == null || !Number.isFinite(height)) return CALM;
+    const period = entry.wave_period_peak ?? entry.wave_period_avg ?? CALM.period;
+    return {
+      amp: waveAmplitude(height, WAVE_STATION),
+      period: Number.isFinite(period) && period > 0 ? period : CALM.period,
+    };
+  }
+
+  function drawWave(svg, reading) {
+    const { amp } = reading;
+    // At the top of the clamp the front layer's troughs just touch the
+    // band's bottom edge and the back layer's crests stay 3 px below its top.
+    const maxCrest = 4.5;
+    svg.style.setProperty("--wave-period", `${(reading.period * 1.5).toFixed(2)}s`);
+    svg.querySelectorAll(".nav-wave-layer").forEach((layer, i) => {
+      const spec = WAVE_LAYERS[i];
+      layer.firstChild.setAttribute(
+        "d",
+        wavePath(spec.wavelength, spec.centre, maxCrest * (amp / 1.2) * spec.share),
+      );
+    });
+  }
+
+  function buildWave() {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("class", "nav-wave");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    for (const spec of WAVE_LAYERS) {
+      const layer = document.createElementNS(SVG_NS, "g");
+      layer.setAttribute("class", "nav-wave-layer");
+      layer.style.setProperty("--wave-speed", String(spec.speed));
+      layer.appendChild(document.createElementNS(SVG_NS, "path"));
+      svg.appendChild(layer);
+    }
+    drawWave(svg, CALM);
+    return svg;
+  }
+
+  async function refreshWave() {
+    const svg = document.querySelector(".main-nav:not(.main-nav-footer) .nav-wave");
+    if (!svg) return;
+    let reading = CALM;
+    try {
+      // nav.js is a classic script, so the shared scale comes in by dynamic
+      // import (unversioned, like every module import: revalidated each load).
+      const [{ waveAmplitude }, response] = await Promise.all([
+        import("/assets/js/shared/wave-scale.js"),
+        fetch(`/data/latest_buoy_v2.json?t=${Date.now()}`),
+      ]);
+      if (response.ok) reading = waveReading((await response.json())[WAVE_STATION], waveAmplitude);
+    } catch {
+      // Network trouble leaves the calm wave up; the next refresh tries again.
+    }
+    drawWave(svg, reading);
+  }
+
+  function initWave() {
+    // Header copy only: the footer nav is the same fragment, and one moving
+    // band per page is plenty.
+    const nav = document.querySelector(".main-nav:not(.main-nav-footer)");
+    if (!nav || nav.querySelector(".nav-wave")) return;
+    nav.appendChild(buildWave());
+    refreshWave();
+    if (!window._navWaveTimer) {
+      // The same five-minute rhythm as the home page's station refresh.
+      window._navWaveTimer = setInterval(refreshWave, 5 * 60 * 1000);
+    }
+  }
+
   function initNav() {
     highlightActivePage();
     labelNavLandmarks();
     initClock();
     initThemeToggle();
     initHamburger();
+    initWave();
   }
 
   setTimeout(initNav, 0);

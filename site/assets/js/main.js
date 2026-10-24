@@ -277,12 +277,18 @@ function handleHashNavigation() {
 wireStationList();
 loadBuoyData();
 
-// The map key folds away when the reader clicks or taps anywhere off it
-// (the map included) or presses Escape. Capture phase, because Leaflet stops
-// some pointer events on its markers and controls from bubbling.
+// The map key folds away when the reader clicks or taps anywhere at all
+// (the map, the page, or the open key itself) or presses Escape. Its own
+// summary is left to the browser, which toggles it.
+// Off the key: pointerdown, in the capture phase, because Leaflet stops some
+// pointer events on its markers and controls from bubbling.
+// On the key: click, NOT pointerdown. Closing the <details> while a press
+// inside its own content is in progress crashes the Chromium renderer
+// (reproduced 2026-10-24, Playwright Chromium 145).
 function wireMapKey() {
   const key = document.querySelector(".map-key");
-  if (!key) return;
+  const summary = key?.querySelector("summary");
+  if (!key || !summary) return;
   document.addEventListener(
     "pointerdown",
     (e) => {
@@ -290,6 +296,9 @@ function wireMapKey() {
     },
     true,
   );
+  key.addEventListener("click", (e) => {
+    if (key.open && !summary.contains(e.target)) key.open = false;
+  });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && key.open) {
       key.open = false;
