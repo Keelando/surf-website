@@ -63,6 +63,13 @@ duplicated observations on 2026-09-06. Write-up:
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+### Queued 2026-10-24
+
+- [ ] **Water-comfort indicator** (user 2026-10-24, future feature):
+      wetsuit recommendation, wind chill and a sea-temperature indicator,
+      shown as a colour-coded visual reference. Inputs are already in the
+      exports: sea and air temperature from the buoys, wind for the chill.
+
 ### Queued 2026-10-23
 
 - [ ] **Point forecast: show the peak wave height** (user 2026-10-23). On
