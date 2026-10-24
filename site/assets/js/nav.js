@@ -289,7 +289,10 @@
     const maxCrest = 5;
     // The band slides one wavelength per cycle, so the loop is seamless;
     // a longer swell period drifts slower.
-    svg.style.setProperty("--wave-period", `${(reading.period * 3).toFixed(2)}s`);
+    const period = `${(reading.period * 3).toFixed(2)}s`;
+    svg.style.setProperty("--wave-period", period);
+    // The hero photo's wave (style-v4.css) keeps the same pace.
+    document.documentElement.style.setProperty("--wave-period", period);
     svg.style.setProperty("--wave-shift", `${-WAVE_WAVELENGTH_PX}px`);
     svg
       .querySelector(".nav-wave-layer path")

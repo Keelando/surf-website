@@ -1165,6 +1165,43 @@ header {
   gap: 1.25rem;
 }
 
+/* The header's wave, repeated along the bottom of the hero photo on every
+   page (subpage <header>, home .summary): the same teal sinusoid at the same
+   opacity, sliding one 200px wavelength per cycle at the pace nav.js sets
+   from the swell at Halibut Bank (--wave-period on <html>). Static shape,
+   decoration only. */
+header,
+.summary {
+  position: relative;
+}
+
+header::after,
+.summary::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12px;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='12'%3E%3Cpath d='M0 6.5Q50 1.5 100 6.5T200 6.5V12H0Z' fill='%2367d8e0' fill-opacity='.55'/%3E%3C/svg%3E")
+    repeat-x 0 0 / 200px 12px;
+  animation: hero-wave-drift var(--wave-period, 12s) linear infinite;
+}
+
+@keyframes hero-wave-drift {
+  to {
+    background-position-x: -200px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  header::after,
+  .summary::after {
+    animation: none;
+  }
+}
+
 /* Disable parallax on mobile for better performance and compatibility */
 @media (max-width: 768px) {
   header {
