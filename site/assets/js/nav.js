@@ -50,21 +50,28 @@
     if (window._navClockStarted) return;
     window._navClockStarted = true;
 
+    // timeZoneName gives "PST" or "PDT" as the date falls; a hardcoded label
+    // is wrong half the year. hourCycle h23, not hour12: false, which Chromium
+    // renders as "24:00:00" at midnight.
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Vancouver",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+      timeZoneName: "short",
+    });
+
     const updateClock = () => {
       const clocks = document.querySelectorAll(".nav-clock");
       if (!clocks.length) return;
 
-      const now = new Date();
-      const timeString = now.toLocaleTimeString("en-US", {
-        timeZone: "America/Vancouver",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      });
+      const parts = formatter.formatToParts(new Date());
+      const part = (type) => parts.find((p) => p.type === type)?.value;
+      const label = `${part("timeZoneName")} ${part("hour")}:${part("minute")}:${part("second")}`;
 
       clocks.forEach((clock) => {
-        clock.textContent = `PST ${timeString}`;
+        clock.textContent = label;
       });
     };
 
