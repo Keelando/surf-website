@@ -263,8 +263,8 @@ class TestFetchPoint:
 
 class TestFetchStationForecast:
     STATION = {"name": "Halibut Bank", "lat": 49.337, "lon": -123.731}
-    WAVE_LAYERS = wf.SOURCES[wf.MODEL_NAME]
-    WIND_LAYERS = wf.SOURCES[wf.WIND_MODEL_NAME]
+    WAVE_LAYERS = wf.layers_for(wf.MODEL_NAME, wf.STATIONS["4600146"])
+    WIND_LAYERS = wf.layers_for(wf.WIND_MODEL_NAME, wf.STATIONS["4600146"])
 
     def _stub(self, monkeypatch, results):
         """results: (field, iso) -> (value, run, status)."""
@@ -697,23 +697,24 @@ class TestConfiguration:
     def _requests_per_run(self):
         """Point queries in one run, counted per station.
 
-        Not a multiplication any more: the wind-less stations cost 4 variables
-        a step where the others cost 7.
+        Not a multiplication any more: the in-Strait stations cost 7 variables
+        a step, the open-Pacific ones 10 (waves and swell, no wind).
         """
         published = [dt(RUN_ISO) + timedelta(hours=h) for h in range(49)]
         steps = taper_time_steps(published, wf.FINE_HORIZON_HOURS, wf.COARSE_STEP_HOURS)
         per_run = sum(
-            len(steps) * len(wf.SOURCES[model])
+            len(steps) * len(wf.layers_for(model, config))
             for config in wf.STATIONS.values()
             for model in wf.models_for(config)
         )
         return len(steps), per_run
 
     def test_request_budget_matches_the_documented_footprint(self):
-        """33 steps x 7 variables = 231 point queries per station with wind,
-        132 without. Four of each and two of the other, plus one
-        GetCapabilities per model, is 1,190/run and 4,760/day at 4 runs —
-        7.3% of the 86,400 guidance once storm surge is counted too. Mirrors
+        """33 steps x 7 variables = 231 point queries per station with wind;
+        the two open-Pacific points skip wind (4 variables) and take swell
+        (6 more), 330 each. Four of the one and two of the other, plus one
+        GetCapabilities per model, is 1,586/run and 6,344/day at 4 runs —
+        9.1% of the 86,400 guidance once storm surge is counted too. Mirrors
         the table in docs/DATA_FEEDS.md, which is maintained by hand — this
         test is what keeps it honest, so update both together when STATIONS
         or the step count changes."""
@@ -723,8 +724,8 @@ class TestConfiguration:
         assert steps == 33
         assert len(wf.STATIONS) == 6
         assert len(with_wind) == 4
-        assert per_run == 1_190
-        assert per_run * 4 == 4_760
+        assert per_run == 1_586
+        assert per_run * 4 == 6_344
         assert per_run * 4 + 1_550 < 86_400 * 0.10  # MSC guidance, with storm surge
 
     def test_dropping_wind_actually_saves_the_requests_it_claims(self):
@@ -738,6 +739,31 @@ class TestConfiguration:
         assert "if model not in models_for(config):" in source, (
             "main() must skip models a station opts out of"
         )
+
+    def test_swell_is_fetched_only_where_a_station_opts_in(self):
+        """Swell partitions are masked almost every hour inside the Strait, so
+        only the open-Pacific points take them; and they must actually reach
+        the fetch loop and the budget, not just the config."""
+        swell = {sid for sid, c in wf.STATIONS.items() if c.get("swell")}
+        assert swell == {"46087", "4600206"}
+        for sid, config in wf.STATIONS.items():
+            fields = set(wf.layers_for(wf.MODEL_NAME, config))
+            assert (wf.SWELL_FIELDS <= fields) == (sid in swell)
+            assert {"wave_height", "peak_period", "wave_direction"} <= fields
+            assert not wf.SWELL_FIELDS & set(wf.layers_for(wf.WIND_MODEL_NAME, config))
+        source = Path(wf.__file__).read_text()
+        assert "layers_for(model, config), steps_by_model[model]" in source, (
+            "main() must fetch the per-station layer set, not all of SOURCES"
+        )
+
+    def test_swell_layers_are_the_rdwps_partitions(self):
+        layers = wf.SOURCES[wf.MODEL_NAME]
+        assert {layers[f] for f in wf.SWELL_FIELDS} == {
+            f"RDWPS_2.5km_{n}Swell{v}"
+            for n in ("First", "Second")
+            for v in ("SignificantWaveHeight", "PeakWavePeriod", "MeanWaveDir")
+        }
+        assert wf.UNITS["swell_direction"] == "degrees_true_from"
 
     def test_stale_lock_threshold_exceeds_a_full_run(self):
         """acquire_lock() removes a lock it judges stale. Runtime scales with
@@ -782,6 +808,7 @@ class TestConfiguration:
         wf.save_forecast(
             "4600146",
             {"name": "Halibut Bank", "lat": 49.337, "lon": -123.731},
+            wf.STATIONS["4600146"],
             {STEP_ISO: {"wave_height": 0.718, "wind_speed": 31.196}},
             {wf.MODEL_NAME: RUN_ISO, wf.WIND_MODEL_NAME: RUN_ISO},
         )
@@ -811,6 +838,7 @@ class TestConfiguration:
         wf.save_forecast(
             "4600146",
             {"name": "Halibut Bank", "lat": 49.337, "lon": -123.731},
+            wf.STATIONS["4600146"],
             {STEP_ISO: {"wave_height": 0.718}},
             {wf.MODEL_NAME: RUN_ISO, wf.WIND_MODEL_NAME: older},
         )
@@ -835,6 +863,7 @@ class TestConfiguration:
         wf.save_forecast(
             "4600146",
             {"name": "Halibut Bank", "lat": 49.337, "lon": -123.731},
+            wf.STATIONS["4600146"],
             {STEP_ISO: {"wave_height": 0.718}},
             {wf.MODEL_NAME: RUN_ISO},
         )

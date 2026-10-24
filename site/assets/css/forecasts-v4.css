@@ -886,6 +886,12 @@ header {
   white-space: nowrap;
 }
 
+/* Each swell partition on its own line within the cell. */
+.wave-forecast-swell {
+  display: block;
+  white-space: nowrap;
+}
+
 .wave-forecast-table thead th {
   background: var(--color-surface);
   font-size: 0.8rem;

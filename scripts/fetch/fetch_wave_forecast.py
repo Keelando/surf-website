@@ -59,6 +59,13 @@ SOURCES = {
         "peak_period": "RDWPS_2.5km_PeakWavePeriod",
         "wave_direction": "RDWPS_2.5km_MeanWaveDir",
         "wind_wave_height": "RDWPS_2.5km_WindWavesSignificantHeight",
+        # Swell partitions: opt-in per station (SWELL_FIELDS, STATIONS).
+        "swell_height": "RDWPS_2.5km_FirstSwellSignificantWaveHeight",
+        "swell_period": "RDWPS_2.5km_FirstSwellPeakWavePeriod",
+        "swell_direction": "RDWPS_2.5km_FirstSwellMeanWaveDir",
+        "swell2_height": "RDWPS_2.5km_SecondSwellSignificantWaveHeight",
+        "swell2_period": "RDWPS_2.5km_SecondSwellPeakWavePeriod",
+        "swell2_direction": "RDWPS_2.5km_SecondSwellMeanWaveDir",
     },
     WIND_MODEL_NAME: {
         "wind_speed": "HRDPS.CONTINENTAL_WSPD",
@@ -73,6 +80,23 @@ SOURCES = {
     },
 }
 
+# The two swell partitions, fetched only at stations that opt in. On the open
+# Pacific a single bulk direction hides the mix: La Perouse Bank read "1.9 m
+# from ESE" on 2026-10-24 while Neah Bay's NOAA spectrum split the same sea
+# into 0.6 m of E wind chop over a 0.5 m, 10 s W swell. The partitions are
+# how the forecast shows that. Inside the Strait they are masked nearly every
+# hour (swell rarely gets in), so fetching them there would buy 9999s.
+SWELL_FIELDS = frozenset(
+    {
+        "swell_height",
+        "swell_period",
+        "swell_direction",
+        "swell2_height",
+        "swell2_period",
+        "swell2_direction",
+    }
+)
+
 # Flat field -> layer view of SOURCES, for callers that don't care which model
 # a field came from.
 VARIABLES = {field: layer for layers in SOURCES.values() for field, layer in layers.items()}
@@ -82,6 +106,12 @@ UNITS = {
     "peak_period": "s",
     "wave_direction": "degrees_true_from",
     "wind_wave_height": "m",
+    "swell_height": "m",
+    "swell_period": "s",
+    "swell_direction": "degrees_true_from",
+    "swell2_height": "m",
+    "swell2_period": "s",
+    "swell2_direction": "degrees_true_from",
     "wind_speed": "km/h",
     "wind_direction": "degrees_true_from",
     "wind_gust": "km/h",
@@ -139,10 +169,15 @@ CONVERSIONS = {
 # as swell-arrival indicators, and the waves are the whole signal. Fetching
 # wind there would add 1,584 requests/day to buy a number nobody reads.
 #
-# Cost, for the next person weighing a fifth point: 33 steps x 7 variables =
-# 231 requests per station per run, 924/day, or 132 and 528 without wind.
-# The total lands at 6,310 ECCC requests/day (7.3% of MSC's 86,400 guidance)
-# and ~31 min per run at 1.1 s spacing. Neither is the binding constraint —
+# SWELL IS THE REVERSE: opt-in, and only those same two points take it
+# (2026-10-24). Six more RDWPS layers (two partitions x height, period,
+# direction) at 33 steps is 198 requests per station per run.
+#
+# Cost, for the next person weighing another point: 33 steps x 7 variables =
+# 231 requests per station per run, 924/day, or 132 and 528 without wind,
+# 330 and 1,320 for waves plus swell. The total lands at 7,894 ECCC
+# requests/day (9.1% of MSC's 86,400 guidance) and ~41 min per run at 1.1 s
+# spacing. Neither is the binding constraint —
 # the burst rate stays at 0.65 req/s, under the guidance — and what actually
 # bites is runtime, both as publication lag and against the stale-lock
 # threshold. See docs/DATA_FEEDS.md.
@@ -151,8 +186,8 @@ STATIONS = {
     "CRPILE": {"wind": True},    # Crescent Beach Ocean — Surrey sensor
     "4600304": {"wind": True},   # English Bay — EC buoy, local and sheltered
     "46088": {"wind": True},     # New Dungeness — NOAA, Juan de Fuca mouth
-    "46087": {"wind": False},    # Neah Bay — NOAA, open Pacific swell
-    "4600206": {"wind": False},  # La Perouse Bank — EC buoy, open Pacific
+    "46087": {"wind": False, "swell": True},    # Neah Bay — NOAA, open Pacific
+    "4600206": {"wind": False, "swell": True},  # La Perouse Bank — EC, open Pacific
 }
 
 
@@ -165,6 +200,18 @@ def models_for(config):
     out).
     """
     return (MODEL_NAME, WIND_MODEL_NAME) if config.get("wind", True) else (MODEL_NAME,)
+
+
+def layers_for(model, config):
+    """The {field: layer} map to fetch for one model at one station.
+
+    SOURCES lists every layer a model offers us; the swell partitions are
+    dropped unless the station opts in (see the STATIONS comment).
+    """
+    layers = SOURCES[model]
+    if config.get("swell", False):
+        return dict(layers)
+    return {field: layer for field, layer in layers.items() if field not in SWELL_FIELDS}
 
 
 OUTPUT_DIR = EXPORT_DIR / "wave_forecast"
@@ -223,8 +270,9 @@ def acquire_lock():
     if LOCKFILE.exists():
         age = time.time() - LOCKFILE.stat().st_mtime
         # Must stay comfortably above the real runtime, which scales with
-        # STATIONS: ~6.0 min per station with wind, ~3.4 min without, at the
-        # current 1.1 s spacing. Six stations is ~31 min, and the old 1 h
+        # STATIONS: ~6.0 min per station with wind, ~3.4 min without, ~8.5
+        # with swell, at the current 1.1 s spacing. Six stations is ~41 min
+        # (2026-10-24, swell at two of them), and the old 1 h
         # threshold left too little margin for a slow run. 2 h restores the
         # headroom and is still well inside the 6 h gap between runs, so a
         # genuinely wedged process is cleared before the next one is due.
@@ -695,7 +743,7 @@ def store_forecast_to_db(station_id, model, readings, counts, run_time):
         logger.info(f"    🗑️  Purged {deleted} records older than {WAVE_FORECAST_RETENTION_DAYS} days")
 
 
-def save_forecast(station_id, station_info, forecast, run_times):
+def save_forecast(station_id, station_info, config, forecast, run_times):
     """Save forecast JSON with an explicit allowlist of fields (site/data is public).
 
     `run_times` maps model name -> that model's run. `model`/`model_run_time`
@@ -714,7 +762,7 @@ def save_forecast(station_id, station_info, forecast, run_times):
             {
                 "name": model,
                 "run_time": run_times.get(model),
-                "variables": sorted(SOURCES[model]),
+                "variables": sorted(layers_for(model, config)),
             }
             for model in SOURCES
         ],
@@ -784,10 +832,10 @@ def main():
     try:
         steps_by_model = plan_time_steps()
 
-        # Counted per station rather than multiplied out, since the
-        # wind-less stations cost 4 variables a step instead of 7.
+        # Counted per station rather than multiplied out: wind is opt-out and
+        # swell opt-in, so stations cost different numbers of variables.
         requests_planned = sum(
-            len(steps) * len(SOURCES[model])
+            len(steps) * len(layers_for(model, config))
             for config in STATIONS.values()
             for model, steps in steps_by_model.items()
             if models_for(config) and model in models_for(config)
@@ -813,11 +861,11 @@ def main():
             # time axis — but each model stored and labelled separately.
             merged = {}
             run_times = {}
-            for model, layers in SOURCES.items():
+            for model in SOURCES:
                 if model not in models_for(config):
                     continue
                 forecast, readings, counts, run_time = fetch_station_forecast(
-                    buoy_id, station_info, layers, steps_by_model[model]
+                    buoy_id, station_info, layers_for(model, config), steps_by_model[model]
                 )
                 if not forecast:
                     logger.info(f"    ❌ No {model} data retrieved for {buoy_id}")
@@ -829,7 +877,7 @@ def main():
                     merged.setdefault(time_key, {}).update(values)
 
             if merged:
-                save_forecast(buoy_id, station_info, merged, run_times)
+                save_forecast(buoy_id, station_info, config, merged, run_times)
                 published.append((buoy_id, station_info))
             else:
                 logger.info(f"    ❌ No data retrieved for {buoy_id}")

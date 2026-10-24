@@ -41,8 +41,8 @@ subscription is for. Update this table when adding or rescheduling a feed.
 | Endpoint | Job | Schedule | Requests/day |
 |---|---|---|---|
 | `geo.weather.gc.ca` | `fetch_storm_surge.py` | 2×/day | 1,550 (6 stations × 129 of 241 steps + 1 cap) |
-| `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 4,760 (4 stations × 7 vars + 2 stations × 4 vars, × 33 of 49 steps, + 2 caps) |
-| | | **Total** | **6,310 (7.3%)** |
+| `geo.weather.gc.ca` | `fetch_wave_forecast.py` | 4×/day | 6,344 (4 stations × 7 vars + 2 stations × 10 vars, × 33 of 49 steps, + 2 caps) |
+| | | **Total** | **7,894 (9.1%)** |
 
 Nothing else here polls ECCC over HTTP. The lightstation FPCN61 poller used to
 add ~48/day by walking Datamart directory listings — the one thing the policy
@@ -56,11 +56,14 @@ extraction point (2026-08-18) doubled the per-run cost again, 932 → 1,856/day 
 the total to 4.0%. The **rate** has not moved through any of it — `FETCH_DELAY`
 was unchanged through all of those, so each addition lengthened the burst
 (~4 → ~7.6 → ~15 min per run) at the same 0.51 req/s; the six-station step to
-~39 min is what finally moved it, to 1.1 s and ~31 min. It does not overlap `fetch_storm_surge.py`, which runs
-01:31/13:31 for ~32 min against the same host.
+~39 min is what finally moved it, to 1.1 s and ~31 min. Swell partitions at
+the two open-Pacific points (2026-10-24, 6 RDWPS layers each) took it to
+6,344/day and ~41 min, the total to 9.1%. It does not overlap
+`fetch_storm_surge.py`, which runs 01:31/13:31 for ~32 min against the same host.
 
 **Each further extraction point costs 231 requests/run, 924/day (~1.1%), and
-~6.0 min of runtime — or 132, 528/day and ~3.4 min without wind.** The binding
+~6.0 min of runtime — or 132, 528/day and ~3.4 min without wind; swell adds
+198, 792/day and ~5.1 min.** The binding
 constraint is not the guidance — it is the 6 h gap to the next run, and the
 stale-lock threshold in `acquire_lock()`, which must stay above the real runtime
 (1 h when the second station landed, raised to 2 h at six stations, where a
@@ -70,7 +73,7 @@ forecast on the page, not just a longer job.
 
 This table is maintained by hand, not instrumented — deliberately (decided
 2026-08-16). A project-wide request counter is more machinery than a number we
-are 7.3% of deserves. **Keep it honest by updating the row in the same commit
+are 9.1% of deserves. **Keep it honest by updating the row in the same commit
 that changes a fetcher's schedule, station count, or step count** — all three
 are visible in the source constants, so the count is derivable, never measured.
 Revisit the decision if a new point-extraction feed lands (a gridded water-level
@@ -104,7 +107,7 @@ loops `request → sleep(FETCH_DELAY)`, and with ~0.45 s of network per request:
 | 2.0 s | 0.41 req/s |
 
 `fetch_storm_surge.py` uses 2.0 s (0.41 req/s over ~32 min, measured 2026-08-16)
-and `fetch_wave_forecast.py` uses 1.1 s (0.65 req/s over ~31 min, lowered from
+and `fetch_wave_forecast.py` uses 1.1 s (0.65 req/s over ~41 min, lowered from
 1.5 s on 2026-08-24 when six stations made runtime a real cost). 1.5–2 s is
 still the default for a *new* point-extraction feed; argue it down only when
 runtime is buying something, as it is here — the fetch starts at
@@ -343,7 +346,9 @@ See `TODO.md` for the measured interpolation error behind the taper.
 
 **URL:** `https://geo.weather.gc.ca/geomet`
 **Layers:** `RDWPS_2.5km_SignificantWaveHeight`, `RDWPS_2.5km_PeakWavePeriod`,
-`RDWPS_2.5km_MeanWaveDir`, `RDWPS_2.5km_WindWavesSignificantHeight`
+`RDWPS_2.5km_MeanWaveDir`, `RDWPS_2.5km_WindWavesSignificantHeight`; at the
+two open-Pacific points also both swell partitions (`RDWPS_2.5km_{First,Second}Swell`
++ `SignificantWaveHeight` / `PeakWavePeriod` / `MeanWaveDir`)
 (full inventory: `docs/project/RDWPS_PARAMETERS.md`)
 **Protocol:** WMS 1.3.0 GetFeatureInfo (JSON) via requests
 **Fetched by:** `scripts/fetch/fetch_wave_forecast.py`
@@ -353,12 +358,14 @@ See `TODO.md` for the measured interpolation error behind the taper.
 (`CRPILE`), English Bay (`4600304`) and New Dungeness (`46088`) take waves and
 wind; Neah Bay (`46087`) and La Perouse Bank (`4600206`) take **waves only** —
 out on the open Pacific the local wind is not something anyone plans a Salish
-Sea day on, and skipping it saves 1,584 requests/day. Every one has a
+Sea day on, and skipping it saves 1,584 requests/day. Those two take the
+**swell partitions** instead: one bulk direction there hides a wind sea and a
+groundswell arriving from different quarters. Every one has a
 co-located sensor to verify against; see the fetcher's comment for why the
 other candidate points do not qualify yet.
 **Sampling:** 33 of 49 hourly steps — hourly to 24 h, then 3-hourly. 231
-requests per station per run with wind, 132 without: 1,190/run, 4,760/day, at
-1.5 s spacing (0.51 req/s, ~39 min/run). The site's table thins this to
+requests per station per run with wind, 330 for waves plus swell: 1,586/run,
+6,344/day, at 1.1 s spacing (0.65 req/s, ~41 min/run). The site's table thins this to
 3-hourly for display; the hourly steps are kept in the database and on the
 chart.
 **Stored in:** `wave_forecast.sqlite` + exported JSON to `site/data/wave_forecast/`

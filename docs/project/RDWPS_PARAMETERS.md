@@ -183,8 +183,14 @@ below the buoy. Real skill numbers need autumn.
 | `wave_direction` | WWSDIR / MeanWaveDir | display arrow; combined sea state |
 | `wind_wave_height` | WVHGT / WindWavesSignificantHeight | with HTSGW, tells wind-sea vs swell mix |
 
-Deliberately skipped for now: swell partitions (mostly masked in-Strait —
-revisit for outer-coast points), MZWPER/PPERWW (redundant with PWPER for
+Added 2026-10-24 at Neah Bay and La Perouse Bank only (`SWELL_FIELDS`,
+`"swell": True` in `STATIONS`): both swell partitions, as `swell_*` and
+`swell2_*` (height, peak period, mean direction). First live read at La
+Perouse, 21Z: swell 1.75 m / 10.0 s from 271°, second swell 0.38 m / 16.1 s
+from 203°, wind waves 1.33 m, while the buoy's one bulk direction said ESE.
+
+Deliberately skipped for now: swell partitions in-Strait (masked nearly every
+hour), MZWPER/PPERWW (redundant with PWPER for
 display), ICEC (not relevant), RDWPS's own wind/Stokes (GRIB-only — see the
 HRDPS section below, which is where wind comes from instead).
 

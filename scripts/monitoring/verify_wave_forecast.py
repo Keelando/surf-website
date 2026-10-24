@@ -74,6 +74,13 @@ logger = setup_logging("wave_forecast_verify")
 # to a column that is always NULL would look like a data outage forever; naming
 # it here as unverifiable says the real thing.
 #
+# The swell partitions (2026-10-24, Neah Bay and La Perouse Bank only) score
+# the first one against NOAA's swell split, which Neah Bay (46087) reports and
+# the EC buoy at La Perouse does not (no pair there, as with CRPILE's
+# directions below). Close cousins, not twins: NDBC's "swell" is the energy
+# below a separation frequency, RDWPS's first partition is its largest swell
+# system. Nothing measures a second swell, so swell2_* is unverifiable.
+#
 # Directions are absent at CRPILE too (wave_direction_avg is never populated
 # there), but that is per-station rather than per-variable, and needs no
 # special case: no observation simply means no pair.
@@ -82,13 +89,19 @@ OBSERVATION_COLUMNS = {
     "peak_period": "wave_period_peak",
     "wave_direction": "wave_direction_avg",
     "wind_wave_height": None,  # no instrument measures this — see above
+    "swell_height": "swell_height",
+    "swell_period": "swell_period",
+    "swell_direction": "swell_direction",
+    "swell2_height": None,
+    "swell2_period": None,
+    "swell2_direction": None,
     "wind_speed": "wind_speed",
     "wind_direction": "wind_direction",
     "wind_gust": "wind_gust",
 }
 
 # Bearings, not scalars: their errors must go through circular_difference().
-CIRCULAR_VARIABLES = {"wave_direction", "wind_direction"}
+CIRCULAR_VARIABLES = {"wave_direction", "wind_direction", "swell_direction", "swell2_direction"}
 
 # Event gate for the headline scores, applied at read time (user's call,
 # 2026-08-19). Two reasons, both about signal rather than tidiness: the EC buoy

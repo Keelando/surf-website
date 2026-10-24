@@ -112,6 +112,11 @@ function toKnots(kmh) {
  * @param {Object} forecast - The `forecast` object from the payload
  * @returns {Array<Object>} Rows with a parsed Date, sorted by valid time
  */
+function swellPart(height, period, direction) {
+  if (height === null || height === undefined) return null;
+  return { height, period: period ?? null, direction: direction ?? null };
+}
+
 function toSortedRows(forecast) {
   return Object.entries(forecast)
     .map(([validTime, values]) => ({
@@ -124,6 +129,12 @@ function toSortedRows(forecast) {
       // dropped by the fetcher rather than written as zero, so a missing
       // value here means "no wind-wave partition", not "flat".
       windWaveHeight: values.wind_wave_height ?? null,
+      // The two swell partitions, fetched at the open-Pacific points only and
+      // masked (absent) whenever that partition does not exist.
+      swells: [
+        swellPart(values.swell_height, values.swell_period, values.swell_direction),
+        swellPart(values.swell2_height, values.swell2_period, values.swell2_direction),
+      ].filter(Boolean),
       windSpeed: toKnots(values.wind_speed),
       windDirection: values.wind_direction ?? null,
       // Absent at most steps by design: HRDPS only diagnoses a gust where
@@ -635,6 +646,36 @@ const TABLE_COLUMNS = {
   ],
 };
 
+/**
+ * One swell partition per line, "W 1.8 m 10 s": compact enough for a phone,
+ * where two partitions as three columns each would not fit.
+ */
+function formatSwells(row) {
+  if (!row.swells.length) return "—";
+  return row.swells
+    .map((swell) => {
+      const from =
+        swell.direction !== null && typeof degreesToCardinal === "function"
+          ? `${degreesToCardinal(swell.direction)} `
+          : "";
+      const period = swell.period !== null ? ` ${swell.period.toFixed(0)} s` : "";
+      return `<span class="wave-forecast-swell">${from}${swell.height.toFixed(1)} m${period}</span>`;
+    })
+    .join("");
+}
+
+/**
+ * The waves columns gain a swell column only at stations whose forecast
+ * carries swell partitions; elsewhere it would be a column of dashes.
+ */
+function columnsFor(mode, rows) {
+  const columns = TABLE_COLUMNS[mode];
+  if (mode !== MODE_WAVES || !rows.some((row) => row.swells.length)) return columns;
+  // After "From": on a phone the table scrolls sideways, and at these
+  // stations the swell matters more than the wind-wave height.
+  return [...columns.slice(0, 3), { header: "Swell", cell: formatSwells }, ...columns.slice(3)];
+}
+
 function renderTable(allRows) {
   const container = document.getElementById("wave-forecast-table");
   if (!container) return;
@@ -644,7 +685,7 @@ function renderTable(allRows) {
   const shown = rowsWithin(rows, visibleHours);
   const atFullExtent = shown.length >= rows.length;
 
-  const columns = TABLE_COLUMNS[currentMode];
+  const columns = columnsFor(currentMode, allRows);
   const body = shown
     .map(
       (row) => `
