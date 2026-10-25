@@ -70,8 +70,10 @@ const CHEVRON =
   `<path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" ` +
   `stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-// Column labels, drawn inside a column's first row just above its numbers.
+// Column labels: inside a column's first row, just above its numbers, and on
+// a phone (whose rows stack, home.css) on the first region heading instead.
 // Hidden from screen readers: each cell already names itself.
+const HEADING_LABELS = `<span class="sl-head-labels" aria-hidden="true">Waves · Wind</span>`;
 const COLUMN_LABELS =
   `<span class="sl-label sl-label--waves" aria-hidden="true">Waves</span>` +
   `<span class="sl-label sl-label--wind" aria-hidden="true">Wind</span>`;
@@ -129,7 +131,8 @@ export function refreshAges(container, data, now = Date.now()) {
     if (!b || !row || !text) continue;
     const fresh = freshness(b, now);
     if (!row.classList.contains(`sl-row--${fresh.state}`)) stateChanged = true;
-    text.textContent = fresh.text;
+    // Only the age part: a state change rebuilds the list (see buildStationRow).
+    text.textContent = fresh.text.split(" · ")[0];
   }
   return stateChanged;
 }
@@ -166,12 +169,12 @@ function directionPart(cardinal, degrees) {
 /** The waves cell: height large, period and direction small beneath. */
 function waveCell(r) {
   if (r.height == null) {
-    return `<span class="sl-cell"><span class="visually-hidden">Waves: </span><span class="sl-big sl-none">${DASH}</span></span>`;
+    return `<span class="sl-cell sl-cell--waves"><span class="visually-hidden">Waves: </span><span class="sl-big sl-none">${DASH}</span></span>`;
   }
   const period = r.period != null ? `${r.period} s${r.isSwell ? " swell" : ""}` : "";
   const sub = `${period}${directionPart(r.waveCardinal, r.waveDegrees)}`;
   return (
-    `<span class="sl-cell"><span class="visually-hidden">Waves: </span>` +
+    `<span class="sl-cell sl-cell--waves"><span class="visually-hidden">Waves: </span>` +
     `<span class="sl-big">${r.height}<span class="sl-unit"> m</span></span>` +
     `<span class="sl-sub">${sub}</span></span>`
   );
@@ -180,12 +183,12 @@ function waveCell(r) {
 /** The wind cell: speed large, gust and direction small beneath. */
 function windCell(r) {
   if (r.wind == null) {
-    return `<span class="sl-cell"><span class="visually-hidden">Wind: </span><span class="sl-big sl-none">${DASH}</span></span>`;
+    return `<span class="sl-cell sl-cell--wind"><span class="visually-hidden">Wind: </span><span class="sl-big sl-none">${DASH}</span></span>`;
   }
   const gust = r.gust != null ? `G ${r.gust}` : "";
   const sub = `${gust}${directionPart(r.windCardinal, r.windDegrees)}`;
   return (
-    `<span class="sl-cell"><span class="visually-hidden">Wind: </span>` +
+    `<span class="sl-cell sl-cell--wind"><span class="visually-hidden">Wind: </span>` +
     `<span class="sl-big">${r.wind}<span class="sl-unit"> kt</span></span>` +
     `<span class="sl-sub">${sub}</span></span>`
   );
@@ -243,9 +246,10 @@ export function swellLine(height, period, degrees, stationId) {
 /**
  * One station row: a button that toggles its detail panel. A station that is
  * down shows no numbers in the row: a reading days old next to live ones
- * reads as current. Its last report is still in the panel, labelled. The age
- * line ("17d ago · down") already says why, so the name takes the numbers'
- * width rather than wrapping beside a "No recent data" placeholder.
+ * reads as current. Its last report is still in the panel, labelled. On a
+ * desktop the age line ("17d ago · down") says why and the name takes the
+ * numbers' width; a phone's stacked row says "No recent data" on its second
+ * line instead, so every row is the same two lines (home.css).
  *
  * `labels` puts the Waves/Wind column labels inside the row, above its
  * numbers: set on the first row of each column.
@@ -255,7 +259,7 @@ export function buildStationRow(b, id, meta, { labels = false } = {}) {
   const fresh = freshness(b);
   const showValues = fresh.state === "ok" || fresh.state === "late";
 
-  let values = "";
+  let values = `<span class="sl-cell sl-cell--empty sl-none">No recent data</span>`;
   let swell = "";
   if (showValues) {
     const r = rowReading(b, meta);
@@ -268,12 +272,17 @@ export function buildStationRow(b, id, meta, { labels = false } = {}) {
     );
   }
 
+  // The state word is its own span so a phone's down row can drop it: its
+  // second line already says "No recent data" (home.css).
+  const [ago, word] = fresh.text.split(" · ");
+  const state = word ? `<span class="sl-age-state"> · ${word}</span>` : "";
+
   return `
     <button type="button" class="sl-row sl-row--${fresh.state}${labels ? " sl-row--labelled" : ""}" aria-expanded="false" aria-controls="sl-detail-${id}">
       ${labels ? COLUMN_LABELS : ""}
       <span class="sl-name">
         <span class="sl-title">${name}</span>
-        <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span><span class="sl-age-text">${fresh.text}</span></span>
+        <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span><span class="sl-age-text">${ago}</span>${state}</span>
       </span>
       ${values}
       ${CHEVRON}
@@ -466,7 +475,9 @@ export function buildStationList(data, stationMeta, groups = STATION_GROUPS) {
     columns[group.column] =
       (columns[group.column] ?? "") +
       `<section class="sl-region" aria-labelledby="${headingId}">
-        <h2 class="sl-region-title" id="${headingId}">${group.region}</h2>
+        <div class="sl-region-head">
+          <h2 class="sl-region-title" id="${headingId}">${group.region}</h2>${firstInColumn ? HEADING_LABELS : ""}
+        </div>
         <ul class="sl-rows">${rows}</ul>
       </section>`;
   }

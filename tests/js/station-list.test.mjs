@@ -155,7 +155,8 @@ test("refreshAges updates the text in place and reports a state change", () => {
 
   // Ninety minutes on, B (now 190 min) has crossed its late threshold.
   assert.equal(refreshAges(container, data, NOW + 90 * MIN), true);
-  assert.equal(items[1].text.textContent, "3h ago · late");
+  // The age part only: the state word changes with a rebuild, which `true` asks for.
+  assert.equal(items[1].text.textContent, "3h ago");
 });
 
 test("every dot state has its own colour, in both themes", () => {
@@ -239,10 +240,12 @@ test("a down row shows no numbers: days-old readings would pass for live", () =>
     EC,
   );
   assert.match(html, /sl-row--down/);
-  assert.match(html, / ago · down</);
+  // The state word is its own span, so a phone's stacked row can drop it.
+  assert.match(html, / ago<\/span><span class="sl-age-state"> · down</);
   assert.doesNotMatch(html, /sl-big/);
-  // No placeholder cell: the age line says it, and the name gets the width.
-  assert.doesNotMatch(html, /sl-cell/);
+  // Only the phone's line-2 stand-in, no readings.
+  assert.match(html, /sl-cell--empty sl-none">No recent data</);
+  assert.doesNotMatch(html, /sl-cell--waves|sl-cell--wind/);
 });
 
 test("swell amplitude is relative to what is rough at that station", () => {
@@ -345,6 +348,8 @@ test("the list groups stations by region into columns and skips missing ones", (
   assert.equal((html.match(/>Waves</g) || []).length, 2);
   assert.equal((html.match(/sl-row--labelled/g) || []).length, 2);
   assert.match(html, /sl-row--labelled[^>]*>\s*<span class="sl-label sl-label--waves"/);
+  // ... and, for a phone's stacked rows, on each column's first region heading.
+  assert.equal((html.match(/sl-head-labels/g) || []).length, 2);
 });
 
 test("every station appears in exactly one group", () => {

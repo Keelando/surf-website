@@ -248,6 +248,12 @@ From the user's UI refresh spec. Done:
   only the open row's moves; none when down; hidden on phones).
   Footer links set apart by rules. The map key also folds on a click inside
   it (on `click`, not `pointerdown`: closing it mid-press crashed Chromium).
+- **Station rows on a phone (< 600px), 2026-10-25:** two stacked lines:
+  name (ellipsis) | dot + age | chevron, then waves left, wind right. Fixed
+  track heights, so a down row's "No recent data" line matches the others;
+  it drops " · down" from its age (late rows keep " · late", since nothing
+  else says it in words). Waves · Wind ride on the first region heading;
+  on desktop they sit inside each column's first row instead.
 
 Not done, on purpose: the phone warning chip (the banner is already one
 compact line and the user likes it), and a stronger panel blur (24px was
