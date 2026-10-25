@@ -112,6 +112,18 @@ export function freshness(b, now = Date.now()) {
 }
 
 /**
+ * A freshness line in its parts: "17d ago · down" → "17d", " ago", "down".
+ * Each is its own span in the row, so a phone can drop " ago" and a down
+ * row's state word (home.css). Lines without an age ("Out of service") come
+ * back whole as `age`.
+ */
+function ageParts(text) {
+  const [main, word = ""] = text.split(" · ");
+  const age = main.endsWith(" ago") ? main.slice(0, -4) : main;
+  return { age, ago: age === main ? "" : " ago", word };
+}
+
+/**
  * Bring every row's age line up to `now` without rebuilding the list, so
  * open rows and their charts are left alone. Returns true when a row's state
  * changed (ok to late, say): its numbers and notes depend on the state, so
@@ -131,8 +143,8 @@ export function refreshAges(container, data, now = Date.now()) {
     if (!b || !row || !text) continue;
     const fresh = freshness(b, now);
     if (!row.classList.contains(`sl-row--${fresh.state}`)) stateChanged = true;
-    // Only the age part: a state change rebuilds the list (see buildStationRow).
-    text.textContent = fresh.text.split(" · ")[0];
+    // Only the age itself: a state change rebuilds the list, which `true` asks for.
+    text.textContent = ageParts(fresh.text).age;
   }
   return stateChanged;
 }
@@ -171,7 +183,8 @@ function waveCell(r) {
   if (r.height == null) {
     return `<span class="sl-cell sl-cell--waves"><span class="visually-hidden">Waves: </span><span class="sl-big sl-none">${DASH}</span></span>`;
   }
-  const period = r.period != null ? `${r.period} s${r.isSwell ? " swell" : ""}` : "";
+  const swell = r.isSwell ? `<span class="sl-swell-word"> swell</span>` : "";
+  const period = r.period != null ? `${r.period} s${swell}` : "";
   const sub = `${period}${directionPart(r.waveCardinal, r.waveDegrees)}`;
   return (
     `<span class="sl-cell sl-cell--waves"><span class="visually-hidden">Waves: </span>` +
@@ -272,17 +285,20 @@ export function buildStationRow(b, id, meta, { labels = false } = {}) {
     );
   }
 
-  // The state word is its own span so a phone's down row can drop it: its
-  // second line already says "No recent data" (home.css).
-  const [ago, word] = fresh.text.split(" · ");
-  const state = word ? `<span class="sl-age-state"> · ${word}</span>` : "";
+  // One inline run inside the flex age line, so its spaces survive.
+  const { age, ago, word } = ageParts(fresh.text);
+  const ageLine =
+    `<span class="sl-age-words"><span class="sl-age-text">${age}</span>` +
+    (ago ? `<span class="sl-age-ago">${ago}</span>` : "") +
+    (word ? `<span class="sl-age-state"> · ${word}</span>` : "") +
+    `</span>`;
 
   return `
     <button type="button" class="sl-row sl-row--${fresh.state}${labels ? " sl-row--labelled" : ""}" aria-expanded="false" aria-controls="sl-detail-${id}">
       ${labels ? COLUMN_LABELS : ""}
       <span class="sl-name">
         <span class="sl-title">${name}</span>
-        <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span><span class="sl-age-text">${ago}</span>${state}</span>
+        <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span>${ageLine}</span>
       </span>
       ${values}
       ${CHEVRON}

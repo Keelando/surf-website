@@ -150,13 +150,14 @@ test("refreshAges updates the text in place and reports a state change", () => {
   const container = { querySelectorAll: () => items };
 
   assert.equal(refreshAges(container, data), false);
-  assert.equal(items[0].text.textContent, "59m ago");
-  assert.equal(items[1].text.textContent, "1h 40m ago");
+  // The age itself; " ago" is a separate span a phone drops.
+  assert.equal(items[0].text.textContent, "59m");
+  assert.equal(items[1].text.textContent, "1h 40m");
 
   // Ninety minutes on, B (now 190 min) has crossed its late threshold.
   assert.equal(refreshAges(container, data, NOW + 90 * MIN), true);
-  // The age part only: the state word changes with a rebuild, which `true` asks for.
-  assert.equal(items[1].text.textContent, "3h ago");
+  // The state word changes with a rebuild, which `true` asks for.
+  assert.equal(items[1].text.textContent, "3h");
 });
 
 test("every dot state has its own colour, in both themes", () => {
@@ -240,8 +241,11 @@ test("a down row shows no numbers: days-old readings would pass for live", () =>
     EC,
   );
   assert.match(html, /sl-row--down/);
-  // The state word is its own span, so a phone's stacked row can drop it.
-  assert.match(html, / ago<\/span><span class="sl-age-state"> · down</);
+  // " ago" and the state word are their own spans, so a phone can drop them.
+  assert.match(
+    html,
+    /<span class="sl-age-text">\d+[mhd][^<]*<\/span><span class="sl-age-ago"> ago<\/span><span class="sl-age-state"> · down</,
+  );
   assert.doesNotMatch(html, /sl-big/);
   // Only the phone's line-2 stand-in, no readings.
   assert.match(html, /sl-cell--empty sl-none">No recent data</);
@@ -281,6 +285,15 @@ test("a row's swell line is decorative, and absent when down", () => {
   const down = buildStationRow({ ...halibut, status: "down", age_minutes: 22607 }, "x", EC);
   assert.doesNotMatch(down, /sl-swell/);
   assert.equal(swellLine(null, 4, 90, "4600146"), "");
+});
+
+test("a swell-display row tags its period in a span a phone can drop", () => {
+  const html = buildStationRow(
+    { ...halibut, swell_height: 1.5, swell_period: 9.1 },
+    "46087",
+    { ...EC, wave_display: "swell" },
+  );
+  assert.match(html, /9\.1 s<span class="sl-swell-word"> swell<\/span>/);
 });
 
 test("a row with no wind reading shows a dash, not 'NaN'", () => {

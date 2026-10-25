@@ -127,6 +127,36 @@
   }
 }
 
+/* On a phone the stacked list runs ~1,100px, and a background sized to cover
+   that is zoomed soft. Instead the photo sits on a layer fixed to the
+   viewport (screen-sized, so sharp), seen only through this section:
+   clip-path clips even a fixed descendant. Not background-attachment: fixed,
+   which mobile browsers ignore or repaint badly. Same URLs as above. */
+@media (max-width: 599px) {
+  .summary {
+    position: relative;
+    isolation: isolate;
+    clip-path: inset(0);
+    background-image: none;
+  }
+
+  .summary::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-color: #1d3a52;
+    background-image: var(--summary-tint), url("/assets/images/noaa-waves-1989-960.webp");
+    background-image: var(--summary-tint), image-set(
+      url("/assets/images/noaa-waves-1989-960.avif") type("image/avif"),
+      url("/assets/images/noaa-waves-1989-960.webp") type("image/webp")
+    );
+    background-blend-mode: overlay, normal;
+    background-position: center 60%;
+    background-size: cover;
+  }
+}
+
 .summary-panel {
   max-width: 1120px;
   margin: 0 auto;
@@ -643,37 +673,48 @@
 
 /* -----------------------------
    A phone's stacked row (< 600px)
-   Line 1: name (one line, ellipsis), then dot + age and the chevron.
-   Line 2: waves left, wind right, each on one baseline. Every row is the
-   same two lines: a row without numbers says "No recent data" on line 2.
-   .sl-name dissolves (display: contents) so its title and age line become
-   grid items of their own.
+   Line 1: name, then dot + age ("36m", no "ago") and a plain chevron.
+   Line 2: waves left, wind right, each on one baseline and never wrapping;
+   both span the whole line, so the wind stays right whatever the waves'
+   width. Every row is the same two lines: a row without numbers says
+   "No recent data" on line 2. .sl-name dissolves (display: contents) so
+   its title and age line become grid items of their own. The whole row
+   stays the tap target.
 ----------------------------- */
 @media (max-width: 599px) {
   .sl-row,
   .sl-row--labelled {
-    grid-template-columns: minmax(0, 1fr) auto 2rem;
+    grid-template-columns: minmax(0, 1fr) auto 1.25rem;
     /* Fixed tracks, so a row of "No recent data" is as tall as one of numbers. */
-    grid-template-rows: 2rem 1.25rem;
+    grid-template-rows: 1.25rem 1.25rem;
     grid-template-areas:
       "title age chev"
-      "waves wind wind";
+      "line line line";
     column-gap: var(--space-2);
-    row-gap: 0.2rem;
+    row-gap: 0.25rem;
     align-content: center;
-    padding: var(--space-3);
+    padding: 0.75rem var(--space-3);
   }
 
   .sl-row .sl-name {
     display: contents;
   }
 
+  /* Ellipsis is the last resort; an open row shows the whole name. */
   .sl-title {
     grid-area: title;
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  .sl-row[aria-expanded="true"] {
+    grid-template-rows: minmax(1.25rem, auto) 1.25rem;
+  }
+
+  .sl-row[aria-expanded="true"] .sl-title {
+    white-space: normal;
   }
 
   .sl-age {
@@ -683,34 +724,43 @@
     white-space: nowrap;
   }
 
-  .sl-row .sl-chevron {
+  .sl-age-ago {
+    display: none;
+  }
+
+  /* "No recent data" on line 2 says it; the name needs the width. */
+  .sl-row--down .sl-age-state {
+    display: none;
+  }
+
+  .sl-row .sl-chevron,
+  .sl-row:hover .sl-chevron {
     grid-area: chev;
-    width: 2rem;
-    height: 2rem;
-    padding: 0.45rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    background: none;
   }
 
   .sl-row .sl-cell {
+    grid-area: line;
     flex-direction: row;
     align-items: baseline;
     gap: 0.45rem;
+    white-space: nowrap;
   }
 
-  .sl-row .sl-cell--waves {
-    grid-area: waves;
+  .sl-row .sl-cell--waves,
+  .sl-row .sl-cell--empty {
     justify-self: start;
   }
 
   .sl-row .sl-cell--wind {
-    grid-area: wind;
     justify-self: end;
   }
 
   .sl-row .sl-cell--empty {
     display: block;
-    grid-row: 2;
-    grid-column: 1 / -1;
-    justify-self: start;
     font-size: 0.8rem;
   }
 
@@ -718,8 +768,9 @@
     font-size: 1.1rem;
   }
 
-  /* "No recent data" on line 2 says it; the name needs the width. */
-  .sl-row--down .sl-age-state {
+  /* The period alone says swell (9 s against a strait's 3-4 s); the open
+     panel has the detail. */
+  .sl-swell-word {
     display: none;
   }
 
@@ -740,6 +791,22 @@
   padding: 0.25rem 0.5rem 0.85rem;
   background: var(--sl-row-open);
   border-radius: 0 0 8px 8px;
+}
+
+/* A phone's stacked row has 16px sides; the panel indents a little past
+   them, under the station it belongs to, which also brings its three stat
+   columns in off the left edge. */
+@media (max-width: 599px) {
+  .sl-detail {
+    padding-inline: 1.5rem var(--space-3);
+  }
+
+  /* Narrower minimum and gap, so a 360px phone keeps three columns under
+     the indent; the widest label/value pair measured is ~97px. */
+  .sl-detail .sl-stats {
+    grid-template-columns: repeat(auto-fill, minmax(5.25rem, 1fr));
+    column-gap: 0.5rem;
+  }
 }
 
 .sl-observed {

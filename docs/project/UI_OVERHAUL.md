@@ -248,12 +248,27 @@ From the user's UI refresh spec. Done:
   only the open row's moves; none when down; hidden on phones).
   Footer links set apart by rules. The map key also folds on a click inside
   it (on `click`, not `pointerdown`: closing it mid-press crashed Chromium).
-- **Station rows on a phone (< 600px), 2026-10-25:** two stacked lines:
-  name (ellipsis) | dot + age | chevron, then waves left, wind right. Fixed
-  track heights, so a down row's "No recent data" line matches the others;
-  it drops " · down" from its age (late rows keep " · late", since nothing
-  else says it in words). Waves · Wind ride on the first region heading;
-  on desktop they sit inside each column's first row instead.
+- **Station rows on a phone (< 600px), 2026-10-25:** two stacked lines,
+  68px: name | dot + age ("36m", no "ago") | plain 20px chevron, then waves
+  left, wind right, both spanning the line so wind stays flush right, never
+  wrapping. Neah Bay drops "swell" (the 9 s period says it; the panel has
+  the detail). Fixed track heights, so a down row's "No recent data" line
+  matches the others; it drops " · down" (late rows keep " · late", since
+  nothing else says it in words). Ellipsis is the last resort and an open
+  row wraps the whole name: at 390px nothing is cut; at 360px only
+  "Crescent Channel Ocean", by ~9px (a registry `compact_name` would fix it,
+  not built). Waves · Wind ride on the first region heading; on desktop
+  they sit inside each column's first row. The open panel indents 24/16px
+  and keeps three stat columns at 360px. The photo sits on a fixed
+  `::before` layer clipped to the section (`clip-path`), not
+  `background-attachment: fixed`; watch scroll smoothness on a cheap phone
+  (the panel's backdrop blur repaints over it).
+- **Tried and dropped (2026-10-25):** dots, then a dashed line, in place of
+  a down row's swell line (blank is cleaner); `?names=short|panel` variants
+  for cut-off names (superseded by freeing the width).
+- **Wave height decimals:** two only at the Surrey piles (Crescent Beach /
+  Channel Ocean), at any height; the user wants the extra precision there.
+  EC/NOAA buoys resolve 0.1 m, so "0.40" would be false precision.
 
 Not done, on purpose: the phone warning chip (the banner is already one
 compact line and the user likes it), and a stronger panel blur (24px was
