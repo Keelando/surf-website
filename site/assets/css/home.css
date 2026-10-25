@@ -294,36 +294,51 @@
   min-width: 0;
 }
 
-/* Rows and the region headings that carry the column labels share one grid,
-   so the labels line up with the numbers. */
-.sl-region-head,
 .sl-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 4.75rem 4rem 1.5rem;
   column-gap: 0.5rem;
-  align-items: baseline;
-}
-
-.sl-row {
   align-items: center;
 }
 
-.sl-region-head {
-  margin: 0.75rem 0 0.3rem;
-  padding: 0 0.5rem;
+/* A column's first row carries the Waves/Wind labels in a short top row of
+   its own grid, just above the numbers; the name, swell line and chevron span
+   both rows, so they stay centred. */
+.sl-row--labelled {
+  grid-template-rows: auto auto;
 }
 
-.sl-column > .sl-region:first-child .sl-region-head {
-  margin-top: 0.3rem;
+.sl-row--labelled .sl-name,
+.sl-row--labelled .sl-swell {
+  grid-row: 1 / 3;
+}
+
+.sl-row--labelled .sl-chevron {
+  grid-row: 1 / 3;
+  grid-column: 4;
+}
+
+.sl-row--labelled .sl-cell {
+  grid-row: 2;
 }
 
 .sl-label {
+  grid-row: 1;
   text-align: right;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 600;
+  line-height: 1.2;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--sl-muted);
+}
+
+.sl-label--waves {
+  grid-column: 2;
+}
+
+.sl-label--wind {
+  grid-column: 3;
 }
 
 /* Stacked on a phone, the second column's labels would repeat mid-list. */
@@ -334,13 +349,16 @@
 }
 
 .sl-region-title {
-  min-width: 0;
-  margin: 0;
+  margin: 0.75rem 0.5rem 0.3rem;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--sl-heading);
+}
+
+.sl-column > .sl-region:first-child .sl-region-title {
+  margin-top: 0.3rem;
 }
 
 /* Each region's stations sit in a shallow recessed well: an inner shadow
@@ -468,20 +486,11 @@
 }
 
 /* A row without numbers (down, out of service, no data): the name and age
-   line take the numbers' width instead of wrapping in the first column, and
-   the dots sit where the numbers would be, on a phone too. */
+   line take the numbers' width instead of wrapping in the first column. */
 .sl-row--down .sl-name,
 .sl-row--out .sl-name,
 .sl-row--none .sl-name {
   grid-column: 1 / 4;
-}
-
-.sl-row--down .sl-swell,
-.sl-row--out .sl-swell,
-.sl-row--none .sl-swell {
-  display: block;
-  grid-column: 2 / 4;
-  margin-right: 0;
 }
 
 .sl-title {

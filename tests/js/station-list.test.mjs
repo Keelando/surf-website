@@ -344,9 +344,10 @@ test("the list groups stations by region into columns and skips missing ones", (
   assert.match(html, /Juan de Fuca Strait/);
   assert.doesNotMatch(html, /Boundary Bay/); // no data for its stations
   assert.match(html, /id="buoy-4600146"/);
-  // Column labels ride on each column's first region heading, once per column.
-  assert.equal((html.match(/class="sl-label"[^>]*>Waves</g) || []).length, 2);
-  assert.match(html, /Strait of Georgia<\/h2><span class="sl-label"/);
+  // Column labels sit inside each column's first row, once per column.
+  assert.equal((html.match(/>Waves</g) || []).length, 2);
+  assert.equal((html.match(/sl-row--labelled/g) || []).length, 2);
+  assert.match(html, /sl-row--labelled[^>]*>\s*<span class="sl-label sl-label--waves"/);
 });
 
 test("every station appears in exactly one group", () => {
