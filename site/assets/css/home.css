@@ -212,7 +212,7 @@
 /* On a phone the header already says "Halibut Bank" and the rows explain
    themselves: the title stays for screen readers and the tagline goes, so the
    first station sits near the top of the screen. */
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .summary-head {
     position: absolute;
     width: 1px;
@@ -266,7 +266,7 @@
 
 /* A phone wraps the row, and a rule would start the second line: two
    columns instead, the rule only between the pair on each line. */
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .summary-foot {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -320,8 +320,13 @@
   color: var(--sl-muted);
 }
 
+/* Each column is a size container: its rows sit side by side or stack by
+   the column's own width, not the screen's (the stacked layout below). A
+   two-column tablet at 900-1024px has columns narrower than a phone held
+   sideways. Its cqi units also scale the names and numbers. */
 .sl-column {
   min-width: 0;
+  container: sl-column / inline-size;
 }
 
 .sl-row {
@@ -331,60 +336,23 @@
   align-items: center;
 }
 
-/* A column's first row carries the Waves/Wind labels in a short top row of
-   its own grid, just above the numbers; the name, swell line and chevron span
-   both rows, so they stay centred. */
-.sl-row--labelled {
-  grid-template-rows: auto auto;
+/* Side by side, the heading is a grid on the rows' own tracks, inset by the
+   well's 2px and the row's padding, so Waves and Wind sit over their
+   numbers. */
+.sl-region-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.75rem 4rem 1.5rem;
+  column-gap: 0.5rem;
+  align-items: baseline;
+  margin: 0.75rem 0 0.3rem;
+  padding-inline: calc(2px + 0.5rem);
 }
 
-.sl-row--labelled .sl-name,
-.sl-row--labelled .sl-swell {
-  grid-row: 1 / 3;
-}
-
-.sl-row--labelled .sl-chevron {
-  grid-row: 1 / 3;
-  grid-column: 4;
-}
-
-.sl-row--labelled .sl-cell {
-  grid-row: 2;
-}
-
-.sl-label {
-  grid-row: 1;
-  text-align: right;
-  font-size: 0.62rem;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--sl-muted);
-}
-
-.sl-label--waves {
-  grid-column: 2;
-}
-
-.sl-label--wind {
-  grid-column: 3;
-}
-
-/* Stacked on a phone, the second column's labels would repeat mid-list. */
+/* One column of regions, the second column's labels would repeat mid-list. */
 @media (max-width: 899px) {
-  .sl-column + .sl-column .sl-label,
   .sl-column + .sl-column .sl-head-labels {
     display: none;
   }
-}
-
-.sl-region-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin: 0.75rem 0.5rem 0.3rem;
 }
 
 .sl-column > .sl-region:first-child .sl-region-head {
@@ -400,15 +368,30 @@
   color: var(--sl-heading);
 }
 
-/* The heading's copy of the column labels is for the phone's stacked rows. */
 .sl-head-labels {
-  display: none;
+  display: contents;
   font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--sl-muted);
+}
+
+.sl-head-label {
+  text-align: right;
+}
+
+.sl-head-label--waves {
+  grid-column: 2;
+}
+
+.sl-head-label--wind {
+  grid-column: 3;
+}
+
+.sl-head-sep {
+  display: none;
 }
 
 /* Each region's stations sit in a shallow recessed well: an inner shadow
@@ -459,30 +442,37 @@
   border-radius: 8px 8px 0 0;
 }
 
-.sl-name {
-  /* Placed explicitly so the swell line can share its cell. */
-  grid-column: 1;
-  grid-row: 1;
-  position: relative;
-  z-index: 1;
+/* The name and the swell line share the first column as a flex row: the
+   name keeps its full width, the line grows into what is left. */
+.sl-lead {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* Small: the line's masked ends fade out, which is gap enough. */
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.sl-name {
+  display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
   min-width: 0;
 }
 
 /* -----------------------------
-   Swell lines: a faint sine in the spare width at the right of the name
-   column, drawn from the station's own height, period and direction
-   (station-list.js swellLine). Decoration under the numbers, never instead
-   of them. Static except in the open row.
+   Swell lines: a faint sine filling the spare width between name and
+   numbers (80px to 17.5rem, right-aligned against the numbers), drawn from
+   the station's own height, period and direction (station-list.js
+   swellLine, which also says why height alone sets the amplitude).
+   Decoration beside the numbers, never instead of them. Static except in
+   the open row.
 ----------------------------- */
 
 .sl-swell {
-  grid-column: 1;
-  grid-row: 1;
-  justify-self: end;
-  align-self: center;
-  margin-right: var(--space-2);
+  flex: 1 1 0;
+  min-width: 5rem;
+  max-width: 17.5rem;
   overflow: hidden;
   pointer-events: none;
   /* Soft ends, so the line fades in and out of the row. */
@@ -522,23 +512,19 @@
   }
 }
 
-/* A phone's name column is all name: no room for the line. */
-@media (max-width: 600px) {
-  .sl-swell {
-    display: none;
-  }
+/* A row without numbers: the line lies flat, dashed and muted. */
+.sl-swell-flat {
+  stroke: var(--sl-muted);
+  stroke-dasharray: 4 5;
+  opacity: 0.5;
 }
 
-/* A row without numbers (down, out of service, no data): the name and age
-   line take the numbers' width instead of wrapping in the first column. */
-.sl-row--down .sl-name,
-.sl-row--out .sl-name,
-.sl-row--none .sl-name {
-  grid-column: 1 / 4;
-}
-
+/* Fluid by the column's width (cqi): 0.95rem up to a desktop's 519px
+   column (any larger and "Crescent Channel Ocean" wraps there), 1.05rem
+   from a 600px one, a tablet's single column. */
 .sl-title {
   font-size: 0.95rem;
+  font-size: clamp(0.95rem, 0.3rem + 2cqi, 1.05rem);
   font-weight: 600;
   line-height: 1.2;
 }
@@ -598,9 +584,13 @@
   display: none;
 }
 
+/* Fluid like the names: 1.1rem in a phone's column, ~1.3rem in a desktop
+   one, 1.45rem in a tablet's single column, so a tablet never reads
+   smaller than a phone. The cap fits "0.31 m" in its 4.75rem column. */
 .sl-big {
   font-family: var(--sl-readout-font);
   font-size: 1.3rem;
+  font-size: clamp(1.1rem, 0.6rem + 2.2cqi, 1.45rem);
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -639,8 +629,10 @@
   color: var(--sl-text);
 }
 
-/* The chevron sits in a tinted disc so the row reads as something to open. */
+/* The chevron sits in a tinted disc so the row reads as something to open.
+   Placed, not auto-placed: a row without numbers has no cells before it. */
 .sl-chevron {
+  grid-column: 4;
   width: 1.5rem;
   height: 1.5rem;
   padding: 0.3rem;
@@ -672,7 +664,11 @@
 }
 
 /* -----------------------------
-   A phone's stacked row (< 600px)
+   A stacked row (column < 504px: a phone, or a two-column tablet)
+   504px is measured, not a device: below ~502px "Crescent Channel Ocean",
+   an 80px swell line and both numbers no longer fit on one line (Chromium
+   and Firefox alike). A desktop's column is 519px. A longer station name
+   means measuring again.
    Line 1: name, then dot + age ("36m", no "ago") and a plain chevron.
    Line 2: waves left, wind right, each on one baseline and never wrapping;
    both span the whole line, so the wind stays right whatever the waves'
@@ -681,9 +677,8 @@
    its title and age line become grid items of their own. The whole row
    stays the tap target.
 ----------------------------- */
-@media (max-width: 599px) {
-  .sl-row,
-  .sl-row--labelled {
+@container sl-column (width < 504px) {
+  .sl-row {
     grid-template-columns: minmax(0, 1fr) auto 1.25rem;
     /* Fixed tracks, so a row of "No recent data" is as tall as one of numbers. */
     grid-template-rows: 1.25rem 1.25rem;
@@ -696,8 +691,14 @@
     padding: 0.75rem var(--space-3);
   }
 
+  .sl-row .sl-lead,
   .sl-row .sl-name {
     display: contents;
+  }
+
+  /* All name on line 1: no room for the line. */
+  .sl-swell {
+    display: none;
   }
 
   /* Ellipsis is the last resort; an open row shows the whole name. */
@@ -764,21 +765,25 @@
     font-size: 0.8rem;
   }
 
-  .sl-row .sl-big {
-    font-size: 1.1rem;
-  }
-
   /* The period alone says swell (9 s against a strait's 3-4 s); the open
      panel has the detail. */
   .sl-swell-word {
     display: none;
   }
 
-  .sl-label {
-    display: none;
+  /* The heading goes back to a line: region left, "Waves · Wind" right. */
+  .sl-region-head {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding-inline: 0.5rem;
   }
 
   .sl-head-labels {
+    display: inline;
+  }
+
+  .sl-head-sep {
     display: inline;
   }
 }
@@ -793,10 +798,10 @@
   border-radius: 0 0 8px 8px;
 }
 
-/* A phone's stacked row has 16px sides; the panel indents a little past
-   them, under the station it belongs to, which also brings its three stat
-   columns in off the left edge. */
-@media (max-width: 599px) {
+/* A stacked row has 16px sides; the panel indents a little past them,
+   under the station it belongs to, which also brings its three stat columns
+   in off the left edge. */
+@container sl-column (width < 504px) {
   .sl-detail {
     padding-inline: 1.5rem var(--space-3);
   }

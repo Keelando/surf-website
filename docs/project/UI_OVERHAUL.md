@@ -245,7 +245,7 @@ From the user's UI refresh spec. Done:
   fits, and the 601–1279px wrap bug is gone.
 - **Home:** on a phone the title is screen-reader only and the tagline gone,
   so the first station is ~60px higher. Swell lines in each row (static;
-  only the open row's moves; none when down; hidden on phones).
+  only the open row's moves; hidden on stacked rows).
   Footer links set apart by rules. The map key also folds on a click inside
   it (on `click`, not `pointerdown`: closing it mid-press crashed Chromium).
 - **Station rows on a phone (< 600px), 2026-10-25:** two stacked lines,
@@ -257,15 +257,35 @@ From the user's UI refresh spec. Done:
   nothing else says it in words). Ellipsis is the last resort and an open
   row wraps the whole name: at 390px nothing is cut; at 360px only
   "Crescent Channel Ocean", by ~9px (a registry `compact_name` would fix it,
-  not built). Waves · Wind ride on the first region heading; on desktop
-  they sit inside each column's first row. The open panel indents 24/16px
+  not built). Waves · Wind ride on the first region heading (at every
+  width since the tablet pass below). The open panel indents 24/16px
   and keeps three stat columns at 360px. The photo sits on a fixed
   `::before` layer clipped to the section (`clip-path`), not
   `background-attachment: fixed`; watch scroll smoothness on a cheap phone
   (the panel's backdrop blur repaints over it).
-- **Tried and dropped (2026-10-25):** dots, then a dashed line, in place of
-  a down row's swell line (blank is cleaner); `?names=short|panel` variants
-  for cut-off names (superseded by freeing the width).
+- **Tried and dropped (2026-10-25):** dots in place of a down row's swell
+  line; `?names=short|panel` variants for cut-off names (superseded by
+  freeing the width). The dashed line, dropped that morning for a blank,
+  came back in the tablet pass below as the user's spec.
+- **Tablet / fluid pass (2026-10-25):** rows stack or sit side by side by
+  their *column's* width (`.sl-column` is a size container), not the
+  screen's, so the 900–1024px two-column tablet, whose columns (385–447px)
+  are narrower than a phone held sideways, gets the stacked rows instead of
+  cramped ones. The break is 504px, measured: below ~502px "Crescent Channel
+  Ocean", an 80px swell line and both numbers no longer fit (both engines);
+  a desktop column is 519px. The swell line shares a flex cell with the
+  name and fills the spare width (80px to 17.5rem, flush against the
+  numbers), drawn 1:1 and clipped rather than stretched. Names and numbers
+  are fluid by `cqi`: 0.95→1.05rem and 1.1→1.45rem, so a tablet never reads
+  smaller than a phone, and desktop names stay 0.95rem (any larger wraps at
+  519px). Waves/Wind live on each column's first region heading at every
+  width: a grid on the rows' tracks side by side, "Waves · Wind" when
+  stacked. Down, out-of-service and no-data rows draw a flat dashed muted
+  line; late rows keep their real line (their numbers are still shown).
+  Swell amplitude scales by height alone (station-relative), on purpose; the
+  reasoning is on `swellGeometry` in `station-list.js`. The summary photo
+  was checked for seams at six device sizes, both themes and engines: none
+  (a full-page screenshot fakes one on phones, from the fixed photo layer).
 - **Wave height decimals:** two only at the Surrey piles (Crescent Beach /
   Channel Ocean), at any height; the user wants the extra precision there.
   EC/NOAA buoys resolve 0.1 m, so "0.40" would be false precision.

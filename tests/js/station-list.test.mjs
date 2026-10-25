@@ -278,13 +278,33 @@ test("swell geometry: height sets amplitude, period wavelength, bearing drift", 
   assert.equal(swellGeometry(null, 5, 90), null);
 });
 
-test("a row's swell line is decorative, and absent when down", () => {
+test("a row's swell line is decorative, and lies flat when down", () => {
   const fresh = buildStationRow(halibut, "4600146", EC);
   assert.match(fresh, /<svg class="sl-swell"[^>]*aria-hidden="true"/);
   assert.match(fresh, /sl-swell-wave/);
-  const down = buildStationRow({ ...halibut, status: "down", age_minutes: 22607 }, "x", EC);
-  assert.doesNotMatch(down, /sl-swell/);
+  assert.doesNotMatch(fresh, /sl-swell-flat/);
+  // Drawn 1:1 and clipped by its flexible box: no viewBox to stretch it.
+  assert.doesNotMatch(/<svg class="sl-swell"[^>]*>/.exec(fresh)[0], /viewBox/);
+  // Down, out of service and no data: the flat dashed stand-in, no wave.
+  for (const b of [
+    { ...halibut, status: "down", age_minutes: 22607 },
+    { ...halibut, out_of_service: { reason: "Maintenance." } },
+    { name: "Empty", no_data: true },
+  ]) {
+    const html = buildStationRow(b, "x", EC);
+    assert.match(html, /<svg class="sl-swell sl-swell--flat"[^>]*aria-hidden="true"/);
+    assert.doesNotMatch(html, /sl-swell-wave/);
+  }
+  // Late still has real numbers, so its line still draws them.
+  const late = buildStationRow({ ...halibut, status: "late" }, "4600146", EC);
+  assert.match(late, /sl-row--late/);
+  assert.match(late, /sl-swell-wave/);
   assert.equal(swellLine(null, 4, 90, "4600146"), "");
+});
+
+test("the name and swell line share one lead cell", () => {
+  const html = buildStationRow(halibut, "4600146", EC);
+  assert.match(html, /<span class="sl-lead">\s*<span class="sl-name">[\s\S]*<\/span>\s*<svg class="sl-swell"[\s\S]*<\/svg>\s*<\/span>/);
 });
 
 test("a swell-display row tags its period in a span a phone can drop", () => {
@@ -357,12 +377,11 @@ test("the list groups stations by region into columns and skips missing ones", (
   assert.match(html, /Juan de Fuca Strait/);
   assert.doesNotMatch(html, /Boundary Bay/); // no data for its stations
   assert.match(html, /id="buoy-4600146"/);
-  // Column labels sit inside each column's first row, once per column.
+  // Column labels sit on each column's first region heading, never in a row.
   assert.equal((html.match(/>Waves</g) || []).length, 2);
-  assert.equal((html.match(/sl-row--labelled/g) || []).length, 2);
-  assert.match(html, /sl-row--labelled[^>]*>\s*<span class="sl-label sl-label--waves"/);
-  // ... and, for a phone's stacked rows, on each column's first region heading.
   assert.equal((html.match(/sl-head-labels/g) || []).length, 2);
+  assert.match(html, /sl-region-title[^<]*<\/h2><span class="sl-head-labels"/);
+  assert.doesNotMatch(html, /sl-row[^"]*labelled|sl-label/);
 });
 
 test("every station appears in exactly one group", () => {

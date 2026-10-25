@@ -70,13 +70,15 @@ const CHEVRON =
   `<path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" ` +
   `stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-// Column labels: inside a column's first row, just above its numbers, and on
-// a phone (whose rows stack, home.css) on the first region heading instead.
-// Hidden from screen readers: each cell already names itself.
-const HEADING_LABELS = `<span class="sl-head-labels" aria-hidden="true">Waves · Wind</span>`;
-const COLUMN_LABELS =
-  `<span class="sl-label sl-label--waves" aria-hidden="true">Waves</span>` +
-  `<span class="sl-label sl-label--wind" aria-hidden="true">Wind</span>`;
+// Column labels, on each column's first region heading at every width: over
+// the numbers' columns when the rows sit side by side, "Waves · Wind" at the
+// heading's right when they stack (home.css). Hidden from screen readers:
+// each cell already names itself.
+const HEADING_LABELS =
+  `<span class="sl-head-labels" aria-hidden="true">` +
+  `<span class="sl-head-label sl-head-label--waves">Waves</span>` +
+  `<span class="sl-head-sep"> · </span>` +
+  `<span class="sl-head-label sl-head-label--wind">Wind</span></span>`;
 
 /**
  * "52m", "1h 25m", "4h", "15d": whole units, rounded down. Minutes are kept
@@ -207,9 +209,11 @@ function windCell(r) {
   );
 }
 
-// The swell line's box, in px (the SVG is drawn 1:1).
-const SWELL_WIDTH = 96;
+// The swell line's height, in px. Its width is the row's spare space between
+// name and numbers (home.css: 80px to 17.5rem), so the path is drawn 1:1
+// (no viewBox) out to SWELL_DRAWN and the SVG clips it to whatever it gets.
 const SWELL_HEIGHT = 20;
+const SWELL_DRAWN = 400;
 
 /**
  * Geometry of a row's swell line: amplitude from wave height measured against
@@ -217,6 +221,13 @@ const SWELL_HEIGHT = 20;
  * wavelength from period (a long period draws wide lazy rollers, a short one
  * tight chop), and the way it drifts from the direction arrow's horizontal
  * component. Null when there is no height to draw.
+ *
+ * Amplitude scales by height alone, not by steepness, on purpose: the line's
+ * height answers "how big is it here", the one thing a glance down the list
+ * should compare. Period already sets the wavelength, so the drawn line's
+ * steepness (amplitude over wavelength) follows height/period anyway: the
+ * same height looks steeper at a short period. That is a likeness, not a
+ * physical steepness (H/L, with L growing as the period squared).
  *
  * @returns {{amplitude: number, wavelength: number, drift: -1|0|1}|null}
  */
@@ -234,7 +245,8 @@ export function swellGeometry(height, period, degrees, stationId) {
   };
 }
 
-const SWELL_OPEN = `<svg class="sl-swell" width="${SWELL_WIDTH}" height="${SWELL_HEIGHT}" viewBox="0 0 ${SWELL_WIDTH} ${SWELL_HEIGHT}" aria-hidden="true" focusable="false">`;
+const swellOpen = (cls) =>
+  `<svg class="sl-swell${cls}" height="${SWELL_HEIGHT}" aria-hidden="true" focusable="false">`;
 
 /**
  * A faint sine line behind the row's spare width. Decorative, so hidden from
@@ -249,31 +261,37 @@ export function swellLine(height, period, degrees, stationId) {
   // wavelength either way without its ends showing.
   const half = g.wavelength / 2;
   let d = `M${-g.wavelength} ${mid}Q${-g.wavelength + half / 2} ${mid - 2 * g.amplitude} ${-half} ${mid}`;
-  for (let x = 0; x <= SWELL_WIDTH + g.wavelength; x += half) d += `T${x} ${mid}`;
+  for (let x = 0; x <= SWELL_DRAWN + g.wavelength; x += half) d += `T${x} ${mid}`;
   return (
-    `${SWELL_OPEN}<path class="sl-swell-wave" data-drift="${g.drift}" ` +
+    `${swellOpen("")}<path class="sl-swell-wave" data-drift="${g.drift}" ` +
     `style="--swell-shift: ${g.drift * g.wavelength}px; --swell-period: ${((period ?? 4) * 1.5).toFixed(1)}s" d="${d}"/></svg>`
   );
 }
 
 /**
+ * The swell line's stand-in on a row without numbers: flat, dashed and muted,
+ * so the column of lines stays unbroken and the gap reads as "no signal".
+ */
+export const FLAT_LINE = `${swellOpen(" sl-swell--flat")}<path class="sl-swell-flat" d="M0 ${SWELL_HEIGHT / 2}H${SWELL_DRAWN}"/></svg>`;
+
+/**
  * One station row: a button that toggles its detail panel. A station that is
  * down shows no numbers in the row: a reading days old next to live ones
- * reads as current. Its last report is still in the panel, labelled. On a
- * desktop the age line ("17d ago · down") says why and the name takes the
- * numbers' width; a phone's stacked row says "No recent data" on its second
- * line instead, so every row is the same two lines (home.css).
+ * reads as current. Its last report is still in the panel, labelled. Side
+ * by side, the age line ("17d ago · down") says why and a flat dashed line
+ * holds the swell line's place; stacked, the second line says "No recent
+ * data" instead, so every row is the same two lines (home.css).
  *
- * `labels` puts the Waves/Wind column labels inside the row, above its
- * numbers: set on the first row of each column.
+ * The name and swell line share one lead cell, a flex row, so the line takes
+ * whatever width the name leaves and the name never yields to the line.
  */
-export function buildStationRow(b, id, meta, { labels = false } = {}) {
+export function buildStationRow(b, id, meta) {
   const name = b.name || meta?.name || id;
   const fresh = freshness(b);
   const showValues = fresh.state === "ok" || fresh.state === "late";
 
   let values = `<span class="sl-cell sl-cell--empty sl-none">No recent data</span>`;
-  let swell = "";
+  let swell = FLAT_LINE;
   if (showValues) {
     const r = rowReading(b, meta);
     values = waveCell(r) + windCell(r);
@@ -294,15 +312,16 @@ export function buildStationRow(b, id, meta, { labels = false } = {}) {
     `</span>`;
 
   return `
-    <button type="button" class="sl-row sl-row--${fresh.state}${labels ? " sl-row--labelled" : ""}" aria-expanded="false" aria-controls="sl-detail-${id}">
-      ${labels ? COLUMN_LABELS : ""}
-      <span class="sl-name">
-        <span class="sl-title">${name}</span>
-        <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span>${ageLine}</span>
+    <button type="button" class="sl-row sl-row--${fresh.state}" aria-expanded="false" aria-controls="sl-detail-${id}">
+      <span class="sl-lead">
+        <span class="sl-name">
+          <span class="sl-title">${name}</span>
+          <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span>${ageLine}</span>
+        </span>
+        ${swell}
       </span>
       ${values}
       ${CHEVRON}
-      ${swell}
     </button>`;
 }
 
@@ -479,9 +498,9 @@ export function buildStationList(data, stationMeta, groups = STATION_GROUPS) {
     const rows = group.stations
       .filter((id) => data[id])
       .map(
-        (id, i) => `
+        (id) => `
         <li class="sl-item" id="buoy-${id}">
-          ${buildStationRow(data[id], id, stationMeta[id], { labels: firstInColumn && i === 0 })}
+          ${buildStationRow(data[id], id, stationMeta[id])}
           <div class="sl-detail" id="sl-detail-${id}" hidden></div>
         </li>`,
       )
