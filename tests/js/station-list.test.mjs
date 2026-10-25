@@ -23,7 +23,6 @@ const {
   freshness,
   refreshAges,
   rowReading,
-  flatSwellLine,
   swellGeometry,
   swellLine,
 } = await import("../../site/assets/js/station-list.js");
@@ -272,15 +271,13 @@ test("swell geometry: height sets amplitude, period wavelength, bearing drift", 
   assert.equal(swellGeometry(null, 5, 90), null);
 });
 
-test("a row's swell line is decorative, and flat and dashed when down", () => {
+test("a row's swell line is decorative, and absent when down", () => {
   const fresh = buildStationRow(halibut, "4600146", EC);
   assert.match(fresh, /<svg class="sl-swell"[^>]*aria-hidden="true"/);
   assert.match(fresh, /sl-swell-wave/);
   const down = buildStationRow({ ...halibut, status: "down", age_minutes: 22607 }, "x", EC);
-  assert.match(down, /sl-swell-flat/);
-  assert.doesNotMatch(down, /sl-swell-wave/);
+  assert.doesNotMatch(down, /sl-swell/);
   assert.equal(swellLine(null, 4, 90, "4600146"), "");
-  assert.match(flatSwellLine(), /aria-hidden="true"/);
 });
 
 test("a row with no wind reading shows a dash, not 'NaN'", () => {

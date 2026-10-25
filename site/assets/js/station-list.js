@@ -220,15 +220,6 @@ export function swellGeometry(height, period, degrees, stationId) {
 
 const SWELL_OPEN = `<svg class="sl-swell" width="${SWELL_WIDTH}" height="${SWELL_HEIGHT}" viewBox="0 0 ${SWELL_WIDTH} ${SWELL_HEIGHT}" aria-hidden="true" focusable="false">`;
 
-/** A station with no current reading: four dots, centred clear of the faded ends. */
-export function flatSwellLine() {
-  const gap = 10;
-  const dots = [-1.5, -0.5, 0.5, 1.5]
-    .map((k) => `<circle cx="${SWELL_WIDTH / 2 + k * gap}" cy="${SWELL_HEIGHT / 2}" r="1.5"/>`)
-    .join("");
-  return `${SWELL_OPEN}<g class="sl-swell-flat">${dots}</g></svg>`;
-}
-
 /**
  * A faint sine line behind the row's spare width. Decorative, so hidden from
  * screen readers; "" when there is no height reading. It is static; only the
@@ -265,7 +256,7 @@ export function buildStationRow(b, id, meta, { labels = false } = {}) {
   const showValues = fresh.state === "ok" || fresh.state === "late";
 
   let values = "";
-  let swell = flatSwellLine();
+  let swell = "";
   if (showValues) {
     const r = rowReading(b, meta);
     values = waveCell(r) + windCell(r);

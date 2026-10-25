@@ -451,12 +451,6 @@
   opacity: 0.45;
 }
 
-/* No current reading: a few muted dots. */
-.sl-swell-flat {
-  fill: var(--sl-muted);
-  opacity: 0.5;
-}
-
 .sl-row[aria-expanded="true"] .sl-swell-wave {
   opacity: 0.7;
   animation: sl-swell-travel var(--swell-period, 6s) linear infinite;

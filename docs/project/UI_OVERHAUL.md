@@ -245,7 +245,7 @@ From the user's UI refresh spec. Done:
   fits, and the 601–1279px wrap bug is gone.
 - **Home:** on a phone the title is screen-reader only and the tagline gone,
   so the first station is ~60px higher. Swell lines in each row (static;
-  only the open row's moves; dashed flat when down; hidden on phones).
+  only the open row's moves; none when down; hidden on phones).
   Footer links set apart by rules. The map key also folds on a click inside
   it (on `click`, not `pointerdown`: closing it mid-press crashed Chromium).
 
