@@ -70,6 +70,10 @@ const CHEVRON =
   `<path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" ` +
   `stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
+const COLUMN_LABELS =
+  `<span class="sl-label" aria-hidden="true">Waves</span>` +
+  `<span class="sl-label" aria-hidden="true">Wind</span>`;
+
 /**
  * "52m", "1h 25m", "4h", "15d": whole units, rounded down. Minutes are kept
  * through the second hour because that is where an hourly station is either
@@ -214,9 +218,13 @@ export function swellGeometry(height, period, degrees, stationId) {
 
 const SWELL_OPEN = `<svg class="sl-swell" width="${SWELL_WIDTH}" height="${SWELL_HEIGHT}" viewBox="0 0 ${SWELL_WIDTH} ${SWELL_HEIGHT}" aria-hidden="true" focusable="false">`;
 
-/** A station with no current reading: a flat dashed line. */
+/** A station with no current reading: four dots, centred clear of the faded ends. */
 export function flatSwellLine() {
-  return `${SWELL_OPEN}<path class="sl-swell-flat" d="M0 ${SWELL_HEIGHT / 2}H${SWELL_WIDTH}"/></svg>`;
+  const gap = 10;
+  const dots = [-1.5, -0.5, 0.5, 1.5]
+    .map((k) => `<circle cx="${SWELL_WIDTH / 2 + k * gap}" cy="${SWELL_HEIGHT / 2}" r="1.5"/>`)
+    .join("");
+  return `${SWELL_OPEN}<g class="sl-swell-flat">${dots}</g></svg>`;
 }
 
 /**
@@ -242,14 +250,16 @@ export function swellLine(height, period, degrees, stationId) {
 /**
  * One station row: a button that toggles its detail panel. A station that is
  * down shows no numbers in the row: a reading days old next to live ones
- * reads as current. Its last report is still in the panel, labelled.
+ * reads as current. Its last report is still in the panel, labelled. The age
+ * line ("17d ago · down") already says why, so the name takes the numbers'
+ * width rather than wrapping beside a "No recent data" placeholder.
  */
 export function buildStationRow(b, id, meta) {
   const name = b.name || meta?.name || id;
   const fresh = freshness(b);
   const showValues = fresh.state === "ok" || fresh.state === "late";
 
-  let values;
+  let values = "";
   let swell = flatSwellLine();
   if (showValues) {
     const r = rowReading(b, meta);
@@ -260,10 +270,6 @@ export function buildStationRow(b, id, meta) {
       r.waveDegrees,
       id,
     );
-  } else {
-    // The age line already says how long; the panel says since when.
-    const word = fresh.state === "down" ? "No recent data" : fresh.text;
-    values = `<span class="sl-cell sl-cell--wide sl-none">${word}</span>`;
   }
 
   return `
@@ -459,18 +465,21 @@ export function buildStationList(data, stationMeta, groups = STATION_GROUPS) {
       .join("");
     if (!rows) continue;
     const headingId = `sl-region-${group.region.toLowerCase().replace(/\s+/g, "-")}`;
+    // The column labels ride on the first region heading of each column, on
+    // the same grid as the rows, so they line up with the numbers without a
+    // line of their own. Hidden from screen readers: each cell names itself.
+    const labels = columns[group.column] == null ? COLUMN_LABELS : "";
     columns[group.column] =
       (columns[group.column] ?? "") +
       `<section class="sl-region" aria-labelledby="${headingId}">
-        <h2 class="sl-region-title" id="${headingId}">${group.region}</h2>
+        <div class="sl-region-head">
+          <h2 class="sl-region-title" id="${headingId}">${group.region}</h2>${labels}
+        </div>
         <ul class="sl-rows">${rows}</ul>
       </section>`;
   }
-  // Column labels, drawn on the same grid as the rows beneath them. Hidden
-  // from screen readers: each cell already names itself.
-  const labels = `<div class="sl-labels" aria-hidden="true"><span></span><span>Waves</span><span>Wind</span><span></span></div>`;
   return columns
     .filter(Boolean)
-    .map((html) => `<div class="sl-column">${labels}${html}</div>`)
+    .map((html) => `<div class="sl-column">${html}</div>`)
     .join("");
 }

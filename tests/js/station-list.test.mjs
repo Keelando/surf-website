@@ -240,8 +240,10 @@ test("a down row shows no numbers: days-old readings would pass for live", () =>
     EC,
   );
   assert.match(html, /sl-row--down/);
-  assert.match(html, /No recent data/);
+  assert.match(html, / ago · down</);
   assert.doesNotMatch(html, /sl-big/);
+  // No placeholder cell: the age line says it, and the name gets the width.
+  assert.doesNotMatch(html, /sl-cell/);
 });
 
 test("swell amplitude is relative to what is rough at that station", () => {
@@ -342,6 +344,9 @@ test("the list groups stations by region into columns and skips missing ones", (
   assert.match(html, /Juan de Fuca Strait/);
   assert.doesNotMatch(html, /Boundary Bay/); // no data for its stations
   assert.match(html, /id="buoy-4600146"/);
+  // Column labels ride on each column's first region heading, once per column.
+  assert.equal((html.match(/class="sl-label"[^>]*>Waves</g) || []).length, 2);
+  assert.match(html, /Strait of Georgia<\/h2><span class="sl-label"/);
 });
 
 test("every station appears in exactly one group", () => {

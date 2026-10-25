@@ -294,17 +294,31 @@
   min-width: 0;
 }
 
-/* Rows and their column labels share one grid, so the numbers line up. */
-.sl-labels,
+/* Rows and the region headings that carry the column labels share one grid,
+   so the labels line up with the numbers. */
+.sl-region-head,
 .sl-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 4.75rem 4rem 1.5rem;
   column-gap: 0.5rem;
+  align-items: baseline;
+}
+
+.sl-row {
   align-items: center;
 }
 
-.sl-labels {
+.sl-region-head {
+  margin: 0.75rem 0 0.3rem;
   padding: 0 0.5rem;
+}
+
+.sl-column > .sl-region:first-child .sl-region-head {
+  margin-top: 0.3rem;
+}
+
+.sl-label {
+  text-align: right;
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -312,28 +326,21 @@
   color: var(--sl-muted);
 }
 
-.sl-labels span {
-  text-align: right;
-}
-
 /* Stacked on a phone, the second column's labels would repeat mid-list. */
 @media (max-width: 899px) {
-  .sl-column + .sl-column .sl-labels {
+  .sl-column + .sl-column .sl-label {
     display: none;
   }
 }
 
 .sl-region-title {
-  margin: 0.75rem 0.5rem 0.3rem;
+  min-width: 0;
+  margin: 0;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--sl-heading);
-}
-
-.sl-labels + .sl-region .sl-region-title {
-  margin-top: 0.3rem;
 }
 
 /* Each region's stations sit in a shallow recessed well: an inner shadow
@@ -426,11 +433,10 @@
   opacity: 0.45;
 }
 
-/* No current reading: a flat, dashed, muted line. */
+/* No current reading: a few muted dots. */
 .sl-swell-flat {
-  stroke: var(--sl-muted);
-  stroke-dasharray: 3 4;
-  opacity: 0.4;
+  fill: var(--sl-muted);
+  opacity: 0.5;
 }
 
 .sl-row[aria-expanded="true"] .sl-swell-wave {
@@ -459,6 +465,23 @@
   .sl-swell {
     display: none;
   }
+}
+
+/* A row without numbers (down, out of service, no data): the name and age
+   line take the numbers' width instead of wrapping in the first column, and
+   the dots sit where the numbers would be, on a phone too. */
+.sl-row--down .sl-name,
+.sl-row--out .sl-name,
+.sl-row--none .sl-name {
+  grid-column: 1 / 4;
+}
+
+.sl-row--down .sl-swell,
+.sl-row--out .sl-swell,
+.sl-row--none .sl-swell {
+  display: block;
+  grid-column: 2 / 4;
+  margin-right: 0;
 }
 
 .sl-title {
@@ -515,11 +538,6 @@
   align-items: flex-end;
   min-width: 0;
   text-align: right;
-}
-
-.sl-cell--wide {
-  grid-column: 2 / 4;
-  font-size: 0.78rem;
 }
 
 .sl-big {
