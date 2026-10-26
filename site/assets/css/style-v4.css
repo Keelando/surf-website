@@ -25,6 +25,8 @@
   --text-sm: 0.75rem;
   --weight-regular: 400;
   --weight-bold: 700;
+  /* Instrument-readout face for the numbers: fixed-width digits, so
+     readings sit in steady columns. System fonts only, nothing to download. */
   --font-readout: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
 
@@ -107,10 +109,6 @@
   --color-tagline-text: #2c5282;
   --color-tagline-border: rgba(66, 153, 225, 0.2);
   --color-tagline-shadow: rgba(0, 0, 0, 0.05);
-  --color-site-intro-text: #4a5568;
-  --color-site-intro-link: #006daf;
-  --color-site-intro-bg: rgba(224, 242, 255, 0.4);
-  --color-site-intro-border: rgba(66, 153, 225, 0.15);
   --site-tagline-bg: linear-gradient(
     to bottom,
     rgba(224, 242, 255, 0.5),
@@ -191,10 +189,6 @@
   --color-tagline-text: #d1e8ff;
   --color-tagline-border: rgba(99, 180, 255, 0.25);
   --color-tagline-shadow: rgba(0, 0, 0, 0.45);
-  --color-site-intro-text: var(--color-text-muted);
-  --color-site-intro-link: #8dd3ff;
-  --color-site-intro-bg: rgba(16, 28, 45, 0.85);
-  --color-site-intro-border: rgba(255, 255, 255, 0.08);
   --site-tagline-bg: linear-gradient(
     to bottom,
     rgba(17, 30, 47, 0.85),
@@ -448,35 +442,6 @@ footer .github-link:hover {
   opacity: 1;
 }
 
-/* -----------------------------
-   Buoy Cards Container
------------------------------ */
-
-#buoy-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 1rem var(--page-gutter);
-}
-
-/* Last Updated header styling */
-.last-updated-header {
-  max-width: 600px;
-  margin: 0 auto 2rem auto;
-  padding: 0.75rem 1.5rem;
-  background: var(--color-surface);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-  text-align: center;
-  font-size: 1.1em;
-  color: var(--color-primary-dark);
-  font-weight: 600;
-}
-
-/* Region groups */
-.region-group {
-  margin-bottom: 1.5rem;
-}
-
 /* Region headers - styled as section dividers */
 .region-header {
   margin: 0 0 1.5rem 0;
@@ -505,14 +470,6 @@ footer .github-link:hover {
   margin-right: 0.5rem;
   font-size: 0.9em;
   transition: transform 0.2s;
-}
-
-/* Cards grid layout */
-.buoy-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 2rem;
 }
 
 .buoy-card {
@@ -551,46 +508,11 @@ footer .github-link:hover {
   .hide-mobile { display: none; }
 }
 
-/* Responsive grid adjustments */
-@media (min-width: 768px) and (max-width: 1200px) {
-  /* Tablets: 2 columns */
-  .buoy-cards-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1201px) {
-  /* Desktop: 3 columns */
-  .buoy-cards-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 @media (max-width: 767px) {
-  /* Mobile: 1 column */
-  .buoy-cards-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
   .region-header {
     font-size: 1.15em;
     padding: 0.6rem 1rem;
     margin-bottom: 1rem;
-  }
-
-  #buoy-container {
-    padding: 0.75rem var(--page-gutter);
-  }
-
-  .last-updated-header {
-    font-size: 1em;
-    padding: 0.6rem 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .region-group {
-    margin-bottom: 2rem;
   }
 
   .buoy-card {
@@ -1169,10 +1091,16 @@ header {
    page (subpage <header>, home .summary): the same teal sinusoid at the same
    opacity, sliding one 200px wavelength per cycle at the pace nav.js sets
    from the swell at Halibut Bank (--wave-period on <html>). Static shape,
-   decoration only. */
+   decoration only.
+   The strip is one wavelength wider than the photo and slides by transform,
+   which the compositor moves without repainting (animating
+   background-position repainted it every frame, on every page). The photo
+   clips the spare wavelength: overflow-x: clip, not hidden, which makes no
+   scroll container and leaves vertical overflow alone. */
 header,
 .summary {
   position: relative;
+  overflow-x: clip;
 }
 
 header::after,
@@ -1180,7 +1108,7 @@ header::after,
   content: "";
   position: absolute;
   left: 0;
-  right: 0;
+  right: -200px;
   bottom: 0;
   height: 12px;
   pointer-events: none;
@@ -1191,7 +1119,7 @@ header::after,
 
 @keyframes hero-wave-drift {
   to {
-    background-position-x: -200px;
+    transform: translateX(-200px);
   }
 }
 
@@ -1230,107 +1158,6 @@ header h2 {
   margin: 0.5rem 0 0 0;
 }
 
-/* -----------------------------
-   Hero live-conditions panel
-   Light text over the bottom scrim; text-shadow is a second layer of
-   insurance against bright wave crests in the photo.
------------------------------ */
-.hero-conditions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 1rem 2.25rem;
-  width: 100%;
-  max-width: 760px;
-}
-
-/* Reserve the filled panel's height: it is rendered from the buoy fetch, and
-   growing from nothing pushed the whole page down ~96px (CLS 0.12, Lighthouse
-   2026-09-23). Its markup is fixed (a missing value is a dash), so the height
-   is too: measured 136px wide, 197px at ≤600px. Between ~600 and ~700px the
-   groups wrap differently and the panel runs ~217px; that residual is small. */
-.hero-conditions {
-  min-height: 136px;
-}
-
-.hero-station {
-  flex-basis: 100%;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
-}
-
-/* Wind direction arrow: force light colour over the dark scrim
-   (overrides the dark inline colour from getDirectionalArrow). */
-.hero-conditions svg {
-  color: #ffffff !important;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85));
-}
-
-.hero-cond-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 0.4rem 1.5rem;
-}
-
-.hero-group-label {
-  flex-basis: 100%;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
-}
-
-.hero-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1.15;
-}
-
-.hero-stat-label {
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 0.72rem;
-  font-weight: 500;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
-}
-
-.hero-stat-value {
-  color: #ffffff;
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
-}
-
-.hero-updated {
-  flex-basis: 100%;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
-}
-
-/* Stale data: warn the reader not to trust old numbers in a gale. */
-.hero-updated.stale {
-  color: #ffd27a;
-  font-weight: 700;
-}
-
-.hero-updated.stale::before {
-  content: "⚠ ";
-}
-
 @media (max-width: 600px) {
   header {
     padding: 1.75rem 1rem 1.5rem;
@@ -1344,15 +1171,6 @@ header h2 {
 
   header h2 {
     font-size: 1rem;
-  }
-
-  .hero-conditions {
-    gap: 0.75rem 1.5rem;
-    min-height: 197px;
-  }
-
-  .hero-stat-value {
-    font-size: 1.25rem;
   }
 }
 
@@ -1377,70 +1195,6 @@ header h2 {
   .site-tagline {
     font-size: 0.9rem;
     padding: 0.85rem 1rem;
-  }
-}
-
-/* -----------------------------
-   Site Intro Blurb
------------------------------ */
-
-.site-intro-details {
-  background: var(--color-site-intro-bg);
-  border-bottom: 1px solid var(--color-site-intro-border);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-/* Desktop: hide the toggle, always show content */
-.site-intro-summary {
-  display: none;
-}
-
-.site-intro {
-  display: block; /* override UA <details> hiding on desktop */
-  text-align: center;
-  font-size: 0.95rem;
-  color: var(--color-site-intro-text);
-  padding: 0.75rem 1.5rem;
-  transition: color 0.3s ease, background-color 0.3s ease;
-}
-
-.site-intro a {
-  color: var(--color-site-intro-link);
-  font-weight: 600;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.site-intro a:hover {
-  text-decoration: underline;
-}
-
-@media (max-width: 600px) {
-  /* Show collapsible toggle on mobile */
-  .site-intro-summary {
-    display: block;
-    text-align: center;
-    padding: 0.55rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--color-site-intro-link);
-    cursor: pointer;
-    list-style: none;
-    transition: color 0.3s ease;
-  }
-
-  .site-intro-summary::-webkit-details-marker {
-    display: none;
-  }
-
-  /* Content hidden when collapsed */
-  .site-intro-details:not([open]) .site-intro {
-    display: none;
-  }
-
-  .site-intro {
-    font-size: 0.875rem;
-    padding: 0.65rem 1rem;
   }
 }
 
@@ -1602,10 +1356,6 @@ header h2 {
 @media (max-width: 600px) {
   #stations-map {
     height: 400px;
-  }
-
-  .legend-title {
-    display: none; /* save vertical space */
   }
 
   .map-legend {
@@ -1908,12 +1658,6 @@ header h2 {
 .buoy-age-badge--stale {
   color: var(--color-error-text);
   font-weight: bold;
-}
-
-.region-station-count {
-  font-size: 0.8em;
-  font-weight: normal;
-  opacity: 0.8;
 }
 
 /* --- Compact view --- */

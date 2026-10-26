@@ -8,11 +8,6 @@
 ----------------------------- */
 
 :root {
-  /* Instrument-readout face for the numbers: fixed-width digits, so
-     readings sit in steady columns. System fonts only, nothing to download. */
-  --sl-readout-font: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo,
-    Consolas, "Liberation Mono", monospace;
-
   /* Translucent so the photo reads through; the blur evens it out behind
      the text. The user's pick after trying 92% and 60% (2026-10-23).
      Contrast was measured on the rendered pixels behind the text, not by
@@ -593,7 +588,7 @@
    one, 1.45rem in a tablet's single column, so a tablet never reads
    smaller than a phone. The cap fits "0.31 m" in its 4.75rem column. */
 .sl-big {
-  font-family: var(--sl-readout-font);
+  font-family: var(--font-readout);
   font-size: 1.3rem;
   font-size: clamp(1.1rem, 0.6rem + 2.2cqi, 1.45rem);
   font-weight: 700;
@@ -616,7 +611,7 @@
   align-items: center;
   gap: 0.2rem;
   margin-top: 0.1rem;
-  font-family: var(--sl-readout-font);
+  font-family: var(--font-readout);
   font-size: 0.72rem;
   white-space: nowrap;
   color: var(--sl-muted);
@@ -858,7 +853,7 @@
   gap: 0.25rem;
   flex-wrap: wrap;
   margin: 0;
-  font-family: var(--sl-readout-font);
+  font-family: var(--font-readout);
   font-size: 0.92rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;

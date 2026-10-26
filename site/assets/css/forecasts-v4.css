@@ -461,11 +461,11 @@ header {
   list-style: none;
 }
 
-/* Each row is a small copy of the warning banner: the same dark strip, the
-   severity's accent colour on its left edge, its type and its icon, and the
-   same wash, light or dark with the theme. The --wb-* colours come from the severity classes in
-   warning-banner-v4.css, so a reader who has seen a banner recognises the
-   row, and the two cannot drift apart. */
+/* Each row is a small copy of the warning banner: the same strip (pale and
+   tinted in the light theme, navy in the dark), the severity's colour on its
+   left edge, its type and its icon, and the same wash. The --wb-* colours
+   come from the severity classes in warning-banner-v4.css, so a reader who
+   has seen a banner recognises the row, and the two cannot drift apart. */
 .warning-jump-group {
   display: flex;
   flex-wrap: wrap;

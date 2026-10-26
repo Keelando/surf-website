@@ -26,6 +26,12 @@ let stationMeta = {};
 // Latest buoy snapshot, kept so a row's panel can be built when it opens.
 let latestSnapshot = {};
 
+// How often the list fetches a fresh snapshot, and when it last got one
+// (epoch ms; 0 until the first load succeeds).
+const REFRESH_MS = 5 * 60 * 1000;
+let loadedAt = 0;
+let loading = null;
+
 // Show the scroll affordances only while the content actually overflows: the
 // "← Scroll table horizontally →" banner above the table, and the grab cursor
 // on the scroller itself.
@@ -126,16 +132,32 @@ function renderStationList(container, data) {
   if (focusedId) document.querySelector(`#${focusedId} .sl-row`)?.focus();
 }
 
-// Ages count up between the five-minute fetches: "1h 25m" has to be right to
-// the minute. Only the text changes, unless a station crosses into late or
-// down, which changes what its row shows and so rebuilds the list.
-function tickAges() {
+// Once a minute: fetch a fresh snapshot when the last one is due for
+// replacing, then count the ages up ("1h 25m" has to be right to the minute).
+// Only the text changes, unless a station crosses into late or down, which
+// changes what its row shows and so rebuilds the list.
+// Fetch first, tick second: a computer that slept, or a background tab the
+// browser froze, wakes with its timers behind but the clock on time. Ticking
+// a snapshot from hours ago would mark every station down, though it is our
+// copy that is old, not their reports. If the fetch fails the ages still
+// tick, so a page that stays offline never shows a reading as newer than it is.
+async function tick() {
+  if (Date.now() - loadedAt >= REFRESH_MS) await loadBuoyData();
   const container = document.getElementById("station-list");
-  if (!container || !latestSnapshot) return;
-  if (refreshAges(container, latestSnapshot)) renderStationList(container, latestSnapshot);
+  if (container && refreshAges(container, latestSnapshot)) {
+    renderStationList(container, latestSnapshot);
+  }
 }
 
-async function loadBuoyData() {
+// One fetch at a time: a tick that lands while one is in flight waits on it.
+function loadBuoyData() {
+  loading ??= fetchBuoyData().finally(() => {
+    loading = null;
+  });
+  return loading;
+}
+
+async function fetchBuoyData() {
   const container = document.getElementById("station-list");
   if (!container) return;
 
@@ -151,16 +173,24 @@ async function loadBuoyData() {
     ]);
     if (stationsData?.buoys) stationMeta = stationsData.buoys;
     latestSnapshot = data;
+    const firstLoad = loadedAt === 0;
+    loadedAt = Date.now();
 
     renderStationList(container, data);
     container.removeAttribute("aria-busy");
 
-    handleHashNavigation();
+    // A #buoy- link is acted on once, when the rows first exist; on later
+    // refreshes it would scroll the reader back to that row every time.
+    if (firstLoad) handleHashNavigation();
   } catch (err) {
     logger.error("BuoyData", "Error loading buoy data", err);
+    // A failed refresh keeps the rows on screen (their ages still count up);
+    // the next tick tries again.
+    if (loadedAt !== 0) return;
+    container.removeAttribute("aria-busy");
     setSafeHTML(
       container,
-      `<p class="sl-error">Couldn't load the latest readings. Try again in a few minutes.</p>`,
+      `<p class="sl-error">Couldn't load the latest readings. Trying again every minute.</p>`,
     );
   }
 }
@@ -322,8 +352,15 @@ function wireMapKey() {
 }
 wireMapKey();
 
-setInterval(loadBuoyData, 5 * 60 * 1000);
-setInterval(tickAges, 60 * 1000);
+setInterval(tick, 60 * 1000);
+// Back to the tab, or back from the browser's page cache: catch up at once
+// rather than at the next minute.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") tick();
+});
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted) tick();
+});
 
 // Handle hash navigation when hash changes (clicking map links)
 window.addEventListener("hashchange", handleHashNavigation);
