@@ -169,6 +169,16 @@ class TestStationDataIntegrity:
             assert "lon" in data, f"Buoy {bid} missing 'lon'"
             assert "source" in data, f"Buoy {bid} missing 'source'"
 
+    def test_all_buoys_have_a_region_and_rough_height(self):
+        """The home page groups buoys by region and scales each wave line by
+        rough_wave_height_m, both read from the registry (station-list.js)."""
+        for bid, data in STATIONS.buoys.items():
+            assert isinstance(data.get("region"), str) and data["region"], f"Buoy {bid} missing 'region'"
+            rough = data.get("rough_wave_height_m")
+            assert isinstance(rough, (int, float)) and rough > 0, (
+                f"Buoy {bid} needs a positive 'rough_wave_height_m'"
+            )
+
     def test_all_tide_stations_have_required_fields(self):
         for key, data in STATIONS.tides.items():
             assert "name" in data, f"Tide {key} missing 'name'"

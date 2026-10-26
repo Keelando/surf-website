@@ -234,6 +234,17 @@ class TestStationsExportIsFiltered:
         walk(data)
         assert not found, f"private fields leaked into the public export: {found}"
 
+    def test_buoys_keep_the_fields_the_home_page_reads(self):
+        """station-list.js groups buoys by region, and it and nav.js scale wave
+        lines by rough_wave_height_m: an allowlist that dropped either would
+        quietly flatten the home page into one ungrouped list."""
+        if not STATIONS_EXPORT.exists():
+            pytest.skip("stations.json not exported yet")
+        buoys = json.loads(STATIONS_EXPORT.read_text())["buoys"]
+        for bid, entry in buoys.items():
+            assert "region" in entry, f"{bid}: region not published"
+            assert "rough_wave_height_m" in entry, f"{bid}: rough_wave_height_m not published"
+
     def test_export_uses_an_allowlist_not_a_denylist(self):
         """A new registry field must stay private until named deliberately."""
         source = (REPO_ROOT / "scripts" / "export" / "export_stations_json.py").read_text()

@@ -56,6 +56,10 @@ PUBLIC_STATION_FIELDS = {
         "note",
         "wave_display",
         "wave_display_note",
+        "region",
+        # A display scale (see _metadata.notes.rough_wave_height_m), published
+        # because the home page and header wave read it from this file.
+        "rough_wave_height_m",
     },
     "tides": _COMMON | {"data_types", "update_frequency_minutes", "code", "series", "note"},
     "wind": _COMMON
@@ -105,7 +109,7 @@ PUBLIC_METADATA_FIELDS = {
     "units",
     "notes",
 }
-PUBLIC_METADATA_NOTES = {"tide_series", "buoy_sources"}
+PUBLIC_METADATA_NOTES = {"tide_series", "buoy_sources", "rough_wave_height_m"}
 
 
 def filter_public_fields(data):
