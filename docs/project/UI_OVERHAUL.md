@@ -274,8 +274,11 @@ From the user's UI refresh spec. Done:
   cramped ones. The break is 504px, measured: below ~502px "Crescent Channel
   Ocean", an 80px swell line and both numbers no longer fit (both engines);
   a desktop column is 519px. The swell line shares a flex cell with the
-  name and fills the spare width (80px to 17.5rem, flush against the
-  numbers), drawn 1:1 and clipped rather than stretched. Names and numbers
+  name and fills the spare width (80px to 220px, flush against the
+  numbers), drawn 1:1 and clipped rather than stretched. The Waves and Wind
+  tracks grow with the column (15cqi / 12.5cqi, floored at their desktop
+  4.75rem / 4rem), so a tablet's single column spreads its readings out
+  rather than packing them against the right edge (user, 2026-10-26). Names and numbers
   are fluid by `cqi`: 0.95→1.05rem and 1.1→1.45rem, so a tablet never reads
   smaller than a phone, and desktop names stay 0.95rem (any larger wraps at
   519px). Waves/Wind live on each column's first region heading at every

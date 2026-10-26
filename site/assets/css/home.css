@@ -327,11 +327,16 @@
 .sl-column {
   min-width: 0;
   container: sl-column / inline-size;
+  /* Name and swell line, Waves, Wind, chevron. The numbers' tracks grow
+     with the column (15cqi, 12.5cqi) from their desktop width, so a
+     tablet's single column spreads its readings out instead of pushing
+     them against the right edge. Shared by the rows and their heading. */
+  --sl-tracks: minmax(0, 1fr) max(4.75rem, 15cqi) max(4rem, 12.5cqi) 1.5rem;
 }
 
 .sl-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 4.75rem 4rem 1.5rem;
+  grid-template-columns: var(--sl-tracks);
   column-gap: 0.5rem;
   align-items: center;
 }
@@ -341,7 +346,7 @@
    numbers. */
 .sl-region-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 4.75rem 4rem 1.5rem;
+  grid-template-columns: var(--sl-tracks);
   column-gap: 0.5rem;
   align-items: baseline;
   margin: 0.75rem 0 0.3rem;
@@ -462,7 +467,7 @@
 
 /* -----------------------------
    Swell lines: a faint sine filling the spare width between name and
-   numbers (80px to 17.5rem, right-aligned against the numbers), drawn from
+   numbers (80px to 220px, right-aligned against the numbers), drawn from
    the station's own height, period and direction (station-list.js
    swellLine, which also says why height alone sets the amplitude).
    Decoration beside the numbers, never instead of them. Static except in
@@ -472,7 +477,7 @@
 .sl-swell {
   flex: 1 1 0;
   min-width: 5rem;
-  max-width: 17.5rem;
+  max-width: 13.75rem;
   overflow: hidden;
   pointer-events: none;
   /* Soft ends, so the line fades in and out of the row. */

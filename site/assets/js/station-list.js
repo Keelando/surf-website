@@ -210,7 +210,7 @@ function windCell(r) {
 }
 
 // The swell line's height, in px. Its width is the row's spare space between
-// name and numbers (home.css: 80px to 17.5rem), so the path is drawn 1:1
+// name and numbers (home.css: 80px to 220px), so the path is drawn 1:1
 // (no viewBox) out to SWELL_DRAWN and the SVG clips it to whatever it gets.
 const SWELL_HEIGHT = 20;
 const SWELL_DRAWN = 400;
