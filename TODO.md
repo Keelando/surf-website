@@ -588,6 +588,24 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
   are built around a 48-hour axis, and 14 days on the same chart is a
   different picture, not a longer one.
 
+- [ ] **Historical data for most data types** (user 2026-10-26, widens the
+  item above; "could even live on a separate page, not sure yet"). Buoys,
+  wind, lightstations, tides, storm surge, weather: browse and probably
+  download past observations, per station.
+  **Retention is the clock running:** every database prunes itself
+  (`lib/config.py`): buoy, wind, lightstation and storm surge 30 days, tide
+  observations 11, tide predictions 3. History we don't keep is gone, so
+  raising retention can come before any page design. It is cheap: the buoy DB
+  is 7.7 MB for 30 days (~95 MB/year), wind 6.5 MB, lightstations 3.8 MB; tide
+  is the big one (168 MB at 11 days, mostly predictions; check what it holds
+  before keeping more).
+  Open questions: which types and how far back; a separate history page or
+  a longer view on each page (see the 14-day item: on demand, per station);
+  download format (CSV per station and range?) and whether it joins
+  `/api/v1` (a public contract, `docs/PUBLIC_API.md`); backfill from upstream
+  archives where they exist (NOAA NDBC historical files, DFO/MEDS for the EC
+  buoys) versus only what we collect from now on.
+
 - [ ] **North coast coverage** (added 2026-09-03, prompted by a mariner out of
   Kitimat who emailed about the McInnes Island position error). The
   lightstations are currently the *only* north-coast data this site carries,
