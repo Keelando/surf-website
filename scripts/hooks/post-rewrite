@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# After a rebase, recompute the ?v= asset hashes.
+#
+# Replayed commits skip the pre-commit hook, and the merge driver
+# (merge_asset_versions.py) leaves a hash stale on purpose where both sides
+# changed the same asset. This puts the working tree right and says so; it
+# does not commit, so the result can be looked at first.
+#
+# Install: ln -s ../../scripts/hooks/post-rewrite .git/hooks/post-rewrite
+
+[[ "$1" == "rebase" ]] || exit 0
+
+cd "$(git rev-parse --show-toplevel)" || exit 0
+updated=$(.venv/bin/python scripts/update_asset_versions.py | sed -n 's/^updated //p')
+[[ -n "$updated" ]] || exit 0
+
+cat >&2 <<EOF
+
+  Asset versions recomputed after the rebase (?v= hashes in):
+$(echo "$updated" | sed 's/^/    /')
+  Commit them:  git commit -m "Asset versions after rebase" -- site
+
+EOF
+exit 0

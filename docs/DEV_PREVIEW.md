@@ -85,11 +85,18 @@ cd ~/envcan_wave-dev          # edit, commit here as usual
    (`ss -ltn | grep 4173` should print nothing), or give the run its own
    port: `PW_PORT=4180 npm run test:frontend`.
 2. **Rebases skip the pre-commit hook**, so `?v=` hashes can go stale on
-   replayed commits. After every rebase run
-   `.venv/bin/python scripts/update_asset_versions.py`, and commit if it
-   changed anything. `tests/test_asset_versions.py` catches it otherwise.
-3. **`?v=` conflicts are not real conflicts.** When `main` and `dev` both
-   touched an asset, the HTML `?v=` lines conflict. Take either side, run
+   replayed commits. The `post-rewrite` hook runs
+   `update_asset_versions.py` after every rebase and lists what it changed;
+   commit that (`git commit -m "Asset versions after rebase" -- site`).
+   Without the hook installed, run the script by hand.
+   `tests/test_asset_versions.py` catches it otherwise.
+3. **`?v=` lines no longer conflict.** `.gitattributes` sends site HTML
+   through `scripts/hooks/merge_asset_versions.py`, which merges the pages
+   with the hashes taken out, so only real edits stop a rebase (tested
+   2026-10-26: nine conflicting pages became none; a real `<title>` clash
+   still stopped). It needs the git config in its docstring, set once per
+   clone (see Rebuilding the worktree). Without it, git merges HTML
+   normally: take either side of a `?v=` conflict, run
    `update_asset_versions.py`, and `git add` the HTML.
 4. **Python in the dev worktree imports `lib/` from the main checkout.** The
    venv is the main checkout's, and its editable install points there.
@@ -138,6 +145,9 @@ If `~/envcan_wave-dev` is lost, or the repo is re-cloned (which loses
 ```bash
 cd ~/envcan_wave
 printf '/site/data\n/.venv\n/node_modules\n' >> .git/info/exclude   # biome.json is already gitignored
+git config merge.asset-versions.driver \
+  "python3 scripts/hooks/merge_asset_versions.py %O %A %B %L %P"   # trap 3
+ln -s ../../scripts/hooks/post-rewrite .git/hooks/post-rewrite      # trap 2
 git worktree add ~/envcan_wave-dev dev
 cd ~/envcan_wave-dev
 ln -s ~/envcan_wave/site/data site/data

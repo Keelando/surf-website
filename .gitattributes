@@ -1,0 +1,4 @@
+# ?v= cache-bust hashes in site pages merge without conflicts
+# (scripts/hooks/merge_asset_versions.py; needs the git config it describes,
+# without which git merges these files normally).
+site/**/*.html merge=asset-versions
