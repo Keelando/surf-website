@@ -179,6 +179,13 @@ class TestStationDataIntegrity:
                 f"Buoy {bid} needs a positive 'rough_wave_height_m'"
             )
 
+    def test_buoy_list_orders_are_distinct_integers(self):
+        """The home page orders rows by list_order: JS enumerates number-like
+        keys ("4600146") numerically, so the file's own order can't do it."""
+        orders = [data.get("list_order") for data in STATIONS.buoys.values()]
+        assert all(isinstance(o, int) and not isinstance(o, bool) for o in orders), orders
+        assert len(set(orders)) == len(orders), f"duplicate list_order: {orders}"
+
     def test_all_tide_stations_have_required_fields(self):
         for key, data in STATIONS.tides.items():
             assert "name" in data, f"Tide {key} missing 'name'"
