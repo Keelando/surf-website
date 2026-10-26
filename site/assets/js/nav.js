@@ -244,7 +244,8 @@
   // ---- Header wave ---------------------------------------------------------
   // The band along the bottom of the header is one sinusoid drawn from
   // Halibut Bank's latest report: wave height, against what is rough there
-  // (shared/wave-scale.js), sets the amplitude; wave period the speed of the
+  // (its rough_wave_height_m in stations.json, scaled by
+  // shared/wave-scale.js), sets the amplitude; wave period the speed of the
   // drift. Decoration only; the numbers live in the station list.
 
   const WAVE_STATION = "4600146";
@@ -271,14 +272,17 @@
     return `${d} V${WAVE_HEIGHT_PX} H${-wavelength} Z`;
   }
 
-  /** Amplitude and period to draw, or the calm default when the report is unusable. */
-  function waveReading(entry, waveAmplitude) {
+  /**
+   * Amplitude and period to draw, or the calm default when the report is
+   * unusable. `amplitudeOf` maps a height to the 0.2-1.2 factor.
+   */
+  function waveReading(entry, amplitudeOf) {
     if (!entry || entry.no_data || entry.out_of_service || entry.status !== "ok") return CALM;
     const height = entry.wave_height_sig;
     if (height == null || !Number.isFinite(height)) return CALM;
     const period = entry.wave_period_peak ?? entry.wave_period_avg ?? CALM.period;
     return {
-      amp: waveAmplitude(height, WAVE_STATION),
+      amp: amplitudeOf(height),
       period: Number.isFinite(period) && period > 0 ? period : CALM.period,
     };
   }
@@ -312,6 +316,21 @@
     return svg;
   }
 
+  // Halibut Bank's rough height, read from stations.json once per page; it
+  // changes only when the registry does. Undefined until then, and if the
+  // file can't be had, which leaves wave-scale.js's default in force.
+  let roughM;
+
+  async function loadRoughHeight() {
+    if (roughM !== undefined) return;
+    try {
+      const response = await fetch("/data/stations.json");
+      if (response.ok) roughM = (await response.json()).buoys?.[WAVE_STATION]?.rough_wave_height_m;
+    } catch {
+      // Left undefined: the default scale, and the next refresh asks again.
+    }
+  }
+
   async function refreshWave() {
     const svg = document.querySelector(".main-nav:not(.main-nav-footer) .nav-wave");
     if (!svg) return;
@@ -322,8 +341,12 @@
       const [{ waveAmplitude }, response] = await Promise.all([
         import("/assets/js/shared/wave-scale.js"),
         fetch(`/data/latest_buoy_v2.json?t=${Date.now()}`),
+        loadRoughHeight(),
       ]);
-      if (response.ok) reading = waveReading((await response.json())[WAVE_STATION], waveAmplitude);
+      if (response.ok) {
+        const entry = (await response.json())[WAVE_STATION];
+        reading = waveReading(entry, (height) => waveAmplitude(height, roughM));
+      }
     } catch {
       // Network trouble leaves the calm wave up; the next refresh tries again.
     }

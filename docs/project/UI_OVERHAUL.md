@@ -205,7 +205,8 @@ Left for after the verdict:
 
 - `buoy-card.js` no longer renders anything; only its spread descriptors
   are still imported. Retire it (and its tests) once the rows are agreed.
-- The chart dropdown's optgroups in `index.html` repeat `STATION_GROUPS`.
+- The chart dropdown's optgroups in `index.html` hard-code the regions and
+  stations that the list now reads from the registry (`region`, 2026-10-26).
 - Below the map is unchanged apart from the toggle: inline styles on the
   threshold control, the "Individual buoy" divider and the "Show on Map"
   buttons remain.

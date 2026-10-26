@@ -14,7 +14,7 @@ globalThis.getDirectionalArrow = (deg, kind) => `[${kind}@${deg}]`;
 globalThis.degreesToCardinal = () => "N";
 
 const {
-  STATION_GROUPS,
+  REGIONS,
   buildStationDetail,
   buildStationList,
   buildStationRow,
@@ -23,6 +23,7 @@ const {
   freshness,
   refreshAges,
   rowReading,
+  stationGroups,
   swellGeometry,
   swellLine,
 } = await import("../../site/assets/js/station-list.js");
@@ -254,10 +255,10 @@ test("a down row shows no numbers: days-old readings would pass for live", () =>
 
 test("swell amplitude is relative to what is rough at that station", () => {
   // 1 m is rough in the Strait of Georgia and a quiet day at La Perouse.
-  const georgia = swellGeometry(1, 5, 270, "4600146").amplitude;
-  const laPerouse = swellGeometry(1, 5, 270, "4600206").amplitude;
+  const georgia = swellGeometry(1, 5, 270, 1).amplitude;
+  const laPerouse = swellGeometry(1, 5, 270, 2.5).amplitude;
   assert.ok(georgia > laPerouse);
-  assert.equal(georgia, swellGeometry(2.5, 5, 270, "4600206").amplitude);
+  assert.equal(georgia, swellGeometry(2.5, 5, 270, 2.5).amplitude);
 });
 
 test("swell geometry: height sets amplitude, period wavelength, bearing drift", () => {
@@ -299,7 +300,7 @@ test("a row's swell line is decorative, and lies flat when down", () => {
   const late = buildStationRow({ ...halibut, status: "late" }, "4600146", EC);
   assert.match(late, /sl-row--late/);
   assert.match(late, /sl-swell-wave/);
-  assert.equal(swellLine(null, 4, 90, "4600146"), "");
+  assert.equal(swellLine(null, 4, 90, 1), "");
 });
 
 test("the name and swell line share one lead cell", () => {
@@ -376,9 +377,18 @@ test("a down station's warning comes BEFORE its old readings", () => {
   assert.doesNotMatch(html, /sl-observed/);
 });
 
+// A slice of the registry: region, rough height and list order per buoy.
+const REGISTRY = {
+  "4600146": { ...EC, region: "STRAIT OF GEORGIA", rough_wave_height_m: 1, list_order: 1 },
+  "4600304": { ...EC, region: "STRAIT OF GEORGIA", rough_wave_height_m: 1, list_order: 2 },
+  "4600131": { ...EC, region: "STRAIT OF GEORGIA", rough_wave_height_m: 1, list_order: 4 },
+  CRPILE: { region: "BOUNDARY BAY", rough_wave_height_m: 0.5, list_order: 5 },
+  46087: { region: "JUAN DE FUCA STRAIT", rough_wave_height_m: 2.5, list_order: 7 },
+};
+
 test("the list groups stations by region into columns and skips missing ones", () => {
   const data = { "4600146": halibut, 46087: { ...halibut, name: "Neah Bay" } };
-  const html = buildStationList(data, {});
+  const html = buildStationList(data, REGISTRY);
   assert.equal((html.match(/class="sl-column"/g) || []).length, 2);
   assert.match(html, /Strait of Georgia/);
   assert.match(html, /Juan de Fuca Strait/);
@@ -391,8 +401,46 @@ test("the list groups stations by region into columns and skips missing ones", (
   assert.doesNotMatch(html, /sl-row[^"]*labelled|sl-label/);
 });
 
-test("every station appears in exactly one group", () => {
-  const ids = STATION_GROUPS.flatMap((g) => g.stations);
-  assert.equal(ids.length, 10);
-  assert.equal(new Set(ids).size, 10);
+test("groups follow REGIONS, then other regions, then stations without one", () => {
+  const data = {
+    _meta: { exported: "now" },
+    46087: halibut,
+    "4600131": halibut,
+    "4600304": halibut,
+    "4600146": halibut,
+    NEWBUOY: halibut,
+    UNREGISTERED: halibut,
+  };
+  const meta = { ...REGISTRY, NEWBUOY: { region: "HECATE STRAIT" } };
+  const groups = stationGroups(data, meta);
+  assert.deepEqual(
+    groups.map((g) => [g.label, g.stations]),
+    [
+      // list_order, not key order: JS would enumerate 4600131 first.
+      ["Strait of Georgia", ["4600146", "4600304", "4600131"]],
+      ["Juan de Fuca Strait", ["46087"]],
+      ["HECATE STRAIT", ["NEWBUOY"]], // an ordering, not a whitelist
+      ["Other stations", ["UNREGISTERED"]],
+    ],
+  );
+  // Unknown regions go to the last column; nothing is lost or repeated.
+  assert.equal(groups.at(-1).column, REGIONS.at(-1).column);
+  const ids = groups.flatMap((g) => g.stations);
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test("without stations.json every station still shows, ungrouped", () => {
+  const html = buildStationList({ "4600146": halibut, 46087: halibut }, {});
+  assert.match(html, />Other stations</);
+  assert.match(html, /id="buoy-4600146"/);
+  assert.match(html, /id="buoy-46087"/);
+});
+
+test("each row's swell line is scaled by its own registry rough height", () => {
+  const calmWater = buildStationRow(halibut, "4600146", { ...EC, rough_wave_height_m: 10 });
+  const roughWater = buildStationRow(halibut, "4600146", { ...EC, rough_wave_height_m: 0.2 });
+  // The first control point sits 2x the amplitude above the midline (y = 10),
+  // so a taller crest has a smaller y.
+  const crestY = (html) => Number(html.match(/Q[-\d.]+ ([-\d.]+)/)[1]);
+  assert.ok(crestY(roughWater) < crestY(calmWater), "a rougher scale draws a taller crest");
 });

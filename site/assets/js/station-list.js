@@ -29,24 +29,66 @@ import { liveAgeMinutes, reportStatus } from "./shared/staleness.js";
 import { waveAmplitude } from "./shared/wave-scale.js";
 
 /**
- * The ten wave stations, by region. `column` places the region in the
- * two-column desktop layout; on a phone the regions simply stack in order.
- * COLEB is left out: it is wind-only, and lives on the winds page.
+ * The home page's regions in display order: each one's heading, and its
+ * column in the two-column desktop layout (on a phone they simply stack).
+ * Which buoy is in which region is the registry's `region`
+ * (config/stations.json), ordered by its `list_order`; nothing here names a
+ * station.
+ *
+ * An ORDERING, not a whitelist, like orderRegions() in shared/station-meta.js:
+ * a region not listed here still appears, after these, under its own name,
+ * and so does a station the registry has no region for (or every station,
+ * when stations.json could not be loaded).
  */
-export const STATION_GROUPS = [
-  {
-    region: "Strait of Georgia",
-    column: 0,
-    stations: ["4600146", "4600304", "4600303", "4600131"],
-  },
-  { region: "Boundary Bay", column: 0, stations: ["CRPILE", "CRCHAN"] },
-  {
-    region: "Juan de Fuca Strait",
-    column: 1,
-    stations: ["46087", "46088", "46267"],
-  },
-  { region: "West Coast Vancouver Island", column: 1, stations: ["4600206"] },
+export const REGIONS = [
+  { region: "STRAIT OF GEORGIA", label: "Strait of Georgia", column: 0 },
+  { region: "BOUNDARY BAY", label: "Boundary Bay", column: 0 },
+  { region: "JUAN DE FUCA STRAIT", label: "Juan de Fuca Strait", column: 1 },
+  { region: "WEST COAST VANCOUVER ISLAND", label: "West Coast Vancouver Island", column: 1 },
 ];
+
+const UNGROUPED_LABEL = "Other stations";
+
+/**
+ * The stations with readings, grouped by their registry region and put in
+ * display order: REGIONS first, then any other region, then stations without
+ * one. Within a region, by the registry's `list_order` (not the file's order:
+ * JS enumerates number-like keys such as "4600146" numerically); stations
+ * without one follow, then stations missing from the registry.
+ *
+ * @param {Object} data - latest_buoy_v2.json payload (keys starting "_" are not stations)
+ * @param {Object} stationMeta - stations.json `buoys`
+ * @returns {{label: string, column: number, stations: string[]}[]}
+ */
+export function stationGroups(data, stationMeta, regions = REGIONS) {
+  const order = (id) => stationMeta[id]?.list_order ?? Number.POSITIVE_INFINITY;
+  const ids = [
+    ...Object.keys(stationMeta)
+      .filter((id) => data[id])
+      .sort((a, b) => order(a) - order(b)),
+    ...Object.keys(data).filter((id) => !id.startsWith("_") && !stationMeta[id]),
+  ];
+  const byRegion = new Map();
+  for (const id of ids) {
+    const region = stationMeta[id]?.region ?? "";
+    if (!byRegion.has(region)) byRegion.set(region, []);
+    byRegion.get(region).push(id);
+  }
+  const lastColumn = regions.at(-1)?.column ?? 0;
+  const known = regions
+    .filter((r) => byRegion.has(r.region))
+    .map((r) => ({ label: r.label, column: r.column, stations: byRegion.get(r.region) }));
+  const rest = [...byRegion.keys()]
+    .filter((region) => !regions.some((r) => r.region === region))
+    // Named regions alphabetically, the stations without one last.
+    .sort((a, b) => (a === "" ? 1 : b === "" ? -1 : a.localeCompare(b)))
+    .map((region) => ({
+      label: region || UNGROUPED_LABEL,
+      column: lastColumn,
+      stations: byRegion.get(region),
+    }));
+  return [...known, ...rest];
+}
 
 const DASH = "—";
 
@@ -217,7 +259,8 @@ const SWELL_DRAWN = 400;
 
 /**
  * Geometry of a row's swell line: amplitude from wave height measured against
- * what is rough for this station (shared/wave-scale.js, as the header wave),
+ * what is rough for this station (`roughM`, the registry's
+ * rough_wave_height_m, scaled by shared/wave-scale.js as the header wave is),
  * wavelength from period (a long period draws wide lazy rollers, a short one
  * tight chop), and the way it drifts from the direction arrow's horizontal
  * component. Null when there is no height to draw.
@@ -231,9 +274,9 @@ const SWELL_DRAWN = 400;
  *
  * @returns {{amplitude: number, wavelength: number, drift: -1|0|1}|null}
  */
-export function swellGeometry(height, period, degrees, stationId) {
+export function swellGeometry(height, period, degrees, roughM) {
   if (height == null || !Number.isFinite(height)) return null;
-  const factor = waveAmplitude(height, stationId);
+  const factor = waveAmplitude(height, roughM);
   const p = period != null && Number.isFinite(period) && period > 0 ? period : 4;
   // The arrow is a down arrow turned clockwise by the "from" bearing, so its
   // on-screen x component is -sin(bearing): waves from the west drift right.
@@ -253,9 +296,9 @@ const swellOpen = (cls) =>
  * screen readers; "" when there is no height reading. It is static; only the
  * open row's line moves (home.css).
  */
-export function swellLine(height, period, degrees, stationId) {
+export function swellLine(height, period, degrees, roughM) {
   const mid = SWELL_HEIGHT / 2;
-  const g = swellGeometry(height, period, degrees, stationId);
+  const g = swellGeometry(height, period, degrees, roughM);
   if (!g) return "";
   // One wavelength spare at each end, so the line can travel a full
   // wavelength either way without its ends showing.
@@ -299,7 +342,7 @@ export function buildStationRow(b, id, meta) {
       r.height != null ? Number(r.height) : null,
       r.period != null ? Number(r.period) : null,
       r.waveDegrees,
-      id,
+      meta?.rough_wave_height_m,
     );
   }
 
@@ -496,12 +539,11 @@ export function buildStationDetail(b, id, meta) {
 }
 
 /** The whole list: regions as small headings over their rows, in columns. */
-export function buildStationList(data, stationMeta, groups = STATION_GROUPS) {
+export function buildStationList(data, stationMeta, regions = REGIONS) {
   const columns = [];
-  for (const group of groups) {
+  for (const group of stationGroups(data, stationMeta, regions)) {
     const firstInColumn = columns[group.column] == null;
     const rows = group.stations
-      .filter((id) => data[id])
       .map(
         (id) => `
         <li class="sl-item" id="buoy-${id}">
@@ -510,13 +552,12 @@ export function buildStationList(data, stationMeta, groups = STATION_GROUPS) {
         </li>`,
       )
       .join("");
-    if (!rows) continue;
-    const headingId = `sl-region-${group.region.toLowerCase().replace(/\s+/g, "-")}`;
+    const headingId = `sl-region-${group.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
     columns[group.column] =
       (columns[group.column] ?? "") +
       `<section class="sl-region" aria-labelledby="${headingId}">
         <div class="sl-region-head">
-          <h2 class="sl-region-title" id="${headingId}">${group.region}</h2>${firstInColumn ? HEADING_LABELS : ""}
+          <h2 class="sl-region-title" id="${headingId}">${group.label}</h2>${firstInColumn ? HEADING_LABELS : ""}
         </div>
         <ul class="sl-rows">${rows}</ul>
       </section>`;
