@@ -669,24 +669,24 @@
    an 80px swell line and both numbers no longer fit on one line (Chromium
    and Firefox alike). A desktop's column is 519px. A longer station name
    means measuring again.
-   Line 1: the status light, name, then age ("36m", no "ago") and a plain
-   chevron. The light leads the row, as it leads the age line under the
-   name side by side.
-   Line 2: waves left, wind right, each on one baseline and never wrapping;
-   both span the line under the name, so the wind stays right whatever the
-   waves' width. Every row is the same two lines: a row without numbers
-   says "No recent data" on line 2. .sl-name and .sl-age dissolve
-   (display: contents) so the title, light and age become grid items of
-   their own. The whole row stays the tap target.
+   Line 1: name and a plain chevron.
+   Line 2: status light and age ("36m", no "ago") under the name, as side
+   by side; then waves, and wind on the right, each on one baseline and
+   never wrapping. The age track fits the widest age ("1h 59m"), so the
+   waves line up row to row; only a late row's longer age pushes them over.
+   Every row is the same two lines: a row without numbers says "No recent
+   data" after its age. .sl-name dissolves (display: contents) so its
+   title and age line become grid items of their own. The whole row stays
+   the tap target.
 ----------------------------- */
 @container sl-column (width < 504px) {
   .sl-row {
-    grid-template-columns: 0.5rem minmax(0, 1fr) auto 1.25rem;
+    grid-template-columns: minmax(3.75rem, auto) minmax(0, 1fr) auto 1.25rem;
     /* Fixed tracks, so a row of "No recent data" is as tall as one of numbers. */
     grid-template-rows: 1.25rem 1.25rem;
     grid-template-areas:
-      "dot title age chev"
-      ". line line line";
+      "title title title chev"
+      "age waves wind wind";
     column-gap: var(--space-2);
     row-gap: 0.25rem;
     align-content: center;
@@ -721,16 +721,8 @@
   }
 
   .sl-age {
-    display: contents;
-  }
-
-  .sl-dot {
-    grid-area: dot;
-  }
-
-  .sl-age-words {
     grid-area: age;
-    justify-self: end;
+    margin-top: 0;
     white-space: nowrap;
   }
 
@@ -738,8 +730,14 @@
     display: none;
   }
 
-  /* "No recent data" on line 2 says it; the name needs the width. */
+  /* "No recent data" beside it says it. */
   .sl-row--down .sl-age-state {
+    display: none;
+  }
+
+  /* "Out of service" and "No data" say it already. */
+  .sl-row--out .sl-cell--empty,
+  .sl-row--none .sl-cell--empty {
     display: none;
   }
 
@@ -753,24 +751,27 @@
   }
 
   .sl-row .sl-cell {
-    grid-area: line;
     flex-direction: row;
     align-items: baseline;
     gap: 0.45rem;
     white-space: nowrap;
   }
 
-  .sl-row .sl-cell--waves,
-  .sl-row .sl-cell--empty {
+  .sl-row .sl-cell--waves {
+    grid-area: waves;
     justify-self: start;
   }
 
   .sl-row .sl-cell--wind {
+    grid-area: wind;
     justify-self: end;
   }
 
   .sl-row .sl-cell--empty {
     display: block;
+    grid-row: 2;
+    grid-column: 2 / -1;
+    justify-self: start;
     font-size: 0.8rem;
   }
 
@@ -794,6 +795,20 @@
 
   .sl-head-sep {
     display: inline;
+  }
+}
+
+/* The narrowest phones (a 320px screen): " · late" would push a late
+   row's waves into its wind. The amber age still marks the row; the word
+   stays for screen readers. */
+@container sl-column (width < 300px) {
+  .sl-row--late .sl-age-state {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
   }
 }
 
