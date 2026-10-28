@@ -68,7 +68,7 @@ constraint is not the guidance — it is the 6 h gap to the next run, and the
 stale-lock threshold in `acquire_lock()`, which must stay above the real runtime
 (1 h when the second station landed, raised to 2 h at six stations, where a
 ~39 min run left only 21 min of margin). Publication lag is the other cost the
-totals hide: the fetch starts at run+4h35m, so a longer run means a staler
+totals hide: the fetch starts at run+4h45m, so a longer run means a staler
 forecast on the page, not just a longer job.
 
 This table is maintained by hand, not instrumented — deliberately (decided
@@ -111,7 +111,7 @@ and `fetch_wave_forecast.py` uses 1.1 s (0.65 req/s over ~41 min, lowered from
 1.5 s on 2026-08-24 when six stations made runtime a real cost). 1.5–2 s is
 still the default for a *new* point-extraction feed; argue it down only when
 runtime is buying something, as it is here — the fetch starts at
-model-run+4h35m, so a longer run is a staler forecast on the page.
+model-run+4h45m, so a longer run is a staler forecast on the page.
 
 **Judge the ceiling, not the typical rate.** The effective rate depends on
 server response time we do not control, and a slower server only lowers it, so
@@ -352,7 +352,7 @@ two open-Pacific points also both swell partitions (`RDWPS_2.5km_{First,Second}S
 (full inventory: `docs/project/RDWPS_PARAMETERS.md`)
 **Protocol:** WMS 1.3.0 GetFeatureInfo (JSON) via requests
 **Fetched by:** `scripts/fetch/fetch_wave_forecast.py`
-**Schedule:** 04:35, 10:35, 16:35, 22:35 UTC — run+4h35m (model runs 00/06/12/18Z, files land ~3h25m later)
+**Schedule:** 04:45, 10:45, 16:45, 22:45 UTC — run+4h45m (model runs 00/06/12/18Z, files land ~3h25m later). Moved from :35 on 2026-10-28: GeoMet answered the first minutes of the :35 runs with 429s and refused connections, which left gaps in Halibut Bank, the first station fetched.
 **Stations:** six, as `STATIONS` in the fetcher, ids from
 `config/stations.json`. Halibut Bank (`4600146`), Crescent Beach Ocean
 (`CRPILE`), English Bay (`4600304`) and New Dungeness (`46088`) take waves and
@@ -370,6 +370,14 @@ requests per station per run with wind, 330 for waves plus swell: 1,586/run,
 chart.
 **Stored in:** `wave_forecast.sqlite` + exported JSON to `site/data/wave_forecast/`
 **Note:** masked cells (absent wind-wave/swell partition, land) come back as sentinel `9999.0` — the fetcher drops values ≥ 9000.
+**When GeoMet pushes back:** the wait between requests doubles after each failure (to 30 s) and resets on the first success; 20 failures in a row stop the run (unreached stations keep their previous forecast). Failed points get one retry pass after the last station, accepted only from the same model run. Every failed request is a row in `wave_forecast.sqlite` → `fetch_error` (time, station, layer, valid time, kind such as `http_429` / `refused` / `timeout`, and `main` or `retry` pass), kept a year:
+
+```sql
+-- 429s and other failures by UTC hour of day, last 30 days
+SELECT strftime('%H', at, 'unixepoch') AS hour, kind, pass, COUNT(*)
+FROM fetch_error WHERE at > strftime('%s', 'now', '-30 days')
+GROUP BY 1, 2, 3 ORDER BY 1;
+```
 
 ---
 

@@ -226,7 +226,7 @@ BBOX_OFFSET = 0.02  # degrees
 #
 # 1.1 s (2026-08-24, was 1.5 s) gives 0.65 req/s and a ~31 min run at six
 # stations, down from ~39 min. The extra minutes stopped being free once the
-# station list grew: the fetch starts at model-run+4h35m, so runtime is
+# station list grew: the fetch starts at model-run+4h45m, so runtime is
 # publication lag, and it also eats the margin under the stale-lock threshold.
 #
 # SIZE THIS AGAINST THE CEILING, NOT THE TYPICAL RATE. The loop is
@@ -244,6 +244,26 @@ BBOX_OFFSET = 0.02  # degrees
 # server gets faster.
 FETCH_DELAY = 1.1  # seconds between requests
 REQUEST_TIMEOUT = 60  # seconds
+
+# When GeoMet pushes back (429s, refused or dropped connections), slow down
+# rather than keep asking at full rate: the gap doubles after each failure up
+# to BACKOFF_CEILING and drops back to FETCH_DELAY on the first success, so a
+# busy spell costs a handful of requests instead of hundreds. The busy spells
+# seen so far (2026-10-28: 25 s of refused connections at 10:35, ~6 min of
+# 429s from 16:35) came right after the model publishes, when the fetch used to
+# start; it now starts at :45 (config/crontab.txt). GIVE_UP_AFTER consecutive
+# failures (~8.5 min of nothing but errors at the ceiling) means the server is
+# down, not busy: the run stops and the stations it didn't reach keep their
+# previous forecast. Whatever failed in a run that finished gets one more try
+# in a retry pass RETRY_PASS_WAIT after the last station.
+BACKOFF_CEILING = 30  # seconds
+GIVE_UP_AFTER = 20  # consecutive failed requests
+RETRY_PASS_WAIT = 60  # seconds
+
+# Every failed request is logged to the fetch_error table, with its kind, so
+# how often GeoMet pushes back, and when, is a query rather than a grep of a
+# rotated log. Small rows; kept a year to see seasonal or policy changes.
+FETCH_ERROR_RETENTION_DAYS = 365
 
 # Both models publish 49 hourly steps (0–48 h), but we don't fetch them all:
 # one WMS request buys one (variable, hour), so the time axis is what drives
@@ -263,6 +283,56 @@ COARSE_STEP_HOURS = 3  # then this spacing to the end of the run
 # Session reuse: keep-alive cuts ~120 ms off each request (493 ms cold vs
 # 376 ms warm, measured 2026-08-15), which is ~15 s over a full run.
 SESSION = requests.Session()
+
+
+class GeoMetUnavailable(Exception):
+    """GIVE_UP_AFTER requests in a row failed: stop the run."""
+
+
+class Pacer:
+    """The wait between requests: FETCH_DELAY normally, doubling while
+    requests fail (see BACKOFF_CEILING)."""
+
+    def __init__(self, base, ceiling, give_up_after):
+        self.base = base
+        self.ceiling = ceiling
+        self.give_up_after = give_up_after
+        self.delay = base
+        self.consecutive_failures = 0
+
+    def wait(self, status):
+        if status == "failed":
+            self.consecutive_failures += 1
+            if self.consecutive_failures >= self.give_up_after:
+                raise GeoMetUnavailable(f"{self.consecutive_failures} requests failed in a row")
+            self.delay = min(self.delay * 2, self.ceiling)
+        else:
+            self.consecutive_failures = 0
+            self.delay = self.base
+        time.sleep(self.delay)
+
+
+PACER = Pacer(FETCH_DELAY, BACKOFF_CEILING, GIVE_UP_AFTER)
+
+
+def error_kind(exc):
+    """A short label for why a request failed, for the fetch_error table."""
+    if isinstance(exc, requests.HTTPError) and exc.response is not None:
+        code = exc.response.status_code
+        return "http_429" if code == 429 else f"http_{code // 100}xx"
+    # Before ConnectionError: ConnectTimeout is both.
+    if isinstance(exc, requests.Timeout):
+        return "timeout"
+    if isinstance(exc, requests.ConnectionError):
+        text = str(exc)
+        if "refused" in text.lower():
+            return "refused"
+        if "RemoteDisconnected" in text or "aborted" in text.lower():
+            return "disconnected"
+        return "connection"
+    if isinstance(exc, (ValueError, KeyError, IndexError)):
+        return "bad_response"
+    return "other"
 
 
 def acquire_lock():
@@ -353,6 +423,20 @@ def ensure_db_schema(conn):
             PRIMARY KEY (station_id, model, forecast_run_time)
         )
     """)
+    # One row per failed request (see FETCH_ERROR_RETENTION_DAYS). `pass` is
+    # 'main' or 'retry'; a main-pass row with no retry row for the same
+    # station, layer and valid_time was recovered by the retry pass.
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS fetch_error (
+            at INTEGER NOT NULL,
+            station_id TEXT NOT NULL,
+            layer TEXT NOT NULL,
+            valid_time INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            pass TEXT NOT NULL
+        )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_fetch_error_at ON fetch_error(at)")
     # Forecast/observation pairs, written once a valid_time has passed.
     # Deliberately NOT subject to WAVE_FORECAST_RETENTION_DAYS: the raw runs
     # are bulky and disposable, but these triples are the skill history, and
@@ -581,7 +665,7 @@ def get_time_steps(layer):
     return steps
 
 
-def fetch_point(layer, lat, lon, timestamp):
+def fetch_point(layer, lat, lon, timestamp, on_error=None):
     """Fetch one value at one location and time.
 
     Returns (value, model_run_time, status) where status is one of:
@@ -591,7 +675,8 @@ def fetch_point(layer, lat, lon, timestamp):
       'failed' — the request errored. value is None.
 
     'masked' and 'failed' are kept apart deliberately: the first is a
-    statement by the model, the second is a gap in our record.
+    statement by the model, the second is a gap in our record. On 'failed',
+    `on_error` (if given) is called with error_kind() of the exception.
     """
     time_str = to_utc(timestamp).strftime("%Y-%m-%dT%H:%M:%SZ")
     try:
@@ -630,15 +715,45 @@ def fetch_point(layer, lat, lon, timestamp):
         return value, run_time, "ok"
     except Exception as e:
         logger.info(f"    ⚠️  Error fetching {layer} at {time_str}: {e}")
+        if on_error:
+            on_error(error_kind(e))
         return None, None, "failed"
 
 
-def fetch_station_forecast(station_id, station_info, layers, time_steps):
+def _error_recorder(errors, station_id, layer, timestamp, fetch_pass):
+    """An on_error callback for fetch_point that appends a fetch_error row."""
+    if errors is None:
+        return None
+    valid_epoch = int(to_utc(timestamp).timestamp())
+
+    def record(kind):
+        errors.append((int(time.time()), station_id, layer, valid_epoch, kind, fetch_pass))
+
+    return record
+
+
+def _record_point(field, timestamp, value, status, forecast, readings):
+    """File one fetched point into a station's forecast and readings."""
+    # Convert before anything stores or exports it, so km/h is the only
+    # unit this field ever has downstream.
+    convert = CONVERSIONS.get(field)
+    if value is not None and convert:
+        value = convert(value)
+    if status != "failed":
+        readings.append((field, timestamp, value, status))
+    if value is not None:
+        time_key = to_utc(timestamp).strftime("%Y-%m-%dT%H:%M:%SZ")
+        forecast.setdefault(time_key, {})[field] = round(value, 3)
+
+
+def fetch_station_forecast(station_id, station_info, layers, time_steps, errors=None):
     """Fetch one model's variables for all timesteps at one station.
 
     `layers` is a {field: layer} map — one model's entry in SOURCES. Returns
     (forecast, readings, counts, run_time) where forecast maps ISO valid time
     -> {field: value} and run_time is the model run the values came from.
+    Failed requests are appended to `errors` (fetch_error rows) when given.
+    Raises GeoMetUnavailable when the pacer gives up.
     """
     logger.info(f"\n📍 Fetching {station_info['name']}...")
     lat, lon = station_info["lat"], station_info["lon"]
@@ -650,22 +765,14 @@ def fetch_station_forecast(station_id, station_info, layers, time_steps):
 
     for field, layer in layers.items():
         logger.info(f"  🌊 {field} ({layer})")
-        convert = CONVERSIONS.get(field)
         for timestamp in time_steps:
-            value, run_time, status = fetch_point(layer, lat, lon, timestamp)
-            # Convert before anything stores or exports it, so km/h is the only
-            # unit this field ever has downstream.
-            if value is not None and convert:
-                value = convert(value)
+            on_error = _error_recorder(errors, station_id, layer, timestamp, "main")
+            value, run_time, status = fetch_point(layer, lat, lon, timestamp, on_error=on_error)
+            _record_point(field, timestamp, value, status, forecast, readings)
             counts[status] += 1
             if run_time:
                 run_times.add(run_time)
-            if status != "failed":
-                readings.append((field, timestamp, value, status))
-            if value is not None:
-                time_key = to_utc(timestamp).strftime("%Y-%m-%dT%H:%M:%SZ")
-                forecast.setdefault(time_key, {})[field] = round(value, 3)
-            time.sleep(FETCH_DELAY)
+            PACER.wait(status)
 
     total = len(layers) * len(time_steps)
     logger.info(
@@ -677,6 +784,72 @@ def fetch_station_forecast(station_id, station_info, layers, time_steps):
         logger.info(f"    ⚠️  Mixed model runs in one fetch: {sorted(run_times)}")
     run_time = max(run_times) if run_times else None
     return forecast, readings, counts, run_time
+
+
+def failed_points(layers, time_steps, readings):
+    """The (field, timestamp) pairs attempted but absent from `readings`:
+    only a failed request leaves no reading."""
+    answered = {(field, timestamp) for field, timestamp, _value, _status in readings}
+    return [
+        (field, timestamp)
+        for field in layers
+        for timestamp in time_steps
+        if (field, timestamp) not in answered
+    ]
+
+
+def retry_failed_points(station_id, station_info, layers, failed, fetch, errors=None):
+    """Re-fetch one station-model's failed points, once each, in place.
+
+    `fetch` is the {forecast, readings, counts, run_time} of the main pass. A
+    point is only taken from the same model run: a run published since then
+    would put two forecasts in one table. Returns how many were recovered.
+    """
+    lat, lon = station_info["lat"], station_info["lon"]
+    recovered = 0
+    for field, timestamp in failed:
+        layer = layers[field]
+        on_error = _error_recorder(errors, station_id, layer, timestamp, "retry")
+        value, run_time, status = fetch_point(layer, lat, lon, timestamp, on_error=on_error)
+        if status != "failed" and run_time != fetch["run_time"]:
+            logger.info(
+                f"    ⚠️  {field} at {timestamp:%Y-%m-%dT%H:%MZ} came from run "
+                f"{run_time}, not {fetch['run_time']}; left out"
+            )
+            if on_error:
+                on_error("run_changed")
+            status = "failed"
+            value = None
+        if status != "failed":
+            _record_point(field, timestamp, value, status, fetch["forecast"], fetch["readings"])
+            fetch["counts"]["failed"] -= 1
+            fetch["counts"][status] += 1
+            recovered += 1
+        PACER.wait(status)
+    return recovered
+
+
+def store_fetch_errors(errors):
+    """Write the run's fetch_error rows and prune old ones."""
+    WAVE_FORECAST_DATABASE.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(WAVE_FORECAST_DATABASE)
+    ensure_db_schema(conn)
+    conn.executemany(
+        "INSERT INTO fetch_error (at, station_id, layer, valid_time, kind, pass) VALUES (?, ?, ?, ?, ?, ?)",
+        errors,
+    )
+    cutoff = int(time.time()) - FETCH_ERROR_RETENTION_DAYS * 86400
+    conn.execute("DELETE FROM fetch_error WHERE at < ?", (cutoff,))
+    conn.commit()
+    conn.close()
+
+
+def summarize_errors(errors):
+    """'http_429×12, refused×3' for the run log; '' when there were none."""
+    kinds = {}
+    for row in errors:
+        kinds[row[4]] = kinds.get(row[4], 0) + 1
+    return ", ".join(f"{kind}×{n}" for kind, n in sorted(kinds.items(), key=lambda kv: -kv[1]))
 
 
 def store_forecast_to_db(station_id, model, readings, counts, run_time):
@@ -801,6 +974,57 @@ def save_index(stations):
     logger.info(f"💾 Saved station index ({len(stations)} stations)")
 
 
+def publish_station(buoy_id, station_info, config, fetches):
+    """Store each model's readings and write the station's merged JSON.
+
+    One merged series per station across models (they share a valid time
+    axis), each model stored and labelled separately. Safe to call again after
+    the retry pass: the database writes replace, and the JSON is rewritten.
+    Returns False when no model produced anything.
+    """
+    merged = {}
+    run_times = {}
+    for model, fetch in fetches.items():
+        store_forecast_to_db(buoy_id, model, fetch["readings"], fetch["counts"], fetch["run_time"])
+        run_times[model] = fetch["run_time"]
+        for time_key, values in fetch["forecast"].items():
+            merged.setdefault(time_key, {}).update(values)
+    if not merged:
+        return False
+    save_forecast(buoy_id, station_info, config, merged, run_times)
+    return True
+
+
+def retry_pass(fetched, errors):
+    """One more try at every point the main pass failed to fetch.
+
+    Waits RETRY_PASS_WAIT first: by now the busy spell that failed them has
+    usually passed. Stations that recover anything are stored and saved again.
+    """
+    todo = [
+        (buoy_id, station_info, config, fetches, model, failed)
+        for buoy_id, station_info, config, fetches in fetched
+        for model, fetch in fetches.items()
+        if (failed := failed_points(fetch["layers"], fetch["steps"], fetch["readings"]))
+    ]
+    if not todo:
+        return
+    total = sum(len(item[5]) for item in todo)
+    logger.info(f"\n🔁 Retry pass: {total} failed point(s), waiting {RETRY_PASS_WAIT}s")
+    time.sleep(RETRY_PASS_WAIT)
+    recovered = 0
+    changed = {}
+    for buoy_id, station_info, config, fetches, model, failed in todo:
+        fetch = fetches[model]
+        got = retry_failed_points(buoy_id, station_info, fetch["layers"], failed, fetch, errors)
+        recovered += got
+        if got:
+            changed[buoy_id] = (station_info, config, fetches)
+    for buoy_id, (station_info, config, fetches) in changed.items():
+        publish_station(buoy_id, station_info, config, fetches)
+    logger.info(f"🔁 Retry pass recovered {recovered}/{total}")
+
+
 def plan_time_steps():
     """Read each model's published time axis and taper it.
 
@@ -850,39 +1074,58 @@ def main():
 
         failures = 0
         published = []  # (station_id, info) for stations that produced a file
-        for buoy_id, config in STATIONS.items():
-            station_info = get_buoy(buoy_id)
-            if not station_info:
-                logger.info(f"❌ Buoy {buoy_id} not found in stations.json")
-                failures += 1
-                continue
-
-            # One merged series per station across models — they share a valid
-            # time axis — but each model stored and labelled separately.
-            merged = {}
-            run_times = {}
-            for model in SOURCES:
-                if model not in models_for(config):
-                    continue
-                forecast, readings, counts, run_time = fetch_station_forecast(
-                    buoy_id, station_info, layers_for(model, config), steps_by_model[model]
-                )
-                if not forecast:
-                    logger.info(f"    ❌ No {model} data retrieved for {buoy_id}")
+        fetched = []  # (buoy_id, station_info, config, {model: fetch}) per published station
+        errors = []  # fetch_error rows for this run
+        aborted = False
+        try:
+            for buoy_id, config in STATIONS.items():
+                station_info = get_buoy(buoy_id)
+                if not station_info:
+                    logger.info(f"❌ Buoy {buoy_id} not found in stations.json")
                     failures += 1
                     continue
-                store_forecast_to_db(buoy_id, model, readings, counts, run_time)
-                run_times[model] = run_time
-                for time_key, values in forecast.items():
-                    merged.setdefault(time_key, {}).update(values)
 
-            if merged:
-                save_forecast(buoy_id, station_info, config, merged, run_times)
-                published.append((buoy_id, station_info))
-            else:
-                logger.info(f"    ❌ No data retrieved for {buoy_id}")
+                fetches = {}
+                for model in SOURCES:
+                    if model not in models_for(config):
+                        continue
+                    layers = layers_for(model, config)
+                    steps = steps_by_model[model]
+                    forecast, readings, counts, run_time = fetch_station_forecast(
+                        buoy_id, station_info, layers, steps, errors
+                    )
+                    if not forecast:
+                        logger.info(f"    ❌ No {model} data retrieved for {buoy_id}")
+                        failures += 1
+                        continue
+                    fetches[model] = {
+                        "layers": layers,
+                        "steps": steps,
+                        "forecast": forecast,
+                        "readings": readings,
+                        "counts": counts,
+                        "run_time": run_time,
+                    }
 
-        if published:
+                if publish_station(buoy_id, station_info, config, fetches):
+                    published.append((buoy_id, station_info))
+                    fetched.append((buoy_id, station_info, config, fetches))
+                else:
+                    logger.info(f"    ❌ No data retrieved for {buoy_id}")
+
+            retry_pass(fetched, errors)
+        except GeoMetUnavailable as e:
+            # The stations not reached keep their previous files; the index is
+            # left alone so they stay in the picker.
+            aborted = True
+            failures += 1
+            logger.info(f"\n❌ GeoMet unavailable ({e}); stopping. Unfetched stations keep their previous forecast.")
+        finally:
+            if errors:
+                store_fetch_errors(errors)
+                logger.info(f"📉 Fetch errors this run: {summarize_errors(errors)}")
+
+        if published and not aborted:
             save_index(published)
 
         if failures:

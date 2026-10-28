@@ -30,6 +30,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
+import requests
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -93,6 +94,12 @@ def wave_db(tmp_path, monkeypatch):
 def no_sleep(monkeypatch):
     """The 1.5 s inter-request delay has no place in a test run."""
     monkeypatch.setattr(wf.time, "sleep", lambda _seconds: None)
+
+
+@pytest.fixture(autouse=True)
+def fresh_pacer(monkeypatch):
+    """PACER is module state; each test starts with a calm one."""
+    monkeypatch.setattr(wf, "PACER", wf.Pacer(wf.FETCH_DELAY, wf.BACKOFF_CEILING, wf.GIVE_UP_AFTER))
 
 
 @pytest.fixture
@@ -270,9 +277,12 @@ class TestFetchStationForecast:
         """results: (field, iso) -> (value, run, status)."""
         fields = {layer: field for field, layer in wf.VARIABLES.items()}
 
-        def fake_fetch_point(layer, lat, lon, timestamp):
+        def fake_fetch_point(layer, lat, lon, timestamp, on_error=None):
             key = (fields[layer], timestamp.strftime("%Y-%m-%dT%H:%M:%SZ"))
-            return results.get(key, (0.1, RUN_ISO, "ok"))
+            value, run, status = results.get(key, (0.1, RUN_ISO, "ok"))
+            if status == "failed" and on_error:
+                on_error("http_429")
+            return value, run, status
 
         monkeypatch.setattr(wf, "fetch_point", fake_fetch_point)
 
@@ -358,6 +368,174 @@ class TestFetchStationForecast:
         self._stub(monkeypatch, {("wind_direction", STEP_ISO): (276.2, RUN_ISO, "ok")})
         forecast, _r, _c, _run = self._fetch(self.WIND_LAYERS, steps)
         assert forecast[STEP_ISO]["wind_direction"] == 276.2
+
+    def test_failed_requests_become_fetch_error_rows(self, monkeypatch):
+        steps = [dt(RUN_ISO)]
+        self._stub(monkeypatch, {("peak_period", RUN_ISO): (None, None, "failed")})
+        errors = []
+        wf.fetch_station_forecast("4600146", self.STATION, self.WAVE_LAYERS, steps, errors)
+        assert len(errors) == 1
+        _at, station, layer, valid, kind, fetch_pass = errors[0]
+        assert (station, layer, kind, fetch_pass) == (
+            "4600146",
+            wf.VARIABLES["peak_period"],
+            "http_429",
+            "main",
+        )
+        assert valid == int(dt(RUN_ISO).timestamp())
+
+
+# ── Pacer: slow down while GeoMet pushes back ────────────────────────
+
+
+class TestPacer:
+    def _pacer(self, monkeypatch):
+        slept = []
+        monkeypatch.setattr(wf.time, "sleep", slept.append)
+        return wf.Pacer(1.1, 30, 20), slept
+
+    def test_normal_pace_is_the_fetch_delay(self, monkeypatch):
+        pacer, slept = self._pacer(monkeypatch)
+        pacer.wait("ok")
+        pacer.wait("masked")
+        assert slept == [1.1, 1.1]
+
+    def test_failures_double_the_wait_up_to_the_ceiling(self, monkeypatch):
+        pacer, slept = self._pacer(monkeypatch)
+        for _ in range(7):
+            pacer.wait("failed")
+        assert slept == pytest.approx([2.2, 4.4, 8.8, 17.6, 30, 30, 30])
+
+    def test_one_success_restores_the_normal_pace(self, monkeypatch):
+        pacer, slept = self._pacer(monkeypatch)
+        pacer.wait("failed")
+        pacer.wait("failed")
+        pacer.wait("ok")
+        assert slept[-1] == 1.1
+        assert pacer.consecutive_failures == 0
+
+    def test_gives_up_after_too_many_failures_in_a_row(self, monkeypatch):
+        pacer, _slept = self._pacer(monkeypatch)
+        for _ in range(19):
+            pacer.wait("failed")
+        with pytest.raises(wf.GeoMetUnavailable):
+            pacer.wait("failed")
+
+    def test_backoff_never_raises_the_rate(self):
+        """Backing off only lengthens waits, so the rate ceiling still holds."""
+        assert wf.BACKOFF_CEILING > wf.FETCH_DELAY
+        assert wf.GIVE_UP_AFTER >= 10  # a busy spell is not an outage
+
+
+# ── error_kind: why a request failed ─────────────────────────────────
+
+
+class TestErrorKind:
+    def _http_error(self, code):
+        response = requests.Response()
+        response.status_code = code
+        return requests.HTTPError(response=response)
+
+    def test_429_is_its_own_kind(self):
+        assert wf.error_kind(self._http_error(429)) == "http_429"
+
+    def test_other_statuses_are_grouped_by_class(self):
+        assert wf.error_kind(self._http_error(503)) == "http_5xx"
+        assert wf.error_kind(self._http_error(404)) == "http_4xx"
+
+    def test_refused_and_dropped_connections(self):
+        refused = requests.ConnectionError("Failed to establish a new connection: [Errno 111] Connection refused")
+        dropped = requests.ConnectionError(
+            "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+        )
+        assert wf.error_kind(refused) == "refused"
+        assert wf.error_kind(dropped) == "disconnected"
+
+    def test_timeouts_including_connect_timeouts(self):
+        assert wf.error_kind(requests.ReadTimeout()) == "timeout"
+        assert wf.error_kind(requests.ConnectTimeout()) == "timeout"
+
+    def test_unparseable_body(self):
+        assert wf.error_kind(ValueError("Expecting value")) == "bad_response"
+
+
+# ── Retry pass: one more try at the failed points ───────────────────
+
+
+class TestRetryPass:
+    STATION = {"name": "Halibut Bank", "lat": 49.337, "lon": -123.731}
+    LAYERS = {"wave_height": wf.VARIABLES["wave_height"]}
+
+    def _main_pass(self):
+        steps = [dt(RUN_ISO), dt(STEP_ISO)]
+        fetch = {
+            "layers": self.LAYERS,
+            "steps": steps,
+            "forecast": {RUN_ISO: {"wave_height": 0.5}},
+            "readings": [("wave_height", steps[0], 0.5, "ok")],
+            "counts": {"ok": 1, "masked": 0, "failed": 1},
+            "run_time": RUN_ISO,
+        }
+        return fetch, steps
+
+    def _stub(self, monkeypatch, result):
+        def fake_fetch_point(layer, lat, lon, timestamp, on_error=None):
+            if result[2] == "failed" and on_error:
+                on_error("refused")
+            return result
+
+        monkeypatch.setattr(wf, "fetch_point", fake_fetch_point)
+
+    def test_failed_points_are_the_ones_without_a_reading(self):
+        fetch, steps = self._main_pass()
+        assert wf.failed_points(fetch["layers"], steps, fetch["readings"]) == [("wave_height", steps[1])]
+
+    def test_a_recovered_point_fills_the_gap_and_the_counts(self, monkeypatch):
+        fetch, steps = self._main_pass()
+        self._stub(monkeypatch, (0.6, RUN_ISO, "ok"))
+        failed = wf.failed_points(fetch["layers"], steps, fetch["readings"])
+        assert wf.retry_failed_points("4600146", self.STATION, self.LAYERS, failed, fetch) == 1
+        assert fetch["forecast"][STEP_ISO]["wave_height"] == 0.6
+        assert fetch["counts"] == {"ok": 2, "masked": 0, "failed": 0}
+        assert wf.failed_points(fetch["layers"], steps, fetch["readings"]) == []
+
+    def test_a_point_from_a_newer_run_is_left_out(self, monkeypatch):
+        """Two runs in one table would read as one forecast."""
+        fetch, steps = self._main_pass()
+        self._stub(monkeypatch, (0.6, "2026-08-17T00:00:00Z", "ok"))
+        errors = []
+        failed = wf.failed_points(fetch["layers"], steps, fetch["readings"])
+        assert wf.retry_failed_points("4600146", self.STATION, self.LAYERS, failed, fetch, errors) == 0
+        assert STEP_ISO not in fetch["forecast"]
+        assert fetch["counts"]["failed"] == 1
+        assert [row[4:] for row in errors] == [("run_changed", "retry")]
+
+    def test_a_second_failure_is_logged_as_a_retry(self, monkeypatch):
+        fetch, steps = self._main_pass()
+        self._stub(monkeypatch, (None, None, "failed"))
+        errors = []
+        failed = wf.failed_points(fetch["layers"], steps, fetch["readings"])
+        wf.retry_failed_points("4600146", self.STATION, self.LAYERS, failed, fetch, errors)
+        assert [row[4:] for row in errors] == [("refused", "retry")]
+        assert fetch["counts"]["failed"] == 1
+
+    def test_errors_are_stored_and_pruned(self, wave_db, fixture_clock):
+        now = int(wf.time.time())
+        old = now - (wf.FETCH_ERROR_RETENTION_DAYS + 1) * 86400
+        wf.store_fetch_errors(
+            [
+                (now, "4600146", "layer", now, "http_429", "main"),
+                (old, "4600146", "layer", old, "refused", "main"),
+            ]
+        )
+        conn = sqlite3.connect(wave_db)
+        rows = conn.execute("SELECT kind, pass FROM fetch_error").fetchall()
+        conn.close()
+        assert rows == [("http_429", "main")]
+
+    def test_summary_counts_kinds_most_frequent_first(self):
+        rows = [(0, "s", "l", 0, k, "main") for k in ("refused", "http_429", "http_429")]
+        assert wf.summarize_errors(rows) == "http_429×2, refused×1"
 
 
 # ── store_forecast_to_db ─────────────────────────────────────────────
@@ -752,7 +930,7 @@ class TestConfiguration:
             assert {"wave_height", "peak_period", "wave_direction"} <= fields
             assert not wf.SWELL_FIELDS & set(wf.layers_for(wf.WIND_MODEL_NAME, config))
         source = Path(wf.__file__).read_text()
-        assert "layers_for(model, config), steps_by_model[model]" in source, (
+        assert "layers = layers_for(model, config)" in source, (
             "main() must fetch the per-station layer set, not all of SOURCES"
         )
 

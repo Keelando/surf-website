@@ -112,9 +112,11 @@
 # ==================== WAVE FORECAST (RDWPS) ====================
 # RDWPS runs 4x/day at 00/06/12/18Z. Datamart files land ~3h25m after the run
 # (measured to the minute on two consecutive runs) and GeoMet ingests shortly
-# after, so fetch at run+4h35m for margin. 33 timesteps x 4 variables = 133
-# requests/run, 532/day — 0.6% of MSC's 86,400/day guidance.
-35 4,10,16,22 * * * /usr/bin/flock -n /tmp/envcan_wave_forecast.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_wave_forecast.py >> /home/keelando/envcan_wave/logs/wave_forecast.log 2>&1
+# after, so fetch at run+4h45m for margin (run+4h35m until 2026-10-28, when
+# GeoMet's 429s and refused connections in the first minutes of the run left
+# gaps in the first station's forecast; the fetcher also backs off and retries
+# now). Request counts and the rate are in docs/DATA_FEEDS.md.
+45 4,10,16,22 * * * /usr/bin/flock -n /tmp/envcan_wave_forecast.lock /home/keelando/envcan_wave/.venv/bin/python3 /home/keelando/envcan_wave/scripts/fetch/fetch_wave_forecast.py >> /home/keelando/envcan_wave/logs/wave_forecast.log 2>&1
 
 # Forecast verification — pairs past forecasts with what the buoys measured.
 # Local SQLite only, no network, seconds to run. Daily is enough: it re-scans a
