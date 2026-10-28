@@ -63,6 +63,16 @@ duplicated observations on 2026-09-06. Write-up:
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+### Queued 2026-10-28
+
+- [ ] **Judge the wave-forecast fetch changes on real data** (`2762998`,
+      after ~2 weeks of `fetch_error` rows). Did the :35 → :45 move help,
+      or did failures just move to whichever station lands in the ~:50–:05
+      busy window? How much does the retry pass recover? Queries and
+      background: `docs/TROUBLESHOOTING.md` issue 15. If the second window
+      still bites, consider spreading the 06Z/12Z runs' stations differently
+      rather than slowing every request.
+
 ### Queued 2026-10-24
 
 - [ ] **Water-comfort indicator** (user 2026-10-24, future feature):

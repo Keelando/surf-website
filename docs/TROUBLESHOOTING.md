@@ -618,6 +618,60 @@ live on Windy's side under My Stations.
 
 ---
 
+### 15. Gaps in a Point Forecast (Forecasts Page Table or Chart)
+
+**Symptoms:**
+- Blank cells in one station's point-forecast table, breaks in its chart;
+  each variable missing at different hours (height but no period at one
+  hour, period but no height at the next).
+- Usually one station, often Halibut Bank; the others look fine.
+
+**Cause:** not the model. Every (variable, hour) is its own GeoMet WMS
+request, and GeoMet sometimes answers with **429 Too Many Requests**,
+refused or dropped connections. Our rate (≤ 0.91 req/s) is under MSC's
+guidance and nothing else of ours hits GeoMet then, so these look like a busy
+server shedding load. A gap stays on the page until the next run (6 h).
+
+**What the record showed (2026-10-28, from `wave_forecast_run`, 60 days back
+to 2026-08-29):**
+- Some requests fail on most days; it is not new. Runs with 10+ failures at
+  one station: 31 in 60 days.
+- Almost all bad runs are the 06Z and 12Z runs (fetched 10:35 and 16:35 UTC
+  until 2026-10-28), in two windows: **~:35–:42**, the start, which hits the
+  first station (Halibut Bank), and **~:50–:05**, 15–30 min in, which hits
+  New Dungeness, Neah Bay and La Perouse.
+- Halibut Bank's bad runs: 2026-09-21 (every station lost 18–24 values),
+  10-05, 10-20, 10-22, and both 10-28 runs, the first time two in a row
+  (gaps on the page ~10:43 to ~22:45 UTC). Four of its six in the last nine
+  days: getting more frequent.
+- Other stations' gaps go unnoticed: New Dungeness lost 81 values on
+  2026-09-19; many failures are gusts, which HRDPS masks at most hours
+  anyway, so a missing gust looks normal.
+
+**Since 2026-10-28 (`2762998`)** the fetcher backs off while requests fail,
+retries the failed points once at the end of the run, and records every
+failure. The start moved :35 → :45, but with Halibut Bank now fetched around
+:46–:51 that may only move the hit to whichever station lands in the second
+window; the retry pass is the fix that counts. Details:
+`docs/DATA_FEEDS.md` → RDWPS Wave Forecast.
+
+**Diagnosis:**
+```bash
+# The run's summary and retry outcome
+grep -E "Fetch errors|Retry pass|GeoMet unavailable" logs/wave_forecast.log | tail
+
+# Every failed request, by kind and pass, last 7 days
+sqlite3 ~/.local/share/wave_forecast.sqlite "SELECT date(at,'unixepoch'), strftime('%H:%M',at,'unixepoch'), station_id, kind, pass FROM fetch_error WHERE at > strftime('%s','now','-7 days') ORDER BY at;"
+
+# Failed counts per station and run (kept 60 days; fetch_error starts 2026-10-28)
+sqlite3 -header -column ~/.local/share/wave_forecast.sqlite "SELECT date(fetched_at,'unixepoch') day, strftime('%H:%M',fetched_at,'unixepoch') saved, station_id, model, n_failed FROM wave_forecast_run WHERE n_failed > 0 ORDER BY fetched_at DESC LIMIT 20;"
+```
+
+**If it keeps getting worse:** check MSC's usage policy and GeoMet
+announcements for a limit change before touching `FETCH_DELAY`.
+
+---
+
 ## Debugging Tools
 
 ### Enable Verbose Logging

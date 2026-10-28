@@ -352,7 +352,12 @@ two open-Pacific points also both swell partitions (`RDWPS_2.5km_{First,Second}S
 (full inventory: `docs/project/RDWPS_PARAMETERS.md`)
 **Protocol:** WMS 1.3.0 GetFeatureInfo (JSON) via requests
 **Fetched by:** `scripts/fetch/fetch_wave_forecast.py`
-**Schedule:** 04:45, 10:45, 16:45, 22:45 UTC — run+4h45m (model runs 00/06/12/18Z, files land ~3h25m later). Moved from :35 on 2026-10-28: GeoMet answered the first minutes of the :35 runs with 429s and refused connections, which left gaps in Halibut Bank, the first station fetched.
+**Schedule:** 04:45, 10:45, 16:45, 22:45 UTC — run+4h45m (model runs 00/06/12/18Z, files land ~3h25m later). Moved from :35 on 2026-10-28: GeoMet answered the first minutes of the :35 runs with 429s and refused connections, which left gaps in Halibut Bank, the first station fetched. The
+60-day record shows failures on most days since at least 2026-08-29, nearly all
+in the 06Z and 12Z runs, in two windows: ~:35–:42 and ~:50–:05 (UTC). So :45
+dodges the first and may land a station in the second; the backoff and retry
+below are the actual fix. History and diagnosis: `docs/TROUBLESHOOTING.md`
+issue 15.
 **Stations:** six, as `STATIONS` in the fetcher, ids from
 `config/stations.json`. Halibut Bank (`4600146`), Crescent Beach Ocean
 (`CRPILE`), English Bay (`4600304`) and New Dungeness (`46088`) take waves and

@@ -248,10 +248,12 @@ REQUEST_TIMEOUT = 60  # seconds
 # When GeoMet pushes back (429s, refused or dropped connections), slow down
 # rather than keep asking at full rate: the gap doubles after each failure up
 # to BACKOFF_CEILING and drops back to FETCH_DELAY on the first success, so a
-# busy spell costs a handful of requests instead of hundreds. The busy spells
-# seen so far (2026-10-28: 25 s of refused connections at 10:35, ~6 min of
-# 429s from 16:35) came right after the model publishes, when the fetch used to
-# start; it now starts at :45 (config/crontab.txt). GIVE_UP_AFTER consecutive
+# busy spell costs a handful of requests instead of hundreds. Busy spells
+# (429s, refused connections) go back at least to 2026-08-29, nearly all in
+# the 06Z and 12Z runs and in two windows, ~:35-:42 and ~:50-:05 UTC
+# (docs/TROUBLESHOOTING.md issue 15). The start moved :35 -> :45 to miss the
+# first; the second can still catch a station mid-run, which is what the retry
+# pass is for. GIVE_UP_AFTER consecutive
 # failures (~8.5 min of nothing but errors at the ceiling) means the server is
 # down, not busy: the run stops and the stations it didn't reach keep their
 # previous forecast. Whatever failed in a run that finished gets one more try
