@@ -210,6 +210,21 @@ function toggleRow(id, open) {
   detail.hidden = !opening;
 }
 
+// The panel's own Close, at its foot: once the panel folds away the row may
+// sit above the screen (or under the phone's sticky nav), so bring it back
+// into view and give it focus, leaving the reader where they were in the list.
+function closeRowFromPanel(id) {
+  toggleRow(id, false);
+  const row = document.querySelector(`#buoy-${id} .sl-row`);
+  if (!row) return;
+  const nav = document.querySelector(".main-nav");
+  const navBottom =
+    nav && getComputedStyle(nav).position === "sticky" ? nav.getBoundingClientRect().bottom : 0;
+  const top = row.getBoundingClientRect().top - navBottom - 8;
+  if (top < 0) window.scrollBy({ top });
+  row.focus({ preventScroll: true });
+}
+
 // Show or hide the 12-hour table inside an open panel, fetched on first use.
 async function toggleHistory(id, open) {
   const item = document.getElementById(`buoy-${id}`);
@@ -258,6 +273,7 @@ function wireStationList() {
     }
     const action = e.target.closest("button[data-action]")?.dataset.action;
     if (action === "history") toggleHistory(id);
+    else if (action === "close") closeRowFromPanel(id);
     else if (action === "charts") scrollToCharts(id);
     else if (action === "map") scrollToMap(id);
   });

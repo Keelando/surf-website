@@ -336,6 +336,13 @@ test("the detail panel lists only the values the station sends", () => {
   assert.match(html, /data-action="charts"><svg class="icon"/);
 });
 
+test("the panel ends with a Close button, below the history slot", () => {
+  for (const b of [halibut, { ...halibut, no_data: true }]) {
+    const html = buildStationDetail(b, "4600146", EC).trim();
+    assert.match(html, /<button type="button" class="sl-action sl-close" data-action="close">.*Close<\/button>$/);
+  }
+});
+
 test("the source link names its owner and says it opens a new tab", () => {
   const meta = { ...EC, source_url: "https://example.org/station" };
   const html = buildStationDetail(halibut, "4600146", meta);

@@ -951,6 +951,12 @@
   margin-top: 0.5rem;
 }
 
+/* Close sits centred at the very foot of the panel, below the history. */
+.sl-close {
+  display: flex;
+  margin: 0.75rem auto 0;
+}
+
 /* The panel's "12-hour history" toggle closes the table; the table's own
    hide button (buoy-history.js) would be a second control for the same. */
 .sl-history .history-hide-row {

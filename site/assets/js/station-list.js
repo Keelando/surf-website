@@ -469,10 +469,14 @@ function detailActions(b, meta) {
       </div>`;
 }
 
-/** The panel a row opens: readings, notes, actions, and the lazy history slot. */
+// The panel's last control, so a long panel (or its history table) can be
+// closed from the bottom without scrolling back up to the row.
+const CLOSE_BUTTON = `<button type="button" class="sl-action sl-close" data-action="close">${icon("collapse")}Close</button>`;
+
+/** The panel a row opens: readings, notes, actions, the lazy history slot, Close. */
 export function buildStationDetail(b, id, meta) {
   if (b.no_data) {
-    return `<p class="sl-note">No readings from this station are on hand.</p>${detailActions(b, meta)}`;
+    return `<p class="sl-note">No readings from this station are on hand.</p>${detailActions(b, meta)}${CLOSE_BUTTON}`;
   }
   const fresh = freshness(b);
   const state = stateNote(b, fresh);
@@ -487,7 +491,8 @@ export function buildStationDetail(b, id, meta) {
       <div class="sl-groups">${waveStats(b, meta)}${windAndWeatherStats(b, meta)}</div>
       ${detailNotes(b, meta)}
       ${detailActions(b, meta)}
-      <div class="sl-history" id="sl-history-${id}" hidden></div>`;
+      <div class="sl-history" id="sl-history-${id}" hidden></div>
+      ${CLOSE_BUTTON}`;
 }
 
 /** The whole list: regions as small headings over their rows, in columns. */
