@@ -669,22 +669,24 @@
    an 80px swell line and both numbers no longer fit on one line (Chromium
    and Firefox alike). A desktop's column is 519px. A longer station name
    means measuring again.
-   Line 1: name, then dot + age ("36m", no "ago") and a plain chevron.
+   Line 1: the status light, name, then age ("36m", no "ago") and a plain
+   chevron. The light leads the row, as it leads the age line under the
+   name side by side.
    Line 2: waves left, wind right, each on one baseline and never wrapping;
-   both span the whole line, so the wind stays right whatever the waves'
-   width. Every row is the same two lines: a row without numbers says
-   "No recent data" on line 2. .sl-name dissolves (display: contents) so
-   its title and age line become grid items of their own. The whole row
-   stays the tap target.
+   both span the line under the name, so the wind stays right whatever the
+   waves' width. Every row is the same two lines: a row without numbers
+   says "No recent data" on line 2. .sl-name and .sl-age dissolve
+   (display: contents) so the title, light and age become grid items of
+   their own. The whole row stays the tap target.
 ----------------------------- */
 @container sl-column (width < 504px) {
   .sl-row {
-    grid-template-columns: minmax(0, 1fr) auto 1.25rem;
+    grid-template-columns: 0.5rem minmax(0, 1fr) auto 1.25rem;
     /* Fixed tracks, so a row of "No recent data" is as tall as one of numbers. */
     grid-template-rows: 1.25rem 1.25rem;
     grid-template-areas:
-      "title age chev"
-      "line line line";
+      "dot title age chev"
+      ". line line line";
     column-gap: var(--space-2);
     row-gap: 0.25rem;
     align-content: center;
@@ -719,9 +721,16 @@
   }
 
   .sl-age {
+    display: contents;
+  }
+
+  .sl-dot {
+    grid-area: dot;
+  }
+
+  .sl-age-words {
     grid-area: age;
     justify-self: end;
-    margin-top: 0;
     white-space: nowrap;
   }
 
