@@ -4,6 +4,23 @@ UI/UX enhancements and feature history for halibutbank.ca. Entries are newest-fi
 
 ---
 
+## 2026-10-29: Lighthouse Reports and the Scroll Probe
+
+- **`npm run lighthouse` / `npm run lighthouse:live`**: seven key pages on
+  phone, tablet (800x1280) and desktop, with a history file and the change
+  since the last run. Local runs fail on layout shift or accessibility.
+  `site/docs/LIGHTHOUSE.md`. First run: every page passes but webcams
+  (CLS 0.17-0.33, cause listed there).
+- **`/?probe`** on the home page, rebuilt from the description below and kept
+  on `main` this time, since it costs other visitors one URL check: the
+  browser readout, ten single-rule switches, and a frame count after each
+  scroll. For the summary that is still "better, not snappy" on the tablet
+  (TODO.md).
+- **Why the map loads at once on a tablet**: it is on screen. At 800x1280 the
+  collapsed summary ends with the map's top ~185px above the bottom edge.
+
+---
+
 ## 2026-10-29: Lighter on Phones and Tablets
 
 The new home page scrolled slowly and jumpily over the summary on a Lenovo

@@ -38,6 +38,7 @@
         "site/assets/js/station-list.js",
         "site/assets/js/buoy-history.js",
         "site/assets/js/stations-map.js",
+        "site/assets/js/probe.js",
         "site/assets/js/charts-v4.js",
         "site/assets/js/wave-chart-v4.js",
         "site/assets/js/wind-chart-v4.js",

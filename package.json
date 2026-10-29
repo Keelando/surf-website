@@ -8,6 +8,8 @@
     "test:frontend": "playwright test tests/playwright/console.spec.js",
     "test:js": "node --test \"tests/js/**/*.test.mjs\"",
     "screenshots": "playwright test tests/playwright/screenshots.spec.js --project=chromium",
+    "lighthouse": "node scripts/lighthouse/run.mjs",
+    "lighthouse:live": "node scripts/lighthouse/run.mjs --live",
     "test:python": ".venv/bin/pytest tests/ -v",
     "test": ".venv/bin/pytest tests/ -v && npm run test:js && npm run test:frontend"
   },
@@ -15,6 +17,8 @@
     "@axe-core/playwright": "^4.12.1",
     "@biomejs/biome": "^2.4.6",
     "@playwright/test": "^1.58.2",
-    "eslint": "^8.57.0"
+    "chrome-launcher": "^1.2.2",
+    "eslint": "^8.57.0",
+    "lighthouse": "^13.6.0"
   }
 }

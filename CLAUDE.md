@@ -105,6 +105,9 @@ are not wired up yet).
 - Frontend: `npm run lint:js` (0 errors, 0 warnings), `npm run format:js`
   (run after any JS edit), `npm run test:js`, `npm run test:frontend`,
   `npm run screenshots`.
+- Lighthouse: `npm run lighthouse` (local, with checks), `npm run
+  lighthouse:live` (history); on-device scroll probe at `/?probe`. See
+  `site/docs/LIGHTHOUSE.md`.
 - Everything: `npm test` (pytest + JS unit tests + Playwright);
   `npm run test:python` for the pytest suite alone.
 - Cache busting is automated: `scripts/update_asset_versions.py` rewrites
@@ -131,6 +134,7 @@ are not wired up yet).
 | `docs/MSC_REFERENCE_TABLES.md` | MSC code→name lookups (marine regions, SWOB stations) — dated snapshot, not authoritative |
 | `docs/PUBLIC_API.md` | Public `/api/v1` developer API: alias layer, allowlist guard, cache tiers, Cloudflare rule |
 | `docs/DEV_PREVIEW.md` | `dev` worktree → dev.halibutbank.ca: when to use it vs unlisted pages, traps, shipping (rebase + `--ff-only`) |
+| `site/docs/LIGHTHOUSE.md` | Lighthouse runs and history, and the `/?probe` scroll probe |
 | `site/assets/js/shared/README.md` | Frontend shared-module inventory |
 | `docs/incidents/` | Incident write-ups and their lessons (read before building ops/test tooling) |
 | `docs/project/` | Active plans (forecast upgrade, pressure page, …) |

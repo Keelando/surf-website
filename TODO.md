@@ -65,15 +65,25 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 
 ### Queued 2026-10-29
 
-- [ ] **Home map loads at once on a tablet** (user: "next time"). The map is
-      lazy (`LAZY_MAP_MARGIN`, 150px, in `stations-map.js`), yet on an
-      emulated 800x1280 tablet Leaflet and the marker popups
-      (`shared/map-popup.js`, `format-time.js`) ran during load, ~330 ms of
-      script at 4x CPU, while the reader is still at the summary. Find out
-      why the observer fires early there, and whether popup HTML can be
-      built on open rather than up front. Measure on the Lenovo Tab Plus,
-      not only in emulation: see `site/docs/FRONTEND_CHANGELOG.md`
-      2026-10-29 for why.
+- [ ] **Summary still not snappy on the tablet** (user 2026-10-29: "better,
+      not snappy" after the shadow, wave and chart changes). Open
+      `halibutbank.ca/?probe` on the Lenovo Tab Plus and try the switches
+      one at a time (`site/docs/LIGHTHOUSE.md`, "The scroll probe"). In
+      emulation at 800x1280 and 4x CPU, **No blur** was the only switch
+      that moved it: ~30 → ~60 fps, late frames 17% → 0%. The earlier
+      pre-blurred-photo trial didn't feel different on the device, so test
+      plain No blur and Opaque panel there before believing it. Note the
+      readout's user agent too: the tablet's browser is still unconfirmed.
+- [ ] **Home map loads at once on a tablet** (user: "next time"). Why the
+      observer fires early, found 2026-10-29: it isn't early. At 800x1280
+      the summary's rows are collapsed, so the map's top sits at ~1095px in
+      a 1280px viewport once the list renders: it is on screen. Same on
+      desktop and a landscape tablet; phones (map at ~1130px of 844px) wait.
+      So the question is whether to delay it anyway (e.g. until first scroll
+      or idle), and whether popup HTML can be built on open rather than up
+      front (`shared/map-popup.js`, `format-time.js`). Check the probe's
+      **No map** switch on the device first: if it changes nothing, this is
+      load time only, not scroll.
 
 ### Queued 2026-10-28
 
@@ -1120,8 +1130,10 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       backend, cron and API stay on `main`. Workflow, traps and shipping:
       `docs/DEV_PREVIEW.md`. Additive pages still preview as unlisted
       pages on `main`.
-- [ ] **Lighthouse performance reports** (medium): automated runs for key
-      pages, track perf/a11y/SEO over time.
+- [x] **Lighthouse performance reports**, 2026-10-29: `npm run lighthouse`
+      (local, with checks) and `npm run lighthouse:live` (history in
+      `logs/lighthouse/history.jsonl`). See `site/docs/LIGHTHOUSE.md`. First
+      run flagged the webcams page's layout shift, listed there.
 - [ ] **Back-to-top button** (low-medium; mobile-first): additive only — no
       nav changes, no library. Circular button, bottom-right thumb zone,
       ≥44px target, clears the gesture bar and warning banner. Hidden until

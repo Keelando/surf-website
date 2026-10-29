@@ -337,6 +337,9 @@ function handleHashNavigation() {
 wireStationList();
 loadBuoyData();
 
+// /?probe: the on-device scroll probe (probe.js). Loaded only on request.
+if (new URLSearchParams(location.search).has("probe")) import("./probe.js");
+
 // The map key folds away when the reader clicks or taps anywhere at all
 // (the map, the page, or the open key itself) or presses Escape. Its own
 // summary is left to the browser, which toggles it.
