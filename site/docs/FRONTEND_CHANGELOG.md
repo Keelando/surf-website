@@ -7,7 +7,7 @@ UI/UX enhancements and feature history for halibutbank.ca. Entries are newest-fi
 ## 2026-10-29: Lighter on Phones and Tablets
 
 The new home page scrolled slowly and jumpily over the summary on a Lenovo
-Tab Plus (Firefox), smoothly once past it, and fine on a phone. Three
+Tab Plus, smoothly once past it, and fine on a phone. Three
 changes, all scoped to touch-primary devices with
 `(hover: none) and (pointer: coarse)`, never a width (a landscape tablet is
 desktop-wide). Desktop is unchanged.
