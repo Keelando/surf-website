@@ -569,8 +569,17 @@ function getMobileOptimizedTooltipConfig() {
 // is what makes deferring here safe; one that starts to must draw eagerly.
 // An element that is display:none never intersects, so a hidden chart is
 // drawn when it is first shown.
+//
+// On phones and tablets (touch-primary, at any width) charts also skip their
+// draw-in animation, as does anyone who asks for reduced motion: on an emulated
+// tablet at 4x CPU it was most of the scroll cost (2026-10-29: echarts
+// 1520 -> 865 ms and browser work 2554 -> 1032 ms over one scroll of the home
+// page, frames over 50 ms 16 -> 5). A chart that sets animation keeps it.
 if (typeof echarts !== "undefined") {
   const LAZY_MARGIN = "300px 0px";
+  const STILL = matchMedia(
+    "(prefers-reduced-motion: reduce), (hover: none) and (pointer: coarse)",
+  ).matches;
   const echartsInit = echarts.init.bind(echarts);
   const flushers = new WeakMap();
   const observer =
@@ -596,7 +605,11 @@ if (typeof echarts !== "undefined") {
     const dom = chart.getDom();
     const setOption = chart.setOption.bind(chart);
     const clear = chart.clear.bind(chart);
-    const draw = (option, ...rest) => setOption({ aria: { enabled: true }, ...option }, ...rest);
+    const draw = (option, ...rest) =>
+      setOption(
+        { aria: { enabled: true }, ...(STILL && { animation: false }), ...option },
+        ...rest,
+      );
 
     // null once the chart has been drawn (or cannot be deferred).
     let queue = observer ? [] : null;
