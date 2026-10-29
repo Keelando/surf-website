@@ -4,6 +4,57 @@ UI/UX enhancements and feature history for halibutbank.ca. Entries are newest-fi
 
 ---
 
+## 2026-10-29: Lighter on Phones and Tablets
+
+The new home page scrolled slowly and jumpily over the summary on a Lenovo
+Tab Plus (Firefox), smoothly once past it, and fine on a phone. Three
+changes, all scoped to touch-primary devices with
+`(hover: none) and (pointer: coarse)`, never a width (a landscape tablet is
+desktop-wide). Desktop is unchanged.
+
+- **The waves hold still** (`6ae1cf7`): the header-edge wave, the nav wave
+  and an open row's swell line get what `prefers-reduced-motion` already
+  got. Still drawn, not drifting.
+- **Charts skip their draw-in animation** (`dff506a`), in the
+  `echarts.init` wrapper in `chart-utils-v4.js`, so every chart on every
+  page; reduced-motion readers get the same. It was most of the scroll cost
+  further down the page: on an emulated tablet at 4x CPU, ECharts time over
+  one scroll 1520 → 836 ms, browser work 2554 → 954 ms, frames over 50 ms
+  16 → 5.
+- **No soft shadows in the summary** (`0d518a6`): the panel's drop shadow,
+  the wells' inset shading and the status lights' glow. This was the fix for
+  the summary itself. None of the three made a difference alone, and their
+  absence isn't visible, but together they were felt.
+
+### Emulation pointed the wrong way
+
+Chromium with CPU throttling blamed the panel's `backdrop-filter` (summary
+scroll ~21 → ~46–61 fps without it) and found the shadows free. On the
+tablet it was the other way round: a pre-blurred photo in place of the live
+blur (tried on `dev`, dropped) made no perceptible difference, and the
+shadows did. Headless Chromium paints with a software GPU, so it overstates
+filter cost and says nothing about Firefox's renderer, which redraws on the
+GPU every frame. For drawing cost, measure on the device. Emulation is still
+fine for script time (the chart result held).
+
+What found it: a throwaway script on `dev`, loaded only with `/?probe`,
+that printed the browser, viewport and active layout and offered a row of
+links, each reloading the page with one stylesheet rule added (no photo, no
+blend mode, opaque panel, no swell lines, no shadows, nav not sticky, …).
+Five minutes to rebuild if needed again; it never reached `main`. Keep its
+readout in the page flow, not a fixed overlay, since a fixed layer is itself
+a suspect.
+
+**Playwright trap:** an element screenshot of the tall `.summary`
+(`locator.screenshot()`) drops touch emulation on a phone context partway
+through: `(pointer: coarse)` turns false and the desktop rules apply.
+Measure first, and take viewport screenshots.
+
+Still to do: the home map and its popups load at once on a tablet (TODO.md,
+queued 2026-10-29).
+
+---
+
 ## 2026-08-23: Per-Zone Warning Opt-In, and a Storm Floor Under It
 
 The sitewide banner fired for a hardcoded pair of zones while the feed carried

@@ -63,6 +63,18 @@ duplicated observations on 2026-09-06. Write-up:
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+### Queued 2026-10-29
+
+- [ ] **Home map loads at once on a tablet** (user: "next time"). The map is
+      lazy (`LAZY_MAP_MARGIN`, 150px, in `stations-map.js`), yet on an
+      emulated 800x1280 tablet Leaflet and the marker popups
+      (`shared/map-popup.js`, `format-time.js`) ran during load, ~330 ms of
+      script at 4x CPU, while the reader is still at the summary. Find out
+      why the observer fires early there, and whether popup HTML can be
+      built on open rather than up front. Measure on the Lenovo Tab Plus,
+      not only in emulation: see `site/docs/FRONTEND_CHANGELOG.md`
+      2026-10-29 for why.
+
 ### Queued 2026-10-28
 
 - [ ] **Judge the wave-forecast fetch changes on real data** (`2762998`,
