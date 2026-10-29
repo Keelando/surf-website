@@ -241,7 +241,8 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+/* Still on touch devices too, for now: see the hero wave in style-v4.css. */
+@media (prefers-reduced-motion: reduce), (hover: none) and (pointer: coarse) {
   .nav-wave-layer {
     animation: none;
   }

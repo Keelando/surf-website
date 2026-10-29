@@ -1130,7 +1130,11 @@ header::after,
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+/* Still on phones and tablets too (touch-primary, at any width: a landscape
+   tablet is desktop-wide) until the home page's cost on a mid-range tablet
+   is measured: the wave stays, it just doesn't drift. Same for the nav wave
+   and the swell line in an open station row. */
+@media (prefers-reduced-motion: reduce), (hover: none) and (pointer: coarse) {
   header::after,
   .summary::after {
     animation: none;
