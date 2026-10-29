@@ -550,6 +550,20 @@
   box-shadow: 0 0 5px 1px var(--led);
 }
 
+/* Phones and tablets (touch-primary, at any width): no soft shadows in the
+   summary. The panel's drop shadow, the wells' inset shading and the lights'
+   glow, together, made the summary scroll visibly slower on a Lenovo Tab Plus
+   (tested on the device with switches, 2026-10-29), though none alone was
+   noticeable, and their absence isn't either. Placed after all three rules so
+   it wins. */
+@media (hover: none) and (pointer: coarse) {
+  .summary-panel,
+  .sl-rows,
+  .sl-dot {
+    box-shadow: none;
+  }
+}
+
 .sl-row--late .sl-dot {
   --led: var(--sl-late-dot);
 }
