@@ -8,13 +8,10 @@
 ----------------------------- */
 
 :root {
-  /* Translucent so the photo reads through; the blur evens it out behind
-     the text. The user's pick after trying 92% and 60% (2026-10-23).
-     Contrast was measured on the rendered pixels behind the text, not by
-     axe, which cannot judge text over an image. */
-  --summary-panel-bg: rgba(255, 255, 255, 0.72);
-  --summary-panel-fallback-bg: rgba(244, 248, 251, 0.96);
-  --summary-panel-shadow: 0 12px 32px rgba(0, 20, 40, 0.28);
+  /* --color-surface at 80%: the photo shows through at 20%, unblurred (see
+     "Summary" below for why no blur). */
+  --summary-panel-bg: rgba(255, 255, 255, 0.8);
+  --summary-panel-border: rgba(255, 255, 255, 0.7);
   --sl-text: #10202f;
   --sl-muted: #36424f;
   --sl-heading: #004b7c;
@@ -30,12 +27,8 @@
   --sl-action-border: rgba(0, 75, 124, 0.3);
   --sl-action-text: #004b7c;
   --sl-focus: #006daf;
-  --sl-well-bg: rgba(0, 45, 80, 0.06);
-  --sl-well-inset: rgba(0, 30, 60, 0.22);
-  --sl-well-highlight: rgba(255, 255, 255, 0.75);
+  --sl-well-bg: rgba(0, 45, 80, 0.05);
   --sl-chevron-bg: rgba(0, 75, 124, 0.12);
-  --summary-panel-edge: rgba(255, 255, 255, 0.7);
-  --summary-panel-bevel: rgba(255, 255, 255, 0.9);
   --home-toggle-bg: #e3eaf0;
   --home-toggle-active-bg: #ffffff;
   --map-key-bg: rgba(255, 255, 255, 0.95);
@@ -44,9 +37,8 @@
 }
 
 [data-theme="dark"] {
-  --summary-panel-bg: rgba(10, 22, 35, 0.74);
-  --summary-panel-fallback-bg: rgba(10, 22, 35, 0.95);
-  --summary-panel-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --summary-panel-bg: rgba(22, 34, 50, 0.8);
+  --summary-panel-border: rgba(255, 255, 255, 0.1);
   --sl-text: #e8eef5;
   --sl-muted: #c9d4e1;
   --sl-heading: #a8ddff;
@@ -62,12 +54,8 @@
   --sl-action-border: rgba(141, 211, 255, 0.35);
   --sl-action-text: #a8ddff;
   --sl-focus: #8dd3ff;
-  --sl-well-bg: rgba(0, 0, 0, 0.22);
-  --sl-well-inset: rgba(0, 0, 0, 0.55);
-  --sl-well-highlight: rgba(255, 255, 255, 0.07);
+  --sl-well-bg: rgba(0, 0, 0, 0.2);
   --sl-chevron-bg: rgba(141, 211, 255, 0.16);
-  --summary-panel-edge: rgba(255, 255, 255, 0.1);
-  --summary-panel-bevel: rgba(255, 255, 255, 0.12);
   --home-toggle-bg: #1f2f45;
   --home-toggle-active-bg: #33496a;
   --map-key-bg: rgba(22, 34, 50, 0.95);
@@ -88,68 +76,32 @@
 }
 
 /* -----------------------------
-   Summary: the station list on the hero photo
+   Summary: the station list on the photo
+   Built to scroll cheaply (dev, 2026-10-31): the photo scrolls with the page
+   and the panel over it is see-through but not blurred, so the browser
+   paints the two together once and only moves them. No backdrop blur (redone
+   on every frame the panel moves), no fixed photo layer, no blend mode, no
+   soft shadows. The blurred version scrolled slowly on a Lenovo Tab Plus even
+   after its shadows went (FRONTEND_CHANGELOG 2026-10-29). Decoration added
+   back later should keep to that: nothing that has to be redrawn while the
+   page scrolls.
+
+   The photo is the page's LCP element. index.html preloads the AVIF that the
+   matching media query selects, so the URLs here and there must stay in
+   step. The first declaration is the fallback for browsers without typed
+   image-set().
 ----------------------------- */
 
-/* The photo is the page's LCP element. Each <head> preloads the AVIF that the
-   matching media query selects, so the URLs here and there must stay in step.
-   The first declaration is the fallback for browsers without typed
-   image-set(). */
 .summary {
-  /* The photo's water is teal under a grey sky; this layer pulls it toward
-     blue. Delete it (and the blend mode) if the photo is replaced. */
-  --summary-tint: linear-gradient(rgba(0, 70, 190, 0.35), rgba(0, 70, 190, 0.35));
   background-color: #1d3a52;
-  background-image: var(--summary-tint), url("/assets/images/noaa-waves-1989-1600.webp");
-  background-image: var(--summary-tint), image-set(
+  background-image: url("/assets/images/noaa-waves-1989-1600.webp");
+  background-image: image-set(
     url("/assets/images/noaa-waves-1989-1600.avif") type("image/avif"),
     url("/assets/images/noaa-waves-1989-1600.webp") type("image/webp")
   );
-  background-blend-mode: overlay, normal;
   background-position: center 60%;
   background-size: cover;
   padding: 2.5rem 1.5rem 3rem;
-}
-
-@media (max-width: 768px) {
-  .summary {
-    background-image: var(--summary-tint), url("/assets/images/noaa-waves-1989-960.webp");
-    background-image: var(--summary-tint), image-set(
-      url("/assets/images/noaa-waves-1989-960.avif") type("image/avif"),
-      url("/assets/images/noaa-waves-1989-960.webp") type("image/webp")
-    );
-    padding: 0.75rem 0.5rem 1.25rem;
-  }
-}
-
-/* On a phone the stacked list runs ~1,100px, and a background sized to cover
-   that is zoomed soft. Instead the photo sits on a layer fixed to the
-   viewport (screen-sized, so sharp), seen only through this section:
-   clip-path clips even a fixed descendant. Not background-attachment: fixed,
-   which mobile browsers ignore or repaint badly. Same URLs as above. */
-@media (max-width: 599px) {
-  .summary {
-    position: relative;
-    isolation: isolate;
-    clip-path: inset(0);
-    background-image: none;
-  }
-
-  .summary::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    background-color: #1d3a52;
-    background-image: var(--summary-tint), url("/assets/images/noaa-waves-1989-960.webp");
-    background-image: var(--summary-tint), image-set(
-      url("/assets/images/noaa-waves-1989-960.avif") type("image/avif"),
-      url("/assets/images/noaa-waves-1989-960.webp") type("image/webp")
-    );
-    background-blend-mode: overlay, normal;
-    background-position: center 60%;
-    background-size: cover;
-  }
 }
 
 .summary-panel {
@@ -157,25 +109,23 @@
   margin: 0 auto;
   padding: 1.25rem 1.25rem 0.75rem;
   background: var(--summary-panel-bg);
-  -webkit-backdrop-filter: blur(24px) saturate(1.3);
-  backdrop-filter: blur(24px) saturate(1.3);
-  border: 1px solid var(--summary-panel-edge);
+  border: 1px solid var(--summary-panel-border);
   border-radius: 16px;
-  box-shadow:
-    var(--summary-panel-shadow),
-    inset 0 1px 0 var(--summary-panel-bevel);
   color: var(--sl-text);
 }
 
-/* Without backdrop-filter the photo would show through at full detail behind
-   the numbers: go nearly opaque instead. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .summary-panel {
-    background: var(--summary-panel-fallback-bg);
-  }
-}
-
+/* On a phone the list is tall and the photo is zoomed soft to cover it; at
+   20% behind the panel that doesn't show. */
 @media (max-width: 768px) {
+  .summary {
+    background-image: url("/assets/images/noaa-waves-1989-960.webp");
+    background-image: image-set(
+      url("/assets/images/noaa-waves-1989-960.avif") type("image/avif"),
+      url("/assets/images/noaa-waves-1989-960.webp") type("image/webp")
+    );
+    padding: 0.75rem 0.5rem 1.25rem;
+  }
+
   .summary-panel {
     padding: 0.85rem 0.35rem 0.5rem;
     border-radius: 12px;
@@ -394,18 +344,14 @@
   display: none;
 }
 
-/* Each region's stations sit in a shallow recessed well: an inner shadow
-   along the top edge and a highlight along the bottom, as if pressed into
-   the panel, so a region reads as one block. */
+/* Each region's stations sit on a faint tint, so a region reads as one
+   block. Flat: no inset shading. */
 .sl-rows {
   list-style: none;
   margin: 0;
   padding: 2px;
   border-radius: 10px;
   background: var(--sl-well-bg);
-  box-shadow:
-    inset 0 2px 4px var(--sl-well-inset),
-    inset 0 -1px 0 var(--sl-well-highlight);
 }
 
 .sl-item + .sl-item {
@@ -539,7 +485,7 @@
   color: var(--sl-muted);
 }
 
-/* Status lights: each dot glows in its own colour, like a panel LED. */
+/* Status lights: a plain dot in the status colour, no glow. */
 .sl-dot {
   --led: var(--sl-ok);
   flex: none;
@@ -547,21 +493,6 @@
   height: 0.5rem;
   border-radius: 50%;
   background: var(--led);
-  box-shadow: 0 0 5px 1px var(--led);
-}
-
-/* Phones and tablets (touch-primary, at any width): no soft shadows in the
-   summary. The panel's drop shadow, the wells' inset shading and the lights'
-   glow, together, made the summary scroll visibly slower on a Lenovo Tab Plus
-   (tested on the device with switches, 2026-10-29), though none alone was
-   noticeable, and their absence isn't either. Placed after all three rules so
-   it wins. */
-@media (hover: none) and (pointer: coarse) {
-  .summary-panel,
-  .sl-rows,
-  .sl-dot {
-    box-shadow: none;
-  }
 }
 
 .sl-row--late .sl-dot {
