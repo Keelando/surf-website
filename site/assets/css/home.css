@@ -8,9 +8,9 @@
 ----------------------------- */
 
 :root {
-  /* --color-surface at 80%: the photo shows through at 20%, unblurred (see
-     "Summary" below for why no blur). */
-  --summary-panel-bg: rgba(255, 255, 255, 0.8);
+  /* --color-surface at 90%: the photo shows through at 10%, unblurred (see
+     "Summary" below for why no blur). 20% was too much (user, 2026-10-31). */
+  --summary-panel-bg: rgba(255, 255, 255, 0.9);
   --summary-panel-border: rgba(255, 255, 255, 0.7);
   --sl-text: #10202f;
   --sl-muted: #36424f;
@@ -37,7 +37,7 @@
 }
 
 [data-theme="dark"] {
-  --summary-panel-bg: rgba(22, 34, 50, 0.8);
+  --summary-panel-bg: rgba(22, 34, 50, 0.9);
   --summary-panel-border: rgba(255, 255, 255, 0.1);
   --sl-text: #e8eef5;
   --sl-muted: #c9d4e1;
@@ -115,7 +115,7 @@
 }
 
 /* On a phone the list is tall and the photo is zoomed soft to cover it; at
-   20% behind the panel that doesn't show. */
+   10% behind the panel that doesn't show. */
 @media (max-width: 768px) {
   .summary {
     background-image: url("/assets/images/noaa-waves-1989-960.webp");
