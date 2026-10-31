@@ -60,8 +60,13 @@ export function selectHistorySeries(timeseries, meta) {
 /**
  * Row timestamps, newest first, within the trailing 12-hour window.
  *
- * The axis comes from wave data when present, falling back to wind and then
- * temperature so the table still renders when a buoy's wave sensor is offline.
+ * Every time any shown channel (waves, wind, sea or air temperature) has a
+ * sample, so a row missing one reading still shows the others. The axis used
+ * to come from waves alone whenever the export held any wave samples: when
+ * the Crescent wave sensors went silent on 2026-10-29, their last wave
+ * samples sat in the 48h export for two days, all older than 12 hours, and
+ * the table came up empty despite hourly wind. Channels share timestamps
+ * where both report (checked 2026-10-31), so the union adds no stray rows.
  * Sub-hourly reporters (the Crescent pile stations) are thinned to
  * on-the-hour rows so 12 hours fits the table.
  *
@@ -69,15 +74,11 @@ export function selectHistorySeries(timeseries, meta) {
  */
 export function buildHistoryTimes(selected, meta, now = new Date()) {
   const { waveHeight, wind, seaTemp, airTemp } = selected;
-  const timeSource = waveHeight.length
-    ? waveHeight
-    : wind.speed.length
-      ? wind.speed
-      : seaTemp.length
-        ? seaTemp
-        : airTemp;
-
-  let times = timeSource.map((d) => d.time);
+  let times = [
+    ...new Set(
+      [waveHeight, wind.speed, seaTemp, airTemp].flatMap((samples) => samples.map((d) => d.time)),
+    ),
+  ];
 
   if (reportsSubHourly(meta)) {
     times = times.filter((time) => new Date(time).getMinutes() === 0);

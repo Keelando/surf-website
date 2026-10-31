@@ -99,6 +99,36 @@ test("buildHistoryTimes falls back to wind then temperature for the axis", () =>
   assert.deepEqual(buildHistoryTimes(tempOnly, EC, NOW), [T(9)]);
 });
 
+test("buildHistoryTimes keeps wind rows when the only wave samples are old", () => {
+  // The Crescent stations, 2026-10-31: wave sensors silent for two days, so
+  // the export's last wave samples are all outside the window.
+  const selected = selectHistorySeries(
+    {
+      wave_height_sig: chan([["2026-07-17T20:00:00Z", 0.4]]),
+      wind_speed: chan([
+        [T(10), 8],
+        [T(11), 9],
+      ]),
+    },
+    PILE,
+  );
+  assert.deepEqual(buildHistoryTimes(selected, PILE, NOW), [T(11), T(10)]);
+});
+
+test("buildHistoryTimes keeps a row that has wind but no wave reading", () => {
+  const selected = selectHistorySeries(
+    {
+      wave_height_sig: chan([[T(9), 1]]),
+      wind_speed: chan([
+        [T(9), 12],
+        [T(10), 14],
+      ]),
+    },
+    NOAA_DOMINANT,
+  );
+  assert.deepEqual(buildHistoryTimes(selected, NOAA_DOMINANT, NOW), [T(10), T(9)]);
+});
+
 test("buildHistoryTimes thins sub-hourly reporters to on-the-hour rows", () => {
   const ts = {
     wave_height_sig: chan([
