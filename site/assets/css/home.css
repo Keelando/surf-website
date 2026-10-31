@@ -994,6 +994,19 @@
   margin-bottom: 0.6rem;
 }
 
+/* A per-station chart with nothing to plot, collapsed to one line in its
+   place (charts-v4.js chartOrNote): the chart cards' frame, dashed. */
+.chart-empty {
+  margin: 0 0 2rem;
+  padding: 0.85rem 1rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
 .home-section-head {
   display: flex;
   flex-wrap: wrap;

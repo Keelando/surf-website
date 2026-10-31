@@ -135,6 +135,44 @@ function updateActiveBuoyIndicator(buoyId) {
   indicator.classList.add("active");
 }
 
+// The channels each per-station chart plots. A chart with none of them in the
+// time range collapses to a one-line note instead of an empty 400-500px
+// frame (the Crescent stations' wave chart, 2026-10-31, sensors silent).
+const CHART_CHANNELS = {
+  wave: ["wave_height_sig", "swell_height", "wind_wave_height"],
+  wind: ["wind_speed", "wind_gust"],
+  temp: ["air_temp", "sea_temp"],
+};
+
+function hasPoints(buoy, fields) {
+  return fields.some((field) =>
+    buoy.timeseries?.[field]?.data?.some((point) => point.value != null),
+  );
+}
+
+/**
+ * Show a chart's frame, or in its place a line saying it has nothing to plot.
+ * A hidden chart isn't drawn (chart-utils' lazy wrapper waits for it to be
+ * on screen), so this costs nothing while the note shows.
+ *
+ * @returns {boolean} Whether to draw the chart.
+ */
+function chartOrNote(chart, containerId, hasData, note) {
+  const container = document.getElementById(containerId);
+  let empty = document.getElementById(`${containerId}-empty`);
+  if (!empty) {
+    empty = document.createElement("p");
+    empty.id = `${containerId}-empty`;
+    empty.className = "chart-empty";
+    container.after(empty);
+  }
+  empty.textContent = note;
+  empty.hidden = hasData;
+  container.hidden = !hasData;
+  if (hasData) chart.resize();
+  return hasData;
+}
+
 /**
  * Update all charts for the selected buoy
  */
@@ -147,11 +185,39 @@ function updateCharts(buoyId) {
   // Filter data based on current time range
   const filteredData = filterTimeseriesData(chartData, currentTimeRange);
   const buoy = filteredData[buoyId];
+  const since = `in the last ${currentTimeRange} hours`;
 
   // Render each chart using the dedicated modules
-  renderWaveChart(waveChart, buoy, buoyId);
-  renderBuoyWindChart(windChart, buoy);
-  renderTemperatureChart(tempChart, buoy);
+  const hasWaves = hasPoints(buoy, CHART_CHANNELS.wave);
+  if (
+    chartOrNote(waveChart, "wave-chart", hasWaves, `No wave readings from ${buoy.name} ${since}.`)
+  ) {
+    renderWaveChart(waveChart, buoy, buoyId);
+  } else {
+    // NOAA's second wave chart (periods) goes with the first.
+    const periodChart = document.getElementById("wave-period-chart");
+    if (periodChart) periodChart.style.display = "none";
+  }
+  if (
+    chartOrNote(
+      windChart,
+      "wind-chart",
+      hasPoints(buoy, CHART_CHANNELS.wind),
+      `No wind readings from ${buoy.name} ${since}.`,
+    )
+  ) {
+    renderBuoyWindChart(windChart, buoy);
+  }
+  if (
+    chartOrNote(
+      tempChart,
+      "temp-chart",
+      hasPoints(buoy, CHART_CHANNELS.temp),
+      `No temperature readings from ${buoy.name} ${since}.`,
+    )
+  ) {
+    renderTemperatureChart(tempChart, buoy);
+  }
   renderComparisonChart(waveComparisonChart, filteredData);
 }
 function ensureChartThemeListener() {
