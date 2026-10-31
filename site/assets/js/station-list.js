@@ -482,9 +482,16 @@ function stateNote(b, fresh) {
   return "";
 }
 
-/** Plain-words notes under the numbers: backup sensor, terms, caveats. */
+/** Plain-words notes under the numbers: silent or backup sensor, terms, caveats. */
 function detailNotes(b, meta) {
   const notes = [];
+  // Set by the export only when the station's waves have dropped out of the
+  // freshness window while its other readings haven't.
+  if (b.wave_last_reading_time) {
+    notes.push(
+      `<p class="sl-note">Wave sensor not reporting since ${formatWeekdayDayTime(b.wave_last_reading_time)}.</p>`,
+    );
+  }
   if (b.wave_sensor) {
     notes.push(
       `<p class="sl-note">Waves from the ${b.wave_sensor} sensor: the station's main wave sensor has no reading.</p>`,

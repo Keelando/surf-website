@@ -166,6 +166,25 @@ def query_and_export():
                             tz=timezone.utc,
                         ).isoformat()
 
+            # A wave sensor gone quiet while the rest of the station reports:
+            # the window above drops its fields, so say when its last reading
+            # was, for the page's "not reporting since" note. Absent when the
+            # station has never sent waves (within the database's retention).
+            if "wave_height_sig" not in buoy_json:
+                cur.execute(
+                    """
+                    SELECT MAX(observation_time) FROM buoy_observation
+                    WHERE buoy_id = ? AND wave_height_sig IS NOT NULL AND observation_time <= ?
+                    """,
+                    (buoy_id, latest_time),
+                )
+                last_wave = cur.fetchone()[0]
+                if last_wave is not None:
+                    buoy_json["wave_last_reading_time"] = datetime.fromtimestamp(
+                        last_wave,
+                        tz=timezone.utc,
+                    ).isoformat()
+
             # Which backup sensor supplied the wave reading, read from the SAME
             # row as wave_height_sig (absent = the station's first choice).
             # "Most recent non-null" would pin an hours-old "radar" on a fresh

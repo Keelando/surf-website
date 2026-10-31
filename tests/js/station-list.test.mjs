@@ -363,6 +363,19 @@ test("NOAA dominant-period stations explain the term", () => {
   assert.match(html, /NOAA's term for peak period/);
 });
 
+test("a station whose wave sensor went quiet says since when", () => {
+  const { wave_height_sig, ...noWaves } = halibut;
+  const html = buildStationDetail(
+    { ...noWaves, wave_last_reading_time: "2026-10-29T16:00:00+00:00" },
+    "CRPILE",
+    EC,
+  );
+  assert.match(html, /Wave sensor not reporting since \w+/);
+  assert.doesNotMatch(html, /undefined|null|NaN|Invalid/);
+  // A station with waves gets no such note.
+  assert.doesNotMatch(buildStationDetail(halibut, "4600146", EC), /not reporting/);
+});
+
 test("a late station's panel says so in plain words", () => {
   const html = buildStationDetail({ ...halibut, status: "late" }, "4600146", EC);
   assert.match(html, /sl-note--late/);
