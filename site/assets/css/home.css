@@ -898,16 +898,25 @@
   background: var(--sl-row-hover);
 }
 
-/* The table opens straight under its button: a full-width item in the
-   actions row, so the actions after it wrap below the table. It runs the
-   panel's full width, out through the side padding, for the most columns
-   on screen at once. */
+/* The history table is a full-width item in the actions row. In a wide
+   panel the actions fit on one line and the table follows all of them
+   (order: 1); in a narrow one they wrap, so the table opens straight under
+   its own button instead and the actions after it wrap below the table. It
+   runs the panel's full width, out through the side padding, for the most
+   columns on screen at once. */
 .sl-history {
+  order: 1;
   flex: 0 0 calc(100% + var(--sl-detail-pad-start) + var(--sl-detail-pad-end));
   margin-inline: calc(-1 * var(--sl-detail-pad-start)) calc(-1 * var(--sl-detail-pad-end));
   /* A flex item won't shrink below its content by default, and the table's
      content is its full width: let the scroll box do the scrolling. */
   min-width: 0;
+}
+
+@container sl-column (width < 504px) {
+  .sl-history {
+    order: 0;
+  }
 }
 
 /* Edge to edge, the table is a band across the panel: rules top and
