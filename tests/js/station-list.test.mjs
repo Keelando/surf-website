@@ -344,6 +344,16 @@ test("the panel ends with a Close button, below the history slot", () => {
   }
 });
 
+test("the history table opens straight under its button, ahead of the other actions", () => {
+  for (const b of [halibut, { ...halibut, no_data: true }]) {
+    const html = buildStationDetail(b, "4600146", EC);
+    assert.match(
+      html,
+      /data-action="history" aria-expanded="false" aria-controls="sl-history-4600146">.*?12-hour history<\/button>\s*<div class="sl-history" id="sl-history-4600146" hidden><\/div>\s*<button type="button" class="sl-action" data-action="charts">/s,
+    );
+  }
+});
+
 test("the source link names its owner and says it opens a new tab", () => {
   const meta = { ...EC, source_url: "https://example.org/station" };
   const html = buildStationDetail(halibut, "4600146", meta);

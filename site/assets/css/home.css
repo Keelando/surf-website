@@ -747,8 +747,12 @@
    A row's detail panel
 ----------------------------- */
 
+/* The side padding is named so the history table can bleed back out
+   through it to the panel's edges (.sl-history below). */
 .sl-detail {
-  padding: 0.25rem 0.5rem 0.85rem;
+  --sl-detail-pad-start: 0.5rem;
+  --sl-detail-pad-end: 0.5rem;
+  padding: 0.25rem var(--sl-detail-pad-end) 0.85rem var(--sl-detail-pad-start);
   background: var(--sl-row-open);
   border-radius: 0 0 8px 8px;
 }
@@ -758,7 +762,8 @@
    in off the left edge. */
 @container sl-column (width < 504px) {
   .sl-detail {
-    padding-inline: 1.5rem var(--space-3);
+    --sl-detail-pad-start: 1.5rem;
+    --sl-detail-pad-end: var(--space-3);
   }
 
   /* Narrower minimum and gap, so a 360px phone keeps three columns under
@@ -893,8 +898,38 @@
   background: var(--sl-row-hover);
 }
 
+/* The table opens straight under its button: a full-width item in the
+   actions row, so the actions after it wrap below the table. It runs the
+   panel's full width, out through the side padding, for the most columns
+   on screen at once. */
 .sl-history {
-  margin-top: 0.5rem;
+  flex: 0 0 calc(100% + var(--sl-detail-pad-start) + var(--sl-detail-pad-end));
+  margin-inline: calc(-1 * var(--sl-detail-pad-start)) calc(-1 * var(--sl-detail-pad-end));
+  /* A flex item won't shrink below its content by default, and the table's
+     content is its full width: let the scroll box do the scrolling. */
+  min-width: 0;
+}
+
+/* Edge to edge, the table is a band across the panel: rules top and
+   bottom only, and the outer cells step in off the panel's edges. */
+.sl-history .history-scroll {
+  margin-top: 0;
+  border-inline: none;
+  border-radius: 0;
+}
+
+.sl-history .history-scroll-hint {
+  margin-inline: var(--sl-detail-pad-start) var(--sl-detail-pad-end);
+}
+
+.sl-history .history-table th:first-child,
+.sl-history .history-table td:first-child {
+  padding-left: var(--sl-detail-pad-start);
+}
+
+.sl-history .history-table th:last-child,
+.sl-history .history-table td:last-child {
+  padding-right: var(--sl-detail-pad-end);
 }
 
 /* Close sits centred at the very foot of the panel, below the history. */

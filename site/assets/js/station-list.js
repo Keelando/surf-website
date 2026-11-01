@@ -506,13 +506,18 @@ function detailNotes(b, meta) {
   return notes.join("");
 }
 
-/** Text actions at the foot of the panel. */
-function detailActions(b, meta) {
+/**
+ * Text actions at the foot of the panel. The lazy history slot sits right
+ * after its button: a full-width flex item, so the table opens directly
+ * under "12-hour history" and the remaining actions wrap below it.
+ */
+function detailActions(b, id, meta) {
   const hasChartData = b.wave_height_sig != null || b.wind_speed != null;
   const link = sourceUrl(meta);
   return `
       <div class="sl-actions">
-        <button type="button" class="sl-action" data-action="history" aria-expanded="false">${icon("history")}12-hour history</button>
+        <button type="button" class="sl-action" data-action="history" aria-expanded="false" aria-controls="sl-history-${id}">${icon("history")}12-hour history</button>
+        <div class="sl-history" id="sl-history-${id}" hidden></div>
         ${hasChartData ? `<button type="button" class="sl-action" data-action="charts">${icon("chart")}Charts</button>` : ""}
         <button type="button" class="sl-action" data-action="map">${icon("map")}Show on map</button>
         ${link ? `<a class="sl-action" href="${link}" target="_blank" rel="noopener noreferrer">${meta?.source ?? "Source"}${icon("external", "icon--trailing")}<span class="visually-hidden"> (opens in a new tab)</span></a>` : ""}
@@ -523,10 +528,10 @@ function detailActions(b, meta) {
 // closed from the bottom without scrolling back up to the row.
 const CLOSE_BUTTON = `<button type="button" class="sl-action sl-close" data-action="close">${icon("collapse")}Close</button>`;
 
-/** The panel a row opens: readings, notes, actions, the lazy history slot, Close. */
+/** The panel a row opens: readings, notes, actions (with the lazy history slot), Close. */
 export function buildStationDetail(b, id, meta) {
   if (b.no_data) {
-    return `<p class="sl-note">No readings from this station are on hand.</p>${detailActions(b, meta)}${CLOSE_BUTTON}`;
+    return `<p class="sl-note">No readings from this station are on hand.</p>${detailActions(b, id, meta)}${CLOSE_BUTTON}`;
   }
   const fresh = freshness(b);
   const state = stateNote(b, fresh);
@@ -540,8 +545,7 @@ export function buildStationDetail(b, id, meta) {
       ${observed}
       <div class="sl-groups">${waveStats(b, meta)}${windAndWeatherStats(b, meta)}</div>
       ${detailNotes(b, meta)}
-      ${detailActions(b, meta)}
-      <div class="sl-history" id="sl-history-${id}" hidden></div>
+      ${detailActions(b, id, meta)}
       ${CLOSE_BUTTON}`;
 }
 
