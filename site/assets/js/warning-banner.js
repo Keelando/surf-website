@@ -226,7 +226,8 @@ async function displayWarningBanners(containerId = "warning-banner-container") {
  * floor means all of them reach the banner whether or not the reader follows
  * those waters. Nine entries is not a banner, it is a list — and on a phone
  * `.warning-text` is a single truncated line, so entries past the first few are
- * invisible anyway while still pushing the ones that matter off the end.
+ * unreadable anyway — which is why the phone layout names only the most
+ * severe one and counts the rest (see the `compact` branch below).
  * Three named zones plus an honest count beats nine silently clipped.
  *
  * The warnings are already sorted severity-first then the reader's own zones
@@ -269,7 +270,17 @@ function createCombinedWarningBanner(warnings) {
 
   // Build warning text
   let warningText = "";
-  if (warnings.length === 1) {
+  if (compact) {
+    // A phone has one line, and a list clipped by an ellipsis reads as one
+    // warning: "STORM WARNING for West Coast Vancouver Isl…" never shows the
+    // gale behind it. So the line is the most severe warning alone, free to
+    // truncate, plus a count the CSS never truncates. The tap goes to the
+    // full list either way (see detailsHref).
+    const others = warnings.length - 1;
+    const lead = `<span class="warning-compact-lead"><strong>${highestSeverity.type.toUpperCase()}</strong> for ${highestSeverity.zone_name}</span>`;
+    const more = others > 0 ? `<span class="warning-compact-more">+${others} more</span>` : "";
+    warningText = lead + more;
+  } else if (warnings.length === 1) {
     warningText = `<strong>${warnings[0].type.toUpperCase()}</strong> in effect for ${warnings[0].zone_name}`;
   } else if (sameType) {
     // The many-storms case: one system warning several zones produces the same

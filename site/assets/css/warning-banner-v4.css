@@ -322,6 +322,26 @@
     margin-right: 0.25rem;
   }
 
+  /* The phone line is the most severe warning plus "+N more" (built in
+     warning-banner.js). The warning truncates; the count never does, or a
+     banner with three warnings would read as one. */
+  .warning-text:has(.warning-compact-lead) {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+  }
+
+  .warning-compact-lead {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .warning-compact-more {
+    flex: none;
+    font-weight: 700;
+  }
+
   /* The per-zone links cannot be tapped here — the stretched overlay below
      covers the whole banner and owns every touch — so they must not look
      tappable either. Left as anchors rather than unwrapped: keyboard
