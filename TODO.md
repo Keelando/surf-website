@@ -63,6 +63,22 @@ duplicated observations on 2026-09-06. Write-up:
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+### Queued 2026-11-04
+
+- [ ] **Point forecast verification: show the residuals** (user 2026-11-04,
+      "for later"). Today `renderVerificationMode()` in
+      `site/assets/js/wave-forecast.js` overlays forecast on observed, and
+      the error appears only point by point in the tooltip ("Model error",
+      forecast − observed, so + = over-forecast). Add a residual view: the
+      forecast − observed series around a zero line, with bias and MAE (or
+      RMSE) for the window, per variable (wave height, period, wind). Keep
+      the tooltip's sign convention. Open questions: a second small chart
+      under the overlay or a toggle; whether to split the residuals by lead
+      time (`leadHours` is already on each forecast point), since a model's
+      error at 6 h and at 48 h are different questions; and at stations
+      with no model side, show nothing rather than a residual
+      (see the "model side is missing" item below).
+
 ### Queued 2026-10-29
 
 - [ ] **Home map loads at once on a tablet** (user: "next time"). The map is
