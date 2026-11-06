@@ -1,26 +1,430 @@
 /**
- * Winds Page Styles
- * Extracted from inline <style> in winds.html + inline styles from JS
+ * Winds page styles.
+ *
+ * The summary panel, its region heads, status lights and the row panels are
+ * the home page's (home.css, loaded first); these lay out the winds rows,
+ * which carry different columns: name and age, direction, wind, gust, and on
+ * a wide list temperature and pressure (wind-list.js).
  */
 
-/* --- Layout --- */
+/* --- Summary: one column, a table's width rather than the panel's --- */
 
-.winds-page header {
-  margin-bottom: 0;
+.wl-summary .summary-panel {
+  max-width: 50rem;
 }
 
-/* Hidden (still laid out) until the conditions table fills; see winds.html. */
-#wind-table-section[aria-busy="true"] .data-table ~ *,
-#wind-table-section[aria-busy="true"] ~ * {
-  visibility: hidden;
+.wl-view-btn {
+  white-space: nowrap;
 }
 
-/* --- Wind Data Table --- */
+.wl-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+}
+
+/* --- The station list --- */
+
+/* A size container: the columns follow the list's own width, in rem, so a
+   phone set to large text drops to fewer columns the way a narrow one does. */
+.wind-list {
+  margin-top: 0.75rem;
+  container: wl / inline-size;
+}
+
+/* Hold the filled list's height while it loads, so the map below does not
+   jump down when the rows arrive (~29 rows). */
+.wind-list[aria-busy="true"] {
+  min-height: 90rem;
+}
+
+/* Phone tracks: name (with age), direction, wind, gust, chevron. Shared by
+   the rows and the column heads, so each head sits over its numbers. */
+.wl-row,
+.wl-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.75rem 2.75rem 2.25rem 1.25rem;
+  column-gap: 0.5rem;
+  align-items: center;
+}
+
+.wl-head {
+  align-items: end;
+  padding: 0 calc(2px + 0.5rem) 0.2rem;
+}
+
+.wl-head-name {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.wl-sort {
+  min-height: 32px;
+  margin: 0;
+  padding: 0.25rem 0;
+  border: 0;
+  background: none;
+  color: var(--sl-muted);
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.wl-head > .wl-sort {
+  justify-self: end;
+}
+
+.wl-sort:hover {
+  color: var(--sl-text);
+}
+
+.wl-sort[aria-pressed="true"] {
+  color: var(--sl-heading);
+}
+
+.wl-sort-arrow {
+  margin-left: 0.15rem;
+}
+
+.wl-sort:focus-visible,
+.wl-row:focus-visible {
+  outline: 2px solid var(--sl-focus);
+  outline-offset: -2px;
+}
+
+.wl-region {
+  margin-top: 0.75rem;
+}
+
+.wl-region-title {
+  margin-bottom: 0.3rem;
+  padding-inline: calc(2px + 0.5rem);
+}
+
+.wl-row {
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0.45rem 0.5rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wl-row:hover {
+  background: var(--sl-row-hover);
+}
+
+.wl-row[aria-expanded="true"] {
+  background: var(--sl-row-open);
+  border-radius: 8px 8px 0 0;
+}
+
+.wl-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Ellipsis is the last resort; an open row shows the whole name. */
+.wl-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.wl-row[aria-expanded="true"] .wl-title {
+  white-space: normal;
+}
+
+.wl-title-short {
+  display: none;
+}
+
+.wl-kind {
+  margin-left: 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sl-muted);
+}
+
+/* Status lights and age colours, as on the home rows (home.css). */
+.wl-row--late .sl-dot {
+  --led: var(--sl-late-dot);
+}
+
+.wl-row--late .sl-age {
+  color: var(--sl-late);
+  font-weight: 600;
+}
+
+.wl-row--down .sl-dot,
+.wl-row--out .sl-dot,
+.wl-row--none .sl-dot {
+  --led: var(--sl-down-dot);
+}
+
+.wl-row--down .sl-age,
+.wl-row--out .sl-age,
+.wl-row--none .sl-age {
+  color: var(--sl-down);
+  font-weight: 600;
+}
+
+.wl-cell {
+  min-width: 0;
+  text-align: right;
+  white-space: nowrap;
+  font-family: var(--font-readout);
+  font-variant-numeric: tabular-nums;
+}
+
+.wl-dir {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--sl-muted);
+}
+
+.wl-speed {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.wl-speed .sl-unit {
+  font-size: 0.68rem;
+}
+
+.wl-gust {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* "G" only where the column heads don't sit over the numbers (stacked). */
+.wl-gust-label {
+  display: none;
+}
+
+/* Wide lists only: see the 36rem query below. */
+.wl-temp,
+.wl-pressure,
+.wl-sort--temp,
+.wl-sort--pressure {
+  display: none;
+}
+
+.wl-temp,
+.wl-pressure {
+  font-size: 0.88rem;
+}
+
+.wl-temp .sl-unit,
+.wl-pressure .sl-unit {
+  display: none;
+}
+
+/* A row without numbers says so across their columns. */
+.wl-empty {
+  grid-column: 2 / -2;
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+
+/* Placed last whatever the row holds; a plain chevron on a phone. */
+.wl-row .sl-chevron,
+.wl-row:hover .sl-chevron {
+  grid-column: -2 / -1;
+  justify-self: end;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  background: none;
+}
+
+.wl-detail .wl-kind-note {
+  margin-top: 0.6rem;
+}
+
+/* A phone: the registry's short names, so the numbers keep their room. */
+@container wl (width < 26rem) {
+  .wl-title-full {
+    display: none;
+  }
+
+  .wl-title-short {
+    display: inline;
+  }
+}
+
+/* A wide list: temperature and pressure come back as columns, and the
+   chevron gets the home rows' disc. */
+@container wl (width >= 36rem) {
+  .wl-row,
+  .wl-head {
+    grid-template-columns: minmax(0, 1fr) 5rem 3.25rem 3rem 3.5rem 4.25rem 1.5rem;
+  }
+
+  .wl-temp,
+  .wl-pressure,
+  .wl-sort--temp,
+  .wl-sort--pressure {
+    display: block;
+  }
+
+  .wl-speed {
+    font-size: 1.3rem;
+  }
+
+  .wl-row .sl-chevron {
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0.3rem;
+    border-radius: 50%;
+    background: var(--sl-chevron-bg);
+  }
+
+  .wl-row:hover .sl-chevron {
+    background: var(--sl-action-border);
+  }
+}
+
+/* Too narrow for one line (a phone at large text): the name on line 1,
+   the numbers under it; the column heads become a row of sort buttons. */
+@container wl (width < 18rem) {
+  .wl-row {
+    grid-template-columns: auto auto minmax(0, 1fr) 1.25rem;
+    grid-template-areas:
+      "name name name chev"
+      "speed gust dir dir";
+    row-gap: 0.2rem;
+    column-gap: 0.6rem;
+  }
+
+  .wl-name {
+    grid-area: name;
+  }
+
+  .wl-speed {
+    grid-area: speed;
+    text-align: left;
+  }
+
+  .wl-gust {
+    grid-area: gust;
+    text-align: left;
+  }
+
+  .wl-gust-label {
+    display: inline;
+    font-family: system-ui, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--sl-muted);
+  }
+
+  .wl-dir {
+    grid-area: dir;
+  }
+
+  .wl-empty {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    text-align: left;
+  }
+
+  .wl-row .sl-chevron,
+  .wl-row:hover .sl-chevron {
+    grid-area: chev;
+  }
+
+  .wl-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.9rem;
+  }
+
+  .wl-head-name {
+    display: contents;
+  }
+}
+
+/* --- Below the summary: the map and one station's history --- */
+
+/* The phone gutter matches #map-section's (0.5rem, style-v4.css's
+   600px rule, which this later rule would otherwise undercut). */
+#wind-chart-section {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 max(var(--page-gutter), 0.5rem);
+}
+
+#map-section .home-section-title,
+#wind-chart-section .home-section-title {
+  margin: 0;
+  font-size: 1.15rem;
+  text-align: left;
+  color: var(--color-text);
+}
+
+#map-section .home-section-title {
+  margin-bottom: 0.6rem;
+}
+
+.wl-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.wl-picker label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.wl-picker select {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.wl-hourly-toggle {
+  margin-top: 0.75rem;
+}
+
+.wl-hourly {
+  margin-top: 0.75rem;
+}
+
+/* --- The hourly table: quiet heads, like the home panel's history --- */
 
 .data-table {
   overflow-x: auto;
+  border: 1px solid var(--color-border-light);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .data-table table {
@@ -30,196 +434,42 @@
 }
 
 .data-table th {
-  background: linear-gradient(to bottom, var(--color-primary-dark), var(--color-primary-hover-start));
-  color: var(--color-on-primary);
-  padding: 0.65rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border-light);
   text-align: left;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-/* Dark theme: the light-to-dark gradient can't satisfy contrast at both ends,
-   so use the solid primary fill that --color-on-primary is paired with. */
-[data-theme="dark"] .data-table th {
-  background: var(--color-primary-dark);
-}
-
-.data-table th.sortable {
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.2s;
-}
-
-.data-table th.sortable:hover {
-  background: linear-gradient(to bottom, var(--color-primary-hover-end), var(--color-primary-dark));
-}
-
-.data-table th .sort-indicator {
-  font-size: 1.1em;
-  margin-left: 0.25rem;
-  opacity: 0.9;
-}
-
-.data-table th.sortable .sort-indicator::before {
-  content: '⇅';
-  opacity: 0.4;
-}
-
-.data-table th.sortable:hover .sort-indicator::before {
-  opacity: 0.7;
-}
-
-/* Hide the default indicator when actively sorting */
-.data-table th.sortable.sorting .sort-indicator::before {
-  content: '';
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
 }
 
 .data-table td {
-  padding: 0.5rem 0.75rem;
+  padding: 0.45rem 0.75rem;
   border-bottom: 1px solid var(--color-border-light);
-  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
 }
 
-.data-table tbody tr:nth-child(even) {
-  background: var(--color-table-zebra);
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
 }
-
-.data-table tbody tr:hover {
-  background: var(--color-surface-light);
-}
-
-.data-table tbody tr.stale {
-  opacity: 0.6;
-  background: var(--color-surface-alt);
-  color: var(--color-text-muted);
-}
-
-.data-table tbody tr.stale:hover {
-  background: var(--color-surface-light);
-}
-
-/* --- Utility classes --- */
-
-.w-full {
-  width: 100%;
-}
-
-.h-500 {
-  height: 500px;
-}
-
-/* --- Wind time range toggle buttons --- */
-
-.wind-time-range-btn {
-  padding: 0.5rem 1rem;
-  margin: 0 0.25rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: all 0.2s;
-  background: var(--color-card-muted-bg);
-  color: var(--color-text-muted);
-}
-
-.wind-time-range-btn:hover {
-  background: var(--color-card-muted-hover);
-  transform: translateY(-1px);
-}
-
-.wind-time-range-btn.active {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-}
-
-.wind-time-range-btn.active:hover {
-  background: var(--color-primary-light);
-}
-
-/* --- Collapsed rows (hidden by default) --- */
 
 .collapsed-row {
   display: none;
 }
 
-/* --- Section containers --- */
-
-.winds-section {
-  max-width: 1200px;
-  margin: 2rem auto;
-  padding: 0 var(--page-gutter);
-}
-
-/* --- Sort hint text --- */
-
-.sort-hint {
-  text-align: center;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-/* --- Station caveat footnotes (siting notes marked with * in the table) --- */
-
-/* Collapsed by default so the notes don't crowd out the content below them. */
-.station-caveat-notes {
-  max-width: 1200px;
-  margin: 0.75rem auto 0;
-}
-
-.station-caveat-notes > summary {
+.wind-24hr-toggle-btn {
+  min-height: 32px;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
-  padding: 0.25rem 0.4rem;
-  border-radius: 4px;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-  width: fit-content;
 }
-
-.station-caveat-notes > summary:hover,
-.station-caveat-notes > summary:focus-visible {
-  color: var(--color-text);
-  background: var(--color-callout-info-bg);
-}
-
-.station-caveat {
-  max-width: 1200px;
-  margin: 0.5rem auto 0;
-  padding: 0.25rem 0.4rem;
-  border-radius: 4px;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-  line-height: 1.4;
-  transition: background-color 0.6s ease;
-  /* The asterisk anchor scrolls the footnote flush to the viewport top,
-     where the mobile sticky nav bar (≤600px) would cover it. */
-  scroll-margin-top: 4rem;
-}
-
-/* Jumped-to footnote: hold a tint so the reader sees where they landed. */
-.station-caveat:target {
-  background: var(--color-callout-info-bg);
-  outline: 2px solid var(--color-accent-blue);
-}
-
-.station-caveat-mark {
-  font-weight: 700;
-}
-
-.station-caveat-mark a {
-  color: var(--color-accent-blue);
-  cursor: help;
-  padding: 0 0.15rem;
-  text-decoration: none;
-}
-
-.station-caveat-mark a:hover,
-.station-caveat-mark a:focus-visible {
-  text-decoration: underline;
-}
-
-/* --- Station suggestion callout --- */
 
 /* --- Map container --- */
 
@@ -236,59 +486,6 @@
   font-size: 0.9rem;
 }
 
-/* --- Station selector --- */
-
-.station-selector {
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.station-selector-row {
-  margin-bottom: 0.5rem;
-}
-
-.station-selector label {
-  font-weight: 600;
-  margin-right: 0.5rem;
-}
-
-.station-selector input,
-.station-selector select {
-  padding: 0.5rem;
-  font-size: 1rem;
-  border-radius: 4px;
-  border: 1px solid var(--color-border);
-}
-
-.station-selector input {
-  width: 250px;
-}
-
-.station-selector select {
-  min-width: 300px;
-}
-
-/* --- Time range toggle wrapper --- */
-
-.wind-time-range-toggle {
-  margin: 1rem 0;
-  text-align: center;
-}
-
-.wind-time-range-toggle label {
-  margin-right: 0.5rem;
-  font-weight: 600;
-  color: var(--color-primary-dark);
-}
-
-/* --- 24hr station name heading --- */
-
-#wind-24hr-station-name {
-  text-align: center;
-  color: var(--color-primary-dark);
-  margin-bottom: 0.75rem;
-}
-
 /* --- Chart container --- */
 
 .wind-chart-container {
@@ -301,50 +498,6 @@
 .table-message-cell {
   text-align: center;
   padding: 2rem;
-}
-
-/* --- Table action links (Map / Chart) --- */
-
-.wind-table-action-link {
-  color: var(--color-primary);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.wind-table-actions {
-  white-space: nowrap;
-}
-
-.wind-table-action-separator {
-  color: var(--color-border);
-}
-
-/* --- Stations left out of the table: a footnote, not a card --- */
-
-.offline-note {
-  margin-top: 0.75rem;
-  padding: 0.4rem 0.75rem;
-  border-left: 3px solid var(--color-status-warning);
-  background: var(--color-callout-warning-bg);
-  border-radius: 4px;
-  font-size: 0.85rem;
-  line-height: 1.45;
-}
-
-.offline-note-label {
-  font-weight: 600;
-  color: var(--color-warning-text);
-}
-
-.offline-note ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.offline-note a {
-  color: var(--color-accent-blue);
-  text-decoration: none;
 }
 
 /* --- Map popup wind data card --- */
@@ -432,24 +585,14 @@
   font-size: 0.95rem;
 }
 
-/* --- Mobile / responsive --- */
+/* --- Mobile --- */
 
-/* Mobile-only elements hidden on desktop */
+/* Mobile-only spans in the hourly table, hidden on desktop. */
 .show-mobile {
   display: none !important;
 }
 
 @media (max-width: 768px) {
-  .wind-cards-grid {
-    grid-template-columns: 1fr;
-  }
-
-  /* Hide extra columns on mobile */
-  .data-table th.hide-mobile,
-  .data-table td.hide-mobile {
-    display: none;
-  }
-
   .hide-mobile {
     display: none !important;
   }
@@ -458,22 +601,13 @@
     display: inline !important;
   }
 
-  /* Reduce horizontal padding on mobile */
   .data-table th,
   .data-table td {
-    padding: 0.5rem 0.5rem;
+    padding: 0.45rem 0.5rem;
     font-size: 0.9rem;
   }
 
-  /* Fix dropdown overflow on mobile */
-  .station-selector input {
-    min-width: 200px !important;
-    max-width: 100% !important;
-    width: 200px !important;
-  }
-
-  .station-selector select {
-    min-width: 200px !important;
-    max-width: 100% !important;
+  .data-table th {
+    font-size: 0.66rem;
   }
 }

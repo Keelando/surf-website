@@ -161,7 +161,7 @@ export function freshness(b, now = Date.now()) {
  * row's state word (home.css). Lines without an age ("Out of service") come
  * back whole as `age`.
  */
-function ageParts(text) {
+export function ageParts(text) {
   const [main, word = ""] = text.split(" · ");
   const age = main.endsWith(" ago") ? main.slice(0, -4) : main;
   return { age, ago: age === main ? "" : " ago", word };

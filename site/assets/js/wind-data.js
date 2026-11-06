@@ -51,6 +51,9 @@ function normalizeBuoyLatest(buoy, stationMeta) {
     observation_time: windObsTime,
     stale: buoy.stale ?? false,
     status: buoy.status ?? null, // ok | late | down (shared/staleness.js reportStatus)
+    late_after_minutes: buoy.late_after_minutes ?? null,
+    down_after_minutes: buoy.down_after_minutes ?? null,
+    humidity_percent: buoy.humidity ?? null,
     _sourceType: isWindType ? "land" : "buoy",
     _isWindType: isWindType,
   };
@@ -71,6 +74,9 @@ function normalizeWindLatest(station) {
     observation_time: station.observation_time,
     stale: station.stale ?? false,
     status: station.status ?? null,
+    late_after_minutes: station.late_after_minutes ?? null,
+    down_after_minutes: station.down_after_minutes ?? null,
+    humidity_percent: station.humidity_percent ?? null,
     out_of_service: station.out_of_service ?? null, // {since, reason}; overrides status
     _sourceType: "land",
     _isWindType: true,
@@ -95,10 +101,11 @@ function normalizeTimeseries(ts) {
 }
 
 /**
- * Fetch all data, normalize, and resolve the ready promise.
+ * Fetch all data, normalize it into the store, and resolve the ready promise
+ * (the first time). Throws on failure; the callers decide what that means.
  */
-async function load() {
-  try {
+async function fetchAll() {
+  {
     const [stations, windLatest, buoyLatest, windTs, buoyTs] = await Promise.all([
       fetchWithTimeout(`/data/stations.json?t=${Date.now()}`),
       fetchWithTimeout(`/data/latest_wind.json?t=${Date.now()}`),
@@ -157,14 +164,33 @@ async function load() {
       });
     timeseries._meta = windTs._meta || null;
     store.timeseries = timeseries;
-
-    store._readyResolve(store);
-  } catch (error) {
-    console.error("WindDataStore: failed to load data", error);
-    store._readyResolve(store); // resolve anyway so consumers don't hang
+    store.loadedAt = Date.now();
   }
 }
 
+let reloading = null;
+
+/**
+ * Fetch everything again, for a page left open or resumed from a phone's
+ * home screen (the home page refreshes on the same rhythm, main.js). On
+ * success the store is replaced and `winds:data-updated` fires on document;
+ * on failure the store keeps what it had and the next call tries again.
+ * One reload at a time.
+ */
+store.reload = function reload() {
+  reloading ??= fetchAll()
+    .then(() => document.dispatchEvent(new CustomEvent("winds:data-updated")))
+    .catch((error) => console.warn("WindDataStore: refresh failed, keeping the last data", error))
+    .finally(() => {
+      reloading = null;
+    });
+  return reloading;
+};
+
+store.loadedAt = 0;
+
 // Module scripts are deferred and the fetches don't touch the DOM —
-// start loading immediately.
-load();
+// start loading immediately. Resolve either way so consumers don't hang.
+fetchAll()
+  .catch((error) => console.error("WindDataStore: failed to load data", error))
+  .finally(() => store._readyResolve(store));

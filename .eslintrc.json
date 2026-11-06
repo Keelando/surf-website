@@ -27,6 +27,7 @@
         "site/assets/js/webcams-v4.js",
         "site/assets/js/guide.js",
         "site/assets/js/wind-data.js",
+        "site/assets/js/wind-list.js",
         "site/assets/js/wind-stations.js",
         "site/assets/js/winds-map.js",
         "site/assets/js/lightstation-charts.js",

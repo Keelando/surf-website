@@ -36,14 +36,17 @@
   <meta name="twitter:image:alt" content="Halibut Bank: live buoys, wind, tides and marine forecasts for the Salish Sea at halibutbank.ca" />
 
   <link rel="canonical" href="https://halibutbank.ca/winds.html" />
-  <!-- Hero photo (the LCP element): same URLs and media split as style-v4.css -->
+  <!-- Summary photo (the LCP element): same URLs and media split as home.css -->
   <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-960.avif" media="(max-width: 768px)" fetchpriority="high" />
   <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-1600.avif" media="(min-width: 769px)" fetchpriority="high" />
   <link rel="stylesheet" href="/assets/css/style-v4.css?v=fd56d24a50" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=40debffa31" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=c8c970f93b" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=ad281cb152" />
-  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=9cf7236f90" />
+  <!-- The summary panel, region heads, status lights and row panels are the
+       home page's (home.css); winds-v4.css lays out the winds rows. -->
+  <link rel="stylesheet" href="/assets/css/home.css?v=728d0e84c1" />
+  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=814c113d73" />
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
@@ -57,120 +60,84 @@
   <!-- Navigation -->
   <div class="nav-slot" hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
-  <header>
-    <h1>Salish Sea Wind Conditions</h1>
-  </header>
-
   <main id="main-content" tabindex="-1">
 
-  <div class="site-tagline">
-    Real-time wind observations from coastal weather stations across the Salish Sea and Strait of Georgia.
-  </div>
-
-  <!-- Current Conditions Table -->
-  <!-- aria-busy until the table has rendered (wind-stations.js clears it on
-       success and failure): everything below it is hidden meanwhile, so the
-       station list landing does not shove the map off-screen (CLS 0.20). -->
-  <section id="wind-table-section" class="winds-section" aria-busy="true">
-    <h2>Current Wind Conditions</h2>
-    <p class="sort-hint">
-      <em>Click column headers to sort</em>
-    </p>
-    <div class="data-table">
-      <table id="wind-conditions-table">
-        <thead>
-          <tr>
-            <th>Station</th>
-            <th>Updated</th>
-            <th>Direction</th>
-            <th>Wind Speed</th>
-            <th>Gust</th>
-            <th>Temp</th>
-            <th>Pressure</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colspan="7" class="table-message-cell">Loading wind data...</td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- The summary: every station with wind readings, on the hero photo, in
+       the home page's look. Built by wind-stations.js from the wind data
+       store (wind-list.js): one sortable list, or grouped by region. -->
+  <section class="summary wl-summary" aria-labelledby="summary-title">
+    <div class="summary-panel">
+      <div class="summary-head wl-summary-head">
+        <div>
+          <h1 id="summary-title" class="summary-title">Salish Sea wind conditions</h1>
+          <p class="summary-tagline">Latest wind from weather stations and buoys around the Salish Sea. Sort by any column; tap a station
+            <svg class="sl-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            for its details.</p>
+        </div>
+        <div class="range-toggle wl-view-toggle" role="group" aria-label="List the stations">
+          <button type="button" class="time-range-btn wl-view-btn active" data-view="all" aria-pressed="true">All stations</button>
+          <button type="button" class="time-range-btn wl-view-btn" data-view="region" aria-pressed="false">By region</button>
+        </div>
+      </div>
+      <div id="wind-list" class="wind-list" aria-busy="true">
+        <p class="sl-loading">Loading the latest readings…</p>
+      </div>
+      <p class="summary-foot">
+        <a href="/guide.html">How to read these numbers</a>
+        <a href="/">Wave stations</a>
+        <a href="/forecasts.html">Forecasts</a>
+        <a href="mailto:windwaves604@outlook.com?subject=Wind%20Station%20Suggestion">Missing a station? Tell me</a>
+      </p>
     </div>
-
-    <!-- Station caveats, e.g. non-sea-level siting (populated by JavaScript) -->
-    <div id="wind-table-footnotes"></div>
-
-    <!-- Offline stations list (populated by JavaScript) -->
-    <div id="offline-stations-list"></div>
-
-    <p class="station-suggestion">
-      <strong>Missing your favorite station?</strong> <a href="mailto:windwaves604@outlook.com?subject=Wind%20Station%20Suggestion" class="color-primary">Let me know so I can add it!</a>
-    </p>
   </section>
 
   <!-- Stations Map Section -->
-  <section id="map-section" class="winds-section">
-    <h2>Station Locations</h2>
+  <section id="map-section" aria-labelledby="map-title">
+    <h2 id="map-title" class="home-section-title">Stations map</h2>
     <div id="winds-map" class="winds-map-container"></div>
     <div class="winds-map-legend">
       <span>🌊 = Buoy / marine station</span>
     </div>
   </section>
 
-  <!-- Wind Chart Section -->
-  <section id="wind-chart-section" class="winds-section">
-    <h2>24-Hour Wind Trends</h2>
-    <div id="station-selector" class="station-selector">
-      <div class="station-selector-row">
-        <label for="wind-station-search">Search:</label>
-        <input type="text" id="wind-station-search" placeholder="Type to jump to station...">
-      </div>
-      <div>
-        <label for="wind-station-select">Station:</label>
-        <select id="wind-station-select" size="1">
-          <option value="">Loading stations...</option>
-        </select>
+  <!-- One station's history: the chart, and its hourly table behind a
+       button under it. One station picker and one time range for both. -->
+  <section id="wind-chart-section" aria-labelledby="wind-chart-title">
+    <div class="home-section-head">
+      <h2 id="wind-chart-title" class="home-section-title">Wind history</h2>
+      <div class="range-toggle" role="group" aria-label="Time range">
+        <button type="button" class="time-range-btn wind-time-range-btn active" data-wind-hours="24" aria-pressed="true">24 h</button>
+        <button type="button" class="time-range-btn wind-time-range-btn" data-wind-hours="48" aria-pressed="false">48 h</button>
       </div>
     </div>
-
-    <!-- Time Range Toggle -->
-    <div class="wind-time-range-toggle">
-      <label>Time Range:</label>
-      <button class="wind-time-range-btn active" data-wind-hours="24" aria-pressed="true">24 Hours</button>
-      <button class="wind-time-range-btn" data-wind-hours="48" aria-pressed="false">48 Hours</button>
+    <div class="wl-picker">
+      <label for="wind-station-select">Station</label>
+      <select id="wind-station-select">
+        <option value="">Loading stations…</option>
+      </select>
     </div>
 
     <div id="wind-trend-chart" class="wind-chart-container"></div>
-  </section>
 
-  <!-- 24-Hour Data Table -->
-  <section id="wind-data-table-section" class="winds-section">
-    <h2>24-Hour Wind Data</h2>
-
-    <!-- Time Range Toggle (By Table) -->
-    <div class="wind-time-range-toggle">
-      <label>Time Range:</label>
-      <button class="wind-time-range-btn active" data-wind-hours="24" aria-pressed="true">24 Hours</button>
-      <button class="wind-time-range-btn" data-wind-hours="48" aria-pressed="false">48 Hours</button>
-    </div>
-
-    <h3 id="wind-24hr-station-name" style="display: none;"></h3>
-    <div class="data-table">
-      <table id="wind-24hr-table">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Wind Speed</th>
-            <th>Gust</th>
-            <th>Direction</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colspan="4" class="table-message-cell">Select a station to view 24-hour data</td>
-          </tr>
-        </tbody>
-      </table>
+    <button type="button" class="sl-action wl-hourly-toggle" aria-expanded="false" aria-controls="wind-hourly">Hourly table</button>
+    <div id="wind-hourly" class="wl-hourly" hidden>
+      <div class="data-table">
+        <table id="wind-24hr-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Direction</th>
+              <th>Wind Speed (kt)</th>
+              <th>Gust (kt)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="4" class="table-message-cell">Select a station to see its hourly readings</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -193,8 +160,8 @@
   <script type="module" src="/assets/js/warning-banner.js?v=69920f4608"></script>
   <script defer src="/assets/js/chart-utils-v4.js?v=53a5c28bad"></script>
   <!-- wind-data.js is imported by both module entry points (no script tag needed) -->
-  <script type="module" src="/assets/js/wind-stations.js?v=9576d5ec3d"></script>
-  <script type="module" src="/assets/js/winds-map.js?v=2d231d8351"></script>
+  <script type="module" src="/assets/js/wind-stations.js?v=49275a0054"></script>
+  <script type="module" src="/assets/js/winds-map.js?v=871971efbf"></script>
   <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

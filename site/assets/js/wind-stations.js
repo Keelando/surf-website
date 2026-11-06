@@ -1,6 +1,7 @@
 /* -----------------------------
    Wind Stations Module (ES module)
-   Displays current wind conditions table and 24hr trends chart
+   The winds page: the station list on the summary (built by wind-list.js),
+   and one station's history chart with its hourly table.
 
    Chart helpers (degreesToCardinal, getDirectionalArrow,
    createWindDirectionArrowData, theme/grid/tooltip config, echarts) still
@@ -9,39 +10,25 @@
 
 import { formatMonthDayTime, formatTimeHM, formatTimeWithDate } from "./shared/format-time.js";
 import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
-import { windData } from "./wind-data.js";
 import { setSafeHTML } from "./shared/safe-html.js";
-import { outOfServiceHTML, staleAgeLabel } from "./shared/staleness.js";
-
-/** Escape a string for safe interpolation into an HTML attribute. */
-function escapeAttr(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
+import { windData } from "./wind-data.js";
+import {
+  buildWindDetail,
+  buildWindList,
+  DEFAULT_SORT,
+  nextSort,
+  regionGroups,
+  windEntry,
+} from "./wind-list.js";
 
 // --- Constants ---
-const STALE_THRESHOLD_HOURS = 2; // Data older than this is dimmed
-const OFFLINE_THRESHOLD_HOURS = 4; // Data older than this moves to offline list
 const SCROLL_SETTLE_DELAY_MS = 500; // Delay after smooth-scroll before focusing
 const TOOLTIP_TIME_TOLERANCE_MS = 1800000; // 30 min — snap tooltip to nearest direction point
 
 // Global chart instance
 let windChart = null;
 let windTimeseriesData = null;
-let allStationsList = []; // Store all stations
-let currentSort = { column: null, ascending: true };
 let currentWindTimeRange = 24; // Default to 24 hours
-
-/**
- * Look up station metadata (source_url, short_name, flag) from stations.json
- */
-function getStationMeta(id) {
-  const s = windData.stations;
-  return s?.wind?.[id] || s?.buoys?.[id] || {};
-}
 
 /**
  * Filter wind timeseries data to specified time range (hours)
@@ -81,386 +68,195 @@ function filterWindTimeseriesData(data, hours) {
   return filtered;
 }
 
-/**
- * Initialize sortable table functionality
- */
-function initializeSortableTable() {
-  const headers = document.querySelectorAll("#wind-conditions-table th.sortable");
+// -----------------------------
+// The station list
+// -----------------------------
 
-  headers.forEach((header) => {
-    header.addEventListener("click", () => {
-      const column = header.dataset.column;
-      const type = header.dataset.type;
+// How often the list fetches a fresh snapshot: the home page's rhythm (main.js).
+const REFRESH_MS = 5 * 60 * 1000;
+// The reader's last pick of view, remembered per browser (a convenience only:
+// without storage the list opens as "all").
+const VIEW_KEY = "winds-list-view";
 
-      // Toggle sort direction if clicking same column
-      if (currentSort.column === column) {
-        currentSort.ascending = !currentSort.ascending;
-      } else {
-        currentSort.column = column;
-        currentSort.ascending = true;
-      }
+let listView = readView();
+let listSort = { ...DEFAULT_SORT };
+let entriesById = {};
 
-      sortTable(column, type, currentSort.ascending);
-      updateSortIndicators(header);
-    });
-  });
-}
-
-/**
- * Sort table by column
- */
-function sortTable(column, type, ascending) {
-  const table = document.getElementById("wind-conditions-table");
-  const tbody = table.querySelector("tbody");
-  const rows = Array.from(tbody.querySelectorAll("tr"));
-
-  rows.sort((a, b) => {
-    let aVal = a.dataset[column];
-    let bVal = b.dataset[column];
-
-    // Handle empty values
-    if (!aVal && !bVal) return 0;
-    if (!aVal) return 1;
-    if (!bVal) return -1;
-
-    // Compare based on type
-    let comparison = 0;
-    if (type === "number") {
-      comparison = parseFloat(aVal) - parseFloat(bVal);
-    } else if (type === "date") {
-      comparison = new Date(aVal) - new Date(bVal);
-    } else {
-      // String comparison
-      comparison = aVal.toLowerCase().localeCompare(bVal.toLowerCase());
-    }
-
-    return ascending ? comparison : -comparison;
-  });
-
-  // Re-append rows in sorted order
-  rows.forEach((row) => tbody.appendChild(row));
-}
-
-/**
- * Update sort direction indicators
- */
-function updateSortIndicators(activeHeader) {
-  // Clear all indicators and remove sorting class
-  document.querySelectorAll("#wind-conditions-table th.sortable").forEach((header) => {
-    header.classList.remove("sorting");
-    header.removeAttribute("aria-sort");
-    const indicator = header.querySelector(".sort-indicator");
-    indicator.textContent = "";
-  });
-
-  // Set active indicator
-  activeHeader.classList.add("sorting");
-  activeHeader.setAttribute("aria-sort", currentSort.ascending ? "ascending" : "descending");
-  const indicator = activeHeader.querySelector(".sort-indicator");
-  indicator.textContent = currentSort.ascending ? "▲" : "▼";
-}
-
-/**
- * Classify latest station data into active vs offline lists by data age
- * @param {Object} latestAll - All latest station readings keyed by ID
- * @returns {{ active: Array, offline: Array, outOfService: Array }} Station tuples [id, stationData]
- */
-function classifyStations(latestAll) {
-  const active = [];
-  const offline = [];
-  const outOfService = [];
-
-  Object.entries(latestAll)
-    .filter(([key]) => key !== "_meta")
-    .forEach(([id, station]) => {
-      const obsTime = station.observation_time ? new Date(station.observation_time) : null;
-      const ageHours = obsTime ? (Date.now() - obsTime.getTime()) / (1000 * 60 * 60) : Infinity;
-
-      const displayName = station._isWindType ? station.name : station.name + " \u{1F30A}";
-
-      const stationData = {
-        name: displayName,
-        wind_speed_kt: station.wind_speed_kt != null ? Math.round(station.wind_speed_kt) : null,
-        wind_gust_kt: station.wind_gust_kt != null ? Math.round(station.wind_gust_kt) : null,
-        wind_direction: station.wind_direction_deg,
-        wind_direction_cardinal: station.wind_direction_cardinal,
-        air_temp_c: station.air_temp_c,
-        pressure_hpa: station.pressure_hpa,
-        observation_time: station.observation_time,
-        ageHours: ageHours,
-        stale: ageHours >= STALE_THRESHOLD_HOURS && ageHours < OFFLINE_THRESHOLD_HOURS,
-        type: station._sourceType,
-        out_of_service: station.out_of_service,
-      };
-
-      // The owner's word beats our clock: out of the table entirely.
-      if (station.out_of_service) {
-        outOfService.push([id, stationData]);
-      } else if (ageHours >= OFFLINE_THRESHOLD_HOURS) {
-        offline.push([id, stationData]);
-      } else {
-        active.push([id, stationData]);
-      }
-    });
-
-  active.sort((a, b) => a[1].name.localeCompare(b[1].name));
-  return { active, offline, outOfService };
-}
-
-/**
- * Render the note under the table: one line per station left out of it,
- * down for service first, then stale. Kept small on purpose; the table is
- * the page, these are footnotes to it.
- * @param {Array} offlineStations - Station tuples [id, stationData] with ageHours
- * @param {Array} [outOfServiceStations] - Station tuples taken out of service
- */
-function renderOfflineStationsList(offlineStations, outOfServiceStations = []) {
-  const container = document.getElementById("offline-stations-list");
-  if (!container) return;
-
-  if (offlineStations.length === 0 && outOfServiceStations.length === 0) {
-    container.innerHTML = "";
-    return;
-  }
-
-  const items = outOfServiceStations.map(([id, station]) => {
-    const name = station.name.replace(" \u{1F30A}", "");
-    return `<li><strong>${name}</strong>: ${outOfServiceHTML(station.out_of_service, getStationMeta(id).source_url)}</li>`;
-  });
-
-  [...offlineStations]
-    .sort((a, b) => a[1].name.localeCompare(b[1].name))
-    .forEach(([id, station]) => {
-      const age = staleAgeLabel(station.observation_time);
-      const offlineMeta = getStationMeta(id);
-      let stationLink = station.name.replace(" 🌊", "");
-      if (offlineMeta.source_url) {
-        stationLink = `<a href="${offlineMeta.source_url}" target="_blank" rel="noopener">${stationLink}</a>`;
-      }
-      items.push(`<li><strong>${stationLink}</strong>: no report for ${age ?? "over 4h"}</li>`);
-    });
-
-  setSafeHTML(
-    container,
-    `<div class="offline-note"><span class="offline-note-label">Not in the table</span><ul>${items.join("")}</ul></div>`,
-  );
-}
-
-/**
- * Load and display current wind conditions table
- */
-async function loadWindTable() {
+function readView() {
   try {
-    // Wait for shared data store (fetched once by wind-data.js)
-    await windData.ready;
-    const latestAll = windData.latestAll;
-
-    const table = document.getElementById("wind-conditions-table");
-    if (!table) return;
-
-    const {
-      active: stations,
-      offline: offlineStations,
-      outOfService: outOfServiceStations,
-    } = classifyStations(latestAll);
-
-    let tableHTML = `
-      <thead>
-        <tr>
-          <th class="sortable" data-column="name" data-type="string">Station <span class="sort-indicator"></span></th>
-          <th class="sortable" data-column="observation_time" data-type="date">Updated <span class="sort-indicator"></span></th>
-          <th class="sortable" data-column="wind_direction" data-type="number"><span class="hide-mobile">Direction</span><span class="show-mobile">Dir</span> <span class="sort-indicator"></span></th>
-          <th class="sortable" data-column="wind_speed_kt" data-type="number"><span class="hide-mobile">Speed (kt)</span><span class="show-mobile">kt</span> <span class="sort-indicator"></span></th>
-          <th class="sortable" data-column="wind_gust_kt" data-type="number"><span class="hide-mobile">Gust (kt)</span><span class="show-mobile">Gst</span> <span class="sort-indicator"></span></th>
-          <th class="sortable" data-column="air_temp_c" data-type="number">Temp (°C) <span class="sort-indicator"></span></th>
-          <th class="sortable" data-column="pressure_hpa" data-type="number">Pressure (hPa) <span class="sort-indicator"></span></th>
-          <th>View:</th>
-        </tr>
-      </thead>
-      <tbody>
-    `;
-
-    stations.forEach(([id, station]) => {
-      const rowClass = station.stale ? 'class="stale"' : "";
-      // Round wind speeds to integers
-      const windSpeed = station.wind_speed_kt != null ? Math.round(station.wind_speed_kt) : "—";
-      const windGust = station.wind_gust_kt != null ? Math.round(station.wind_gust_kt) : "—";
-      // Show arrow + cardinal direction (degrees in tooltip)
-      const cardinal =
-        station.wind_direction != null
-          ? station.wind_direction_cardinal || degreesToCardinal(station.wind_direction)
-          : null;
-      const direction =
-        cardinal != null
-          ? `${getDirectionalArrow(station.wind_direction)} ${cardinal}<span class="hide-mobile"> (${station.wind_direction}°)</span>`
-          : "—";
-      const temp = station.air_temp_c != null ? station.air_temp_c.toFixed(1) : "—";
-      const pressure = station.pressure_hpa != null ? station.pressure_hpa.toFixed(1) : "—";
-      const updated = formatTimeWithDate(station.observation_time);
-
-      // Look up source link, flag, and short name from stations.json
-      const meta = getStationMeta(id);
-      const sourceLink = meta.source_url || null;
-      const flag = meta.flag || "";
-      const flagSpan = flag
-        ? ` <span class="hide-mobile" style="font-size: 0.8em;">${flag}</span>`
-        : "";
-
-      const mobileName = meta.short_name || station.name;
-
-      // Stations with a `caveat` in stations.json get an asterisk that links
-      // down to the footnote below the table (e.g. CWLM sits 65 m up a hill,
-      // so its pressure reads low next to the sea-level stations). The title
-      // answers on hover; the anchor is what works without a pointer.
-      const caveatMark = meta.caveat
-        ? ` <sup class="station-caveat-mark"><a href="#caveat-${escapeAttr(id)}" title="${escapeAttr(meta.caveat)}" aria-label="Footnote: why ${escapeAttr(station.name)} readings differ">*</a></sup>`
-        : "";
-
-      tableHTML += `
-        <tr ${rowClass}
-            data-name="${station.name}"
-            data-wind_speed_kt="${station.wind_speed_kt || ""}"
-            data-wind_gust_kt="${station.wind_gust_kt || ""}"
-            data-wind_direction="${station.wind_direction || ""}"
-            data-air_temp_c="${station.air_temp_c || ""}"
-            data-pressure_hpa="${station.pressure_hpa || ""}"
-            data-observation_time="${station.observation_time}">
-          <td>${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;"><strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}</a>` : `<strong><span class="hide-mobile">${station.name}</span><span class="show-mobile">${mobileName}</span></strong>${flagSpan}`}${caveatMark}</td>
-          <td class="wind-table-actions"><span class="hide-mobile">${updated}</span><span class="show-mobile">${formatTimeHM(station.observation_time)}</span></td>
-          <td class="wind-table-actions">${direction}</td>
-          <td>${windSpeed}</td>
-          <td>${windGust}</td>
-          <td>${temp}</td>
-          <td>${pressure}</td>
-          <td class="wind-table-actions">
-            <a href="#map-section" class="wind-table-action-link" data-action="map" data-station-id="${id}">Map</a>
-            <span class="wind-table-action-separator">/</span>
-            <a href="#wind-chart-section" class="wind-table-action-link" data-action="chart" data-station-id="${id}">Chart</a>
-          </td>
-        </tr>
-      `;
-    });
-
-    tableHTML += "</tbody>";
-    table.innerHTML = tableHTML;
-
-    renderCaveatFootnotes(stations);
-
-    // Add sort functionality
-    initializeSortableTable();
-
-    // Default sort by wind speed (descending) to show strongest winds first
-    const speedHeader = document.querySelector(
-      '#wind-conditions-table th[data-column="wind_speed_kt"]',
-    );
-    if (speedHeader) {
-      currentSort.column = "wind_speed_kt";
-      currentSort.ascending = false; // Descending to show highest first
-      sortTable("wind_speed_kt", "number", false);
-      updateSortIndicators(speedHeader);
-    }
-
-    renderOfflineStationsList(offlineStations, outOfServiceStations);
-
-    // (Dead footer-timestamp updater removed 2026-07-16: it targeted
-    // #timestamp, which no longer exists in any page, and checked
-    // windData._meta, which never existed on the store.)
-  } catch (error) {
-    console.error("Error loading wind table:", error);
-    const table = document.getElementById("wind-conditions-table");
-    if (table) {
-      table.innerHTML =
-        '<tbody><tr><td colspan="7" class="table-message-cell">Error loading wind data</td></tr></tbody>';
-    }
-  } finally {
-    document.getElementById("wind-table-section")?.removeAttribute("aria-busy");
+    return localStorage.getItem(VIEW_KEY) === "region" ? "region" : "all";
+  } catch {
+    return "all";
   }
 }
 
+function saveView(view) {
+  try {
+    localStorage.setItem(VIEW_KEY, view);
+  } catch {
+    // Private mode or blocked storage: the choice lasts for this visit.
+  }
+}
+
+/** Every station in the store, as wind-list.js rows (keys starting "_" are not stations). */
+function currentEntries(now = Date.now()) {
+  const latestAll = windData.latestAll || {};
+  const registry = windData.stations || {};
+  return Object.entries(latestAll)
+    .filter(([id]) => !id.startsWith("_"))
+    .map(([id, s]) => windEntry(id, s, registry.wind?.[id] || registry.buoys?.[id] || {}, now));
+}
+
+/** Rebuild the list, keeping open rows and focus. */
+function renderWindList() {
+  const container = document.getElementById("wind-list");
+  if (!container || !windData.latestAll) return;
+  const open = [...container.querySelectorAll('.wl-row[aria-expanded="true"]')].map(
+    (row) => row.closest(".wl-item").dataset.stationId,
+  );
+  const active = document.activeElement;
+  const focusedRow = active?.closest?.("#wind-list .wl-item")?.dataset.stationId;
+  const focusedSort = active?.closest?.("#wind-list .wl-sort")?.dataset.sort;
+
+  const entries = currentEntries();
+  entriesById = Object.fromEntries(entries.map((e) => [e.id, e]));
+  setSafeHTML(container, buildWindList(entries, { view: listView, sort: listSort }));
+  container.removeAttribute("aria-busy");
+
+  for (const id of open) toggleWindRow(id, true);
+  if (focusedSort) container.querySelector(`.wl-sort[data-sort="${focusedSort}"]`)?.focus();
+  else if (focusedRow) document.querySelector(`#wind-row-${focusedRow} .wl-row`)?.focus();
+}
+
+/** Open or close one station's row; its panel is built each time it opens. */
+function toggleWindRow(id, open) {
+  const item = document.getElementById(`wind-row-${id}`);
+  const row = item?.querySelector(".wl-row");
+  const panel = item?.querySelector(".wl-detail");
+  if (!row || !panel) return;
+  const opening = open ?? row.getAttribute("aria-expanded") !== "true";
+  if (opening && entriesById[id]) setSafeHTML(panel, buildWindDetail(entriesById[id]));
+  panel.hidden = !opening;
+  row.setAttribute("aria-expanded", String(opening));
+}
+
 /**
- * Render the "*" footnotes under the conditions table — one line per visible
- * station that carries a `caveat` in stations.json. Driven entirely by the
- * registry, so adding a caveat to a station needs no change here.
+ * Once a minute: fetch a fresh snapshot when the last one is due for
+ * replacing (the store then fires winds:data-updated, which rebuilds the
+ * list), then bring every row's age up to the clock. A row whose state
+ * changes (on time to late, say) shows different things, so that rebuilds
+ * the list too. Fetch first: a tab the browser froze wakes with its clock on
+ * time but its copy old, and ticking the old copy would mark every station
+ * down (the home page's lesson, main.js).
  */
-function renderCaveatFootnotes(stations) {
-  const container = document.getElementById("wind-table-footnotes");
+async function tick() {
+  if (Date.now() - windData.loadedAt >= REFRESH_MS) await windData.reload();
+  const container = document.getElementById("wind-list");
   if (!container) return;
+  for (const e of currentEntries()) {
+    const item = document.getElementById(`wind-row-${e.id}`);
+    const row = item?.querySelector(".wl-row");
+    if (!row) continue;
+    if (!row.classList.contains(`wl-row--${e.fresh.state}`)) {
+      renderWindList();
+      return;
+    }
+    const text = item.querySelector(".sl-age-text");
+    if (text) text.textContent = e.fresh.text.split(" · ")[0].replace(/ ago$/, "");
+  }
+}
 
-  const caveats = stations
-    .map(([id, station]) => [getStationMeta(id).caveat, station.name, id])
-    .filter(([caveat]) => caveat);
-
-  if (caveats.length === 0) {
-    container.innerHTML = "";
+async function loadWindList() {
+  await windData.ready;
+  const container = document.getElementById("wind-list");
+  if (!container) return;
+  if (!windData.latestAll) {
+    container.removeAttribute("aria-busy");
+    setSafeHTML(
+      container,
+      `<p class="sl-error">Couldn't load the latest readings. Trying again every minute.</p>`,
+    );
     return;
   }
-
-  // Collapsed by default: the notes are reference material, and left open they
-  // buried the "Missing your favorite station?" prompt below them.
-  // tabindex="-1" so the asterisk anchor moves focus here, not just scroll —
-  // otherwise a keyboard user jumps but their focus stays up in the table.
-  const label = `Station notes (${caveats.length})`;
-  setSafeHTML(
-    container,
-    `<details class="station-caveat-notes">` +
-      `<summary>${label}</summary>` +
-      caveats
-        .map(
-          ([caveat, name, id]) =>
-            `<p class="station-caveat" id="caveat-${id}" tabindex="-1">* <strong>${name}</strong>: ${caveat}</p>`,
-        )
-        .join("") +
-      `</details>`,
-  );
-
-  ensureCaveatJumpOpensNotes();
+  renderWindList();
 }
 
-/**
- * A collapsed <details> hides its contents from an in-page jump in browsers
- * that don't auto-expand on fragment navigation, so open it ourselves when an
- * asterisk footnote link is followed.
- */
-let caveatJumpHandlerAttached = false;
+function setListView(view) {
+  listView = view;
+  saveView(view);
+  document.querySelectorAll(".wl-view-btn").forEach((btn) => {
+    const active = btn.dataset.view === view;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", String(active));
+  });
+  renderWindList();
+}
 
-function ensureCaveatJumpOpensNotes() {
-  if (caveatJumpHandlerAttached) return;
-  caveatJumpHandlerAttached = true;
+document.getElementById("wind-list")?.addEventListener("click", (event) => {
+  const sort = event.target.closest(".wl-sort");
+  if (sort) {
+    listSort = nextSort(listSort, sort.dataset.sort);
+    renderWindList();
+    return;
+  }
+  const item = event.target.closest(".wl-item");
+  if (!item) return;
+  const id = item.dataset.stationId;
+  if (event.target.closest(".wl-row")) {
+    toggleWindRow(id);
+    return;
+  }
+  const action = event.target.closest("[data-action]")?.dataset.action;
+  if (action === "chart") viewStationChart(id);
+  else if (action === "map") showStationOnMap(id);
+  else if (action === "close") {
+    toggleWindRow(id, false);
+    item.querySelector(".wl-row")?.focus();
+  }
+});
 
-  document.addEventListener("click", (event) => {
-    const link = event.target.closest?.('a[href^="#caveat-"]');
-    if (!link) return;
-
-    const notes = document.querySelector(".station-caveat-notes");
-    if (notes) notes.open = true;
-
-    // Re-target after opening so the browser scrolls to a laid-out element.
-    const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
-    if (target) {
-      event.preventDefault();
-      window.location.hash = link.hash;
-      target.focus();
-      target.scrollIntoView({ block: "start" });
-    }
+document.querySelectorAll(".wl-view-btn").forEach((btn) => {
+  btn.addEventListener("click", () => setListView(btn.dataset.view));
+});
+// The markup starts on "all"; show the remembered view's button as pressed.
+if (listView !== "all") {
+  document.querySelectorAll(".wl-view-btn").forEach((btn) => {
+    const active = btn.dataset.view === listView;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", String(active));
   });
 }
 
 /**
- * Populate station dropdown (always shows all stations)
+ * The chart's station picker, grouped by region like the list (same order),
+ * stations by name within each.
  */
 function populateStationDropdown() {
   const select = document.getElementById("wind-station-select");
-  if (!select || !allStationsList) return;
-
-  select.innerHTML = "";
-
-  // Populate dropdown with all stations
-  allStationsList.forEach(([id, station]) => {
-    const option = document.createElement("option");
-    option.value = id;
-    option.textContent = station.name;
-    select.appendChild(option);
-  });
+  if (!select || !windTimeseriesData) return;
+  const registry = windData.stations || {};
+  const stations = Object.entries(windTimeseriesData)
+    .filter(([id]) => !id.startsWith("_"))
+    .map(([id, station]) => {
+      const meta = registry.wind?.[id] || registry.buoys?.[id] || {};
+      // The list's name for it (the timeseries export shortens some: "Ballenas").
+      const name = windData.latestAll?.[id]?.name || meta.name || station.name || id;
+      return { id, name: name.replace(" \u{1F30A}", ""), region: meta.region ?? "" };
+    });
+  const selected = select.value;
+  select.textContent = "";
+  for (const group of regionGroups(stations, { key: "name", dir: "asc" })) {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group.label;
+    for (const station of group.entries) {
+      const option = document.createElement("option");
+      option.value = station.id;
+      option.textContent = station.name;
+      optgroup.appendChild(option);
+    }
+    select.appendChild(optgroup);
+  }
+  if (selected && windTimeseriesData[selected]) select.value = selected;
 }
 
 /**
@@ -473,52 +269,21 @@ async function loadWindTimeseries() {
     windTimeseriesData = windData.timeseries;
 
     const select = document.getElementById("wind-station-select");
-    const searchInput = document.getElementById("wind-station-search");
     if (!select) return;
 
-    // Get all stations (exclude _meta)
-    allStationsList = Object.entries(windTimeseriesData)
-      .filter(([key]) => key !== "_meta")
-      .sort((a, b) => a[1].name.localeCompare(b[1].name));
-
-    // Populate dropdown with all stations
     populateStationDropdown();
 
-    // Set default selection (first station)
-    if (allStationsList.length > 0) {
-      select.value = allStationsList[0][0];
-      renderWindChart(allStationsList[0][0]);
-      renderWind24HourTable(allStationsList[0][0]);
+    // The first station of the first region, unless a link already chose one.
+    if (!select.value) select.selectedIndex = 0;
+    if (select.value) {
+      renderWindChart(select.value);
+      renderWind24HourTable(select.value);
     }
 
-    // Add change listener to dropdown
     select.addEventListener("change", (e) => {
       renderWindChart(e.target.value);
       renderWind24HourTable(e.target.value);
     });
-
-    // Add "jump to" search listener
-    if (searchInput) {
-      searchInput.addEventListener("input", (e) => {
-        const searchText = e.target.value.toLowerCase();
-        if (!searchText) return;
-
-        // Find first matching station (by name or ID)
-        const match = allStationsList.find(
-          ([id, station]) =>
-            station.name.toLowerCase().includes(searchText) ||
-            id.toLowerCase().includes(searchText),
-        );
-
-        if (match) {
-          // Select the matching station in dropdown
-          select.value = match[0];
-          // Trigger chart and table update
-          renderWindChart(match[0]);
-          renderWind24HourTable(match[0]);
-        }
-      });
-    }
   } catch (error) {
     console.error("Error loading wind timeseries:", error);
     const select = document.getElementById("wind-station-select");
@@ -605,13 +370,6 @@ function renderWind24HourTable(stationId) {
 
   const table = document.getElementById("wind-24hr-table");
   if (!table) return;
-
-  // Update station name heading above the table
-  const stationNameEl = document.getElementById("wind-24hr-station-name");
-  if (stationNameEl) {
-    stationNameEl.textContent = station.name.replace(" \u{1F30A}", "");
-    stationNameEl.style.display = "block";
-  }
 
   // Extract and merge timeseries data (all normalized to flat arrays by wind-data.js)
   const ts = station.timeseries;
@@ -731,30 +489,11 @@ function setWindTimeRange(hours) {
     btn.setAttribute("aria-pressed", isActive);
   });
 
-  // Update section headers to show current time range
-  updateWindTimeRangeLabels();
-
   // Re-render current station chart and table
   const selectedStation = document.getElementById("wind-station-select")?.value;
   if (selectedStation) {
     renderWindChart(selectedStation);
     renderWind24HourTable(selectedStation);
-  }
-}
-
-/**
- * Update all wind time range labels on the page
- */
-function updateWindTimeRangeLabels() {
-  // Update section headers
-  const chartSectionH2 = document.querySelector("#wind-chart-section h2");
-  if (chartSectionH2) {
-    chartSectionH2.textContent = `${currentWindTimeRange}-Hour Wind Trends`;
-  }
-
-  const tableSectionH2 = document.querySelector("#wind-data-table-section h2");
-  if (tableSectionH2) {
-    tableSectionH2.textContent = `${currentWindTimeRange}-Hour Wind Data`;
   }
 }
 
@@ -977,15 +716,25 @@ function toggleWind24hrRows() {
   toggleButton.setAttribute("aria-expanded", isCurrentlyHidden);
 }
 
-function checkHashForWindStation() {
+/**
+ * A #wind-<id> link (the home map's "View on Winds Page") opens that
+ * station's row in the list and picks it for the chart below, as a #buoy-
+ * link opens its row on the home page.
+ */
+async function checkHashForWindStation() {
   const hash = window.location.hash;
-
-  if (hash.startsWith("#wind-")) {
-    const stationId = hash.substring(6); // Remove '#wind-'
-    // Short delay to ensure data starts loading, then retry logic in selectStationAndShowChart kicks in
-    setTimeout(() => {
-      selectStationAndShowChart(stationId);
-    }, 500);
+  if (!hash.startsWith("#wind-")) return;
+  const stationId = decodeURIComponent(hash.substring(6));
+  await windData.ready;
+  // The list renders on the same promise; let it land first.
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  toggleWindRow(stationId, true);
+  document.getElementById(`wind-row-${stationId}`)?.scrollIntoView({ block: "center" });
+  const select = document.getElementById("wind-station-select");
+  if (select && windTimeseriesData?.[stationId]) {
+    select.value = stationId;
+    renderWindChart(stationId);
+    renderWind24HourTable(stationId);
   }
 }
 
@@ -1012,12 +761,41 @@ document.addEventListener("click", function (e) {
 });
 
 // Initialize on page load (module scripts are deferred, so the DOM is parsed)
-loadWindTable();
+loadWindList();
 loadWindTimeseries();
-updateWindTimeRangeLabels(); // Set initial labels to 24-Hour
 
-// Check for wind station in URL hash
+// The list and chart catch up on the home page's rhythm: once a minute, and at
+// once when the page comes back into view or out of the browser's page cache.
+setInterval(tick, 60 * 1000);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") tick();
+});
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted) tick();
+});
+document.addEventListener("winds:data-updated", () => {
+  renderWindList();
+  windTimeseriesData = windData.timeseries;
+  populateStationDropdown();
+  const selected = document.getElementById("wind-station-select")?.value;
+  if (selected) {
+    renderWindChart(selected);
+    renderWind24HourTable(selected);
+  }
+});
+
+// The hourly table opens under the chart.
+const hourlyToggle = document.querySelector(".wl-hourly-toggle");
+hourlyToggle?.addEventListener("click", () => {
+  const panel = document.getElementById("wind-hourly");
+  if (!panel) return;
+  panel.hidden = !panel.hidden;
+  hourlyToggle.setAttribute("aria-expanded", String(!panel.hidden));
+});
+
+// Check for wind station in URL hash, on load and when a link on the page changes it.
 checkHashForWindStation();
+window.addEventListener("hashchange", checkHashForWindStation);
 
 // Handle window resize
 window.addEventListener("resize", () => {

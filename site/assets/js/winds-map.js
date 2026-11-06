@@ -51,26 +51,7 @@ function initWindsMap() {
 async function loadWindStationsAndMarkers() {
   try {
     await windData.ready;
-    const stations = windData.stations;
-    const latestAll = windData.latestAll;
-
-    // Add wind station markers
-    if (stations.wind) {
-      Object.values(stations.wind).forEach((windStation) => {
-        const currentData = latestAll[windStation.id];
-        addWindMarker(windStation, currentData, false);
-      });
-    }
-
-    // Add buoy markers (only those with wind data — already normalized)
-    if (stations.buoys) {
-      Object.values(stations.buoys).forEach((buoy) => {
-        const currentData = latestAll[buoy.id];
-        if (currentData) {
-          addWindMarker(buoy, currentData, true);
-        }
-      });
-    }
+    placeWindMarkers();
   } catch (error) {
     console.error("Error loading wind stations for map:", error);
     const mapEl = document.getElementById("winds-map");
@@ -78,6 +59,41 @@ async function loadWindStationsAndMarkers() {
       mapEl.innerHTML =
         '<div class="winds-map-error">Unable to load station markers. Try refreshing the page.</div>';
     }
+  }
+}
+
+// When the store refreshes (wind-stations.js asks every five minutes and on
+// coming back into view), the markers are rebuilt from it, unless a popup is
+// open: the rebuild would close it under the reader, so it waits for the
+// next refresh instead (the home map's rule, stations-map.js).
+document.addEventListener("winds:data-updated", () => {
+  if (!windMarkersLayer) return;
+  if (windMarkersLayer.getLayers().some((marker) => marker.isPopupOpen())) return;
+  placeWindMarkers();
+});
+
+function placeWindMarkers() {
+  const stations = windData.stations;
+  const latestAll = windData.latestAll;
+  windMarkersLayer.clearLayers();
+  windMarkers = {};
+
+  // Add wind station markers
+  if (stations.wind) {
+    Object.values(stations.wind).forEach((windStation) => {
+      const currentData = latestAll[windStation.id];
+      addWindMarker(windStation, currentData, false);
+    });
+  }
+
+  // Add buoy markers (only those with wind data — already normalized)
+  if (stations.buoys) {
+    Object.values(stations.buoys).forEach((buoy) => {
+      const currentData = latestAll[buoy.id];
+      if (currentData) {
+        addWindMarker(buoy, currentData, true);
+      }
+    });
   }
 }
 

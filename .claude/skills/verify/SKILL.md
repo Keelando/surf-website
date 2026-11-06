@@ -92,15 +92,23 @@ those need real rendering in both engines).
 
 ## Flows worth driving per page
 
-- **winds.html**: `#wind-conditions-table tbody tr` count + default
-  speed-desc sort (`data-wind_speed_kt`); `.station-marker` count; map
-  popup → "View Wind Chart" (`.view-data-btn[data-wind-station-id]`)
-  must set `#wind-station-select` (CustomEvent wiring across modules);
-  table "Map" link (`.wind-table-action-link[data-action="map"]`) must
-  open a `.leaflet-popup` (allow ~1.2s for scroll settle + focus delay);
-  48h toggle (`.wind-time-range-btn[data-wind-hours="48"]`) updates the
-  section `h2`; deep link `#wind-<id>` selects that station on load
-  (allow ~1.5s).
+- **winds.html** (list rebuilt 2026-11-06): `#wind-list .wl-row` count
+  (~31: every station, down and out-of-service ones included, as
+  `wl-row--down`/`--out`); default sort is wind desc
+  (`.wl-sort[data-sort="speed"][aria-pressed="true"]`); clicking a
+  `.wl-sort` re-sorts; `.wl-view-btn[data-view="region"]` groups under
+  `.wl-region-title`s and is remembered in localStorage
+  (`winds-list-view`). A row's panel (`.wl-detail`) has Chart / Show on
+  map (`[data-action]`). Measure the list at 390 and at 125/150% root
+  font: below an 18rem container it stacks (gust gets its "G"), below
+  26rem it shows `short_name`s. Refresh: push `Date.now` 6 min ahead +
+  `visibilitychange` → one more `latest_wind.json` fetch, open rows stay
+  open, the map's markers are rebuilt (no duplicates). Deep link
+  `#wind-<id>` opens that row and picks it in `#wind-station-select` (on
+  load AND on hashchange: a same-page `goto` with only a new hash is a
+  hashchange, not a load). Map popup "View Wind Chart"
+  (`.view-data-btn[data-wind-station-id]`) still sets the select. The
+  chart draws only once scrolled to.
 - **lightstations.html**: `.lightstation-card` count grouped in
   `.region-section`s; `.report-time` text matches
   `Reported: <Weekday> <Mon> <D>, <HH:MM> (<age> ago)`;

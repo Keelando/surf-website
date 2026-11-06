@@ -300,6 +300,52 @@ Not done, on purpose: the phone warning chip (the banner is already one
 compact line and the user likes it), and a stronger panel blur (24px was
 tuned with the panel opacity; a no-blur fallback was added instead).
 
+## Step 3: winds (2026-11-06, `dev`)
+
+**Audit, before** (Firefox and Chromium agree; 390 / 1280 px): the first
+table row at 647 / 704 px (the photo hero ~300 px of it); the conditions
+table 29 rows and **1,900 px on a phone** (2.3 screens), its Temp and
+Pressure columns cut off sideways inside the table; the map from 2,460 px;
+page 6,125 px. A flag emoji, a date and "Map / Chart" links on every row,
+the saturated blue header bar the home page dropped, a "Click column
+headers to sort" line, **two 24 h / 48 h toggles** (chart and a data table
+repeating the chart), 334 inline styles. Staleness was a flat 2 h / 4 h,
+not the export's per-station cadence; the page fetched once and never
+again (the resumed-app staleness the user reported on the home map).
+
+**Decisions (user, 2026-11-06):** keep the whole list sortable, with a
+toggle for **all stations / by region** ("it's nice to see the entire list
+sortable"), opening on **all, fastest first**; **one panel** for the chart
+and its hourly table. Regions are the registry's (`region` on every wind
+station, `main` `07dee7d`): the buoys' four plus HOWE SOUND (Pam Rocks) and
+HARO STRAIT & SAN JUANS (Kelp Reefs, Discovery Island, Orcas Island and
+Bellingham, the user asking for accuracy: EC's Haro Strait plus NOAA's
+PZZ133, which takes in Bellingham Bay).
+
+**Built:**
+- The list sits on the summary panel over the photo, in the home page's
+  look (`home.css` is loaded for the panel, region heads, status lights and
+  row panels; `winds-v4.css` lays out the rows). Rows: name with its light
+  and live age, direction, wind, gust; temperature and pressure come back
+  as columns on a wide list (container ≥ 36rem). Below 26rem the registry's
+  `short_name`s; below 18rem (a phone at 150 % text) a row stacks onto two
+  lines and the column heads become a row of sort buttons. Down and
+  out-of-service stations are in the list, saying so, instead of a
+  footnote under it. `wind-list.js` holds the builders, unit-tested.
+- Status from the export's thresholds against the live clock (the wind
+  store now keeps `late_after_minutes` / `down_after_minutes`), and a
+  refresh on the home page's rhythm: every minute, fetching when the copy
+  is 5 minutes old, and at once on coming back into view. The map rebuilds
+  its markers then too, unless a popup is open.
+- One "Wind history" panel: a station picker grouped by region, one
+  24 h / 48 h toggle, the chart, and the hourly table behind a button. The
+  search box is gone (the grouped picker does its job).
+- `#wind-<id>` opens that station's row (as `#buoy-` does on home) and
+  picks it for the chart.
+
+Left for later: the map legend's emoji and the About block (shared
+components, restyle with the next pages).
+
 ## Where the work happens
 
 On the `dev` branch in `~/envcan_wave-dev`, previewed live at
