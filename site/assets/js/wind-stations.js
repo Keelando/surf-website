@@ -425,7 +425,9 @@ function renderWind24HourTable(stationId) {
       if (data.direction != null) {
         const cardinal = degreesToCardinal(data.direction);
         const arrow = getDirectionalArrow(data.direction);
-        direction = `${cardinal} (${Math.round(data.direction)}°) ${arrow}`;
+        // Arrow first and degrees on wide screens only, as in the list: on a
+        // phone "ESE (102°) ↖" wrapped onto two lines.
+        direction = `${arrow} ${cardinal}<span class="hide-mobile"> (${Math.round(data.direction)}°)</span>`;
       }
 
       // Add 'collapsed-row' class to rows beyond the default visible count
@@ -547,7 +549,8 @@ function renderWindChart(stationId) {
       backgroundColor: tc.background,
       textStyle: { color: tc.text },
       title: {
-        text: `${station.name.replace(" 🌊", "")} - Wind Conditions`,
+        // The list's name for it: the timeseries export shortens some ("Ballenas").
+        text: `${(windData.latestAll?.[stationId]?.name || station.name).replace(" 🌊", "")} - Wind Conditions`,
         left: "center",
         textStyle: {
           fontSize: window.innerWidth < 600 ? 12 : 14,
@@ -791,6 +794,7 @@ hourlyToggle?.addEventListener("click", () => {
   if (!panel) return;
   panel.hidden = !panel.hidden;
   hourlyToggle.setAttribute("aria-expanded", String(!panel.hidden));
+  hourlyToggle.textContent = panel.hidden ? "Hourly table" : "Hide hourly table";
 });
 
 // Check for wind station in URL hash, on load and when a link on the page changes it.

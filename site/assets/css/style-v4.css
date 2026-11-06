@@ -9,7 +9,10 @@
      reworked rules use these; older rules move over page by page.
      One radius (circles use 50%), one spacing scale, one accent for what can
      be clicked, amber for warnings and nothing else, two weights, three
-     sizes. */
+     sizes. The radius in practice (user 2026-11-06, "settle on a site
+     standard"): every framed surface (chart, map, table, card) takes
+     var(--radius); rows and controls nested inside a frame take 8px;
+     buttons and toggles are pills (999px); dots are circles. */
   --radius: 12px;
   --space-1: 4px;
   --space-2: 8px;
@@ -719,7 +722,7 @@ footer .github-link:hover {
   margin-bottom: 2rem;
   padding: 1rem;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--color-surface);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
@@ -730,11 +733,29 @@ footer .github-link:hover {
    These two are bare divs, not the bordered cards above — but ECharts paints
    its own `backgroundColor` across the whole canvas, so the white block has
    hard square corners against the page. A radius on the container only shows
-   if the canvas is clipped to it, hence overflow. 8px is the radius the map
-   and the cards on that page already use. */
+   if the canvas is clipped to it, hence overflow. The site's one radius
+   (var(--radius)), like every chart and map: see "Framed surfaces" below. */
 #lightstation-wind-chart,
 #lightstation-wave-chart {
-  border-radius: 8px;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* Framed surfaces: the charts and maps that had no radius of their own (bare
+   ECharts canvases paint a square block against the page; Leaflet's tiles
+   run to a square edge). Each takes the one radius and clips to it. Their
+   tooltips stay inside the chart (getMobileOptimizedTooltipConfig's
+   `confine`), so clipping cuts nothing off. */
+#wind-trend-chart,
+#forecast-chart,
+#verification-chart,
+#wave-forecast-chart,
+#wind-forecast-chart,
+#wave-verification-chart,
+#wind-verification-chart,
+#winds-map,
+#lightstation-map {
+  border-radius: var(--radius);
   overflow: hidden;
 }
 
@@ -1248,7 +1269,7 @@ header h2 {
 #stations-map {
   height: 600px;
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   border: 1px solid var(--color-border);
   overflow: hidden;

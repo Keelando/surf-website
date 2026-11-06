@@ -39,14 +39,14 @@
   <!-- Summary photo (the LCP element): same URLs and media split as home.css -->
   <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-960.avif" media="(max-width: 768px)" fetchpriority="high" />
   <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-1600.avif" media="(min-width: 769px)" fetchpriority="high" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=fd56d24a50" />
-  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=40debffa31" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=f012115d60" />
+  <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=345437d067" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=c8c970f93b" />
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=ad281cb152" />
   <!-- The summary panel, region heads, status lights and row panels are the
        home page's (home.css); winds-v4.css lays out the winds rows. -->
   <link rel="stylesheet" href="/assets/css/home.css?v=728d0e84c1" />
-  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=814c113d73" />
+  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=668b5ed437" />
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
@@ -119,8 +119,10 @@
 
     <div id="wind-trend-chart" class="wind-chart-container"></div>
 
-    <button type="button" class="sl-action wl-hourly-toggle" aria-expanded="false" aria-controls="wind-hourly">Hourly table</button>
-    <div id="wind-hourly" class="wl-hourly" hidden>
+    <!-- Open by default (user 2026-11-06): its first 12 hours, the rest
+         behind "Show More Rows". -->
+    <button type="button" class="sl-action wl-hourly-toggle" aria-expanded="true" aria-controls="wind-hourly">Hide hourly table</button>
+    <div id="wind-hourly" class="wl-hourly">
       <div class="data-table">
         <table id="wind-24hr-table">
           <thead>
@@ -160,7 +162,7 @@
   <script type="module" src="/assets/js/warning-banner.js?v=69920f4608"></script>
   <script defer src="/assets/js/chart-utils-v4.js?v=53a5c28bad"></script>
   <!-- wind-data.js is imported by both module entry points (no script tag needed) -->
-  <script type="module" src="/assets/js/wind-stations.js?v=49275a0054"></script>
+  <script type="module" src="/assets/js/wind-stations.js?v=2b4e4562b1"></script>
   <script type="module" src="/assets/js/winds-map.js?v=871971efbf"></script>
   <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>

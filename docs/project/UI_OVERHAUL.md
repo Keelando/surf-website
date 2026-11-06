@@ -346,6 +346,18 @@ PZZ133, which takes in Bellingham Bay).
 Left for later: the map legend's emoji and the About block (shared
 components, restyle with the next pages).
 
+**Follow-ups the same day (user):** the hourly table opens by default (12
+hours, the rest behind "Show More Rows"); its header was grey text on the
+navy fill style-v4.css gives every `.data-table th`, now the home history
+table's surface-alt band (15.2:1 light, 12.3:1 dark). And **one radius
+for framed surfaces, sitewide** ("rounded chart borders rather than
+square, we should settle on a site standard"): every chart, map, table and
+card takes `var(--radius)` (12px) and clips to it; rows and controls nested
+in a frame take 8px; buttons and toggles are pills; dots are circles. The
+rule is in the token comment in style-v4.css. Applied to every chart and
+map on the site (they were 8px or square); other surfaces move to it as
+their pages are rolled out.
+
 ## Where the work happens
 
 On the `dev` branch in `~/envcan_wave-dev`, previewed live at
