@@ -1,8 +1,10 @@
 # UI overhaul
 
-Status 2026-10-23: **draft 1 of the home-page mockup is on `dev`**, live at
-dev.halibutbank.ca, awaiting the user's verdict on the direction. See "Draft 1"
-below for what it does and what it deliberately leaves alone.
+Status 2026-11-06: **steps 1 and 2 of the Order below are done and live.**
+The home page (Draft 1 and Round 3 below) and the shared surfaces (nav,
+brand, tokens, header wave, warning palette) shipped `dev` → `main` in rounds
+on 2026-10-26, 10-28 and 10-31; the user called the home summary settled on
+2026-11-06. **Step 3, page by page, starts with winds.**
 
 ## Why
 
@@ -312,7 +314,7 @@ change ships together with the frontend that handles it.
 
 ## Order
 
-1. **One home-page mockup, data first**, following the brief in the audit
+1. *(Done.)* **One home-page mockup, data first**, following the brief in the audit
    above. Agree the direction on this one page before touching any other.
    Open questions for the mockup:
    - ~~What the summary row shows~~: **decided 2026-10-04**, waves (height
@@ -323,7 +325,8 @@ change ships together with the frontend that handles it.
    - ~~Whether the map stays on the home page~~: **decided 2026-10-04, it
      stays.** Lazy-load Leaflet instead (TBT ~400 ms is the biggest
      remaining performance lever).
-2. **Shared surfaces**, once the direction is agreed: nav, hero, the shared
+2. *(Done; nav overflow fixed by the hamburger at ≤899px, home cards
+   replaced by the station list.)* **Shared surfaces**, once the direction is agreed: nav, hero, the shared
    CSS tokens in `style-v4.css`, shared modules. Fold in:
    - **Nav overflow at 601–1279 px** (open since 2026-09-04): `.nav-actions`
      and the theme toggle overflow the viewport sitewide at 768/900/1024 px
@@ -357,7 +360,8 @@ change ships together with the frontend that handles it.
 
 ## Shipping
 
-Once, when the whole overhaul is ready: rebase `dev` onto `main`, run
+In rounds, when the user says "ship it" (one page or a small group at a
+time in step 3): rebase `dev` onto `main`, run
 `scripts/update_asset_versions.py`, `npm test`, then `merge --ff-only` from
 the main checkout (`docs/DEV_PREVIEW.md`, "Shipping dev to production"). The
 merge is live the moment it lands. Tag it (`deploy-YYYY-MM-DD`) as a

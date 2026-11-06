@@ -215,12 +215,12 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       charts were blank boxes. Now defaults to Merry Island only while it
       reports; and the "No reports" row was stripped by DOMPurify (bare
       `<tr>`), now built with DOM calls.
-- [ ] **UI overhaul.** Start with ONE home-page mockup (data first: a compact
-      summary of the ten wave stations up top on the hero photo, map and charts below,
-      explanations folded away), agree the direction, then roll it out.
+- [ ] **UI overhaul.** Steps 1–2 DONE (home page, nav, brand, tokens,
+      header wave; shipped dev → main 2026-10-26/28/31, home summary settled
+      2026-11-06). Now step 3, page by page, starting 2026-11-06 with winds.
       User: "I have to scroll a lot through some filler to get to the data."
       Plan, order, checks and shipping: `docs/project/UI_OVERHAUL.md`. Work
-      on `dev`, previewed at dev.halibutbank.ca (live 2026-10-03).
+      on `dev`, previewed at dev.halibutbank.ca.
 - [ ] **CIOPS-SalishSea storm surge** (queued 2026-09-25; user 2026-09-29:
       **next straight after the UI overhaul**): the 500 m model beside
       GDSPS's ~3–9 km, as the fine-grained 48 h view on
@@ -1159,7 +1159,7 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 - [ ] **Tighten graph margins** (medium): start with the buoys page ECharts
       (grid left/right/top/bottom, container padding), then audit the other
       chart pages. Prefer a shared pattern over per-page one-offs.
-- [ ] **Dev branch + preview subdomain** (medium; SET UP 2026-09-26 for the
+- [x] **Dev branch + preview subdomain** (*done*; SET UP 2026-09-26 for the
       UI overhaul, which reworks the nav, shared CSS and the hero — surfaces
       an unlisted page cannot isolate). `dev` branch checked out as a git
       worktree at `~/envcan_wave-dev`; its `site/data`, `.venv` and
