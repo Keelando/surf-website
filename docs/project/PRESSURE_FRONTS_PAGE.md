@@ -37,6 +37,53 @@ A front propagating W→E would appear as a red-to-blue gradient sweeping across
 - **Wind shift**: overlay wind direction — cold fronts show pressure trough + veer SW→NW
 - **Temperature drop**: correlated with frontal passage
 
+### Companion signal: has the wind peaked? (user 2026-11-06)
+
+Salish Sea winds are frontally driven: they spike as a front comes through
+and rarely hold high values for long. So beyond *where is the front*, the
+question a boater actually asks is **has the wind peaked yet, or is it still
+building?** That can be read from the wind stations themselves, without
+waiting on the pressure analysis:
+
+- **Regional pressure, averaged**: a network-mean MSLP (and its 3 h tendency)
+  is a cheap first indicator. A trough bottoming out and turning to rising
+  pressure is the classic sign that the front has passed and the wind is
+  past its peak or about to be.
+- **Wind trend per station**: the slope of a smoothed sustained wind (say a
+  30–60 min rolling mean) over the last 1–3 h. Rising, flat-at-high, or
+  falling.
+- **Peakiness**: the current speed against the station's own recent maximum
+  (for example the max of the last 3–6 h). "Now 18 kt, peak 27 kt 2 h ago,
+  falling" reads as past the peak; "now at the 6 h max and still climbing"
+  reads as building. Gust factor (gust / mean) may help, since gustiness
+  often jumps in the cold-air behind a cold front.
+- **Across the region at large**: the peak should sweep the network roughly
+  W→E (or SW→NE) like the pressure fall does. If the upstream stations (Juan
+  de Fuca, outer coast) have already peaked and are falling while a station
+  downstream is still rising, that station's peak is probably close. This is
+  the same "project stations onto a frontal axis" idea as the secondary
+  views above, applied to wind instead of pressure.
+- **Wind shift as confirmation**: a veer (SE/S → SW/W/NW) at a station
+  alongside the peak is the frontal passage itself.
+
+Open questions for this part:
+
+1. Where to show it: a per-station badge ("building" / "near peak" /
+   "easing") on the winds page and home map, a regional one-line summary,
+   or a panel on the fronts page itself?
+2. Thresholds for "peaked": how far below the recent max, and for how long,
+   before saying so? Per station (sheltered vs exposed stations peak at very
+   different speeds) or relative to each station's own range? Remember the
+   staleness lesson, so derive it from the data and not a flat number.
+3. What to do with outflow (Fraser/Squamish/Arctic) events, which are not
+   frontal and *can* hold for days, so "will drop soon" would be wrong.
+   Probably detect them by direction plus rising pressure and say nothing.
+4. History needed: 48 h of wind is on the frontend today; does a 6 h
+   lookback suffice, or does "recent max" want the 14-day history item?
+5. Validation: back-test against past fronts in `wind_data.sqlite` before
+   showing anything. How often would it have said "peaked" and then the wind
+   rose again?
+
 ---
 
 ## Data Inventory

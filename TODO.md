@@ -65,6 +65,16 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 
 ### Queued 2026-11-04
 
+- [ ] **Frontal passage viewer, plus "has the wind peaked?"** (user
+      2026-11-06). Two signals for one question, where the front is and what
+      it means on the water: the regional pressure picture already planned
+      in `docs/project/PRESSURE_FRONTS_PAGE.md` (area-averaged pressure and
+      3 h tendency, isallobars), and a new wind-side read across all the
+      wind stations, which is whether the blow is still building or already
+      past its peak. Local winds are frontal and don't hold high values for
+      long, so "peaked" is the actionable answer. Details and open questions
+      in the plan doc, section "Companion signal: has the wind peaked?".
+
 - [ ] **Point forecast verification: show the residuals** (user 2026-11-04,
       "for later"). Today `renderVerificationMode()` in
       `site/assets/js/wave-forecast.js` overlays forecast on observed, and
