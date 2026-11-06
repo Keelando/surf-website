@@ -75,6 +75,26 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       `docs/project/PRESSURE_FRONTS_PAGE.md`, see the section "Wind alongside
       pressure: show the changes, don't predict".
 
+- [ ] **Small trend graphs in the map popups** (user 2026-11-06). A tiny
+      sparkline of recent measured values in each Leaflet popup (wave height,
+      wind speed, pressure, water level), so a reader sees which way a
+      reading is heading without leaving the map. Pairs with the wind and
+      pressure changes item above. Things to settle first:
+      - **Data**: popups read only the `latest_*.json` snapshots today. The
+        timeseries exports are big (`buoy_timeseries_48h.json` 1.3 MB,
+        `wind_timeseries_48hr.json` 440 KB, `tide-timeseries.json` 870 KB),
+        so either fetch a station's series when its popup opens (home already
+        loads the buoy one for its charts, `getBuoyTimeseries()`), or add a
+        slim export of the last ~12 h per station for every map.
+      - **Performance**: build the sparkline when the popup opens, never up
+        front. The 2026-10-29 tablet item already wants popup HTML built on
+        open; do that first, and this lands on top of it.
+      - **Which maps**: home, winds and lightstations each have their own
+        popups; land it on one (home) with a shared helper, then queue the
+        rest.
+      - **Look**: inline SVG, no axes, the same `POPUP_OPTIONS` 280px width;
+        mark the latest point, and keep it readable in both themes.
+
 ### Queued 2026-11-04
 
 - [ ] **Point forecast verification: show the residuals** (user 2026-11-04,
