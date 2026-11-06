@@ -57,6 +57,7 @@ PUBLIC_STATION_FIELDS = {
         "wave_display",
         "wave_display_note",
         "region",
+        "country",
         "list_order",
         # A display scale (see _metadata.notes.rough_wave_height_m), published
         # because the home page and header wave read it from this file.
@@ -77,6 +78,8 @@ PUBLIC_STATION_FIELDS = {
         # SOUND and HARO STRAIT & SAN JUANS (EC marine areas, and NOAA
         # PZZ133 for the US side of the San Juans and Bellingham Bay).
         "region",
+        # "CA" or "US": the drawn flag beside a station's name (shared/flags.js).
+        "country",
     },
     "lightstations": _COMMON
     | {

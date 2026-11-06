@@ -354,6 +354,30 @@ class TestWindRegions:
         assert not bad, bad
 
 
+class TestStationCountry:
+    """`country` drives the drawn flag beside a name (wind stations, buoys).
+    The `flag` field is an emoji that is sometimes a source, not a country
+    (a city's stations, a sailing club), so the country is its own field."""
+
+    FLAG_COUNTRY = {"\U0001f1e8\U0001f1e6": "CA", "\U0001f1fa\U0001f1f8": "US"}
+
+    def test_every_wind_station_and_buoy_has_a_country(self):
+        bad = {
+            sid: meta.get("country")
+            for sid, meta in {**STATIONS.wind, **STATIONS.buoys}.items()
+            if meta.get("country") not in ("CA", "US")
+        }
+        assert not bad, bad
+
+    def test_country_agrees_with_a_country_flag(self):
+        bad = {
+            sid: (meta.get("flag"), meta.get("country"))
+            for sid, meta in {**STATIONS.wind, **STATIONS.buoys}.items()
+            if meta.get("flag") in self.FLAG_COUNTRY and self.FLAG_COUNTRY[meta["flag"]] != meta.get("country")
+        }
+        assert not bad, bad
+
+
 class TestLightstationRegions:
     """`region` in config/stations.json is the only owner of page grouping.
 
