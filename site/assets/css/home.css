@@ -670,10 +670,6 @@
     white-space: nowrap;
   }
 
-  .sl-age-ago {
-    display: none;
-  }
-
   /* "No recent data" on line 2 says it; the name needs the width. */
   .sl-row--down .sl-age-state {
     display: none;

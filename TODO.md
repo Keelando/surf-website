@@ -95,6 +95,16 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       - **Look**: inline SVG, no axes, the same `POPUP_OPTIONS` 280px width;
         mark the latest point, and keep it readable in both themes.
 
+- [ ] **Home station list at 150% text: line 2 collides** (found
+      2026-11-06 while restoring "ago"). At 390px with a 150% root font the
+      wave-direction arrow runs into the wind number ("14.8 s ↗31" at Neah
+      Bay, La Perouse). Pre-existing, not from "ago" (that is line 1). "ago"
+      itself costs names at 150% (New Dungeness, Angeles Point and La Perouse
+      Bank cut short at 390px; at 360px even Halibut Bank). If that matters,
+      the fix floated 2026-10-25 is a `compact_name` registry field (main +
+      API allowlist), or dropping "ago" only below a container width in `em`,
+      so it goes only when text is large.
+
 ### Queued 2026-11-04
 
 - [ ] **Point forecast verification: show the residuals** (user 2026-11-04,
