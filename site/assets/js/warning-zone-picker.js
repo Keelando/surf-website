@@ -160,7 +160,7 @@ function makeNoBannersOption(selected) {
   });
 
   const text = document.createElement("span");
-  text.textContent = "No banners for any zone";
+  text.textContent = "Disable warning banners";
 
   // The floor stated where the choice is made, not only in the summary above:
   // a reader who ticks this and then sees a storm banner anyway must have been
