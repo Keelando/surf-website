@@ -358,6 +358,30 @@ rule is in the token comment in style-v4.css. Applied to every chart and
 map on the site (they were 8px or square); other surfaces move to it as
 their pages are rolled out.
 
+**Round 2 (user, 2026-11-06):** on desktop the photo shrinks to a banner
+across the top of the summary panel holding the title (home and winds: the
+1600px photo was upscaled 1.2-2.4x to cover a desktop's summary and looked
+grainy); phones unchanged. Region view folds per region (remembered).
+"Direction" spelled out as the column head on a wide list. Stronger section
+heads (1.4rem, a short teal rule). The 24 h / 48 h toggle sits beside the
+station picker, right above the chart. "Show More Rows" runs the table's
+full width. Legend toggles rescale the y-axis (`rescaleYAxisOnLegendToggle`
+in chart-utils-v4.js) on the winds chart and home's wind chart.
+
+**Queued from round 2:**
+- **Legend rescale on the other charts that pin their axis:**
+  temperature-chart-v4.js (`yMin`/`yMax`), storm_surge_chart-v4.js and
+  storm_surge_page.js, wave-forecast.js (`axisMax`, `periodMax`), and
+  wave-chart-v4.js's 750 (`yAxisMax`). Each computes its limits its own
+  way (a min that isn't 0, a symmetric surge range), so each page gets the
+  helper, extended as needed, when it is rolled out. Charts whose `max` is
+  already a function of the extent rescale on their own.
+- **One table pattern (user: "not sure yet how to standardize or when"):**
+  the tables page their rows three ways today: the point forecast's
+  "+12 / All rows", winds' "Show More Rows" and home's 12-hour history,
+  which shows all twelve. Undecided; settle it before the forecasts page's
+  rollout, which has the most table.
+
 ## Where the work happens
 
 On the `dev` branch in `~/envcan_wave-dev`, previewed live at

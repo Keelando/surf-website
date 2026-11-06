@@ -20,6 +20,7 @@ const {
   buildWindRow,
   nextSort,
   regionGroups,
+  regionSlug,
   sortEntries,
   windEntry,
 } = await import("../../site/assets/js/wind-list.js");
@@ -163,4 +164,25 @@ test("the list: column heads with the active sort pressed, regions only in regio
   const byRegion = buildWindList(entries, { view: "region", sort: { key: "name", dir: "asc" } });
   assert.equal((byRegion.match(/wl-region-title/g) || []).length, 4);
   assert.match(byRegion, /data-sort="name" aria-pressed="true"/);
+});
+
+test("region view: each heading folds its rows, and a folded one keeps its count", () => {
+  assert.equal(regionSlug("Haro Strait & San Juans"), "haro-strait-san-juans");
+  const html = buildWindList(entries, {
+    view: "region",
+    collapsed: new Set(["strait-of-georgia"]),
+  });
+  assert.match(
+    html,
+    /data-region="strait-of-georgia" aria-expanded="false" aria-controls="wl-rows-strait-of-georgia"/,
+  );
+  assert.match(html, /<ul class="sl-rows wl-rows" id="wl-rows-strait-of-georgia" hidden>/);
+  assert.match(html, /wl-region-count">2 stations</);
+  assert.match(html, /data-region="howe-sound" aria-expanded="true"/);
+  assert.match(html, /wl-region-count">1 station</);
+});
+
+test("the direction head has a phone form and a wide form", () => {
+  const html = buildWindList(entries);
+  assert.match(html, /wl-label-short">Dir<\/span><span class="wl-label-wide">Direction</);
 });

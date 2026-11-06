@@ -154,6 +154,7 @@ export function renderBuoyWindChart(windChart, buoy) {
         },
       ],
     });
+    rescaleYAxisOnLegendToggle(windChart, { topSeries: ["Wind Direction"] });
   } catch (error) {
     showChartError("wind-chart", "Wind Chart", error);
   }

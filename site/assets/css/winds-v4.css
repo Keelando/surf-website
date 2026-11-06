@@ -17,12 +17,16 @@
   white-space: nowrap;
 }
 
-.wl-summary-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.6rem 1rem;
+.wl-controls {
+  margin-top: 0.75rem;
+  padding-inline: 0.5rem;
+}
+
+@media (min-width: 769px) {
+  .wl-controls {
+    margin-top: 1rem;
+    padding-inline: 0;
+  }
 }
 
 /* --- The station list --- */
@@ -99,12 +103,75 @@
 }
 
 .wl-region {
-  margin-top: 0.75rem;
+  margin-top: 0.6rem;
 }
 
+/* A region heading is a button that folds its stations away: the name in
+   the heading colour, its count after it, a chevron at the right edge. */
 .wl-region-title {
-  margin-bottom: 0.3rem;
-  padding-inline: calc(2px + 0.5rem);
+  margin: 0 0 0.2rem;
+}
+
+.wl-region-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 40px;
+  margin: 0;
+  padding: 0.3rem calc(2px + 0.5rem);
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--sl-heading);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wl-region-toggle:hover {
+  background: var(--sl-row-hover);
+}
+
+.wl-region-toggle:focus-visible {
+  outline: 2px solid var(--sl-focus);
+  outline-offset: -2px;
+}
+
+.wl-region-count {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--sl-muted);
+}
+
+.wl-region-chevron {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: auto;
+  color: var(--sl-action-text);
+  transition: transform 0.2s ease;
+}
+
+.wl-region-toggle[aria-expanded="false"] .wl-region-chevron {
+  transform: rotate(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-region-chevron {
+    transition: none;
+  }
+}
+
+/* Column heads with a short and a wide form ("Dir" / "Direction"). */
+.wl-label-wide {
+  display: none;
 }
 
 .wl-row {
@@ -286,6 +353,14 @@
     display: block;
   }
 
+  .wl-label-short {
+    display: none;
+  }
+
+  .wl-label-wide {
+    display: inline;
+  }
+
   .wl-speed {
     font-size: 1.3rem;
   }
@@ -373,23 +448,39 @@
   padding: 0 max(var(--page-gutter), 0.5rem);
 }
 
-#map-section .home-section-title,
+/* The home page's section heads (home.css), for the chart's section too. */
 #wind-chart-section .home-section-title {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.4rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
   text-align: left;
   color: var(--color-text);
 }
 
-#map-section .home-section-title {
-  margin-bottom: 0.6rem;
+#wind-chart-section .home-section-title::after {
+  content: "";
+  display: block;
+  width: 2.25rem;
+  height: 3px;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  background: var(--color-accent-teal);
 }
 
+#map-section .home-section-title {
+  margin-bottom: 0.75rem;
+}
+
+/* Station and time range on one line right above the chart; on a phone
+   the range wraps under the station. */
 .wl-picker {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: 0.5rem 0.6rem;
+  margin: 0.9rem 0 0.75rem;
 }
 
 .wl-picker label {
@@ -440,12 +531,18 @@
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface-alt);
-  text-align: left;
+  /* Over their values: the cells are centred, the time column left
+     (style-v4.css .data-table td). */
+  text-align: center;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text);
+}
+
+.data-table th:first-child {
+  text-align: left;
 }
 
 .data-table td {
@@ -462,9 +559,12 @@
   display: none;
 }
 
+/* Full width, like the home panel's buttons: the row that opens the rest of
+   the table (user 2026-11-06). */
 .wind-24hr-toggle-btn {
-  min-height: 32px;
-  padding: 0.3rem 0.8rem;
+  width: 100%;
+  min-height: 40px;
+  padding: 0.4rem 0.8rem;
   border: 1px solid var(--color-border);
   border-radius: 999px;
   background: none;
@@ -574,7 +674,7 @@
 
 .wind-24hr-toggle-cell {
   text-align: center;
-  padding: 1rem;
+  padding: 0.5rem;
   background: var(--color-surface-light);
   cursor: pointer;
   border-bottom: none;

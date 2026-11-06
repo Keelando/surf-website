@@ -77,8 +77,11 @@ const REFRESH_MS = 5 * 60 * 1000;
 // The reader's last pick of view, remembered per browser (a convenience only:
 // without storage the list opens as "all").
 const VIEW_KEY = "winds-list-view";
+// Region slugs the reader folded away in region view, remembered the same way.
+const COLLAPSED_KEY = "winds-collapsed-regions";
 
 let listView = readView();
+let collapsedRegions = readCollapsed();
 let listSort = { ...DEFAULT_SORT };
 let entriesById = {};
 
@@ -88,6 +91,36 @@ function readView() {
   } catch {
     return "all";
   }
+}
+
+function readCollapsed() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COLLAPSED_KEY) || "[]");
+    return new Set(Array.isArray(saved) ? saved : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveCollapsed() {
+  try {
+    localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...collapsedRegions]));
+  } catch {
+    // Storage unavailable: the folds last for this visit.
+  }
+}
+
+/** Fold or unfold one region in place; the list is not rebuilt. */
+function toggleRegion(button) {
+  const slug = button.dataset.region;
+  const rows = document.getElementById(`wl-rows-${slug}`);
+  if (!rows) return;
+  const open = button.getAttribute("aria-expanded") !== "true";
+  button.setAttribute("aria-expanded", String(open));
+  rows.hidden = !open;
+  if (open) collapsedRegions.delete(slug);
+  else collapsedRegions.add(slug);
+  saveCollapsed();
 }
 
 function saveView(view) {
@@ -117,14 +150,20 @@ function renderWindList() {
   const active = document.activeElement;
   const focusedRow = active?.closest?.("#wind-list .wl-item")?.dataset.stationId;
   const focusedSort = active?.closest?.("#wind-list .wl-sort")?.dataset.sort;
+  const focusedRegion = active?.closest?.("#wind-list .wl-region-toggle")?.dataset.region;
 
   const entries = currentEntries();
   entriesById = Object.fromEntries(entries.map((e) => [e.id, e]));
-  setSafeHTML(container, buildWindList(entries, { view: listView, sort: listSort }));
+  setSafeHTML(
+    container,
+    buildWindList(entries, { view: listView, sort: listSort, collapsed: collapsedRegions }),
+  );
   container.removeAttribute("aria-busy");
 
   for (const id of open) toggleWindRow(id, true);
   if (focusedSort) container.querySelector(`.wl-sort[data-sort="${focusedSort}"]`)?.focus();
+  else if (focusedRegion)
+    container.querySelector(`.wl-region-toggle[data-region="${focusedRegion}"]`)?.focus();
   else if (focusedRow) document.querySelector(`#wind-row-${focusedRow} .wl-row`)?.focus();
 }
 
@@ -193,6 +232,11 @@ function setListView(view) {
 }
 
 document.getElementById("wind-list")?.addEventListener("click", (event) => {
+  const region = event.target.closest(".wl-region-toggle");
+  if (region) {
+    toggleRegion(region);
+    return;
+  }
   const sort = event.target.closest(".wl-sort");
   if (sort) {
     listSort = nextSort(listSort, sort.dataset.sort);
@@ -654,6 +698,7 @@ function renderWindChart(stationId) {
         },
       ],
     });
+    rescaleYAxisOnLegendToggle(windChart, { topSeries: ["Wind Direction"] });
   } catch (error) {
     showChartError("wind-trend-chart", "Wind Chart", error);
   }
@@ -731,6 +776,11 @@ async function checkHashForWindStation() {
   await windData.ready;
   // The list renders on the same promise; let it land first.
   await new Promise((resolve) => requestAnimationFrame(resolve));
+  const folded = document
+    .getElementById(`wind-row-${stationId}`)
+    ?.closest(".wl-region")
+    ?.querySelector('.wl-region-toggle[aria-expanded="false"]');
+  if (folded) toggleRegion(folded);
   toggleWindRow(stationId, true);
   document.getElementById(`wind-row-${stationId}`)?.scrollIntoView({ block: "center" });
   const select = document.getElementById("wind-station-select");

@@ -10,7 +10,7 @@
    getDirectionalArrow, createWindDirectionArrowData, fetchWithTimeout,
    sanitizeSeriesData, registerChartThemeListener, formatCompactTimeLabel,
    getResponsiveGridConfig, getResponsiveLegendBottom, getLegendRowCount, showChartError,
-   getMobileOptimizedTooltipConfig */
+   getMobileOptimizedTooltipConfig, rescaleYAxisOnLegendToggle */
 
 /* =============================================================================
    DIRECTION ARROW DEFINITIONS (CENTRALIZED)
@@ -212,6 +212,79 @@ async function fetchWithTimeout(url, options = {}) {
  * Sanitize series data for ECharts
  * Converts invalid values (null, NaN, "MM") to [timestamp, null]
  */
+/**
+ * Fit a chart's y-axis to the series still shown whenever a legend entry is
+ * toggled, both ways (user 2026-11-06: hiding Wind Gust left the axis sized
+ * for gusts that were no longer drawn).
+ *
+ * For charts that pin `max` themselves rather than leave it to ECharts: the
+ * wind charts set it from the highest speed or gust so the direction arrows
+ * clear the data. `topSeries` names such marker series: they don't count
+ * toward the axis, and they move to just above whatever is still shown, as
+ * createWindDirectionArrowData() places them. With them shown the axis is
+ * the arrows' height times `pad`, as at first draw; with them hidden, the
+ * data's. Nothing shown leaves the axis alone. Call once per chart; a second
+ * call replaces the first's handler, so a re-render may call it again.
+ *
+ * @param {Object} chart - ECharts instance
+ * @param {Object} [options]
+ * @param {string[]} [options.topSeries] - Marker series pinned above the data
+ * @param {number} [options.pad] - Headroom over the highest point (1.1 = 10%)
+ */
+function rescaleYAxisOnLegendToggle(chart, { topSeries = [], pad = 1.1 } = {}) {
+  if (!chart) return;
+  if (chart.__legendRescale) chart.off("legendselectchanged", chart.__legendRescale);
+
+  const valueOf = (point) => {
+    if (Array.isArray(point)) return point[1];
+    if (point && typeof point === "object") {
+      return Array.isArray(point.value) ? point.value[1] : point.value;
+    }
+    return point;
+  };
+
+  chart.__legendRescale = (event) => {
+    const option = chart.getOption();
+    if (!option) return;
+    const shown = (name) => event.selected?.[name] !== false;
+    let max = Number.NEGATIVE_INFINITY;
+    for (const series of option.series || []) {
+      if (topSeries.includes(series.name) || !shown(series.name)) continue;
+      for (const point of series.data || []) {
+        const v = Number(valueOf(point));
+        if (Number.isFinite(v) && v > max) max = v;
+      }
+    }
+    if (!Number.isFinite(max)) return;
+
+    const markersShown = topSeries.some(shown);
+    const markerY = max * 1.05;
+    const axisMax = Math.ceil((markersShown ? markerY : max) * pad);
+    chart.setOption({
+      yAxis: { max: axisMax },
+      series: (option.series || []).map((series) =>
+        topSeries.includes(series.name)
+          ? {
+              data: (series.data || []).map((point) =>
+                Array.isArray(point?.value)
+                  ? { ...point, value: [point.value[0], markerY] }
+                  : point,
+              ),
+            }
+          : {},
+      ),
+    });
+  };
+  chart.on("legendselectchanged", chart.__legendRescale);
+
+  // A redraw (another station, another time range) keeps the legend's picks
+  // but sets the pinned axis afresh, so fit it again to what is still shown.
+  // Before its first draw a chart has no state to read (the lazy echarts.init
+  // wrapper below queues setOption), and nothing can have been deselected yet.
+  const selected = chart.getOption()?.legend?.[0]?.selected;
+  if (selected && Object.values(selected).includes(false)) chart.__legendRescale({ selected });
+}
+
 function sanitizeSeriesData(dataArray) {
   return dataArray.map((d) => {
     const y = parseFloat(d.value);
@@ -568,6 +641,8 @@ function getMobileOptimizedTooltipConfig() {
 // queued before it, so the queue stays short however often a page redraws.
 // No page reads chart state back (getOption and friends) before drawing, which
 // is what makes deferring here safe; one that starts to must draw eagerly.
+// (rescaleYAxisOnLegendToggle reads it, but only once drawn: before that
+// getOption() is undefined and it does nothing.)
 // An element that is display:none never intersects, so a hidden chart is
 // drawn when it is first shown.
 //

@@ -42,7 +42,8 @@ const UNGROUPED_LABEL = "Other stations";
 export const SORTS = {
   name: { label: "Station", first: "asc" },
   age: { label: "Age", first: "asc" },
-  direction: { label: "Dir", first: "asc" },
+  // Spelled out where the list is wide; "Dir" on a phone (winds-v4.css).
+  direction: { label: "Dir", wide: "Direction", first: "asc" },
   speed: { label: "Wind", first: "desc" },
   gust: { label: "Gust", first: "desc" },
   temp: { label: "Temp", first: "desc" },
@@ -293,6 +294,12 @@ export function buildWindDetail(e) {
       <button type="button" class="sl-action sl-close" data-action="close">${icon("collapse")}Close</button>`;
 }
 
+/** A column head's text: a short and a wide form where it has both. */
+function label(sort) {
+  if (!sort.wide) return sort.label;
+  return `<span class="wl-label-short">${sort.label}</span><span class="wl-label-wide">${sort.wide}</span>`;
+}
+
 /** One column head: a sort button, pressed when it is the active sort. */
 function sortButton(key, sort) {
   const active = sort.key === key;
@@ -302,7 +309,7 @@ function sortButton(key, sort) {
     : "";
   return (
     `<button type="button" class="wl-sort wl-sort--${key}" data-sort="${key}" aria-pressed="${active}">` +
-    `${SORTS[key].label}${spoken}<span class="wl-sort-arrow" aria-hidden="true">${arrow}</span></button>`
+    `${label(SORTS[key])}${spoken}<span class="wl-sort-arrow" aria-hidden="true">${arrow}</span></button>`
   );
 }
 
@@ -331,21 +338,47 @@ function rowsHTML(entries) {
     .join("");
 }
 
+/** A region's id for the page: "Haro Strait & San Juans" → "haro-strait-san-juans". */
+export function regionSlug(label) {
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+const REGION_CHEVRON =
+  `<svg class="wl-region-chevron" viewBox="0 0 16 16" aria-hidden="true">` +
+  `<path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" ` +
+  `stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
 /**
  * The whole list: the column heads, then either every station in one block
- * ("all") or a block per region under a small heading ("region").
+ * ("all") or a block per region ("region"). In region view each heading is
+ * a button that folds its stations away (user 2026-11-06); `collapsed` holds
+ * the slugs of the folded ones, and a folded region keeps its count in view.
  */
-export function buildWindList(entries, { view = "all", sort = DEFAULT_SORT } = {}) {
+export function buildWindList(
+  entries,
+  { view = "all", sort = DEFAULT_SORT, collapsed = new Set() } = {},
+) {
   const head = buildSortHead(sort);
   if (view !== "region") {
     return `${head}<ul class="sl-rows wl-rows">${rowsHTML(sortEntries(entries, sort))}</ul>`;
   }
   const groups = regionGroups(entries, sort)
     .map((group) => {
-      const headingId = `wl-region-${group.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-      return `<section class="sl-region wl-region" aria-labelledby="${headingId}">
-        <h2 class="sl-region-title wl-region-title" id="${headingId}">${group.label}</h2>
-        <ul class="sl-rows wl-rows">${rowsHTML(group.entries)}</ul>
+      const slug = regionSlug(group.label);
+      const open = !collapsed.has(slug);
+      const n = group.entries.length;
+      return `<section class="sl-region wl-region" aria-labelledby="wl-region-${slug}">
+        <h2 class="sl-region-title wl-region-title" id="wl-region-${slug}">
+          <button type="button" class="wl-region-toggle" data-region="${slug}" aria-expanded="${open}" aria-controls="wl-rows-${slug}">
+            <span class="wl-region-name">${group.label}</span>
+            <span class="wl-region-count">${n} ${n === 1 ? "station" : "stations"}</span>
+            ${REGION_CHEVRON}
+          </button>
+        </h2>
+        <ul class="sl-rows wl-rows" id="wl-rows-${slug}"${open ? "" : " hidden"}>${rowsHTML(group.entries)}</ul>
       </section>`;
     })
     .join("");

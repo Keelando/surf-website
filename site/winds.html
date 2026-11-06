@@ -45,8 +45,8 @@
   <link rel="stylesheet" href="/assets/css/stations-map-v4.css?v=ad281cb152" />
   <!-- The summary panel, region heads, status lights and row panels are the
        home page's (home.css); winds-v4.css lays out the winds rows. -->
-  <link rel="stylesheet" href="/assets/css/home.css?v=728d0e84c1" />
-  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=668b5ed437" />
+  <link rel="stylesheet" href="/assets/css/home.css?v=56db6e4571" />
+  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=383684c9ac" />
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
@@ -67,13 +67,14 @@
        store (wind-list.js): one sortable list, or grouped by region. -->
   <section class="summary wl-summary" aria-labelledby="summary-title">
     <div class="summary-panel">
-      <div class="summary-head wl-summary-head">
-        <div>
-          <h1 id="summary-title" class="summary-title">Salish Sea wind conditions</h1>
-          <p class="summary-tagline">Latest wind from weather stations and buoys around the Salish Sea. Sort by any column; tap a station
-            <svg class="sl-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            for its details.</p>
-        </div>
+      <div class="summary-head">
+        <h1 id="summary-title" class="summary-title">Salish Sea wind conditions</h1>
+        <p class="summary-tagline">Latest wind from weather stations and buoys around the Salish Sea. Sort by any column; tap a station
+          <svg class="sl-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          for its details.</p>
+      </div>
+      <!-- Under the banner, not on it: a control on a photo reads as decoration. -->
+      <div class="wl-controls">
         <div class="range-toggle wl-view-toggle" role="group" aria-label="List the stations">
           <button type="button" class="time-range-btn wl-view-btn active" data-view="all" aria-pressed="true">All stations</button>
           <button type="button" class="time-range-btn wl-view-btn" data-view="region" aria-pressed="false">By region</button>
@@ -103,18 +104,18 @@
   <!-- One station's history: the chart, and its hourly table behind a
        button under it. One station picker and one time range for both. -->
   <section id="wind-chart-section" aria-labelledby="wind-chart-title">
-    <div class="home-section-head">
-      <h2 id="wind-chart-title" class="home-section-title">Wind history</h2>
-      <div class="range-toggle" role="group" aria-label="Time range">
-        <button type="button" class="time-range-btn wind-time-range-btn active" data-wind-hours="24" aria-pressed="true">24 h</button>
-        <button type="button" class="time-range-btn wind-time-range-btn" data-wind-hours="48" aria-pressed="false">48 h</button>
-      </div>
-    </div>
+    <h2 id="wind-chart-title" class="home-section-title">Wind history</h2>
+    <!-- Both of the chart's controls on one line, right above it: the time
+         range beside the station, where it is seen (user 2026-11-06). -->
     <div class="wl-picker">
       <label for="wind-station-select">Station</label>
       <select id="wind-station-select">
         <option value="">Loading stations…</option>
       </select>
+      <div class="range-toggle" role="group" aria-label="Time range">
+        <button type="button" class="time-range-btn wind-time-range-btn active" data-wind-hours="24" aria-pressed="true">24 h</button>
+        <button type="button" class="time-range-btn wind-time-range-btn" data-wind-hours="48" aria-pressed="false">48 h</button>
+      </div>
     </div>
 
     <div id="wind-trend-chart" class="wind-chart-container"></div>
@@ -160,9 +161,9 @@
   <script defer src="/assets/vendor/echarts.min.js?v=866f27da86"></script>
   <script defer src="/assets/js/logger.js?v=1bcd73e2db"></script>
   <script type="module" src="/assets/js/warning-banner.js?v=69920f4608"></script>
-  <script defer src="/assets/js/chart-utils-v4.js?v=53a5c28bad"></script>
+  <script defer src="/assets/js/chart-utils-v4.js?v=0a193d1a96"></script>
   <!-- wind-data.js is imported by both module entry points (no script tag needed) -->
-  <script type="module" src="/assets/js/wind-stations.js?v=2b4e4562b1"></script>
+  <script type="module" src="/assets/js/wind-stations.js?v=b8589331be"></script>
   <script type="module" src="/assets/js/winds-map.js?v=871971efbf"></script>
   <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>

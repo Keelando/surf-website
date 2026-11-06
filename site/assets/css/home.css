@@ -223,6 +223,101 @@
 }
 
 /* -----------------------------
+   Desktop: the photo shrinks to a banner for the title (user 2026-11-06)
+   The photo is 1600px wide. Stretched to cover a desktop's whole summary it
+   was upscaled 1.2-2.4x and looked grainy; as a band across the top of the
+   panel (1120px at most) it is never stretched on a 1x screen. The list
+   sits on the plain panel under it, and the hero edge's teal wave moves to
+   the banner's foot. Phones keep the photo behind the panel: there it barely
+   shows, and the 960px version covers a phone without much stretching.
+   Same URLs and media split as the <head> preloads, which still apply.
+----------------------------- */
+@media (min-width: 769px) {
+  .summary {
+    background: none;
+    padding: 1.5rem 1.5rem 2.5rem;
+  }
+
+  .summary::after {
+    display: none;
+  }
+
+  .summary-panel {
+    overflow: hidden;
+    padding: 0 1.25rem 0.75rem;
+    background: var(--color-surface);
+    border-color: var(--color-border);
+  }
+
+  .summary-head {
+    position: relative;
+    overflow-x: clip;
+    margin: 0 -1.25rem;
+    padding: 1.6rem 1.75rem 1.85rem;
+    background-color: #1d3a52;
+    background-image:
+      linear-gradient(100deg, rgba(4, 22, 38, 0.82) 0%, rgba(4, 22, 38, 0.55) 55%, rgba(4, 22, 38, 0.3) 100%),
+      url("/assets/images/noaa-waves-1989-1600.webp");
+    background-image:
+      linear-gradient(100deg, rgba(4, 22, 38, 0.82) 0%, rgba(4, 22, 38, 0.55) 55%, rgba(4, 22, 38, 0.3) 100%),
+      image-set(
+        url("/assets/images/noaa-waves-1989-1600.avif") type("image/avif"),
+        url("/assets/images/noaa-waves-1989-1600.webp") type("image/webp")
+      );
+    background-position: center 60%;
+    background-size: cover;
+    color: #fff;
+  }
+
+  /* The hero edge's wave (style-v4.css header::after), on the banner's foot. */
+  .summary-head::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: -200px;
+    bottom: 0;
+    height: 12px;
+    pointer-events: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='12'%3E%3Cpath d='M0 6.5Q50 1.5 100 6.5T200 6.5V12H0Z' fill='%2367d8e0' fill-opacity='.55'/%3E%3C/svg%3E")
+      repeat-x 0 0 / 200px 12px;
+    animation: hero-wave-drift var(--wave-period, 12s) linear infinite;
+  }
+
+  /* On the banner the title is a title: larger, sentence case, white. */
+  .summary-title {
+    font-size: 1.55rem;
+    font-weight: 750;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    color: #fff;
+  }
+
+  .summary-tagline {
+    max-width: 44rem;
+    margin-top: 0.35rem;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .summary-tagline .sl-chevron {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+
+  .station-list {
+    margin-top: 1rem;
+  }
+}
+
+/* Still where the hero edge is still (style-v4.css): reduced motion, and
+   touch devices until a mid-range tablet's cost is measured. */
+@media (prefers-reduced-motion: reduce), (hover: none) and (pointer: coarse) {
+  .summary-head::after {
+    animation: none;
+  }
+}
+
+/* -----------------------------
    Station list
 ----------------------------- */
 
@@ -943,12 +1038,28 @@
    Section heads below the summary
 ----------------------------- */
 
+/* Section heads: left-aligned and weighty, with a short teal rule under
+   them (user 2026-11-06: the plain 1.15rem heads read "ordinary and weak"). */
 #map-section .home-section-title,
 #charts-section .home-section-title {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.4rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
   text-align: left;
   color: var(--color-text);
+}
+
+#map-section .home-section-title::after,
+#charts-section .home-section-title::after {
+  content: "";
+  display: block;
+  width: 2.25rem;
+  height: 3px;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  background: var(--color-accent-teal);
 }
 
 #map-section .home-section-title {
