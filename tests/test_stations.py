@@ -329,6 +329,31 @@ class TestLightstationCoordinates:
                 )
 
 
+class TestWindRegions:
+    """The winds page groups its stations by `region` (user 2026-11-06), with
+    the buoys' vocabulary plus two areas only wind stations sit in."""
+
+    ALLOWED = {
+        "STRAIT OF GEORGIA",
+        "HOWE SOUND",
+        "BOUNDARY BAY",
+        "HARO STRAIT & SAN JUANS",
+        "JUAN DE FUCA STRAIT",
+        "WEST COAST VANCOUVER ISLAND",
+    }
+
+    def test_every_wind_station_has_a_known_region(self):
+        bad = {sid: meta.get("region") for sid, meta in STATIONS.wind.items() if meta.get("region") not in self.ALLOWED}
+        assert not bad, bad
+
+    def test_buoys_use_the_same_vocabulary(self):
+        """Buoys and wind stations share one list on the winds page."""
+        bad = {
+            bid: meta.get("region") for bid, meta in STATIONS.buoys.items() if meta.get("region") not in self.ALLOWED
+        }
+        assert not bad, bad
+
+
 class TestLightstationRegions:
     """`region` in config/stations.json is the only owner of page grouping.
 

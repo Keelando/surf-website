@@ -247,6 +247,14 @@ class TestStationsExportIsFiltered:
             assert "rough_wave_height_m" in entry, f"{bid}: rough_wave_height_m not published"
             assert "list_order" in entry, f"{bid}: list_order not published"
 
+    def test_wind_stations_keep_their_region(self):
+        """The winds page groups by region; the allowlist must carry it."""
+        if not STATIONS_EXPORT.exists():
+            pytest.skip("stations.json not exported yet")
+        wind = json.loads(STATIONS_EXPORT.read_text())["wind"]
+        missing = [sid for sid, entry in wind.items() if "region" not in entry]
+        assert not missing, f"region not published for {missing}"
+
     def test_export_uses_an_allowlist_not_a_denylist(self):
         """A new registry field must stay private until named deliberately."""
         source = (REPO_ROOT / "scripts" / "export" / "export_stations_json.py").read_text()

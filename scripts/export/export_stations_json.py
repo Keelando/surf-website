@@ -73,6 +73,10 @@ PUBLIC_STATION_FIELDS = {
         "is_buoy",
         "caveat",
         "note",
+        # Grouping on the winds page; the vocabulary is the buoys' plus HOWE
+        # SOUND and HARO STRAIT & SAN JUANS (EC marine areas, and NOAA
+        # PZZ133 for the US side of the San Juans and Bellingham Bay).
+        "region",
     },
     "lightstations": _COMMON
     | {
