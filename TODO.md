@@ -65,6 +65,26 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 
 ### Queued 2026-11-06
 
+- [ ] **Page background: chart grid over a depth gradient** (user
+      2026-11-06, NEXT frontend session). The desktop page is plain since the
+      photo became a banner. Plan, options and checks:
+      `docs/project/PAGE_BACKGROUND.md` (try the options behind a `?bg=`
+      switch on dev first).
+- [ ] **Webcams: the oldest frame vanishes when scrolled to** (user
+      2026-11-06, White Rock pier cam; fold into the webcams page overhaul).
+      Likely cause, not yet confirmed: the page reads
+      `slideshow_manifest.json` once and re-reads it on a 5-minute refresh
+      that stops after 30 minutes (`webcams-v4.js` REFRESH_INTERVAL /
+      MAX_REFRESH_TIME), while `fetch_webcam.py`'s
+      `manage_slideshow_images` adds a frame every 10 minutes and deletes the
+      oldest. A page open a while lists frames no longer on disk, so the
+      oldest 404s and the card shows nothing. Confirm by holding the page
+      open past one fetch. Fix: re-read the manifest before stepping back (or
+      on the home page's tick), skip a frame whose image fails (`error` on
+      the `<img>`) rather than show nothing, and drop the `?t=` cache-buster
+      on frame files, whose names are already unique. Also: a refresh resets
+      `currentIndex` to 0, which would jump a reader who is scrubbing.
+
 - [ ] **Wind and pressure changes, visualized** (user 2026-11-06). Not a
       frontal-passage prediction, just a view of how wind and pressure are
       changing across the region: area-averaged pressure and its 3 h
