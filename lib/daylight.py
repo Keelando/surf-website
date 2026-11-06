@@ -179,11 +179,12 @@ if __name__ == "__main__":
     now = datetime.now(timezone.utc)
     print(f"Current time (UTC): {now.strftime('%Y-%m-%d %H:%M:%S UTC')}")
 
-    # Also show local time (Pacific)
-    import pytz
+    # Also show local time (Pacific). zoneinfo, not pytz: pytz's own bundled
+    # tz data predates BC's permanent UTC-7 (lib/webcam/processing.py).
+    from zoneinfo import ZoneInfo
 
     try:
-        pacific = pytz.timezone("America/Vancouver")
+        pacific = ZoneInfo("America/Vancouver")
         local_time = now.astimezone(pacific)
         print(f"Current time (Local): {local_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
     except Exception:

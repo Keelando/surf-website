@@ -2,8 +2,32 @@
 Image post-processing utilities (annotation, etc.).
 """
 
-import pytz
+from datetime import timedelta
+from zoneinfo import ZoneInfo
+
 from PIL import Image, ImageDraw, ImageFont
+
+# zoneinfo reads the system's tz data, which knows BC keeps UTC-7 all year
+# from 2026-03-08. pytz did not: it ships its own copy of the database
+# (2025.2 here), which put Vancouver back on PST after 2026-11-01, so every
+# stamp read an hour early ("14:21PST" on a 15:21 frame) and the cams looked
+# an hour more delayed than they were.
+PACIFIC = ZoneInfo("America/Vancouver")
+
+
+def pacific_label(local):
+    """The zone name for a Pacific time: "PDT" at UTC-7, "PST" at UTC-8.
+
+    Not %Z: up-to-date tz data names BC's permanent UTC-7 "MST", which reads
+    as Mountain time. "PDT" matches the website (shared/format-time.js).
+    """
+    return "PDT" if local.utcoffset() == timedelta(hours=-7) else "PST"
+
+
+def retrieval_label(timestamp):
+    """ "Retrieval time: 2026-11-06T15:21PDT" for a UTC datetime."""
+    local = timestamp.astimezone(PACIFIC)
+    return f"Retrieval time: {local.strftime('%Y-%m-%dT%H:%M')}{pacific_label(local)}"
 
 
 def annotate_image(image_path, timestamp, logger):
@@ -21,12 +45,7 @@ def annotate_image(image_path, timestamp, logger):
         True if annotation successful, False otherwise
     """
     try:
-        # Convert UTC timestamp to PST
-        pst = pytz.timezone("America/Vancouver")
-        timestamp_pst = timestamp.astimezone(pst)
-
-        # Format as "Retrieval time: 2026-01-13T11:40PST"
-        timestamp_str = f"Retrieval time: {timestamp_pst.strftime('%Y-%m-%dT%H:%M')}PST"
+        timestamp_str = retrieval_label(timestamp)
 
         logger.info(f"Annotating image with: {timestamp_str}")
 

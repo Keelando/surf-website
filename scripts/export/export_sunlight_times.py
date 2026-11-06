@@ -10,8 +10,8 @@ Generates JSON files with sunlight information for each webcam location.
 
 import json
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
-import pytz
 from astral import Depression, LocationInfo
 from astral.sun import blue_hour, dawn, dusk, golden_hour, sun
 
@@ -69,13 +69,15 @@ def get_sunlight_times(lat, lon, date=None, tz_name="America/Vancouver"):
         dict: Contains all sunlight events (sunrise, sunset, dawn, dusk, etc.)
     """
     # Use local timezone for proper date handling
-    local_tz = pytz.timezone(tz_name)
+    # zoneinfo, not pytz: pytz bundles tz data from before BC's permanent
+    # UTC-7 (2026), so its "today" ran an hour behind after 2026-11-01.
+    local_tz = ZoneInfo(tz_name)
 
     if date is None:
         date = datetime.now(local_tz)
     elif date.tzinfo is None or date.tzinfo.utcoffset(date) is None:
-        # If date is naive, localize it
-        date = local_tz.localize(date)
+        # If date is naive, it is local time
+        date = date.replace(tzinfo=local_tz)
 
     location = LocationInfo("Location", "Region", tz_name, lat, lon)
 
@@ -247,7 +249,7 @@ def export_all_locations(days_ahead=TIDE_FORECAST_DAYS + 2):
                     - The daylight-change line on the last day the tides page
                       reaches needs the day after it to difference against.
     """
-    local_tz = pytz.timezone("America/Vancouver")
+    local_tz = ZoneInfo("America/Vancouver")
     today = datetime.now(local_tz).date()
 
     results = {"generated_at": datetime.now(timezone.utc).isoformat(), "days_ahead": days_ahead, "stations": {}}
@@ -309,7 +311,7 @@ def export_all_locations(days_ahead=TIDE_FORECAST_DAYS + 2):
             sunlight = get_sunlight_times(
                 location["lat"],
                 location["lon"],
-                date=local_tz.localize(datetime.combine(target_date, datetime.min.time())),
+                date=datetime.combine(target_date, datetime.min.time(), tzinfo=local_tz),
             )
 
             # Extract only the times we need for plotting

@@ -65,6 +65,35 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 
 ### Queued 2026-11-06
 
+- [ ] **URGENT, FIRST THING NEXT SESSION: sitewide audit for BC time-change
+      errors** (user 2026-11-06). BC kept UTC-7 from 2026-03-08 (no
+      fall-back on 2026-11-01); anything using tz data older than 2026e puts
+      Pacific times an hour behind. Fixed so far: the frontend
+      (`bea3759`, `PACIFIC_TZ` fixed UTC-7 labelled PDT) and every `pytz`
+      use in Python (it bundles its own pre-2026 tz data: webcam frame
+      stamps read "14:21PST" on 15:21 frames, so every cam looked an hour
+      late; sunlight "today", storm-surge verification day window,
+      `lib/daylight.py`). The host is UTC (`timedatectl`), so cron is safe,
+      and `zoneinfo` reads the system's 2026e. To audit, file by file:
+      - **Feeds that publish LOCAL times** (most likely to be wrong, and the
+        source itself may have fallen back): `fetch_surrey_wave_v2.py`,
+        `fetch_surrey_tides.py` (FlowWorks), `fetch_jericho_wind.py`,
+        `fetch_whiterock_weather.py` (`parse_timestamp` treats the feed's
+        time as UTC: confirm against the City's page), `parse_lightstation.py`
+        (bulletin local times), `fetch_noaa_buoy.py`,
+        `fetch_storm_surge.py`, `fetch_wave_forecast.py`.
+      - **Our own local-time logic**: `export_tide_json.py`,
+        `water_level_export.py`, `daily_digest.py`, `lib/report_status.py`,
+        `lib/daylight.py` (webcam capture windows).
+      - **Frontend left-overs**: device-local `Date` use (`getHours`,
+        `toLocale*` without `timeZone`, the "pacificNow" parse trick),
+        hand-written PST/PDT arithmetic (`storm_surge_page.js`,
+        `tides-modules/chart-renderer.js`), page text that says "PST".
+      - **Then** drop `pytz` from `pyproject.toml` and the lock if nothing
+        needs it, and add a test that fails if `pytz` is imported again.
+      Method: for each source, compare one stored timestamp against the
+      source's own page or file for the same reading.
+
 - [ ] **Page background: chart grid over a depth gradient** (user
       2026-11-06, NEXT frontend session). The desktop page is plain since the
       photo became a banner. Plan, options and checks:

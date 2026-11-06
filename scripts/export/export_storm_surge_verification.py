@@ -32,8 +32,7 @@ Output: site/data/storm_surge/verification.json
 import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
-
-import pytz
+from zoneinfo import ZoneInfo
 
 from lib.config import EXPORT_DIR
 from lib.config import STORM_SURGE_DATABASE as DB_PATH
@@ -155,7 +154,8 @@ def export_verification():
             # we need forecast runs from ~2 days before day X
             # Example: To show predictions for Nov 14-23 (10 days), we need runs from ~Nov 12-21 (12 days back)
 
-            pacific = pytz.timezone("America/Vancouver")
+            # zoneinfo, not pytz (whose bundled tz data predates BC's permanent UTC-7).
+            pacific = ZoneInfo("America/Vancouver")
             now_pacific = datetime.now(pacific)
             # Start of today Pacific
             today_midnight_pacific = now_pacific.replace(hour=0, minute=0, second=0, microsecond=0)
