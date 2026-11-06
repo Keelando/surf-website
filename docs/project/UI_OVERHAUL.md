@@ -368,6 +368,15 @@ station picker, right above the chart. "Show More Rows" runs the table's
 full width. Legend toggles rescale the y-axis (`rescaleYAxisOnLegendToggle`
 in chart-utils-v4.js) on the winds chart and home's wind chart.
 
+**Round 3 (user, 2026-11-06):** desktop uses its width for the row's
+actions and the map instead of hiding them. On a wide list each row carries
+map / chart / source icons at its right end (quiet until hover or focus;
+out of the tab order, the panel has the same three labelled); from 1400px
+the map sits beside the list and stays in view, and a row's map icon pans
+it without moving the page. Drawn Canada / US flags replace the old emoji
+(shared/flags.js), from a registry `country` field (`main` `92470e6`; the
+`flag` emoji is sometimes a source, not a country).
+
 **Queued from round 2:**
 - **Legend rescale on the other charts that pin their axis:**
   temperature-chart-v4.js (`yMin`/`yMax`), storm_surge_chart-v4.js and

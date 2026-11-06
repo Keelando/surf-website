@@ -364,16 +364,18 @@ function viewStationChart(stationId) {
  * Show station on map (from table link)
  */
 function showStationOnMap(stationId) {
-  // Scroll to map section
-  const mapSection = document.getElementById("map-section");
-  if (mapSection) {
-    mapSection.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  // Ask winds-map.js to center on the station (after scroll settles)
-  setTimeout(() => {
+  const focus = () =>
     document.dispatchEvent(new CustomEvent("winds:focus-station", { detail: { stationId } }));
-  }, SCROLL_SETTLE_DELAY_MS);
+  const map = document.getElementById("winds-map");
+  const box = map?.getBoundingClientRect();
+  // Beside the list on a wide screen the map is already in view: pan it at once.
+  if (box && box.top >= 0 && box.bottom <= window.innerHeight) {
+    focus();
+    return;
+  }
+  document.getElementById("map-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Ask winds-map.js to center on the station once the scroll settles.
+  setTimeout(focus, SCROLL_SETTLE_DELAY_MS);
 }
 
 // Make functions globally accessible

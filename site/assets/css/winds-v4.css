@@ -9,8 +9,10 @@
 
 /* --- Summary: one column, a table's width rather than the panel's --- */
 
+/* Wide enough on a single-column desktop for the row icons and every full
+   name (Crescent Channel Ocean with its flag and tag) on one line. */
 .wl-summary .summary-panel {
-  max-width: 50rem;
+  max-width: 58rem;
 }
 
 .wl-view-btn {
@@ -218,6 +220,21 @@
   display: none;
 }
 
+/* Drawn flags (shared/flags.js): on a wide list's rows (see below) and in
+   every panel. */
+.wl-flag {
+  display: none;
+  width: 1rem;
+  height: 0.5rem;
+  margin-left: 0.4rem;
+  vertical-align: 0.08em;
+}
+
+.wl-kind-note .wl-flag {
+  display: inline;
+  margin-left: 0;
+}
+
 .wl-kind {
   margin-left: 0.35rem;
   font-size: 0.62rem;
@@ -327,6 +344,54 @@
   margin-top: 0.6rem;
 }
 
+/* A row and its icons share the item's first grid cell: the icons are laid
+   over the row's spare track (below) rather than inside its button, which
+   can't hold buttons. The panel takes the second row. */
+.wl-item {
+  display: grid;
+}
+
+.wl-item > .wl-row {
+  grid-area: 1 / 1;
+}
+
+.wl-item > .wl-detail {
+  grid-area: 2 / 1;
+}
+
+.wl-actions {
+  display: none;
+}
+
+.wl-act {
+  display: inline-grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--sl-action-text);
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.wl-act .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Quiet until wanted: the numbers stay the loudest thing on the row. */
+.wl-item:hover .wl-act,
+.wl-item:focus-within .wl-act {
+  opacity: 1;
+}
+
+.wl-act:hover {
+  background: var(--sl-chevron-bg);
+}
+
 /* A phone: the registry's short names, so the numbers keep their room. */
 @container wl (width < 26rem) {
   .wl-title-full {
@@ -341,9 +406,27 @@
 /* A wide list: temperature and pressure come back as columns, and the
    chevron gets the home rows' disc. */
 @container wl (width >= 36rem) {
+  /* The 6rem track before the chevron is the icons' (.wl-actions). */
   .wl-row,
   .wl-head {
-    grid-template-columns: minmax(0, 1fr) 5rem 3.25rem 3rem 3.5rem 4.25rem 1.5rem;
+    grid-template-columns: minmax(0, 1fr) 5rem 3.25rem 3rem 3.5rem 4.25rem 6rem 1.5rem;
+  }
+
+  .wl-flag {
+    display: inline;
+  }
+
+  /* Three fixed slots, so map and chart line up down the list even on a
+     row without a source link. */
+  .wl-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1.85rem);
+    grid-area: 1 / 1;
+    align-self: center;
+    justify-self: end;
+    gap: 0.15rem;
+    /* Clear the chevron: its track, the gap before it, the row's padding. */
+    margin-right: calc(1.5rem + 0.5rem + 0.5rem);
   }
 
   .wl-temp,
@@ -435,6 +518,51 @@
 
   .wl-head-name {
     display: contents;
+  }
+}
+
+/* --- Wide screens: the map beside the list --- */
+
+/* From 1400px the map sits beside the list and stays in view while the list
+   scrolls (user 2026-11-06), so a row's map icon pans it without moving the
+   page. Same DOM order as on a phone (list, map, chart), placed by grid. */
+@media (min-width: 1400px) {
+  .winds-main {
+    display: grid;
+    grid-template-columns: minmax(0, 54rem) minmax(0, 1fr);
+    align-items: start;
+    column-gap: 1.5rem;
+    max-width: 1760px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .winds-main > * {
+    grid-column: 1 / -1;
+  }
+
+  .winds-main > .summary {
+    grid-column: 1;
+    padding-inline: 0;
+  }
+
+  .winds-main > .summary .summary-panel {
+    max-width: none;
+  }
+
+  .winds-main > #map-section {
+    position: sticky;
+    top: 5.5rem;
+    grid-column: 2;
+    grid-row: 1;
+    max-width: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+  }
+
+  .winds-main .winds-map-container {
+    height: calc(100vh - 11rem);
+    min-height: 32rem;
   }
 }
 

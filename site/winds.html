@@ -46,7 +46,7 @@
   <!-- The summary panel, region heads, status lights and row panels are the
        home page's (home.css); winds-v4.css lays out the winds rows. -->
   <link rel="stylesheet" href="/assets/css/home.css?v=56db6e4571" />
-  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=383684c9ac" />
+  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=62d19d0765" />
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
@@ -60,7 +60,8 @@
   <!-- Navigation -->
   <div class="nav-slot" hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
-  <main id="main-content" tabindex="-1">
+  <!-- winds-main: from 1400px the map sits beside the list (winds-v4.css). -->
+  <main id="main-content" class="winds-main" tabindex="-1">
 
   <!-- The summary: every station with wind readings, on the hero photo, in
        the home page's look. Built by wind-stations.js from the wind data
@@ -163,7 +164,7 @@
   <script type="module" src="/assets/js/warning-banner.js?v=69920f4608"></script>
   <script defer src="/assets/js/chart-utils-v4.js?v=0a193d1a96"></script>
   <!-- wind-data.js is imported by both module entry points (no script tag needed) -->
-  <script type="module" src="/assets/js/wind-stations.js?v=b8589331be"></script>
+  <script type="module" src="/assets/js/wind-stations.js?v=5844335d24"></script>
   <script type="module" src="/assets/js/winds-map.js?v=871971efbf"></script>
   <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>

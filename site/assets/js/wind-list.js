@@ -13,6 +13,7 @@
    helpers, so both pages judge a report the same way.
    ----------------------------- */
 
+import { countryName, flagIcon } from "./shared/flags.js";
 import { formatWeekdayDayTime } from "./shared/format-time.js";
 import { icon } from "./shared/icons.js";
 import { outOfServiceHTML } from "./shared/staleness.js";
@@ -198,11 +199,13 @@ export function buildWindRow(e) {
   }
 
   const buoy = e.isBuoy ? `<span class="wl-kind">buoy</span>` : "";
+  // The flag shows on a wide list only (winds-v4.css); the panel has it too.
+  const flag = flagIcon(e.meta.country, { className: "wl-flag" });
   return `
     <button type="button" class="wl-row wl-row--${e.fresh.state}" aria-expanded="false" aria-controls="wl-detail-${e.id}">
       <span class="wl-name">
         <span class="visually-hidden">${e.name}${e.isBuoy ? " (buoy)" : ""}</span>
-        <span class="sl-title wl-title" aria-hidden="true"><span class="wl-title-full">${e.name}</span><span class="wl-title-short">${e.shortName}</span>${buoy}</span>
+        <span class="sl-title wl-title" aria-hidden="true"><span class="wl-title-full">${e.name}</span><span class="wl-title-short">${e.shortName}</span>${flag}${buoy}</span>
         <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span>${ageLine}</span>
       </span>
       ${values}
@@ -273,6 +276,9 @@ export function buildWindDetail(e) {
       ]);
   const kind = e.isBuoy ? "Ocean buoy" : "Weather station";
   const source = meta.source ? ` · ${meta.source}` : "";
+  const where = countryName(meta.country)
+    ? ` · ${flagIcon(meta.country, { className: "wl-flag" })} ${countryName(meta.country)}`
+    : "";
   const notes = [meta.caveat, meta.note]
     .filter(Boolean)
     .map((text) => `<p class="sl-note">${text}</p>`)
@@ -284,7 +290,7 @@ export function buildWindDetail(e) {
       ${stateNote(e)}
       ${observed}
       <div class="sl-groups">${groups}</div>
-      <p class="sl-note wl-kind-note">${kind}${source}</p>
+      <p class="sl-note wl-kind-note">${kind}${source}${where}</p>
       ${notes}
       <div class="sl-actions">
         <button type="button" class="sl-action" data-action="chart">${icon("chart")}Chart</button>
@@ -326,12 +332,34 @@ export function buildSortHead(sort = DEFAULT_SORT) {
     </div>`;
 }
 
+/**
+ * A wide list's row actions: map, chart and source as icons at the row's
+ * right end (user 2026-11-06), so a desktop reader needn't open the panel
+ * for them. They sit beside the row's button, not inside it (a button
+ * can't hold buttons), laid over its spare track (winds-v4.css). Out of the
+ * tab order: the panel carries the same three, labelled, one tab stop per
+ * station rather than four. A phone shows none of them.
+ */
+export function buildRowActions(e) {
+  const source = e.meta.source ?? "the source";
+  const link = e.meta.source_url
+    ? `<a class="wl-act" href="${e.meta.source_url}" target="_blank" rel="noopener noreferrer" tabindex="-1" title="${source} (opens in a new tab)" aria-label="${e.name} at ${source} (opens in a new tab)">${icon("external")}</a>`
+    : "";
+  return `
+          <span class="wl-actions">
+            <button type="button" class="wl-act" data-action="map" tabindex="-1" title="Show on the map" aria-label="Show ${e.name} on the map">${icon("map")}</button>
+            <button type="button" class="wl-act" data-action="chart" tabindex="-1" title="Wind chart" aria-label="Wind chart for ${e.name}">${icon("chart")}</button>
+            ${link}
+          </span>`;
+}
+
 function rowsHTML(entries) {
   return entries
     .map(
       (e) => `
         <li class="sl-item wl-item" id="wind-row-${e.id}" data-station-id="${e.id}">
           ${buildWindRow(e)}
+          ${buildRowActions(e)}
           <div class="sl-detail wl-detail" id="wl-detail-${e.id}" hidden></div>
         </li>`,
     )

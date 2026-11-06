@@ -17,6 +17,7 @@ const {
   WIND_REGIONS,
   buildWindDetail,
   buildWindList,
+  buildRowActions,
   buildWindRow,
   nextSort,
   regionGroups,
@@ -185,4 +186,28 @@ test("region view: each heading folds its rows, and a folded one keeps its count
 test("the direction head has a phone form and a wide form", () => {
   const html = buildWindList(entries);
   assert.match(html, /wl-label-short">Dir<\/span><span class="wl-label-wide">Direction</);
+});
+
+test("row icons: map and chart always, the source link only where there is one; out of the tab order", () => {
+  const withLink = buildRowActions(
+    windEntry("CWGT", station("Sisters Island", 41), {
+      ...META.CWGT,
+      source: "Environment Canada",
+      source_url: "https://example.org/cwgt",
+    }),
+  );
+  assert.match(withLink, /data-action="map" tabindex="-1"[^>]*aria-label="Show Sisters Island on the map"/);
+  assert.match(withLink, /data-action="chart" tabindex="-1"/);
+  assert.match(withLink, /aria-label="Sisters Island at Environment Canada \(opens in a new tab\)"/);
+  assert.doesNotMatch(buildRowActions(entries[1]), /<a /);
+});
+
+test("a drawn flag from the registry's country, beside the name and in the panel", async () => {
+  const { flagIcon } = await import("../../site/assets/js/shared/flags.js");
+  assert.equal(flagIcon("XX"), "");
+  assert.match(flagIcon("CA"), /^<svg class="flag" viewBox="0 0 32 16"[^>]*aria-hidden="true"/);
+  assert.match(flagIcon("US", { label: true }), /role="img" aria-label="United States"/);
+  const e = windEntry("SISW1", station("Smith Island", 20), { ...META.SISW1, country: "US" });
+  assert.match(buildWindRow(e), /<svg class="flag wl-flag"/);
+  assert.match(buildWindDetail(e), /United States<\/p>/);
 });
