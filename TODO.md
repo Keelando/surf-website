@@ -84,6 +84,17 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       the `<img>`) rather than show nothing, and drop the `?t=` cache-buster
       on frame files, whose names are already unique. Also: a refresh resets
       `currentIndex` to 0, which would jump a reader who is scrubbing.
+- [ ] **Webcams: some cams very delayed** (user 2026-11-06; for the webcams
+      overhaul). Measured that evening: **Ambleside's newest frame ~7,000 min
+      old** (~5 days): upstream serves the same 10,652-byte image to every
+      fetch (a placeholder, by its size), so the dedupe skip keeps the last
+      real frame, as designed (see `"dedupe": true` in config/webcams.example.json); plus odd DNS
+      timeouts (`curl` 28). Mud Bay SE 37 min on a 15-min cadence; the rest
+      within cadence, though White Rock East Beach and Cox Bay carry a
+      20-min source delay on top (`stream_delay_minutes`). For the overhaul:
+      say "this camera hasn't sent a new picture for N days" plainly on a
+      frozen cam (and whether to hide it after a threshold), and show the
+      source delay as part of the age, not as small print.
 
 - [ ] **Wind and pressure changes, visualized** (user 2026-11-06). Not a
       frontal-passage prediction, just a view of how wind and pressure are
