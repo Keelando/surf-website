@@ -63,17 +63,19 @@ duplicated observations on 2026-09-06. Write-up:
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
-### Queued 2026-11-04
+### Queued 2026-11-06
 
-- [ ] **Frontal passage viewer, plus "has the wind peaked?"** (user
-      2026-11-06). Two signals for one question, where the front is and what
-      it means on the water: the regional pressure picture already planned
-      in `docs/project/PRESSURE_FRONTS_PAGE.md` (area-averaged pressure and
-      3 h tendency, isallobars), and a new wind-side read across all the
-      wind stations, which is whether the blow is still building or already
-      past its peak. Local winds are frontal and don't hold high values for
-      long, so "peaked" is the actionable answer. Details and open questions
-      in the plan doc, section "Companion signal: has the wind peaked?".
+- [ ] **Wind and pressure changes, visualized** (user 2026-11-06). Not a
+      frontal-passage prediction, just a view of how wind and pressure are
+      changing across the region: area-averaged pressure and its 3 h
+      tendency, each wind station's trend and its current speed beside its
+      recent peak, stations ordered W→E so a blow sweeping through shows as a
+      band. Local winds are frontal and short-lived, so seeing the trend lets
+      the reader judge whether it has peaked. Builds on
+      `docs/project/PRESSURE_FRONTS_PAGE.md`, see the section "Wind alongside
+      pressure: show the changes, don't predict".
+
+### Queued 2026-11-04
 
 - [ ] **Point forecast verification: show the residuals** (user 2026-11-04,
       "for later"). Today `renderVerificationMode()` in
