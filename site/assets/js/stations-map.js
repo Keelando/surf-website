@@ -137,6 +137,17 @@ function ensureMap() {
   return mapReady;
 }
 
+// On a tall screen (a portrait tablet, 800x1280) the map's top edge is on
+// screen at load, so the observer fires straight away and Leaflet would start
+// while the summary is still drawing. Waiting for an idle moment lets the
+// summary go first; the cap keeps a busy page from holding the map back.
+// Safari has no requestIdleCallback, hence the timeout.
+const MAP_IDLE_TIMEOUT_MS = 1000;
+function whenIdle(fn) {
+  if ("requestIdleCallback" in window) requestIdleCallback(fn, { timeout: MAP_IDLE_TIMEOUT_MS });
+  else setTimeout(fn, 200);
+}
+
 function startMapWhenNear() {
   const el = document.getElementById("stations-map");
   if (!el) return;
@@ -148,7 +159,7 @@ function startMapWhenNear() {
     (entries) => {
       if (!entries.some((entry) => entry.isIntersecting)) return;
       observer.disconnect();
-      ensureMap().catch(() => {});
+      whenIdle(() => ensureMap().catch(() => {}));
     },
     { rootMargin: LAZY_MAP_MARGIN },
   );
@@ -634,19 +645,14 @@ function refreshWindLabels() {
   });
 }
 
-// Add buoy marker to map
-function addBuoyMarker(buoy) {
+// Popup HTML is built when a popup opens, not when its marker is placed: each
+// builder below is bound with bindPopup(() => ...), which Leaflet calls on
+// open. Placing 74 markers no longer builds 74 popups nobody has asked for,
+// and an open popup reads the data and the clock as they are then, so its
+// "12m ago" is right even on a page left open.
+function buoyPopupHTML(buoy) {
   const isWave = isWaveStation(buoy);
   const typeLabel = stationTypeLabel(buoy);
-
-  const marker = L.marker([buoy.lat, buoy.lon], {
-    icon: buildBuoyIcon(buoy, { showWind: false }),
-    title: `${buoy.name} buoy`,
-  });
-  // Kept on the marker so the zoom handler can rebuild the icon without
-  // re-reading stations.json.
-  marker.stationMeta = buoy;
-  marker.windLabelShown = false;
 
   // Build popup with latest data at top
   let popupContent = `<div class="station-popup"><h3>${buoy.name}</h3>`;
@@ -828,7 +834,21 @@ function addBuoyMarker(buoy) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, getPopupOptions(stationsMap));
+  return popupContent;
+}
+
+// Add buoy marker to map
+function addBuoyMarker(buoy) {
+  const marker = L.marker([buoy.lat, buoy.lon], {
+    icon: buildBuoyIcon(buoy, { showWind: false }),
+    title: `${buoy.name} buoy`,
+  });
+  // Kept on the marker so the zoom handler can rebuild the icon without
+  // re-reading stations.json.
+  marker.stationMeta = buoy;
+  marker.windLabelShown = false;
+
+  marker.bindPopup(() => buoyPopupHTML(buoy), getPopupOptions(stationsMap));
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
@@ -890,21 +910,7 @@ function getCurrentSurgeForecast(stationKey) {
   };
 }
 
-// Add tide station marker to map
-function addTideMarker(tide, stationKey) {
-  const icon = L.divIcon({
-    className: "station-marker tide-marker",
-    html: createTideGaugeSVG(),
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -12],
-  });
-
-  const marker = L.marker([tide.lat, tide.lon], {
-    icon: icon,
-    title: `${tide.name} tide station`,
-  });
-
+function tidePopupHTML(tide, stationKey) {
   const hasObservations = tide.series && tide.series.includes("wlo");
   const stationType = hasObservations
     ? "Permanent (with observations)"
@@ -947,36 +953,34 @@ function addTideMarker(tide, stationKey) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, getPopupOptions(stationsMap));
+  return popupContent;
+}
+
+// Add tide station marker to map
+function addTideMarker(tide, stationKey) {
+  const icon = L.divIcon({
+    className: "station-marker tide-marker",
+    html: createTideGaugeSVG(),
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
+  });
+
+  const marker = L.marker([tide.lat, tide.lon], {
+    icon: icon,
+    title: `${tide.name} tide station`,
+  });
+
+  marker.bindPopup(() => tidePopupHTML(tide, stationKey), getPopupOptions(stationsMap));
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
   tideMarkers[stationKey] = marker;
 }
 
-// Add lightstation marker to map
-function addLightstationMarker(lightstation) {
-  // Check if this station has any current data
+function lightstationPopupHTML(lightstation) {
   const lookupName = lightstation.id.replace(/_/g, " ");
   const hasData = latestLightstationData && latestLightstationData[lookupName];
-
-  // Inactive stations (no data) get reduced opacity
-  const markerClass = hasData
-    ? "station-marker lightstation-marker"
-    : "station-marker lightstation-marker lightstation-inactive";
-
-  const icon = L.divIcon({
-    className: markerClass,
-    html: createLighthouseSVG(),
-    iconSize: [28, 32],
-    iconAnchor: [14, 32],
-    popupAnchor: [0, -32],
-  });
-
-  const marker = L.marker([lightstation.lat, lightstation.lon], {
-    icon: icon,
-    title: `${lightstation.name} lightstation`,
-  });
 
   // Build popup
   let popupContent = `<div class="station-popup"><h3>${lightstation.name}</h3>`;
@@ -1054,28 +1058,41 @@ function addLightstationMarker(lightstation) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, getPopupOptions(stationsMap));
+  return popupContent;
+}
+
+// Add lightstation marker to map
+function addLightstationMarker(lightstation) {
+  // Check if this station has any current data
+  const lookupName = lightstation.id.replace(/_/g, " ");
+  const hasData = latestLightstationData && latestLightstationData[lookupName];
+
+  // Inactive stations (no data) get reduced opacity
+  const markerClass = hasData
+    ? "station-marker lightstation-marker"
+    : "station-marker lightstation-marker lightstation-inactive";
+
+  const icon = L.divIcon({
+    className: markerClass,
+    html: createLighthouseSVG(),
+    iconSize: [28, 32],
+    iconAnchor: [14, 32],
+    popupAnchor: [0, -32],
+  });
+
+  const marker = L.marker([lightstation.lat, lightstation.lon], {
+    icon: icon,
+    title: `${lightstation.name} lightstation`,
+  });
+
+  marker.bindPopup(() => lightstationPopupHTML(lightstation), getPopupOptions(stationsMap));
   marker.addTo(markersLayer);
 
   // Store marker reference for later access
   lightstationMarkers[lightstation.id] = marker;
 }
 
-// Add webcam marker to map
-function addWebcamMarker(webcam) {
-  const icon = L.divIcon({
-    className: "station-marker webcam-marker",
-    html: createWebcamSVG(),
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -28],
-  });
-
-  const marker = L.marker([webcam.lat, webcam.lon], {
-    icon: icon,
-    title: `${webcam.name} webcam`,
-  });
-
+function webcamPopupHTML(webcam) {
   // Build popup
   let popupContent = `<div class="station-popup">`;
   popupContent += `<h3>📹 ${webcam.name}</h3>`;
@@ -1101,7 +1118,25 @@ function addWebcamMarker(webcam) {
     </div>
   </div>`;
 
-  marker.bindPopup(popupContent, getPopupOptions(stationsMap));
+  return popupContent;
+}
+
+// Add webcam marker to map
+function addWebcamMarker(webcam) {
+  const icon = L.divIcon({
+    className: "station-marker webcam-marker",
+    html: createWebcamSVG(),
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -28],
+  });
+
+  const marker = L.marker([webcam.lat, webcam.lon], {
+    icon: icon,
+    title: `${webcam.name} webcam`,
+  });
+
+  marker.bindPopup(() => webcamPopupHTML(webcam), getPopupOptions(stationsMap));
   marker.addTo(markersLayer);
 
   // Store marker reference for later access

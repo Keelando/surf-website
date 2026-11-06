@@ -113,15 +113,17 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 
 ### Queued 2026-10-29
 
-- [ ] **Home map loads at once on a tablet** (user: "next time"). The map is
-      lazy (`LAZY_MAP_MARGIN`, 150px, in `stations-map.js`), yet on an
-      emulated 800x1280 tablet Leaflet and the marker popups
-      (`shared/map-popup.js`, `format-time.js`) ran during load, ~330 ms of
-      script at 4x CPU, while the reader is still at the summary. Find out
-      why the observer fires early there, and whether popup HTML can be
-      built on open rather than up front. Measure on the Lenovo Tab Plus,
-      not only in emulation: see `site/docs/FRONTEND_CHANGELOG.md`
-      2026-10-29 for why.
+- [x] **Home map loads at once on a tablet** (user: "next time"). *Done
+      2026-11-06.* The observer was right, not early: at 800x1280 the map's
+      top edge is ON screen at load (1195px of 1280), and at 1280x800 it is
+      45px below, inside the 150px margin. Profiled at 4x CPU: the map is
+      ~200 ms of script (Leaflet's icons mostly), popup HTML a small part of
+      it. Now (a) Leaflet waits for `requestIdleCallback` (1s cap) when the
+      observer fires, so it starts after the station list draws (~1370 ms
+      vs ~620 ms; markers appear at the same time as before, they wait on
+      data anyway), and (b) popup HTML is built on open
+      (`bindPopup(() => …)`), byte-identical in both engines, ages current
+      on open. Emulated gain is modest; judge it on the Lenovo Tab Plus.
 
 ### Queued 2026-10-28
 
