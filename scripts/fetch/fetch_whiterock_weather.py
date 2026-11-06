@@ -4,13 +4,13 @@ White Rock East Beach Weather Station - Direct JSON API Integration
 Fetches from https://maps.whiterockcity.ca/weather/weatherResults.txt
 
     fetch_whiterock_weather.py           # fetch, store, export (every 10 min)
-    fetch_whiterock_weather.py --probe   # out of service: one look, nothing stored
+    fetch_whiterock_weather.py --probe   # out of service: two looks, nothing stored
 
 While the station is out of service (stations.json "out_of_service"), cron
-runs only --probe, once a day. It compares the feed with the last stored
-reading — the values the sensors froze at — and logs one verdict line:
-"STILL DOWN" or "BACK ONLINE?". The second means the sensors are moving
-again: check, then remove the flag and restore the 10-minute cron line.
+runs only --probe, once a day. It reads the feed twice, 11 minutes apart, and
+logs one verdict line: "STILL DOWN" (including "frozen again, at new values")
+or "BACK ONLINE?". The second means the sensors moved between the two looks:
+check, then remove the flag and restore the 10-minute cron line.
 """
 
 import argparse
@@ -325,13 +325,50 @@ def export_json(conn):
 # Sensors the probe watches; any of them changing means the station moved.
 PROBE_FIELDS = ("wind_speed", "wind_direction", "wind_gust", "humidity", "pressure")
 
+# Two looks this far apart, so the feed (5-minute cadence) publishes at least
+# twice between them. Comparing one look with the stored freeze values is not
+# enough: in 2026-11 the sensors moved off their October values and froze again
+# at new ones (11.7 kt / 192° / 22.4 / 1014.8 hPa, Nov 4–6), and every daily
+# probe read that as "BACK ONLINE?". A working anemometer never reports the
+# same speed, direction and gust across two updates; a frozen one always does.
+PROBE_GAP_SECONDS = 11 * 60
 
-def probe():
-    """One look at the feed while out of service; logs a verdict, stores nothing."""
-    data = fetch_weather()
+
+def probe_verdict(first, second, stored):
+    """The probe's verdict on two looks at the feed, PROBE_GAP_SECONDS apart.
+
+    first, second -- fetch_weather() dicts; stored -- the last stored row's
+    PROBE_FIELDS (the October freeze). Returns the text after "PROBE: ".
+    """
+    # A field missing from either look says nothing either way.
+    moving = [f for f in PROBE_FIELDS if None not in (first.get(f), second.get(f)) and first.get(f) != second.get(f)]
+    if moving:
+        changes = ", ".join(f"{f} {first.get(f)} -> {second.get(f)}" for f in moving)
+        gap = PROBE_GAP_SECONDS // 60
+        return f"BACK ONLINE? {', '.join(moving)} moving between two looks {gap} min apart ({changes})"
+    values = ", ".join(f"{f} {second.get(f)}" for f in PROBE_FIELDS)
+    if any(second.get(f) is not None and second.get(f) != stored.get(f) for f in PROBE_FIELDS):
+        return f"STILL DOWN (sensors frozen again, at new values: {values})"
+    return "STILL DOWN (feed publishing, sensors still frozen)"
+
+
+def probe(gap_seconds=PROBE_GAP_SECONDS):
+    """Two looks at the feed while out of service; logs a verdict, stores nothing."""
+    first = fetch_weather()
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    if not data:
+    if not first:
         print(f"{stamp} PROBE: STILL DOWN (feed unreachable or empty)")
+        return 0
+
+    feed_time = datetime.fromtimestamp(first["observation_time"], tz=timezone.utc)
+    if feed_time < datetime.now(timezone.utc) - timedelta(hours=2):
+        print(f"{stamp} PROBE: STILL DOWN (feed last updated {feed_time:%Y-%m-%d %H:%M} UTC)")
+        return 0
+
+    time.sleep(gap_seconds)
+    second = fetch_weather()
+    if not second or second["observation_time"] <= first["observation_time"]:
+        print(f"{stamp} PROBE: STILL DOWN (feed stopped updating during the probe)")
         return 0
 
     conn = sqlite3.connect(f"file:{SQLITE_PATH}?mode=ro", uri=True)
@@ -340,27 +377,17 @@ def probe():
         "ORDER BY observation_time DESC LIMIT 1"
     ).fetchone()
     conn.close()
-
-    feed_time = datetime.fromtimestamp(data["observation_time"], tz=timezone.utc)
-    if feed_time < datetime.now(timezone.utc) - timedelta(hours=2):
-        print(f"{stamp} PROBE: STILL DOWN (feed last updated {feed_time:%Y-%m-%d %H:%M} UTC)")
-        return 0
-
     stored = dict(zip(PROBE_FIELDS, row[1:])) if row else {}
-    moved = [f for f in PROBE_FIELDS if data.get(f) is not None and data.get(f) != stored.get(f)]
-    if moved:
-        print(
-            f"{stamp} PROBE: BACK ONLINE? {', '.join(moved)} changed since the freeze "
-            f"({', '.join(f'{f} {stored.get(f)} -> {data.get(f)}' for f in moved)})"
-        )
-    else:
-        print(f"{stamp} PROBE: STILL DOWN (feed publishing, sensors still frozen)")
+
+    print(f"{stamp} PROBE: {probe_verdict(first, second, stored)}")
     return 0
 
 
 def main():
     parser = argparse.ArgumentParser(description="White Rock East Beach weather")
-    parser.add_argument("--probe", action="store_true", help="Out-of-service check: one look, nothing stored")
+    parser.add_argument(
+        "--probe", action="store_true", help="Out-of-service check: two looks 11 min apart, nothing stored"
+    )
     args = parser.parse_args()
     if args.probe:
         return probe()
