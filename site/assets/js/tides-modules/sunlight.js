@@ -3,6 +3,7 @@
  * Handles loading and displaying sunrise/sunset data
  */
 
+import { PACIFIC_TZ } from "../shared/format-time.js";
 import { setSafeHTML } from "../shared/safe-html.js";
 import { dayLabel as formatDayLabel, pacificDate } from "./utils.js";
 
@@ -169,7 +170,7 @@ export function displaySunlightTimes(
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: "America/Vancouver",
+    timeZone: PACIFIC_TZ,
   };
   const firstLightStr = firstLight.toLocaleTimeString("en-US", timeOptions);
   const sunriseStr = sunrise.toLocaleTimeString("en-US", timeOptions);

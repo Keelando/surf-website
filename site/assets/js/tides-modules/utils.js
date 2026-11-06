@@ -4,6 +4,8 @@
  * lives in ../shared/format-time.js.
  */
 
+import { PACIFIC_TZ } from "../shared/format-time.js";
+
 /**
  * Show error state in the UI
  *
@@ -68,7 +70,7 @@ export function maxDayOffset(timeseriesData) {
  */
 export function pacificDate(dayOffset, now = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Vancouver",
+    timeZone: PACIFIC_TZ,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

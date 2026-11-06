@@ -26,7 +26,7 @@
    echarts, logger) come from classic scripts loaded before this entry point.
    ----------------------------- */
 
-import { formatModelRunTimeLocal, formatMonthDayTimeTZ } from "./shared/format-time.js";
+import { formatModelRunTimeLocal, formatMonthDayTimeTZ, PACIFIC_TZ } from "./shared/format-time.js";
 import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
 import { setSafeHTML } from "./shared/safe-html.js";
 
@@ -297,7 +297,7 @@ function formatStepLabel(date) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: "America/Vancouver",
+    timeZone: PACIFIC_TZ,
   });
 }
 

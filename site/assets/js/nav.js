@@ -44,11 +44,13 @@
     if (window._navClockStarted) return;
     window._navClockStarted = true;
 
-    // timeZoneName gives "PST" or "PDT" as the date falls; a hardcoded label
-    // is wrong half the year. hourCycle h23, not hour12: false, which Chromium
-    // renders as "24:00:00" at midnight.
+    // Fixed UTC-7, labelled "PDT": BC keeps daylight time all year since
+    // 2026, and browsers with older tz data would show PST, an hour off. The
+    // rule and its reasons: PACIFIC_TZ in shared/format-time.js (a classic
+    // script can't import it). hourCycle h23, not hour12: false, which
+    // Chromium renders as "24:00:00" at midnight.
     const formatter = new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/Vancouver",
+      timeZone: "Etc/GMT+7",
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
@@ -62,7 +64,8 @@
 
       const parts = formatter.formatToParts(new Date());
       const part = (type) => parts.find((p) => p.type === type)?.value;
-      const label = `${part("timeZoneName")} ${part("hour")}:${part("minute")}:${part("second")}`;
+      const zone = part("timeZoneName") === "GMT-7" ? "PDT" : part("timeZoneName");
+      const label = `${zone} ${part("hour")}:${part("minute")}:${part("second")}`;
 
       clocks.forEach((clock) => {
         clock.textContent = label;

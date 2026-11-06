@@ -11,6 +11,7 @@ import {
   formatModelRunTime,
   formatMonthDayTime,
   formatMonthDayTimeTZ,
+  PACIFIC_TZ,
 } from "./shared/format-time.js";
 
 let surgeChart = null;
@@ -222,9 +223,9 @@ function updateSurgeChart(stationId) {
           const d = new Date(value);
           const weekday = d.toLocaleString("en-US", {
             weekday: "short",
-            timeZone: "America/Vancouver",
+            timeZone: PACIFIC_TZ,
           });
-          const day = d.toLocaleString("en-US", { day: "numeric", timeZone: "America/Vancouver" });
+          const day = d.toLocaleString("en-US", { day: "numeric", timeZone: PACIFIC_TZ });
           return `${weekday} ${day}`;
         },
         rotate: window.innerWidth < 600 ? 45 : 0,

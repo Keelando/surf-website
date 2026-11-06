@@ -1,7 +1,7 @@
 /**
  * Shared time-formatting helpers (ES module).
  *
- * Site convention: user-facing times are Pacific (America/Vancouver),
+ * Site convention: user-facing times are Pacific (fixed UTC-7, see PACIFIC_TZ),
  * "en-US" locale, 24-hour clock unless noted. Every formatter accepts a
  * Date or an ISO 8601 string.
  *
@@ -11,14 +11,42 @@
  * removed when its page migrates to ES modules — see shared/README.md.
  */
 
-export const PACIFIC_TZ = "America/Vancouver";
+/**
+ * BC stopped changing its clocks: from the spring-forward of 2026-03-08 it
+ * keeps UTC-7 all year. A browser whose time-zone data predates the change
+ * still puts America/Vancouver back on UTC-8 after 2026-11-01, an hour off,
+ * so the site formats Pacific times in a fixed UTC-7 zone and prints the
+ * label up-to-date browsers do ("PDT"; user's pick, 2026-11-06).
+ * "Etc/GMT+7" is UTC-7: POSIX zone names invert the sign.
+ *
+ * Scripts that only ever show recent data (the exports keep 30 days at most)
+ * use PACIFIC_TZ directly. The formatters below go through pacificTimeZone(),
+ * which keeps America/Vancouver for instants before the switch, so a time
+ * from winter 2025–26 still reads as the PST it was.
+ */
+export const PACIFIC_TZ = "Etc/GMT+7";
+export const PACIFIC_LABEL = "PDT";
+const BC_FIXED_UTC7_FROM = Date.UTC(2026, 2, 8, 10); // 02:00 PST, 2026-03-08
 
 function toDate(input) {
   return input instanceof Date ? input : new Date(input);
 }
 
+/** The zone to format an instant in: fixed UTC-7 from 2026-03-08 on. */
+export function pacificTimeZone(input) {
+  return toDate(input).getTime() >= BC_FIXED_UTC7_FROM ? PACIFIC_TZ : "America/Vancouver";
+}
+
+/** Intl names the fixed zone "GMT-7"; say what local clocks say instead. */
+export function pacificLabel(text) {
+  return text.replace("GMT-7", PACIFIC_LABEL);
+}
+
 function fmt(input, options) {
-  return toDate(input).toLocaleString("en-US", { timeZone: PACIFIC_TZ, ...options });
+  const date = toDate(input);
+  return pacificLabel(
+    date.toLocaleString("en-US", { timeZone: pacificTimeZone(date), ...options }),
+  );
 }
 
 /** "14:30" — replaces chart-utils-v4 formatTimeOnly(). */

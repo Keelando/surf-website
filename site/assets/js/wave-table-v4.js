@@ -3,6 +3,8 @@
    Generates 24-hour wave height summary table
    ----------------------------- */
 
+import { PACIFIC_TZ } from "./shared/format-time.js";
+
 /**
  * Generate 24-hour wave height summary table
  * @param {Object} chartData - Full chart data object with all buoys
@@ -94,12 +96,12 @@ export function generateWaveHeightTable(chartData) {
       const dayOfWeek = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][date.getDay()];
       const dayOfMonth = date.toLocaleString("en-US", {
         day: "numeric",
-        timeZone: "America/Vancouver",
+        timeZone: PACIFIC_TZ,
       });
       const hour = date.toLocaleString("en-US", {
         hour: "2-digit",
         hour12: false,
-        timeZone: "America/Vancouver",
+        timeZone: PACIFIC_TZ,
       });
 
       // Only show date prefix if it changed from previous row

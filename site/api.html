@@ -418,7 +418,10 @@ if (!halibutBank.stale) {
       <p>
         All times are ISO 8601 with an explicit UTC offset, e.g.
         <code>2026-08-27T17:05:00+00:00</code>. Local time on the water is
-        <code>America/Vancouver</code>, which observes daylight saving.
+        <code>America/Vancouver</code>. BC stopped changing its clocks in 2026 and
+        keeps UTC-7 all year, so use up-to-date time-zone data (2026e or later) when
+        converting; Washington State still changes, so US stations' local time differs
+        by an hour from November to March.
       </p>
 
       <h2>Caching and fair use</h2>

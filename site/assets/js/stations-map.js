@@ -10,6 +10,8 @@ import {
   formatMonthDayTimeTZ,
   formatWeekdayDayTime,
   getShortAgeString,
+  PACIFIC_TZ,
+  pacificLabel,
 } from "./shared/format-time.js";
 import { formatLightstationWind, silentStationText } from "./shared/lightstation-format.js";
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
@@ -923,13 +925,15 @@ function tidePopupHTML(tide, stationKey) {
   const surgeForecast = getCurrentSurgeForecast(stationKey);
   if (surgeForecast && surgeForecast.value !== null && surgeForecast.value !== undefined) {
     const surgeSign = surgeForecast.value >= 0 ? "+" : "";
-    const timeStr = surgeForecast.time.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "America/Vancouver",
-      timeZoneName: "short",
-    });
+    const timeStr = pacificLabel(
+      surgeForecast.time.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: PACIFIC_TZ,
+        timeZoneName: "short",
+      }),
+    );
 
     popupContent += `<div style="background: var(--color-callout-warning-bg); padding: 8px; margin: 8px 0; border-radius: 4px; border-left: 3px solid var(--color-accent-orange);">`;
     popupContent += `<div style="font-weight: 600; margin-bottom: 4px;">Storm Surge Forecast:</div>`;

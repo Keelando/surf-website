@@ -11,6 +11,7 @@ import {
   formatModelRunTime,
   formatMonthDayTime,
   formatMonthDayTimeTZ,
+  PACIFIC_TZ,
 } from "./shared/format-time.js";
 
 const charts = { forecast: null, verification: null };
@@ -49,7 +50,7 @@ function getDisplayName(stationId, fallback) {
 // Extended to match backend export range
 function getVerificationMinDate() {
   const now = new Date();
-  const pacificNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Vancouver" }));
+  const pacificNow = new Date(now.toLocaleString("en-US", { timeZone: PACIFIC_TZ }));
   // Start of today Pacific
   const todayMidnight = new Date(pacificNow);
   todayMidnight.setHours(0, 0, 0, 0);
@@ -63,15 +64,15 @@ function getVerificationMinDate() {
 // Helper: convert a UTC date to the corresponding midnight in the Pacific timezone
 function getMidnightPacificAsUTC(utcDate) {
   const year = parseInt(
-    utcDate.toLocaleString("en-US", { timeZone: "America/Vancouver", year: "numeric" }),
+    utcDate.toLocaleString("en-US", { timeZone: PACIFIC_TZ, year: "numeric" }),
     10,
   );
   const month = parseInt(
-    utcDate.toLocaleString("en-US", { timeZone: "America/Vancouver", month: "numeric" }),
+    utcDate.toLocaleString("en-US", { timeZone: PACIFIC_TZ, month: "numeric" }),
     10,
   );
   const day = parseInt(
-    utcDate.toLocaleString("en-US", { timeZone: "America/Vancouver", day: "numeric" }),
+    utcDate.toLocaleString("en-US", { timeZone: PACIFIC_TZ, day: "numeric" }),
     10,
   );
 
@@ -79,7 +80,7 @@ function getMidnightPacificAsUTC(utcDate) {
   let testDate = new Date(Date.UTC(year, month - 1, day, 8, 0, 0, 0));
   const testHour = parseInt(
     testDate.toLocaleString("en-US", {
-      timeZone: "America/Vancouver",
+      timeZone: PACIFIC_TZ,
       hour: "numeric",
       hour12: false,
     }),
@@ -244,7 +245,7 @@ function baseSurgeChartOption(theme, opts) {
           new Date(value).toLocaleString("en-US", {
             month: "short",
             day: "numeric",
-            timeZone: "America/Vancouver",
+            timeZone: PACIFIC_TZ,
           }),
         rotate: mobile ? opts.mobileXRotate : 0,
         fontSize: 10,
@@ -681,7 +682,7 @@ function updateVerificationChart(stationId) {
 
   // Calculate midnight tonight (Pacific time) - only show up to today
   const now = new Date();
-  const pacificNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Vancouver" }));
+  const pacificNow = new Date(now.toLocaleString("en-US", { timeZone: PACIFIC_TZ }));
   const midnightTonight = new Date(pacificNow);
   midnightTonight.setHours(23, 59, 59, 999);
   const midnightTonightUTC = new Date(midnightTonight.toLocaleString("en-US", { timeZone: "UTC" }));

@@ -15,7 +15,7 @@
    before the module graph, same as main.js.
    ----------------------------- */
 
-import { formatTimeHM } from "./shared/format-time.js";
+import { formatTimeHM, PACIFIC_TZ } from "./shared/format-time.js";
 import {
   reportsSubHourly,
   usesDominantPeriod,
@@ -147,7 +147,7 @@ function firstValueAt(channels, time) {
  * Time cell — "Mo-11<br/>08h10", or just "08h10" when the date is unchanged
  * from the previous row.
  *
- * Everything is pinned to America/Vancouver: getDay()/getHours() would use the
+ * Everything is pinned to Pacific time (PACIFIC_TZ): getDay()/getHours() would use the
  * viewer's timezone and mislabel evening rows for non-Pacific visitors. Hour
  * and minute come from one formatTimeHM() call because engines only zero-pad
  * reliably when both fields are requested together.
@@ -156,11 +156,11 @@ function firstValueAt(channels, time) {
  */
 export function formatHistoryTimeCell(dateObj, previousDate) {
   const dayOfWeek = dateObj
-    .toLocaleString("en-US", { weekday: "short", timeZone: "America/Vancouver" })
+    .toLocaleString("en-US", { weekday: "short", timeZone: PACIFIC_TZ })
     .slice(0, 2);
   const dayOfMonth = dateObj.toLocaleString("en-US", {
     day: "numeric",
-    timeZone: "America/Vancouver",
+    timeZone: PACIFIC_TZ,
   });
   const [hour, minute] = formatTimeHM(dateObj).split(":");
 

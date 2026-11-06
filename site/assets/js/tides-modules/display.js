@@ -5,7 +5,7 @@
 
 import { STATION_DISPLAY_NAMES } from "./constants.js";
 import { isGeodeticStation, getGeodeticMethodology, getCurrentGeodeticOffset } from "./geodetic.js";
-import { formatMonthDayTime, getAgeString } from "../shared/format-time.js";
+import { formatMonthDayTime, getAgeString, PACIFIC_TZ } from "../shared/format-time.js";
 import { setSafeHTML } from "../shared/safe-html.js";
 
 /**
@@ -268,7 +268,7 @@ export function displayCurrentPrediction(station, stationKey, tideDataStore) {
           hour: "2-digit",
           minute: "2-digit",
           hour12: false,
-          timeZone: "America/Vancouver",
+          timeZone: PACIFIC_TZ,
         });
         const eventType = nextEvent.type === "high" ? "High" : "Low";
         const eventHeight = nextEvent.value.toFixed(2);
@@ -365,7 +365,7 @@ function generatePeakForecastHtml(tideDataStore, stationKey) {
 
   // Get today's date range in Pacific time
   const now = new Date();
-  const pacificNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Vancouver" }));
+  const pacificNow = new Date(now.toLocaleString("en-US", { timeZone: PACIFIC_TZ }));
   const todayStart = new Date(pacificNow);
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(pacificNow);
@@ -375,9 +375,7 @@ function generatePeakForecastHtml(tideDataStore, stationKey) {
   let todayPeak = null;
   combinedData.forecast.forEach((entry) => {
     const entryTime = new Date(entry.time);
-    const pacificEntryTime = new Date(
-      entryTime.toLocaleString("en-US", { timeZone: "America/Vancouver" }),
-    );
+    const pacificEntryTime = new Date(entryTime.toLocaleString("en-US", { timeZone: PACIFIC_TZ }));
 
     // Check if this entry is today
     if (pacificEntryTime >= todayStart && pacificEntryTime <= todayEnd) {
@@ -396,7 +394,7 @@ function generatePeakForecastHtml(tideDataStore, stationKey) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: "America/Vancouver",
+    timeZone: PACIFIC_TZ,
   });
 
   return `
@@ -642,7 +640,7 @@ export function displayHighLowTable(station, dayOffset = 0) {
   }
 
   // Calculate target day in Pacific timezone
-  const pacific = "America/Vancouver";
+  const pacific = PACIFIC_TZ;
   const now = new Date();
 
   // Get current year/month/day in Pacific timezone

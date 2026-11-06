@@ -282,15 +282,16 @@ function registerChartThemeListener(callback) {
  * Example: "Mon 14h"
  */
 function formatCompactTimeLabel(isoString) {
+  // Fixed UTC-7, as PACIFIC_TZ in shared/format-time.js (classic script, no import).
   const d = new Date(isoString);
   const dayOfWeek = d.toLocaleString("en-US", {
     weekday: "short",
-    timeZone: "America/Vancouver",
+    timeZone: "Etc/GMT+7",
   });
   const hour = d.toLocaleString("en-US", {
     hour: "2-digit",
     hour12: false,
-    timeZone: "America/Vancouver",
+    timeZone: "Etc/GMT+7",
   });
   return `${dayOfWeek} ${hour}h`;
 }

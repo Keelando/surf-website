@@ -13,11 +13,37 @@ import {
   formatWeekdayDayTime,
   getAgeString,
   getShortAgeString,
+  PACIFIC_TZ,
+  pacificTimeZone,
 } from "../../site/assets/js/shared/format-time.js";
 
-// 2026-07-14T21:30:00Z = 14:30 PDT (summer); 2026-01-15T20:05:00Z = 12:05 PST (winter)
+// 2026-07-14T21:30:00Z = 14:30 PDT (summer); 2026-01-15T20:05:00Z = 12:05 PST
+// (the last winter BC changed its clocks for). From 2026-03-08 BC keeps UTC-7
+// all year, so 2026-12-01T20:00:00Z is 13:00 PDT, not 12:00 PST.
 const SUMMER = "2026-07-14T21:30:00Z";
 const WINTER = "2026-01-15T20:05:00Z";
+const PERMANENT = "2026-12-01T20:00:00Z";
+
+test("BC times are fixed UTC-7 from the 2026-03-08 spring-forward on", () => {
+  // Independent of the runtime's tz data: an engine that predates BC's change
+  // would put America/Vancouver on UTC-8 in December.
+  assert.equal(formatMonthDayTimeTZ(PERMANENT), "Dec 1, 13:00 PDT");
+  assert.equal(formatFullTimestamp(PERMANENT), "Dec 1, 2026, 13:00 PDT");
+  assert.equal(formatModelRunTimeLocal("2026-12-01T12:00:00Z"), "Dec 1, 05:00 PDT (12Z)");
+  assert.equal(formatTimeHM("2027-01-15T20:05:00Z"), "13:05");
+  // The switch itself: 01:59 PST, then 03:00 PDT.
+  assert.equal(formatTimeHM("2026-03-08T09:59:00Z"), "01:59");
+  assert.equal(formatTimeHM("2026-03-08T10:00:00Z"), "03:00");
+  assert.equal(pacificTimeZone("2026-03-08T09:59:00Z"), "America/Vancouver");
+  assert.equal(pacificTimeZone("2026-03-08T10:00:00Z"), PACIFIC_TZ);
+  // Per-file copies use PACIFIC_TZ directly; it must be UTC-7 in winter too.
+  const hour = new Date(PERMANENT).toLocaleString("en-US", {
+    timeZone: PACIFIC_TZ,
+    hour: "2-digit",
+    hourCycle: "h23",
+  });
+  assert.equal(hour, "13");
+});
 
 test("formatTimeHM renders Pacific 24h time", () => {
   assert.equal(formatTimeHM(SUMMER), "14:30");

@@ -3,7 +3,8 @@
  * Centralized configuration values
  */
 
-export const PACIFIC_TZ = "America/Vancouver";
+// Fixed UTC-7 (BC permanent daylight time); the rule lives in format-time.js.
+export { PACIFIC_TZ } from "../shared/format-time.js";
 
 export const STATION_DISPLAY_NAMES = {
   point_atkinson: "Point Atkinson",

@@ -816,7 +816,7 @@ webcams.html (latest image + slideshow carousel)
 |---------|--------|---------|
 | SQLite storage | Unix epoch (INTEGER) | 1699200000 |
 | JSON exports | ISO 8601 UTC | "2025-11-05T19:00:00Z" |
-| Frontend display | Pacific time (formatted) | "Nov 5, 2025 11:00 AM PST" |
+| Frontend display | Pacific time, fixed UTC-7 from 2026-03-08 (`PACIFIC_TZ` in `shared/format-time.js`) | "Nov 6, 2026 12:00 PM PDT" |
 
 ### Missing Data Indicators
 
