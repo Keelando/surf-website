@@ -155,109 +155,114 @@ function startMapWhenNear() {
   observer.observe(el);
 }
 
-// Load stations.json from the envcan_wave directory
+// How long the markers' readings stay before the next check replaces them, and
+// when they were last loaded (epoch ms; 0 until the first load succeeds). The
+// same five minutes as the station list, and driven by the same clock: main.js
+// calls refreshStationsMap() on its minute tick and when the page comes back
+// into view, so a phone's home-screen app that was only ever resumed, never
+// reloaded, catches up the moment it is opened.
+const MAP_REFRESH_MS = 5 * 60 * 1000;
+let markersLoadedAt = 0;
+let refreshing = null;
+
+// Fetch one optional feed. A failure keeps what was already there: on the first
+// load that is nothing (the popups show no reading), on a refresh it is the
+// previous copy, which is better than wiping every marker's numbers.
+async function fetchOptional(url, previous, what) {
+  try {
+    return await fetchWithTimeout(url);
+  } catch (err) {
+    logger.warn("StationsMap", `Could not fetch ${what}`, err);
+    return previous;
+  }
+}
+
+// Fetch every feed the markers read. Resolves to stations.json, which is the
+// one that is not optional (it is the list of markers); the rest land in the
+// module caches.
+async function fetchMarkerData() {
+  const [buoy, wind, surge, lightstation, waveIndex, stations] = await Promise.all([
+    fetchOptional("/data/latest_buoy_v2.json", latestBuoyData, "latest buoy data"),
+    fetchOptional("/data/latest_wind.json", latestWindData, "latest wind data"),
+    fetchOptional("/data/storm_surge/combined_forecast.json", stormSurgeData, "storm surge data"),
+    fetchOptional(
+      "/data/latest_lightstation.json",
+      latestLightstationData,
+      "latest lightstation data",
+    ),
+    // Optional: without it the popups simply carry no forecast link, which is
+    // the same as before it existed.
+    fetchOptional("/data/wave_forecast/index.json", null, "wave forecast index"),
+    fetchWithTimeout("/data/stations.json"),
+  ]);
+  latestBuoyData = buoy;
+  latestWindData = wind;
+  stormSurgeData = surge;
+  latestLightstationData = lightstation;
+  if (waveIndex) {
+    waveForecastStations = new Set((waveIndex.stations || []).map((station) => station.station_id));
+  }
+  return stations;
+}
+
+// Put every station's marker on the map, replacing any already there.
+function placeMarkers(stations) {
+  markersLayer.clearLayers();
+  buoyMarkers = {};
+  tideMarkers = {};
+  lightstationMarkers = {};
+  webcamMarkers = {};
+
+  // Add buoy markers
+  if (stations.buoys) {
+    Object.values(stations.buoys).forEach((buoy) => {
+      addBuoyMarker(buoy);
+    });
+  }
+
+  // Add tide station markers
+  if (stations.tides) {
+    // Filter out geodetic stations that are already shown as wave/buoy markers
+    const geodeticStations = ["crescent_beach_ocean", "crescent_channel_ocean"];
+    const tidesToShow = Object.entries(stations.tides).filter(
+      ([key]) => !geodeticStations.includes(key),
+    );
+    tidesToShow.forEach(([stationKey, tide]) => {
+      addTideMarker(tide, stationKey);
+    });
+  }
+
+  // Add wind station markers (as buoys since they use same marker type)
+  if (stations.wind) {
+    Object.values(stations.wind).forEach((windStation) => {
+      // Wind stations use the same marker function as buoys
+      addBuoyMarker(windStation);
+    });
+  }
+
+  // Add lighthouse station markers
+  if (stations.lightstations) {
+    Object.values(stations.lightstations).forEach((lightstation) => {
+      addLightstationMarker(lightstation);
+    });
+  }
+
+  // Add webcam markers
+  if (stations.webcams) {
+    Object.values(stations.webcams).forEach((webcam) => {
+      addWebcamMarker(webcam);
+    });
+  }
+
+  // Markers start without the wind line; now that every one of them is on
+  // the map, work out which have room for it.
+  refreshWindLabels();
+}
+
 async function loadStationsAndMarkers() {
   try {
-    // Fetch latest buoy data
-    try {
-      latestBuoyData = await fetchWithTimeout("/data/latest_buoy_v2.json");
-    } catch (err) {
-      logger.warn("StationsMap", "Could not fetch latest buoy data", err);
-    }
-
-    // Fetch latest wind station data
-    try {
-      latestWindData = await fetchWithTimeout("/data/latest_wind.json");
-      logger.debug("StationsMap", "Loaded latest wind station data");
-    } catch (err) {
-      logger.warn("StationsMap", "Could not fetch latest wind data", err);
-    }
-
-    // Fetch storm surge forecast data
-    try {
-      stormSurgeData = await fetchWithTimeout("/data/storm_surge/combined_forecast.json");
-    } catch (err) {
-      logger.warn("StationsMap", "Could not fetch storm surge data", err);
-    }
-
-    // Fetch latest lightstation observations
-    try {
-      latestLightstationData = await fetchWithTimeout("/data/latest_lightstation.json");
-      logger.debug("StationsMap", "Loaded latest lightstation observations");
-    } catch (err) {
-      logger.warn("StationsMap", "Could not fetch latest lightstation data", err);
-    }
-
-    // Fetch the wave-forecast station index. Optional: without it the popups
-    // simply carry no forecast link, which is the same as before it existed.
-    try {
-      const waveIndex = await fetchWithTimeout("/data/wave_forecast/index.json");
-      waveForecastStations = new Set(
-        (waveIndex.stations || []).map((station) => station.station_id),
-      );
-    } catch (err) {
-      logger.warn("StationsMap", "Could not fetch wave forecast index", err);
-    }
-
-    // Fetch stations metadata
-    const stations = await fetchWithTimeout("/data/stations.json");
-
-    // Add buoy markers
-    if (stations.buoys) {
-      Object.values(stations.buoys).forEach((buoy) => {
-        addBuoyMarker(buoy);
-      });
-    }
-
-    // Add tide station markers
-    if (stations.tides) {
-      // Filter out geodetic stations that are already shown as wave/buoy markers
-      const geodeticStations = ["crescent_beach_ocean", "crescent_channel_ocean"];
-      const tidesToShow = Object.entries(stations.tides).filter(
-        ([key]) => !geodeticStations.includes(key),
-      );
-
-      logger.debug(
-        "StationsMap",
-        `Loading ${tidesToShow.length} tide stations to map (excluding ${geodeticStations.length} geodetic stations)...`,
-      );
-      tidesToShow.forEach(([stationKey, tide]) => {
-        addTideMarker(tide, stationKey);
-        logger.debug("StationsMap", `Added tide marker: ${stationKey} (${tide.name})`);
-      });
-    }
-
-    // Add wind station markers (as buoys since they use same marker type)
-    if (stations.wind) {
-      const windCount = Object.keys(stations.wind).length;
-      logger.debug("StationsMap", `Loading ${windCount} wind stations to map...`);
-      Object.values(stations.wind).forEach((windStation) => {
-        // Wind stations use the same marker function as buoys
-        addBuoyMarker(windStation);
-      });
-    }
-
-    // Add lighthouse station markers
-    if (stations.lightstations) {
-      const lightstationCount = Object.keys(stations.lightstations).length;
-      logger.debug("StationsMap", `Loading ${lightstationCount} lighthouse stations to map...`);
-      Object.values(stations.lightstations).forEach((lightstation) => {
-        addLightstationMarker(lightstation);
-      });
-    }
-
-    // Add webcam markers
-    if (stations.webcams) {
-      const webcamCount = Object.keys(stations.webcams).length;
-      logger.debug("StationsMap", `Loading ${webcamCount} webcam(s) to map...`);
-      Object.values(stations.webcams).forEach((webcam) => {
-        addWebcamMarker(webcam);
-      });
-    }
-
-    // Markers start without the wind line; now that every one of them is on
-    // the map, work out which have room for it.
-    refreshWindLabels();
+    placeMarkers(await fetchMarkerData());
+    markersLoadedAt = Date.now();
 
     // Check for station parameter in URL and zoom to it
     checkAndZoomToStation();
@@ -266,6 +271,32 @@ async function loadStationsAndMarkers() {
     // Fallback to inline station data if fetch fails
     loadFallbackStations();
   }
+}
+
+/**
+ * Replace the markers with fresh readings once the last load is due for
+ * replacing. Does nothing before the map has loaded (it fetches fresh data
+ * when it does), or while a popup is open: rebuilding would close it under
+ * the reader, so the check after it closes does the refresh instead. A failed
+ * refresh leaves the markers as they were; the next check tries again.
+ */
+export function refreshStationsMap() {
+  if (!markersLayer || markersLoadedAt === 0) return Promise.resolve();
+  if (Date.now() - markersLoadedAt < MAP_REFRESH_MS) return Promise.resolve();
+  if (markersLayer.getLayers().some((marker) => marker.isPopupOpen())) return Promise.resolve();
+
+  refreshing ??= fetchMarkerData()
+    .then((stations) => {
+      // A popup opened while the fetch was out: leave it be, try next time.
+      if (markersLayer.getLayers().some((marker) => marker.isPopupOpen())) return;
+      placeMarkers(stations);
+      markersLoadedAt = Date.now();
+    })
+    .catch((err) => logger.warn("StationsMap", "Could not refresh the map", err))
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
 }
 
 /**

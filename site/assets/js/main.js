@@ -15,7 +15,12 @@ import {
 } from "./charts-v4.js";
 import { setSafeHTML } from "./shared/safe-html.js";
 import { buildStationDetail, buildStationList, refreshAges } from "./station-list.js";
-import { centerMapOnBuoy, showSelectedBuoyOnMap, showSelectedSurgeOnMap } from "./stations-map.js";
+import {
+  centerMapOnBuoy,
+  refreshStationsMap,
+  showSelectedBuoyOnMap,
+  showSelectedSurgeOnMap,
+} from "./stations-map.js";
 
 // Station metadata from stations.json (single source of truth for
 // per-station behavior — see docs/project/BUOY_CARD_REFACTOR.md).
@@ -141,7 +146,9 @@ function renderStationList(container, data) {
 // a snapshot from hours ago would mark every station down, though it is our
 // copy that is old, not their reports. If the fetch fails the ages still
 // tick, so a page that stays offline never shows a reading as newer than it is.
+// The map's markers ride the same clock (they keep their own five minutes).
 async function tick() {
+  refreshStationsMap();
   if (Date.now() - loadedAt >= REFRESH_MS) await loadBuoyData();
   const container = document.getElementById("station-list");
   if (container && refreshAges(container, latestSnapshot)) {
