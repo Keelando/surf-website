@@ -851,3 +851,25 @@
     font-size: 0.66rem;
   }
 }
+
+/* --- Caveat marks (stations.json `caveat`) --- */
+
+/* The asterisk after a station's name: seen while comparing rows. */
+.wl-caveat-mark {
+  margin-left: 0.15em;
+  color: var(--color-accent-orange);
+  font-weight: var(--weight-bold);
+  cursor: help;
+}
+
+.wl-caveat-key {
+  margin: 0.5rem 0 0;
+  padding: 0 0.4rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.wl-caveat-key span {
+  color: var(--color-accent-orange);
+  font-weight: var(--weight-bold);
+}

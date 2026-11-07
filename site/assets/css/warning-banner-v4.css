@@ -189,8 +189,24 @@
 }
 
 .warning-banner.warning-storm {
+  position: relative;
   border-left-width: 8px;
-  animation: stormPulse 2s ease-in-out infinite; /* More urgent animation */
+  box-shadow: 0 2px 8px rgba(153, 27, 27, 0.4);
+}
+
+/* The pulse (more urgent): the stronger shadow sits on a layer of its own and
+   only its opacity animates, which the compositor runs off the main thread.
+   Animating box-shadow itself repainted and re-layerized the whole page on
+   every frame for as long as a storm warning was up (measured 2026-11-07:
+   ~460 ms of Layerize per tablet scroll, most of the page's compositing). */
+.warning-banner.warning-storm::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(153, 27, 27, 0.6);
+  opacity: 0;
+  animation: stormPulse 2s ease-in-out infinite;
 }
 
 /* Gale Warning - High Severity (34-47 knots) */
@@ -272,15 +288,15 @@
    zone we carry. The shadow alone still reads as urgent. */
 @keyframes stormPulse {
   0%, 100% {
-    box-shadow: 0 2px 8px rgba(153, 27, 27, 0.4);
+    opacity: 0;
   }
   50% {
-    box-shadow: 0 4px 16px rgba(153, 27, 27, 0.6);
+    opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .warning-banner.warning-storm {
+  .warning-banner.warning-storm::after {
     animation: none;
   }
 }

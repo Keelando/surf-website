@@ -210,16 +210,30 @@ export function buildWindRow(e) {
   const buoy = e.isBuoy ? `<span class="wl-kind">buoy</span>` : "";
   // The flag shows on a wide list only (winds-v4.css); the panel has it too.
   const flag = flagIcon(e.meta.country, { className: "wl-flag" });
+  // A station whose readings need a word of warning (stations.json `caveat`,
+  // e.g. CWLM 65 m up a hill) is marked in the list itself, as the old table
+  // did, so it is seen while comparing rows; the note is in its panel. Not a
+  // link: the row is a button, and the panel is one tap away.
+  const caveat = e.meta.caveat
+    ? `<span class="wl-caveat-mark" title="${escapeAttr(e.meta.caveat)}">*</span>`
+    : "";
   return `
     <button type="button" class="wl-row wl-row--${e.fresh.state}" aria-expanded="false" aria-controls="wl-detail-${e.id}">
       <span class="wl-name">
-        <span class="visually-hidden">${e.name}${e.isBuoy ? " (buoy)" : ""}</span>
-        <span class="sl-title wl-title" aria-hidden="true"><span class="wl-title-full">${e.name}</span><span class="wl-title-short">${e.shortName}</span>${flag}${buoy}</span>
+        <span class="visually-hidden">${e.name}${e.isBuoy ? " (buoy)" : ""}${e.meta.caveat ? ", has a note on its readings" : ""}</span>
+        <span class="sl-title wl-title" aria-hidden="true"><span class="wl-title-full">${e.name}</span><span class="wl-title-short">${e.shortName}</span>${caveat}${flag}${buoy}</span>
         <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span>${ageLine}</span>
       </span>
       ${values}
       ${CHEVRON}
     </button>`;
+}
+
+/** The key to the row asterisks, when any listed station has one. */
+function caveatKey(entries) {
+  return entries.some((e) => e.meta.caveat)
+    ? `<p class="wl-caveat-key"><span aria-hidden="true">*</span> A note on that station's readings: open its row.</p>`
+    : "";
 }
 
 /** `<div>` of label/value pairs; pairs with a null value are skipped. */
@@ -289,9 +303,12 @@ export function buildWindDetail(e) {
   const where = countryName(meta.country)
     ? ` · ${flagIcon(meta.country, { className: "wl-flag" })} ${countryName(meta.country)}`
     : "";
-  const notes = [meta.caveat, meta.note]
+  const notes = [
+    meta.caveat &&
+      `<p class="sl-note wl-caveat-note"><span aria-hidden="true">* </span>${meta.caveat}</p>`,
+    meta.note && `<p class="sl-note">${meta.note}</p>`,
+  ]
     .filter(Boolean)
-    .map((text) => `<p class="sl-note">${text}</p>`)
     .join("");
   const link = meta.source_url
     ? `<a class="sl-action" href="${escapeAttr(meta.source_url)}" target="_blank" rel="noopener noreferrer">${meta.source ?? "Source"}${icon("external", "icon--trailing")}<span class="visually-hidden"> (opens in a new tab)</span></a>`
@@ -401,7 +418,7 @@ export function buildWindList(
 ) {
   const head = buildSortHead(sort);
   if (view !== "region") {
-    return `${head}<ul class="sl-rows wl-rows">${rowsHTML(sortEntries(entries, sort))}</ul>`;
+    return `${head}<ul class="sl-rows wl-rows">${rowsHTML(sortEntries(entries, sort))}</ul>${caveatKey(entries)}`;
   }
   const groups = regionGroups(entries, sort)
     .map((group) => {
@@ -420,5 +437,5 @@ export function buildWindList(
       </section>`;
     })
     .join("");
-  return head + groups;
+  return head + groups + caveatKey(entries);
 }
