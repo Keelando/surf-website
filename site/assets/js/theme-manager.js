@@ -8,12 +8,16 @@
   const html = document.documentElement;
 
   // TRIAL ONLY, must not ship (docs/project/PAGE_BACKGROUND.md):
-  // ?bg=gradient|chart|contours picks a page background on the dev preview.
-  // Nothing is remembered; remove this with the options not chosen.
+  // ?bg=gradient|chart|fabric|sea|periodic picks page-background layers on
+  // the dev preview; "+" combines them (?bg=sea+fabric arrives as
+  // "sea fabric"). Nothing is remembered; remove with the layers not chosen.
   try {
-    const bg = new URLSearchParams(window.location.search).get("bg");
-    if (bg === "gradient" || bg === "chart" || bg === "contours") {
-      html.dataset.bg = bg;
+    const known = ["gradient", "chart", "fabric", "sea", "periodic"];
+    const tokens = (new URLSearchParams(window.location.search).get("bg") || "")
+      .split(/[\s,]+/)
+      .filter((t) => known.includes(t));
+    if (tokens.length) {
+      html.dataset.bg = tokens.join(" ");
     }
   } catch (error) {
     // No URL API: no trial background.
