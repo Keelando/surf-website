@@ -810,11 +810,15 @@
 
 /* --- Map error overlay --- */
 
+/* Laid over the live map (winds-map.js), never in place of it. */
 .winds-map-error {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  background: var(--color-surface);
   padding: 2rem;
   text-align: center;
   color: var(--color-text-muted);

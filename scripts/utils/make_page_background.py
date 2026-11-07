@@ -10,6 +10,7 @@ other layers are parked below for reuse. SVG tiles carry one colour per theme
 (a data URI cannot read a CSS variable) and are url-encoded."""
 
 import math
+from pathlib import Path
 from urllib.parse import quote
 
 
@@ -191,10 +192,13 @@ body {{
 /* ── end page background ── */
 """
 
-# One-time migration from the trial block's markers.
-START = "/* ── Page background"
-ENDS = ("/* ── end page background ── */\n", "/* ── end page background trial ── */\n")
-TARGET = __import__("pathlib").Path(__file__).resolve().parents[2] / "site/assets/css/style-v4.css"
+START, END = "/* ── Page background", "/* ── end page background ── */\n"
+# From this file, not lib.config.PROJECT_ROOT: run in the dev worktree, the
+# shared venv's editable install resolves lib/ to the MAIN checkout
+# (docs/DEV_PREVIEW.md, trap 4), so PROJECT_ROOT would write production's
+# style-v4.css, live the moment it is saved.
+TARGET = Path(__file__).resolve().parents[2] / "site" / "assets" / "css" / "style-v4.css"
+
 
 if __name__ == "__main__":
     import sys
@@ -204,7 +208,6 @@ if __name__ == "__main__":
     else:
         text = TARGET.read_text()
         a = text.index(START)
-        end = next(e for e in ENDS if e in text[a:])
-        b = text.index(end, a) + len(end)
+        b = text.index(END, a) + len(END)
         TARGET.write_text(text[:a] + CSS + text[b:])
         print(f"wrote {TARGET}")

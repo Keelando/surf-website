@@ -49,15 +49,25 @@ function initWindsMap() {
 
 // Load wind stations and buoys with wind data (pre-fetched by wind-data.js)
 async function loadWindStationsAndMarkers() {
+  await windData.ready;
+  tryPlaceMarkers();
+}
+
+// A failed load lays a note over the map rather than replacing its contents:
+// that destroyed Leaflet's container, so a later successful refresh drew its
+// markers into nothing. The note goes once markers are placed.
+function tryPlaceMarkers() {
+  const mapEl = document.getElementById("winds-map");
   try {
-    await windData.ready;
     placeWindMarkers();
+    mapEl?.querySelector(".winds-map-error")?.remove();
   } catch (error) {
     console.error("Error loading wind stations for map:", error);
-    const mapEl = document.getElementById("winds-map");
-    if (mapEl) {
-      mapEl.innerHTML =
-        '<div class="winds-map-error">Unable to load station markers. Try refreshing the page.</div>';
+    if (mapEl && !mapEl.querySelector(".winds-map-error")) {
+      const note = document.createElement("div");
+      note.className = "winds-map-error";
+      note.textContent = "Unable to load station markers. Trying again every few minutes.";
+      mapEl.appendChild(note);
     }
   }
 }
@@ -69,7 +79,7 @@ async function loadWindStationsAndMarkers() {
 document.addEventListener("winds:data-updated", () => {
   if (!windMarkersLayer) return;
   if (windMarkersLayer.getLayers().some((marker) => marker.isPopupOpen())) return;
-  placeWindMarkers();
+  tryPlaceMarkers();
 });
 
 function placeWindMarkers() {

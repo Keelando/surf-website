@@ -28,6 +28,8 @@ const TOOLTIP_TIME_TOLERANCE_MS = 1800000; // 30 min — snap tooltip to nearest
 // Global chart instance
 let windChart = null;
 let windTimeseriesData = null;
+// The timeseries the chart, hourly table and station picker were last drawn from.
+let shownTimeseriesAt = 0;
 let currentWindTimeRange = 24; // Default to 24 hours
 
 /**
@@ -311,6 +313,7 @@ async function loadWindTimeseries() {
     // Wait for shared data store (fetched and normalized by wind-data.js)
     await windData.ready;
     windTimeseriesData = windData.timeseries;
+    shownTimeseriesAt = windData.timeseriesLoadedAt;
 
     const select = document.getElementById("wind-station-select");
     if (!select) return;
@@ -830,12 +833,23 @@ window.addEventListener("pageshow", (e) => {
 });
 document.addEventListener("winds:data-updated", () => {
   renderWindList();
+  // Those three read the timeseries, which refresh only every half hour
+  // (wind-data.js), so most updates leave them alone. When they do redraw,
+  // "Show More Rows" stays open and a dropdown the reader is in is left be.
+  if (windData.timeseriesLoadedAt === shownTimeseriesAt) return;
+  shownTimeseriesAt = windData.timeseriesLoadedAt;
   windTimeseriesData = windData.timeseries;
-  populateStationDropdown();
-  const selected = document.getElementById("wind-station-select")?.value;
+  const select = document.getElementById("wind-station-select");
+  if (select && document.activeElement !== select) populateStationDropdown();
+  const selected = select?.value;
   if (selected) {
+    const moreOpen =
+      document
+        .querySelector("#wind-24hr-table .wind-24hr-toggle-btn")
+        ?.getAttribute("aria-expanded") === "true";
     renderWindChart(selected);
     renderWind24HourTable(selected);
+    if (moreOpen) toggleWind24hrRows();
   }
 });
 

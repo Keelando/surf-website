@@ -16,8 +16,17 @@
 import { countryName, flagIcon } from "./shared/flags.js";
 import { formatWeekdayDayTime } from "./shared/format-time.js";
 import { icon } from "./shared/icons.js";
-import { outOfServiceHTML } from "./shared/staleness.js";
+import { liveAgeMinutes, outOfServiceHTML } from "./shared/staleness.js";
 import { ageParts, compactAge, directionArrow, freshness } from "./station-list.js";
+
+/** Escape a registry string for an HTML attribute value (main's wind table had this). */
+function escapeAttr(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
 /**
  * Region headings in display order, north and inside first, then out to the
@@ -72,9 +81,9 @@ export function windEntry(id, s, meta = {}, now = Date.now()) {
     isBuoy: s._isWindType === false || meta.is_buoy === true,
     fresh,
     showValues,
-    ageMinutes: s.observation_time
-      ? Math.max(0, (now - Date.parse(s.observation_time)) / 60_000)
-      : null,
+    // The shared rule (NaN-safe, falls back to the export's age_minutes), so a
+    // row's sort key and its age text never disagree.
+    ageMinutes: liveAgeMinutes(s, now),
     speed: num(s.wind_speed_kt),
     gust: num(s.wind_gust_kt),
     degrees: num(s.wind_direction_deg),
@@ -232,7 +241,8 @@ function stateNote(e) {
   const { state } = e.fresh;
   const age = compactAge(e.ageMinutes);
   if (state === "late") {
-    return `<p class="sl-note sl-note--state sl-note--late">Running late: the last report came ${age} ago.</p>`;
+    const when = age == null ? "." : `: the last report came ${age} ago.`;
+    return `<p class="sl-note sl-note--state sl-note--late">Running late${when}</p>`;
   }
   if (state === "down") {
     const when = e.s.observation_time
@@ -284,7 +294,7 @@ export function buildWindDetail(e) {
     .map((text) => `<p class="sl-note">${text}</p>`)
     .join("");
   const link = meta.source_url
-    ? `<a class="sl-action" href="${meta.source_url}" target="_blank" rel="noopener noreferrer">${meta.source ?? "Source"}${icon("external", "icon--trailing")}<span class="visually-hidden"> (opens in a new tab)</span></a>`
+    ? `<a class="sl-action" href="${escapeAttr(meta.source_url)}" target="_blank" rel="noopener noreferrer">${meta.source ?? "Source"}${icon("external", "icon--trailing")}<span class="visually-hidden"> (opens in a new tab)</span></a>`
     : "";
   return `
       ${stateNote(e)}
@@ -343,7 +353,7 @@ export function buildSortHead(sort = DEFAULT_SORT) {
 export function buildRowActions(e) {
   const source = e.meta.source ?? "the source";
   const link = e.meta.source_url
-    ? `<a class="wl-act" href="${e.meta.source_url}" target="_blank" rel="noopener noreferrer" tabindex="-1" title="${source} (opens in a new tab)" aria-label="${e.name} at ${source} (opens in a new tab)">${icon("external")}</a>`
+    ? `<a class="wl-act" href="${escapeAttr(e.meta.source_url)}" target="_blank" rel="noopener noreferrer" tabindex="-1" title="${escapeAttr(source)} (opens in a new tab)" aria-label="${escapeAttr(e.name)} at ${escapeAttr(source)} (opens in a new tab)">${icon("external")}</a>`
     : "";
   return `
           <span class="wl-actions">

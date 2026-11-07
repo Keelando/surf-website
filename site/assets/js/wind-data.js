@@ -100,19 +100,41 @@ function normalizeTimeseries(ts) {
   return out;
 }
 
+// The 48-hour timeseries are ~1.8 MB together, the latest files ~10 KB each.
+// A page left open refreshes every five minutes (wind-stations.js); fetching
+// everything each time cost ~20 MB an hour per open tab. So the latest files
+// come every time, the timeseries only once they are this old, and the
+// registry once per page load.
+const TIMESERIES_REFRESH_MS = 30 * 60 * 1000;
+let timeseriesLoadedAt = 0;
+let rawTimeseries = null;
+
 /**
- * Fetch all data, normalize it into the store, and resolve the ready promise
+ * Fetch the data, normalize it into the store, and resolve the ready promise
  * (the first time). Throws on failure; the callers decide what that means.
  */
 async function fetchAll() {
   {
-    const [stations, windLatest, buoyLatest, windTs, buoyTs] = await Promise.all([
-      fetchWithTimeout(`/data/stations.json?t=${Date.now()}`),
+    const wantTimeseries =
+      !rawTimeseries || Date.now() - timeseriesLoadedAt >= TIMESERIES_REFRESH_MS;
+    const [stations, windLatest, buoyLatest, freshTs] = await Promise.all([
+      store.stations ?? fetchWithTimeout(`/data/stations.json?t=${Date.now()}`),
       fetchWithTimeout(`/data/latest_wind.json?t=${Date.now()}`),
       fetchWithTimeout(`/data/latest_buoy_v2.json?t=${Date.now()}`),
-      fetchWithTimeout(`/data/wind_timeseries_48hr.json?t=${Date.now()}`),
-      fetchWithTimeout(`/data/buoy_timeseries_48h.json?t=${Date.now()}`),
+      wantTimeseries
+        ? Promise.all([
+            fetchWithTimeout(`/data/wind_timeseries_48hr.json?t=${Date.now()}`),
+            fetchWithTimeout(`/data/buoy_timeseries_48h.json?t=${Date.now()}`),
+          ])
+        : null,
     ]);
+    if (freshTs) {
+      rawTimeseries = freshTs;
+      timeseriesLoadedAt = Date.now();
+    }
+    // Consumers compare this to skip re-rendering what the timeseries feed.
+    store.timeseriesLoadedAt = timeseriesLoadedAt;
+    const [windTs, buoyTs] = rawTimeseries;
 
     store.stations = stations;
     store.latestWind = windLatest;
