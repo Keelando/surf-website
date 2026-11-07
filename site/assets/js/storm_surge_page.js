@@ -782,7 +782,7 @@ function updateVerificationChart(stationId) {
   ensureChart("verification", "verification-chart").setOption(
     {
       ...baseSurgeChartOption(theme, {
-        title: `${displayStation.station_name}: forecasts issued 56-79 h ahead`,
+        title: `${displayStation.station_name}: as forecast about 2–3 days prior`,
         mobileTitle: `${displayStation.station_name}: verification`,
         subtext: "Black line = Tide offset observations | Colored lines = Historical forecast runs",
         mobileSubtext: "Observed (black) vs Forecast runs (colored)",
@@ -899,7 +899,7 @@ function updateVerificationMetadata(station) {
     <strong>Station:</strong> ${station.station_name}<br/>
     <strong>Location:</strong> ${station.location.lat.toFixed(4)}°N, ${Math.abs(station.location.lon).toFixed(4)}°W<br/>
     <strong>Data Retrieved:</strong> ${formatMonthDayTimeTZ(generatedTime)}<br/>
-    <strong>Forecast Horizon:</strong> ${verificationData.forecast_horizon_hours || "56-79"} hours ahead<br/>
+    <strong>Forecast Lead:</strong> about 2–3 days (${verificationData.forecast_horizon_hours || "56-79"} hours)<br/>
     <strong>Historical Days:</strong> ${daysAvailable} day${daysAvailable !== 1 ? "s" : ""} (max ${verificationData.max_days_back || 10})<br/>
     <strong>Collection Time:</strong> ${modelRunDisplay}
   `,

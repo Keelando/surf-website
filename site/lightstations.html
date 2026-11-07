@@ -68,6 +68,17 @@
       margin: 0 0 0.75rem;
     }
 
+    /* BC's permanent UTC-7 (2026): EC's FPCN61 text still labels its hours
+       in PST. A reader comparing the two would otherwise see an hour's
+       disagreement and assume ours is wrong. Remove once EC's text says PDT
+       again (check the "N AM Weekday" line against the header's UTC hour). */
+    .ls-about-tznote {
+      margin: 0.75rem 0 0;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: var(--color-text-muted);
+    }
+
     /* Deliberately the loudest thing in the block: this page is read by people
        deciding whether to put a boat in the water. */
     .ls-about-authority {
@@ -756,6 +767,13 @@
         <a class="ls-about-link ls-about-link-primary" href="https://weather.gc.ca/marine/weatherConditions-lightstation_e.html?mapID=02&amp;siteID=16200" target="_blank" rel="noopener" aria-label="EC Lightstation Reports (opens weather.gc.ca in a new tab)">EC Lightstation Reports <span class="ls-external-arrow" aria-hidden="true">&#8599;</span></a>
         <a class="ls-about-link" href="https://weather.gc.ca/marine/index_e.html" target="_blank" rel="noopener" aria-label="EC Marine Weather (opens weather.gc.ca in a new tab)">EC Marine Weather <span class="ls-external-arrow" aria-hidden="true">&#8599;</span></a>
       </div>
+
+      <p class="ls-about-tznote">
+        <strong>About the times:</strong> times here are BC time (UTC-7, shown as PDT). Since
+        1&nbsp;November, Environment Canada's written-out FPCN61 bulletin has labelled its hours
+        in PST (UTC-8), one hour earlier than the BC times shown here. EC's
+        Lightstation Reports page gives times in UTC and is not affected.
+      </p>
 
       <details class="ls-about-more">
         <summary>How the reporting schedule works</summary>
