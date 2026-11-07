@@ -1,6 +1,12 @@
 # Page background: a chart grid over a depth gradient
 
-**Status:** planned 2026-11-06, for the next frontend session. Build on `dev`.
+**Status:** BUILT on `dev` 2026-11-07, awaiting "ship it". Trial on the preview
+(`?bg=` layers: gradient, chart, contours, fabric, sea, periodic); the user picked
+**sea + fabric over periodic depth bands**, now always on, switch removed. CSS is
+generated: `scripts/utils/make_page_background.py --write`. Chart grid and
+contours are parked in the generator for reuse. Light-mode band tint had to be
+paler than the top fade for AA (see the CSS comment). Tablet scroll at 4x CPU:
+no measurable cost from the background (A/B on dev, same long-frame count).
 **Why:** with the photo shrunk to a banner on desktop (UI_OVERHAUL.md,
 "Step 3: winds", round 2) the page around the panels is flat colour. User:
 "on desktop the page does look very plain now", "background still looks
