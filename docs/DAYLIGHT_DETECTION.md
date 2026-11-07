@@ -110,11 +110,12 @@ python3 scripts/export/export_sunlight_times.py
 ## Dependencies
 
 - `astral` - Sunrise/sunset calculations (added to venv)
-- `pytz` - Timezone handling
+- Time zones: the standard library's `zoneinfo` via `lib/pacific_time.py` — never `pytz`,
+  whose bundled tz data predates BC's permanent UTC-7 (2026)
 
 Install with:
 ```bash
-/home/keelando/envcan_wave/.venv/bin/pip install astral pytz
+/home/keelando/envcan_wave/.venv/bin/pip install astral
 ```
 
 ## Scheduling

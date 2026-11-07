@@ -24,6 +24,7 @@ from zoneinfo import ZoneInfo
 
 from lib.config import EXPORT_DIR, TIDE_DATABASE
 from lib.logging_config import setup_logging
+from lib.pacific_time import PACIFIC, pacific_label
 from lib.stations import STATIONS
 from lib.surrey_residual import residual_series
 from lib.water_level_stations import WATER_LEVEL_STATIONS
@@ -164,13 +165,13 @@ def build_forecast_for_station(conn, station, surge_forecasts, start_ts, end_ts)
 
         if peak_total is None or total > peak_total:
             peak_total = total
-            local_dt = dt.astimezone(ZoneInfo("America/Vancouver"))
+            local_dt = dt.astimezone(PACIFIC)
             peak_entry = {
                 "time": dt.isoformat(),
                 "astronomical_tide_m": round(tide_level, 3),
                 "storm_surge_m": round(surge_value, 3),
                 "total_water_level_m": round(total, 3),
-                "description": (f"Peak occurs at {local_dt.strftime('%Y-%m-%d %I:%M %p PST')}"),
+                "description": (f"Peak occurs at {local_dt.strftime('%Y-%m-%d %I:%M %p')} {pacific_label(local_dt)}"),
             }
 
         if _is_downsample_tick(dt):

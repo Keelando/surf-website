@@ -33,13 +33,13 @@ these sensors are unshielded and read up to ~19 °C high in daylight. See
 import sqlite3
 import time
 from datetime import datetime, timedelta, timezone
-from zoneinfo import ZoneInfo
 
 import requests
 
 from lib.config import BUOY_DATABASE, WIND_DATABASE
 from lib.env import require_env
 from lib.logging_config import setup_logging
+from lib.pacific_time import PACIFIC
 from lib.stations import get_all_buoys, get_all_wind
 
 # Shared utilities
@@ -160,7 +160,11 @@ class FlowWorksAPI:
         """Fetch data from specific channel (last N hours)."""
         url = f"{self.base_url}/sites/{site_id}/channels/{channel_id}/data"
 
-        end = datetime.now(timezone.utc)
+        # FlowWorks reads the filter as Pacific local time, like the DataTime
+        # it returns. A UTC "now" put the window's end 7 h in the future, so
+        # a 24 h request really covered the last 17 h (fetch_surrey_tides.py
+        # says the same: a UTC window can return nothing at all).
+        end = datetime.now(PACIFIC).replace(tzinfo=None)
         start = end - timedelta(hours=hours)
 
         params = {
@@ -232,7 +236,7 @@ def parse_data_point(point):
 
         # If timestamp has no timezone, assume Pacific time
         if dt_naive.tzinfo is None:
-            dt = dt_naive.replace(tzinfo=ZoneInfo("America/Vancouver"))
+            dt = dt_naive.replace(tzinfo=PACIFIC)
         else:
             dt = dt_naive
 
@@ -566,9 +570,7 @@ def push_to_windy(station_key, data, credentials):
     # Bearer header, never the PASSWORD query parameter Windy also accepts —
     # see lib/windy.py for why.
     try:
-        response = requests.get(
-            WINDY_UPDATE_URL, params=params, headers=auth_headers(credentials), timeout=10
-        )
+        response = requests.get(WINDY_UPDATE_URL, params=params, headers=auth_headers(credentials), timeout=10)
 
         # 409 means Windy already holds this exact observation. The fetcher
         # runs every 20 minutes but Surrey often reports less often, so
@@ -591,9 +593,7 @@ def push_to_windy(station_key, data, credentials):
         # trusting a green run. Logged at INFO during bring-up; drop to DEBUG
         # once the success body's shape is known and checked for explicitly.
         body = response.text.strip()
-        logger.info(
-            f"{station_key}: Windy HTTP {response.status_code} ts={params['ts']} body={body[:200]!r}"
-        )
+        logger.info(f"{station_key}: Windy HTTP {response.status_code} ts={params['ts']} body={body[:200]!r}")
         return True
 
     except requests.exceptions.HTTPError as e:

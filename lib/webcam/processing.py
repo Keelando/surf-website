@@ -2,26 +2,9 @@
 Image post-processing utilities (annotation, etc.).
 """
 
-from datetime import timedelta
-from zoneinfo import ZoneInfo
-
 from PIL import Image, ImageDraw, ImageFont
 
-# zoneinfo reads the system's tz data, which knows BC keeps UTC-7 all year
-# from 2026-03-08. pytz did not: it ships its own copy of the database
-# (2025.2 here), which put Vancouver back on PST after 2026-11-01, so every
-# stamp read an hour early ("14:21PST" on a 15:21 frame) and the cams looked
-# an hour more delayed than they were.
-PACIFIC = ZoneInfo("America/Vancouver")
-
-
-def pacific_label(local):
-    """The zone name for a Pacific time: "PDT" at UTC-7, "PST" at UTC-8.
-
-    Not %Z: up-to-date tz data names BC's permanent UTC-7 "MST", which reads
-    as Mountain time. "PDT" matches the website (shared/format-time.js).
-    """
-    return "PDT" if local.utcoffset() == timedelta(hours=-7) else "PST"
+from lib.pacific_time import PACIFIC, pacific_label
 
 
 def retrieval_label(timestamp):

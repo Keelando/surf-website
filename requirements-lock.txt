@@ -31,7 +31,6 @@ pluggy==1.6.0
 psutil==7.1.0
 pytest==9.0.2
 python-dateutil==2.9.0.post0
-pytz==2025.2
 requests==2.32.5
 ruff==0.5.5
 six==1.17.0

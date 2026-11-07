@@ -1,5 +1,6 @@
 """Surrey wave sensors: each reading comes whole from the first sensor with a real Hs."""
 
+import logging
 import sqlite3
 
 import pytest
@@ -20,6 +21,19 @@ META = {
     ],
 }
 T1, T2 = "2026-10-23T13:00:00", "2026-10-23T13:10:00"  # Pacific, as FlowWorks sends them
+
+
+@pytest.fixture(autouse=True)
+def _quiet_logger(monkeypatch):
+    """Keep fetch_and_store's "Fetching ..." lines out of logs/surrey_fetch.log.
+
+    `setup_logging` binds to the real log at import, so every pytest run wrote
+    six invented run lines into the log read to check on the cron job.
+    """
+    silent = logging.getLogger("surrey_wave_test")
+    silent.addHandler(logging.NullHandler())
+    silent.propagate = False
+    monkeypatch.setattr(wave, "logger", silent)
 
 
 class FakeAPI:

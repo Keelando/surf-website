@@ -17,7 +17,6 @@ dependencies = [
     "OWSLib",
     "paho-mqtt",
     "Pillow",
-    "pytz",
     "requests",
     # invoked as a subprocess from the venv bin, not imported
     "yt-dlp",
