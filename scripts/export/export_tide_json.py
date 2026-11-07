@@ -22,6 +22,7 @@ from lib.config import EXPORT_DIR, TIDE_DATABASE, TIDE_FORECAST_DAYS, safe_json_
 from lib.logging_config import setup_logging
 from lib.reporting_lag import record_publication
 from lib.stations import STATIONS
+from lib.surrey_residual import residual_series
 
 logger = setup_logging("tide_export")
 
@@ -199,29 +200,18 @@ def export_latest(conn, station_metadata):
 
             if obs_val is not None:
                 if is_surrey:
-                    # Surrey: Fetch pre-calculated tidal residual from geodetic data
-                    cur.execute(
-                        """
-                        SELECT observation_time, tidal_residual
-                        FROM surrey_geodetic_data
-                        WHERE station_id = ?
-                        AND tidal_residual IS NOT NULL
-                        ORDER BY observation_time DESC
-                        LIMIT 1
-                    """,
-                        (station_id,),
-                    )
-
-                    residual_row = cur.fetchone()
-                    if residual_row:
-                        residual_time, residual_value = residual_row
-                        if residual_value is not None:
-                            station_data["tide_offset"] = {
-                                "value": round(residual_value, 3),
-                                "observation_time": datetime.fromtimestamp(residual_time, tz=timezone.utc).isoformat(),
-                                "source": "surrey_calculated",
-                                "description": "Tidal residual (Surrey FlowWorks calculation)",
-                            }
+                    # Surrey: our own observed − predicted, not FlowWorks'
+                    # tidal_residual, whose two input channels disagree on the
+                    # clock (lib/surrey_residual.py).
+                    recent = residual_series(conn, station_id, obs_time_for_offset - 3600, obs_time_for_offset)
+                    if recent:
+                        residual_time, residual_value = recent[-1]
+                        station_data["tide_offset"] = {
+                            "value": round(residual_value, 3),
+                            "observation_time": datetime.fromtimestamp(residual_time, tz=timezone.utc).isoformat(),
+                            "source": "surrey_obs_minus_pred",
+                            "description": "Tidal residual (Surrey observed minus Surrey predicted)",
+                        }
                 else:
                     # DFO: Calculate offset by matching observation with prediction
                     cur.execute(
@@ -370,25 +360,11 @@ def export_timeseries(conn, station_metadata):
                 }
             )
 
-        # Export tidal residual timeseries for Surrey stations
-        # Use Surrey's pre-calculated tidal residual (observed - predicted within their datum)
+        # Export tidal residual timeseries for Surrey stations: our own observed −
+        # predicted, not FlowWorks' tidal_residual (lib/surrey_residual.py).
         is_surrey_geodetic = station_id.startswith("surrey_")
         if is_surrey_geodetic:
-            # Fetch Surrey's pre-calculated tidal residual from geodetic data
-            cur.execute(
-                """
-                SELECT observation_time, tidal_residual
-                FROM surrey_geodetic_data
-                WHERE station_id = ?
-                  AND observation_time >= ?
-                  AND observation_time <= ?
-                  AND tidal_residual IS NOT NULL
-                ORDER BY observation_time ASC
-            """,
-                (station_id, start_ts, end_ts),
-            )
-
-            residual_rows = cur.fetchall()
+            residual_rows = residual_series(conn, station_id, start_ts, end_ts)
             residual_downsampled = downsample_to_15min(residual_rows)
 
             residuals = []
@@ -397,7 +373,7 @@ def export_timeseries(conn, station_metadata):
                     {
                         "time": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
                         "value": round(residual_val, 3),
-                        "source": "surrey_calculated",
+                        "source": "surrey_obs_minus_pred",
                     }
                 )
 

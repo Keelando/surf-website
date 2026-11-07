@@ -30,6 +30,21 @@ Channels actively used by the system. For the full list of all available channel
 
 ---
 
+## Timestamps and the residual channels
+
+FlowWorks returns naive local times, read as `America/Vancouver`. Since about
+2026-11-03 06–12 UTC the observed channels (`2296`, `2279`) stamp UTC-7 but the
+predicted channels (`2620`, `2621`) still stamp UTC-8, so Surrey's own tidal
+residual (`2414`, `3660`) subtracts the tide from itself an hour apart and
+swings ±0.5–1 m with the tide. Until then both stamped UTC-8.
+
+So the residual we publish is our own observed − predicted, and the daily
+prediction fetch measures the predicted channel's clock against the observed
+one and stores predictions at corrected times — `lib/surrey_residual.py`. When
+Surrey fixes it, the measured shift drops to 0 by itself. Surrey's residual is
+still fetched and stored, and the daily log line `tidal_residual vs ours` shows
+when it agrees again.
+
 ## Datum Notes
 
 All channels use **CGVD28 GVRD** (Canadian Geodetic Vertical Datum 1928, Greater Vancouver Regional District).

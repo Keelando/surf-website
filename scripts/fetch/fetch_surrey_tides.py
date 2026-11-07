@@ -26,6 +26,7 @@ from lib.config import TIDE_DATABASE, TIDE_FORECAST_DAYS
 from lib.env import require_env
 from lib.logging_config import setup_logging
 from lib.stations import get_buoy
+from lib.surrey_residual import compare_with_surrey, detect_prediction_shift
 
 logger = setup_logging("surrey_tide_sync")
 
@@ -38,6 +39,9 @@ API_BASE = "https://developers.flowworks.com/fwapi/v2"
 MAX_WINDOW_HOURS = 14 * 24  # no channel query spans more than this
 MIN_REQUEST_INTERVAL = 1.0  # seconds between any two data requests
 MAX_REQUESTS_PER_RUN = 40  # a normal --all run makes about 15
+# Past hours of predictions fetched daily to check the predicted channel's
+# clock against stored observations (lib/surrey_residual.py).
+SHIFT_CHECK_HOURS = 30
 
 
 # Surrey FlowWorks API credentials (environment, else config/.env)
@@ -240,49 +244,79 @@ def fetch_predictions(api, station_config, tide_conn, hours_future=(TIDE_FORECAS
     """
     Fetch water_level_predicted from Surrey API and store to tide_prediction table.
 
-    Fetches predictions to match DFO pattern:
-    - 2 hours PAST to current time (to cover current prediction at 20-min boundaries)
-    - One day past the last day the tides page shows (TIDE_FORECAST_DAYS), so
-      that day stays whole between midnight and the next daily fetch
+    The window reaches SHIFT_CHECK_HOURS into the past as well as one day past
+    the last day the tides page shows (TIDE_FORECAST_DAYS), so that day stays
+    whole between midnight and the next daily fetch. The past part overlaps
+    stored observations, which is what lets us measure the predicted channel's
+    clock against the observed channel's (see lib/surrey_residual.py): the
+    predictions are stored at corrected times, and when the shift can't be
+    measured nothing is stored — the week already held is better than a guess.
     """
     site_id = station_config["site_id"]
     channel_id = station_config["channels"]["water_level_predicted"]
-    station_info = {"station_id": station_config["station_id"], "station_name": station_config["station_name"]}
+    station_id = station_config["station_id"]
+    name = station_config["display_name"]
 
-    # Fetch from API (FUTURE data)
-    data_points = api.get_channel_data(site_id, channel_id, hours_future=hours_future)
-
-    if not data_points:
-        logger.debug(f"{station_config['display_name']}: No prediction data available")
-        return 0
-
-    # Insert into tide_prediction table
-    tide_cur = tide_conn.cursor()
-    inserted = 0
-
+    data_points = api.get_channel_data(site_id, channel_id, hours_past=SHIFT_CHECK_HOURS, hours_future=hours_future)
+    raw = {}
     for point in data_points:
         timestamp, value = parse_data_point(point)
+        if timestamp is not None and value is not None:
+            raw[timestamp] = value
+    if not raw:
+        logger.warning(f"{name}: no prediction data returned")
+        return 0
 
-        if timestamp is None or value is None:
-            continue
-
-        try:
-            tide_cur.execute(
-                """
-                INSERT OR IGNORE INTO tide_prediction
-                (station_id, station_name, prediction_time, water_level)
-                VALUES (?, ?, ?, ?)
+    now_ts = int(time.time())
+    observed = dict(
+        tide_conn.execute(
+            """
+            SELECT observation_time, water_level FROM tide_observation
+            WHERE station_id = ? AND observation_time >= ? AND water_level IS NOT NULL
             """,
-                (station_info["station_id"], station_info["station_name"], timestamp, value),
-            )
-            if tide_cur.rowcount > 0:
-                inserted += 1
-        except sqlite3.Error as e:
-            logger.warning(f"Failed to insert prediction: {e}")
+            (station_id, now_ts - (SHIFT_CHECK_HOURS + 3) * 3600),
+        ).fetchall()
+    )
+    past = {t: v for t, v in raw.items() if t <= now_ts}
+    shift, spreads = detect_prediction_shift(observed, past)
+    spread_text = ", ".join(f"{s // 60:+d} min: {sd:.3f} m" for s, sd in sorted(spreads.items()))
+    if shift is None:
+        logger.warning(
+            f"{name}: too few observations overlap the predictions to check the predicted channel's "
+            f"clock ({len(observed)} obs, {len(past)} past predictions); keeping the stored predictions"
+        )
+        return 0
+    if shift:
+        logger.warning(
+            f"{name}: predicted channel is stamped {shift // 60:+d} min off the observed channel; "
+            f"storing predictions shifted to match (residual spread by shift: {spread_text})"
+        )
+    else:
+        logger.info(f"{name}: predicted and observed channels agree on the clock ({spread_text})")
 
+    # Upsert, not INSERT OR IGNORE: a corrected stamp has to overwrite a row
+    # stored under the old shift, and the shift itself can change.
+    tide_conn.executemany(
+        """
+        INSERT INTO tide_prediction (station_id, station_name, prediction_time, water_level)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(station_id, prediction_time) DO UPDATE SET water_level = excluded.water_level
+        """,
+        [(station_id, station_config["station_name"], t + shift, v) for t, v in raw.items()],
+    )
     tide_conn.commit()
-    logger.info(f"{station_config['display_name']}: Fetched {inserted} prediction points")
-    return inserted
+    logger.info(f"{name}: stored {len(raw)} prediction points")
+
+    # Surrey's own residual keeps being stored by fetch_geodetic_data; say how
+    # far it sits from ours, so the log shows when it is usable again.
+    comparison = compare_with_surrey(tide_conn, station_id, now_ts - 24 * 3600)
+    if comparison:
+        n, mean_diff, max_diff = comparison
+        logger.info(
+            f"{name}: Surrey's tidal_residual vs ours, last 24 h: mean {mean_diff:+.3f} m, "
+            f"max |diff| {max_diff:.3f} m over {n} points"
+        )
+    return len(raw)
 
 
 def fetch_observations(api, station_config, tide_conn, hours_past=48):

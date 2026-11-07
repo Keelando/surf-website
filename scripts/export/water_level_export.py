@@ -25,6 +25,7 @@ from zoneinfo import ZoneInfo
 from lib.config import EXPORT_DIR, TIDE_DATABASE
 from lib.logging_config import setup_logging
 from lib.stations import STATIONS
+from lib.surrey_residual import residual_series
 from lib.water_level_stations import WATER_LEVEL_STATIONS
 
 logger = setup_logging("water_level_export")
@@ -333,32 +334,23 @@ def build_observed_for_station(conn, station, registry_entry, start_ts):
     cur = conn.cursor()
 
     if station.is_surrey:
-        cur.execute(
-            """
-            SELECT observation_time, tidal_residual
-            FROM surrey_geodetic_data
-            WHERE station_id = ?
-              AND observation_time >= ?
-              AND tidal_residual IS NOT NULL
-            ORDER BY observation_time ASC
-            """,
-            (station_id, start_ts),
-        )
-        rows = cur.fetchall()
+        # Our own observed − predicted, not FlowWorks' tidal_residual, whose two
+        # input channels disagree on the clock (lib/surrey_residual.py).
+        rows = residual_series(conn, station_id, start_ts)
         if not rows:
             logger.warning(f"  no surrey residual data for {station_name}")
             return None
 
         data = []
         for ts, residual in rows:
-            dt = datetime.fromtimestamp(int(ts), tz=timezone.utc)
+            dt = datetime.fromtimestamp(ts, tz=timezone.utc)
             if not _is_downsample_tick(dt):
                 continue
             data.append(
                 {
                     "time": dt.isoformat(),
-                    "observed_surge_m": round(float(residual), 4),
-                    "source": "surrey_calculated",
+                    "observed_surge_m": round(residual, 4),
+                    "source": "surrey_obs_minus_pred",
                 }
             )
     else:
