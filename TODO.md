@@ -63,6 +63,22 @@ duplicated observations on 2026-09-06. Write-up:
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+### Queued 2026-11-07
+
+- [ ] **Many stations down at once** (user 2026-11-07 ~15:00 PDT, health
+      bar: 57/74, 77%). Down: S. Georgia, WR East Beach, PtAtk Tide,
+      Kitsilano, New West, Campbell R, Tofino Tide, Ucluelet, Port Renfrew,
+      Victoria Hbr, Chrome Island, Entrance Light, Cape Scott, Langara
+      Island, McInnes Island, Pine Island, Ambleside Cam.
+      - **All 8 DFO tide gauges: upstream.** Every one stopped at
+        2026-11-07 02:40 UTC, and IWLS itself returned no Kitsilano
+        observations in the 6 h to 23:15 UTC. A DFO-wide outage, so the
+        Point Atkinson gap is probably not the gale. Re-check IWLS before
+        touching the tide pipeline.
+      - Still to look at: the six lightstations (schedule? SXCN?),
+        Southern Georgia Strait buoy, White Rock East Beach (out of service
+        since 2026-10-23), Ambleside cam (frozen upstream, TODO below).
+
 ### Queued 2026-11-06
 
 - [x] **Sitewide audit for BC time-change errors** — DONE 2026-11-07
