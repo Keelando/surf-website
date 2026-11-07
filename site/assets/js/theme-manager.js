@@ -6,6 +6,18 @@
   };
 
   const html = document.documentElement;
+
+  // TRIAL ONLY, must not ship (docs/project/PAGE_BACKGROUND.md):
+  // ?bg=gradient|chart|contours picks a page background on the dev preview.
+  // Nothing is remembered; remove this with the options not chosen.
+  try {
+    const bg = new URLSearchParams(window.location.search).get("bg");
+    if (bg === "gradient" || bg === "chart" || bg === "contours") {
+      html.dataset.bg = bg;
+    }
+  } catch (error) {
+    // No URL API: no trial background.
+  }
   const THEME_COLORS = {
     light: "#eef4f8",
     dark: "#0d1b2a",
