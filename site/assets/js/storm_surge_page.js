@@ -680,12 +680,13 @@ function updateVerificationChart(stationId) {
   // Filter out data before the minimum date (9 days back from today)
   const minDate = getVerificationMinDate();
 
-  // Calculate midnight tonight (Pacific time) - only show up to today
-  const now = new Date();
-  const pacificNow = new Date(now.toLocaleString("en-US", { timeZone: PACIFIC_TZ }));
-  const midnightTonight = new Date(pacificNow);
-  midnightTonight.setHours(23, 59, 59, 999);
-  const midnightTonightUTC = new Date(midnightTonight.toLocaleString("en-US", { timeZone: "UTC" }));
+  // Only show up to the end of today, Pacific: the instant of tomorrow's
+  // Pacific midnight. (This used to re-read a device-local wall clock as UTC,
+  // which put the cutoff 7 h late on a BC device, 3 h late in Toronto.)
+  // PACIFIC_TZ has no DST, so +24 h is always tomorrow.
+  const midnightTonightUTC = new Date(
+    getMidnightPacificAsUTC(new Date(Date.now() + 86400000)).getTime() - 1,
+  );
 
   const forecastDates = {};
 
