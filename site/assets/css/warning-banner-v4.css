@@ -153,7 +153,8 @@
    and per-zone warning cards draw from the same palette as the banner. */
 .warning-banner,
 .warning-jump-group,
-.warning-card {
+.warning-card,
+.zone-warning-line {
   --wb-text: #1f2937;
   --wb-btn-bg: var(--wb-ink);
   --wb-btn-text: #ffffff;
@@ -167,7 +168,8 @@
 
 [data-theme="dark"] .warning-banner,
 [data-theme="dark"] .warning-jump-group,
-[data-theme="dark"] .warning-card {
+[data-theme="dark"] .warning-card,
+[data-theme="dark"] .zone-warning-line {
   --wb-bg: #0f2236;
   --wb-text: #e8eef5;
   --wb-btn-bg: transparent;

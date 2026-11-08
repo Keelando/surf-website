@@ -126,121 +126,154 @@ html {
   padding-bottom: 0.35rem;
 }
 
-.zone-warnings {
-  margin: 0.75rem 0;
-}
-
-/* A zone's own warning: the same palette as the banner and the "Warnings in
-   effect" rows (--wb-* from warning-banner-v4.css), so one warning looks the
-   same in all three places. */
-.warning-card {
-  padding: 0.6rem 0.9rem;
-  margin-bottom: 0.5rem;
-  border-left: 6px solid var(--wb-bar);
-  border-radius: 8px;
-  background:
-    linear-gradient(to right, var(--wb-wash), rgba(0, 0, 0, 0) 70%),
-    var(--wb-bg);
-  box-shadow: inset 0 0 0 1px var(--wb-edge);
-  color: var(--wb-text);
-}
-
-.warning-card h3 {
-  margin: 0 0 0.25rem 0;
-  color: var(--wb-ink);
-  font-size: 0.9rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.warning-card h3 .icon {
-  flex: none;
-  width: 1.1rem;
-  height: 1.1rem;
-}
-
-.warning-card p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: inherit;
-}
-
-.forecast-section {
-  margin: 0.9rem 0;
-}
-
-.forecast-section h3 {
-  color: var(--color-text);
-  margin: 0 0 0.4rem;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.forecast-content {
-  background: var(--color-surface-alt);
-  padding: 0.6rem 0.9rem;
-  border-radius: 4px;
-  border-left: 3px solid var(--color-accent-blue);
-  font-size: 0.95rem;
-  line-height: 1.45;
-}
-
-.forecast-period {
-  margin-bottom: 0.4rem;
-  color: var(--color-text);
-}
-
-.forecast-period:last-child {
-  margin-bottom: 0;
-}
-
-.extended-forecast {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 0.6rem;
-  margin-top: 0.75rem;
-}
-
-.extended-day {
+/* --- Zone card (forecasts.js renderZoneCard, 2026-11-08) ----------------
+   The forecaster's words for one zone, condensed to about a phone screen:
+   name and issue time, warnings one line each, the text verbatim, the coming
+   days one line each, the source as two small links. Capped at a readable
+   line length on a desktop (the old card ran ~1,100px of prose). */
+.zone-card {
+  container-type: inline-size;
+  max-width: 46rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.1rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border-light);
-  border-radius: 6px;
-  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius);
 }
 
-.extended-day h3 {
-  margin: 0 0 0.25rem 0;
-  color: var(--color-primary-dark);
-  font-size: 0.95rem;
-}
-
-.extended-day p {
+.zone-card-title {
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.45;
-  color: var(--color-text-light);
+  font-size: 1.15rem;
+  line-height: 1.25;
+  color: var(--color-primary-dark);
 }
 
-.forecast-metadata {
-  margin-top: 1rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--color-border-light);
-  font-size: 0.9rem;
+.zone-issued {
+  margin: 0.15rem 0 0.7rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
 }
 
-.no-warnings {
-  background: var(--color-callout-info-bg);
-  border-left: 3px solid var(--color-accent-green);
-  padding: 0.5rem 0.9rem;
-  border-radius: 4px;
+.zone-no-warnings {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.zone-warning-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0 0 0.8rem;
+  padding: 0;
+  list-style: none;
+}
+
+/* The banner's palette (--wb-*, warning-banner-v4.css), in one line. The
+   fallbacks cover a warning type with no severity class. */
+.zone-warning-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.45rem;
+  padding: 0.35rem 0.6rem;
+  border-left: 4px solid var(--wb-bar, var(--color-accent-orange));
+  border-radius: 8px;
+  background:
+    linear-gradient(to right, var(--wb-wash, transparent), rgba(0, 0, 0, 0) 70%),
+    var(--wb-bg, var(--color-surface-alt));
+  box-shadow: inset 0 0 0 1px var(--wb-edge, var(--color-border-light));
+  color: var(--wb-text, var(--color-text));
+  font-size: 0.85rem;
+}
+
+.zone-warning-line .icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--wb-ink, currentColor);
+}
+
+.zone-warning-type {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--wb-ink, currentColor);
+}
+
+.zone-warning-issued {
+  font-size: 0.78rem;
+}
+
+.zone-period {
+  margin: 0 0 0.35rem;
   font-size: 0.9rem;
-  color: var(--color-accent-green);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.zone-text {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.zone-label {
+  margin-right: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* The coming days: day name, then its forecast, one line each where it
+   fits. */
+.zone-days {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.zone-day {
+  display: grid;
+  grid-template-columns: 6.25rem minmax(0, 1fr);
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.zone-day dt {
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.zone-day dd {
+  margin: 0;
+  color: var(--color-text-light);
+}
+
+.zone-source {
+  margin: 0.8rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.zone-source a {
+  white-space: nowrap;
+  color: var(--color-accent-blue);
+}
+
+/* A phone at large text: the day name above its forecast. */
+@container (width < 22rem) {
+  .zone-day {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }
 
 .loading-state {
@@ -263,10 +296,6 @@ html {
   .forecast-zone {
     padding: 1rem 0.9rem;
   }
-
-  .extended-forecast {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Narrow screens: give the tables and charts the width back. The page
@@ -274,11 +303,6 @@ html {
 @media (max-width: 600px) {
   .forecast-zone {
     padding: 0.9rem 0.5rem;
-  }
-
-  .forecast-content,
-  .extended-day p {
-    font-size: 0.9rem;
   }
 }
 
@@ -507,15 +531,19 @@ header {
 /* Each warned water, inside its row. The pill outline is what keeps two
    adjacent zone names from reading as one — a gap alone left "Howe Sound
    Haro Strait". */
+/* Unbroken where it fits; a long name ("Juan de Fuca Strait - central
+   strait") may wrap inside its chip rather than push the page sideways at
+   large text (390px at 150% overflowed by ~30px). */
 .warning-jump-item {
   display: inline-block;
+  max-width: 100%;
   padding: 0.15rem 0.55rem;
   border-radius: 999px;
   border: 1px solid var(--wb-control-border);
   background: var(--wb-control-bg);
   color: inherit;
   text-decoration: none;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .warning-jump-item:hover,
@@ -560,24 +588,78 @@ header {
 
 /* --- Warning-zone opt-in (docs/project/WARNING_ZONE_OPT_IN.md) --- */
 
-/* Borrows .verification-help's boxed-disclosure shape; only the spacing
-   above it differs, because this one sits under the zone <select> rather
-   than under a paragraph of metadata. */
-.warning-zone-picker {
-  margin: -0.5rem 0 1.25rem;
-  max-width: 32rem;
+/* "Banner settings" (user 2026-11-08): one fold on the warnings strip. Its
+   summary is pinned beside the strip's heading; the list opens below the
+   warnings, across the strip's full width. */
+.warning-jump {
+  position: relative;
+  container: warnjump / inline-size;
 }
 
-/* The summary states the storm floor as well as naming the control, so it
-   is a sentence rather than a label and wraps on a phone instead of being
-   clipped. */
+.warning-jump-heading {
+  padding-right: 8.5rem;
+}
+
+
+.warning-zone-picker {
+  margin: 0;
+}
+
 .warning-zone-picker > summary {
-  font-weight: 500;
-  white-space: normal;
+  position: absolute;
+  top: 0.7rem;
+  right: 0.8rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent-blue);
+  white-space: nowrap;
+  cursor: pointer;
+  list-style: none;
+}
+
+.warning-zone-picker > summary::-webkit-details-marker {
+  display: none;
+}
+
+.warning-zone-picker > summary:hover {
+  background: var(--color-callout-info-bg);
+}
+
+.warning-zone-picker > summary:focus-visible {
+  outline: 2px solid var(--color-accent-blue);
+  outline-offset: 1px;
+}
+
+/* Too narrow to share a line (a phone at large text: "WARNINGS" alone
+   outgrew the room beside the summary at 390px / 150%): the summary leaves
+   the heading and sits at the foot of the strip, under the warnings. */
+@container warnjump (width < 16rem) {
+  .warning-jump-heading {
+    padding-right: 0;
+  }
+
+  .warning-zone-picker > summary {
+    position: static;
+    display: inline-block;
+    margin-top: 0.6rem;
+  }
+}
+
+.warning-zone-picker[open] > .warning-zone-picker-body {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.warning-zone-intro {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }
 
 .warning-zone-picker-body {
-  padding: 0.7rem;
+  padding: 0.7rem 0 0;
 }
 
 .warning-zone-group {
@@ -725,30 +807,6 @@ header {
 }
 
 
-
-/* The inline toggle in the zone card: the discovery path for a reader who
-   came to read one zone and did not know the picker existed. */
-.zone-alert-toggle:empty {
-  display: none;
-}
-
-.zone-alert-toggle-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: -0.25rem 0 0.75rem;
-  padding: 0.3rem 0;
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.zone-alert-toggle-label input {
-  flex-shrink: 0;
-  width: 1rem;
-  height: 1rem;
-  accent-color: var(--color-accent-blue);
-}
 
 /* Segmented control: one row of joined buttons, exactly one active. */
 .forecast-mode-toggle {
@@ -981,64 +1039,9 @@ header {
   color: var(--color-text);
 }
 
-/* --- Source footer (forecasts.js renderSourceFooter) -------------------
-   Sits below the extended forecast, at the end of the read. Deliberately
-   quieter than a .forecast-zone card — it is an exit, not content — but
-   bordered so it does not read as a stray paragraph. */
-.forecast-source-footer {
-  margin-bottom: 1.25rem;
-  padding: 0.9rem 1.1rem;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border-light);
-  border-radius: 8px;
-}
-
-.forecast-source-note {
-  margin: 0 0 0.7rem;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: var(--color-text);
-}
-
-.forecast-source-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.forecast-source-link {
-  display: inline-block;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid var(--color-primary-dark);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-primary-dark);
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.forecast-source-link-primary {
-  background: var(--color-primary-dark);
-  color: var(--color-surface);
-}
-
-.forecast-source-link:hover,
-.forecast-source-link:focus-visible {
-  text-decoration: underline;
-}
-
 /* Both links leave the site; the arrow says so before the click. */
 .forecast-external-arrow {
   font-size: 0.85em;
   line-height: 1;
 }
 
-/* One per line on a phone: side by side, the zone name wraps to two lines
-   inside a button and the pair reads as one ragged block. */
-@media (max-width: 768px) {
-  .forecast-source-link {
-    flex: 1 1 100%;
-    text-align: center;
-  }
-}

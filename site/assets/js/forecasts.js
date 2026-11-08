@@ -233,26 +233,13 @@ function displayForecasts() {
     `;
   }
 
-  // Display the selected zone only
-  html += renderZoneForecast(zone.zoneKey, zone.zoneData, zone.areaData);
-
-  // Display extended forecast (per zone; area-level copy when zones agree)
-  const extended = zone.zoneData.extended_forecast || zone.areaData.extended_forecast;
-  if (extended && extended.length > 0) {
-    html += renderExtendedForecast(extended, zone.areaData);
-  }
-
-  // Last thing on the page, after the extended forecast: where this came from.
-  // The link beside the zone heading is easy to miss on the way in; this one
-  // is where a reader lands when they have finished reading and want the
-  // original.
-  html += renderSourceFooter(zone.zoneKey, zone.zoneData);
+  // One card: the forecaster's words for the selected zone, condensed to
+  // about a phone screen (user 2026-11-08), source links at its foot.
+  html += renderZoneCard(zone.zoneKey, zone.zoneData, zone.areaData);
 
   setSafeHTML(container, html);
 
-  // After the card exists: the inline toggle mounts into it, and the card is
-  // rebuilt wholesale on every render.
-  renderWarningZoneControls(zones, selectedZoneKey);
+  renderWarningZoneControls(zones);
   renderWarningJumpStrip(zones);
 }
 
@@ -321,8 +308,14 @@ function renderWarningJumpStrip(zones) {
     zones.map((zone) => zone.zoneKey),
   );
 
+  // Always shown: the banner settings live on this strip (user 2026-11-08),
+  // so it must be there on a quiet day too, saying so.
   list.textContent = "";
-  strip.hidden = warnings.length === 0;
+  strip.hidden = false;
+  list.hidden = warnings.length === 0;
+  const heading = document.getElementById("warning-jump-heading");
+  if (heading)
+    heading.textContent = warnings.length ? "Warnings in effect" : "No warnings in effect";
   if (warnings.length === 0) return;
 
   groupWarningsByType(warnings).forEach((group) => {
@@ -384,169 +377,94 @@ function warningJumpLink(warning) {
 }
 
 /**
- * Render forecast for a single zone
+ * The selected zone's forecast, as one card (user 2026-11-08: "zone first,
+ * condensed"). The forecaster's text is shown verbatim, never shortened: it
+ * is someone else's forecast. What shrinks is everything around it: one
+ * heading with the issue time, warnings as one line each, the coming days as
+ * one line each instead of three cards, and the source as two small links
+ * instead of a box with two full-width buttons.
+ *
  * @param {string} zoneKey - Zone identifier
  * @param {Object} zoneData - Zone forecast data
+ * @param {Object} areaData - The zone's area (wave forecast, area-level extended)
  * @returns {string} HTML string
  */
-function renderZoneForecast(zoneKey, zoneData, areaData) {
+function renderZoneCard(zoneKey, zoneData, areaData) {
   const zoneName = zoneData.zone_name || zoneKey.replace(/_/g, " ");
-
-  // Get source link for this zone (omitted for zones we have no siteID for)
-  const siteId = ZONE_SITE_IDS[zoneKey];
-  const sourceLink = siteId
-    ? `https://weather.gc.ca/marine/forecast_e.html?mapID=03&siteID=${siteId}`
-    : null;
+  const issued = zoneData.issued_utc
+    ? `<p class="zone-issued">Issued ${formatForecastTimestamp(new Date(zoneData.issued_utc))}</p>`
+    : "";
 
   let html = `
-    <div class="forecast-zone" id="${zoneKey}">
-      <h2>
-        ${zoneName}
-        ${sourceLink ? `<a href="${sourceLink}" target="_blank" rel="noopener" style="font-size: 0.75em; margin-left: 0.5rem; color: var(--color-accent-blue); text-decoration: none;">View source</a>` : ""}
-      </h2>
-      <div class="zone-alert-toggle" id="zone-alert-toggle"></div>
+    <article class="zone-card" id="${zoneKey}" aria-labelledby="zone-card-title">
+      <h3 class="zone-card-title" id="zone-card-title">${zoneName}</h3>
+      ${issued}
   `;
 
-  // Warnings section
-  html += '<div class="zone-warnings">';
-  if (zoneData.warnings && zoneData.warnings.length > 0) {
-    zoneData.warnings.forEach((warning) => {
-      html += renderWarningCard(warning);
-    });
-  } else {
-    html += `
-      <div class="no-warnings">
-        ✅ No active warnings for this zone
-      </div>
-    `;
-  }
-  html += "</div>";
+  const warnings = zoneData.warnings || [];
+  html += warnings.length
+    ? `<ul class="zone-warning-lines">${warnings.map((w) => renderWarningLine(w, zoneData.issued_utc)).join("")}</ul>`
+    : `<p class="zone-no-warnings">No warnings for this zone.</p>`;
 
-  // Current forecast
-  if (zoneData.forecast) {
-    html += `
-      <div class="forecast-section">
-        <h3>Current Forecast</h3>
-        <div class="forecast-content">
-    `;
-
-    if (zoneData.forecast.period) {
-      html += `<div class="forecast-period"><strong>Period:</strong> ${zoneData.forecast.period}</div>`;
-    }
-
-    if (zoneData.forecast.wind) {
-      html += `<div class="forecast-period"><strong>Wind:</strong> ${zoneData.forecast.wind}</div>`;
-    }
-
-    if (zoneData.forecast.weather) {
-      html += `<div class="forecast-period"><strong>Weather:</strong> ${zoneData.forecast.weather}</div>`;
-    }
-
-    html += `
-        </div>
-      </div>
-    `;
+  const forecast = zoneData.forecast;
+  if (forecast) {
+    if (forecast.period) html += `<p class="zone-period">${forecast.period}</p>`;
+    if (forecast.wind) html += zoneLine("Wind", forecast.wind);
+    if (forecast.weather) html += zoneLine("Weather", forecast.weather);
   }
 
-  // Wave forecast (if present)
-  if (areaData.wave_forecast) {
-    html += `
-      <div class="forecast-section">
-        <h3>Wave Forecast</h3>
-        <div class="forecast-content">
-    `;
-
-    if (areaData.wave_forecast.period) {
-      html += `<div class="forecast-period"><strong>Period:</strong> ${areaData.wave_forecast.period}</div>`;
-    }
-
-    if (areaData.wave_forecast.forecast) {
-      html += `<div class="forecast-period">${areaData.wave_forecast.forecast}</div>`;
-    }
-
-    html += `
-        </div>
-      </div>
-    `;
+  const waves = areaData.wave_forecast;
+  if (waves && waves.forecast) {
+    html += zoneLine(waves.period ? `Waves, ${waves.period}` : "Waves", waves.forecast);
   }
 
-  // Metadata
-  if (zoneData.issued_utc) {
-    const issuedDate = new Date(zoneData.issued_utc);
-    html += `
-      <div class="forecast-metadata">
-        <strong>Issued:</strong> ${formatForecastTimestamp(issuedDate)}
-      </div>
-    `;
+  const extended = zoneData.extended_forecast || areaData.extended_forecast;
+  if (extended && extended.length > 0) {
+    html += `<dl class="zone-days">${extended
+      .map((day) => `<div class="zone-day"><dt>${day.period}</dt><dd>${day.forecast}</dd></div>`)
+      .join("")}</dl>`;
   }
 
-  html += "</div>"; // .forecast-zone
-
+  html += renderSourceLinks(zoneKey, zoneName);
+  html += "</article>";
   return html;
 }
 
 /**
- * Render a warning card
+ * One labelled paragraph of the forecaster's text.
+ *
+ * @param {string} label - "Wind", "Weather", "Waves, …"
+ * @param {string} text - The forecaster's words, verbatim
+ * @returns {string} HTML string
+ */
+function zoneLine(label, text) {
+  return `<p class="zone-text"><span class="zone-label">${label}</span> ${text}</p>`;
+}
+
+/**
+ * A zone's own warning, one line: type, status, issue time. Same --wb-*
+ * palette as the banner and the warnings strip, so one warning looks the
+ * same in all three places.
+ *
  * @param {Object} warning - Warning data
+ * @param {string} [zoneIssuedUtc] - The bulletin's issue time, shown in the
+ *   card heading; a warning issued with it doesn't repeat it
  * @returns {string} HTML string
  */
-function renderWarningCard(warning) {
-  const severityClass = getWarningSeverityClass(warning.type);
-
-  let issuedText = "";
-  if (warning.issued_utc) {
-    const issuedDate = new Date(warning.issued_utc);
-    issuedText = ` <small>(Issued ${formatForecastTimestamp(issuedDate)})</small>`;
-  }
-
+function renderWarningLine(warning, zoneIssuedUtc) {
+  const sameAsZone =
+    warning.issued_utc &&
+    zoneIssuedUtc &&
+    Math.abs(new Date(warning.issued_utc) - new Date(zoneIssuedUtc)) < 60 * 1000;
+  const issued =
+    warning.issued_utc && !sameAsZone
+      ? ` <span class="zone-warning-issued">issued ${formatForecastTimestamp(new Date(warning.issued_utc))}</span>`
+      : "";
   return `
-    <div class="warning-card ${severityClass}">
-      <h3>${lineIcon("warning")}${warning.type}</h3>
-      <p><strong>Status:</strong> ${warning.status}${issuedText}</p>
-    </div>
-  `;
-}
-
-/**
- * Render extended forecast section
- * @param {Array} extendedForecast - Extended forecast periods
- * @returns {string} HTML string
- */
-function renderExtendedForecast(extendedForecast, areaData) {
-  let html = `
-    <div class="forecast-zone">
-      <h2>Extended Forecast</h2>
-      <div class="extended-forecast">
-  `;
-
-  extendedForecast.forEach((period) => {
-    html += `
-      <div class="extended-day">
-        <h3>${period.period}</h3>
-        <p>${period.forecast}</p>
-      </div>
-    `;
-  });
-
-  html += `
-      </div>
-  `;
-
-  // Add issued timestamp if available
-  if (areaData && areaData.generated_utc) {
-    const issuedDate = new Date(areaData.generated_utc);
-    html += `
-      <div class="forecast-metadata">
-        <strong>Issued:</strong> ${formatForecastTimestamp(issuedDate)}
-      </div>
-    `;
-  }
-
-  html += `
-    </div>
-  `;
-
-  return html;
+    <li class="zone-warning-line ${getWarningSeverityClass(warning.type)}">
+      ${lineIcon("warning")}<span class="zone-warning-type">${warning.type}</span>
+      <span class="zone-warning-status">${String(warning.status || "").toLowerCase()}</span>${issued}
+    </li>`;
 }
 
 /**
@@ -559,19 +477,19 @@ const ALL_ZONES_BULLETIN =
   "https://weather.gc.ca/marine/marine_bulletins_e.html?Bulletin=fqcn13.cwvr";
 
 /**
- * Where this forecast came from, rendered below everything else.
+ * Where this forecast came from: the card's last line.
  *
  * The site re-presents someone else's bulletins, so a reader must always be
- * able to reach the original in one click — and a reader who can put our
- * rendering beside the source is a reader who can catch our next transcription
- * error. That is the reason this is worth the vertical space.
+ * able to reach the original in one click, and a reader who can put our
+ * rendering beside the source can catch our next transcription error. Two
+ * small links do that; the earlier box with two full-width buttons cost
+ * ~200px on a phone for the same two clicks.
  *
  * @param {string} zoneKey - Zone identifier
- * @param {Object} zoneData - Zone forecast data (for the display name)
+ * @param {string} zoneName - Zone display name
  * @returns {string} HTML string
  */
-function renderSourceFooter(zoneKey, zoneData) {
-  const zoneName = zoneData.zone_name || zoneKey.replace(/_/g, " ");
+function renderSourceLinks(zoneKey, zoneName) {
   const siteId = ZONE_SITE_IDS[zoneKey];
   const arrow = '<span class="forecast-external-arrow" aria-hidden="true">\u2197</span>';
 
@@ -579,28 +497,19 @@ function renderSourceFooter(zoneKey, zoneData) {
   // through to the all-zones bulletin rather than to a landing page, which
   // would imply a precision we cannot deliver.
   const zoneLink = siteId
-    ? `<a class="forecast-source-link forecast-source-link-primary"
-          href="https://weather.gc.ca/marine/forecast_e.html?mapID=03&siteID=${siteId}"
+    ? `<a href="https://weather.gc.ca/marine/forecast_e.html?mapID=03&siteID=${siteId}"
           target="_blank" rel="noopener"
           aria-label="${zoneName} forecast on Environment Canada (opens weather.gc.ca in a new tab)"
-       >${zoneName} on weather.gc.ca ${arrow}</a>`
+       >This zone ${arrow}</a> · `
     : "";
 
   return `
-    <div class="forecast-source-footer">
-      <p class="forecast-source-note">
-        <strong>Environment Canada is the authoritative source.</strong>
-        This is their bulletin, rendered here${siteId ? "" : " (we have no direct page link for this zone)"}.
-        Read the original:
-      </p>
-      <div class="forecast-source-links">
-        ${zoneLink}
-        <a class="forecast-source-link" href="${ALL_ZONES_BULLETIN}"
-           target="_blank" rel="noopener"
-           aria-label="All BC marine forecasts, full bulletin (opens weather.gc.ca in a new tab)"
-        >All BC zones (full bulletin) ${arrow}</a>
-      </div>
-    </div>
+    <p class="zone-source">
+      Environment Canada's bulletin, the authoritative source:
+      ${zoneLink}<a href="${ALL_ZONES_BULLETIN}" target="_blank" rel="noopener"
+         aria-label="All BC marine forecasts, full bulletin (opens weather.gc.ca in a new tab)"
+      >All BC zones ${arrow}</a>
+    </p>
   `;
 }
 

@@ -16,16 +16,24 @@
 const { test, expect } = require("@playwright/test");
 
 const sourceLinks = [
-  { route: "/", selector: ".buoy-source-link", label: "buoy card source" },
+  // Home's buoy cards became the station list in the 2026 overhaul; their
+  // source link now lives in each row's detail panel.
+  // Panels are built on open, so open the first row before looking.
+  {
+    route: "/",
+    selector: '.sl-detail a.sl-action[href^="http"]',
+    label: "home station source",
+    before: (page) => page.locator(".sl-row").first().click(),
+  },
   { route: "/lightstations.html", selector: ".ls-card-source-link", label: "lightstation card source" },
-  { route: "/forecasts.html", selector: ".forecast-source-link", label: "forecast source footer" },
-  { route: "/forecasts.html", selector: ".forecast-zone h2 a", label: "forecast zone heading source" },
+  { route: "/forecasts.html", selector: ".zone-source a", label: "forecast zone source" },
 ];
 
 test.describe("Sanitized external links", () => {
-  for (const { route, selector, label } of sourceLinks) {
+  for (const { route, selector, label, before } of sourceLinks) {
     test(`${label} opens externally and is opener-safe`, async ({ page }) => {
       await page.goto(route, { waitUntil: "networkidle" });
+      if (before) await before(page);
       const links = page.locator(selector);
       await expect(links.first()).toBeAttached({ timeout: 10000 });
 

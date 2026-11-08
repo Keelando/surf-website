@@ -1,19 +1,15 @@
 /**
  * Warning-zone picker — the DOM half of the per-zone banner opt-in.
  *
- * Two controls, one preference:
+ * One control: a collapsed `<details>` ("Banner settings") on the warnings
+ * strip at the top of forecasts.html, listing every zone we carry as a
+ * checkbox, grouped by area.
  *
- *   1. A collapsed `<details>` under the zone `<select>`, listing every zone
- *      we carry as a checkbox, grouped by area. Its summary is static copy in
- *      forecasts.html — it names the control and states the storm floor, which
- *      is the one thing a reader needs before opening it.
- *   2. An inline "display warning banners for this zone" checkbox inside the
- *      rendered zone card — the discovery mechanism. A reader who cares about
- *      Howe Sound has to come here to read Howe Sound's forecast at all, which
- *      puts the control for banners about it directly under their eyes. That
- *      is why no footer link, banner gear, or settings page is needed.
+ * Until 2026-11-08 there was a second control, a "display warning banners for
+ * this zone" checkbox inside each rendered zone card, meant as the discovery
+ * route. The user moved the settings out of the forecast text to one fold on
+ * the strip, beside the warnings they control.
  *
- * Both write the same key and re-render each other, so the two never disagree.
  * Resolution and the storm floor live in `shared/warning-zones.js`; storage in
  * `shared/warning-preferences.js`. This file only draws and listens.
  *
@@ -27,12 +23,9 @@ import { DEFAULT_BANNER_ZONES, getBannerZones } from "./shared/warning-zones.js"
 const PICKER_ID = "warning-zone-picker";
 const PICKER_LIST_ID = "warning-zone-picker-list";
 const PICKER_COLLAPSE_ID = "warning-zone-picker-collapse";
-const INLINE_TOGGLE_ID = "zone-alert-toggle";
 
 /** The zone list for the current document, set by renderWarningZoneControls(). */
 let currentZones = [];
-/** The zone the page is currently showing, for the inline toggle. */
-let currentZoneKey = null;
 /**
  * The last non-empty selection, so unticking "no banners" is an undo rather
  * than a reset. Session-scoped on purpose: it is a courtesy for the reader who
@@ -51,7 +44,7 @@ function effectiveZoneKeys() {
 }
 
 /**
- * Persist a selection and bring both controls (and the banner) into line.
+ * Persist a selection and bring the control (and the banner) into line.
  *
  * @param {Iterable<string>} zoneKeys - Zones that may raise the banner
  * @returns {void}
@@ -228,62 +221,24 @@ function renderPickerList(selected) {
   });
 }
 
-/**
- * Draw the inline toggle inside the rendered zone card.
- *
- * The mount point is an empty div emitted by forecasts.js and the control is
- * built with DOM calls rather than markup, because the card HTML goes through
- * DOMPurify — a form control's attributes are not something to leave at the
- * mercy of a sanitiser's defaults.
- *
- * @param {Array<string>} selected - Effective zone keys
- * @returns {void}
- */
-function renderInlineToggle(selected) {
-  const mount = document.getElementById(INLINE_TOGGLE_ID);
-  if (!mount) return;
-
-  mount.textContent = "";
-  if (!currentZoneKey) return;
-
-  const label = document.createElement("label");
-  label.className = "zone-alert-toggle-label";
-
-  const input = document.createElement("input");
-  input.type = "checkbox";
-  input.checked = selected.includes(currentZoneKey);
-  input.addEventListener("change", (event) => {
-    setZoneSelected(currentZoneKey, event.target.checked);
-  });
-
-  const text = document.createElement("span");
-  text.textContent = "Display warning banners for this zone.";
-
-  label.append(input, text);
-  mount.appendChild(label);
-}
-
-/** Redraw both controls from storage. */
+/** Redraw the control from storage. */
 function render() {
   const selected = effectiveZoneKeys();
 
   renderPickerList(selected);
-  renderInlineToggle(selected);
 }
 
 /**
- * Render both zone controls for the current document and selected zone.
+ * Render the banner-settings control for the current document.
  *
- * Called by forecasts.js after every re-render, since the inline toggle lives
- * inside markup the page rebuilds wholesale.
+ * Called by forecasts.js after every render, so the list follows the zones
+ * the latest forecast carries.
  *
  * @param {Array<Object>} zones - Zone list from shared/marine-zones.js
- * @param {string|null} selectedZoneKey - Zone the page is showing
  * @returns {void}
  */
-export function renderWarningZoneControls(zones, selectedZoneKey) {
+export function renderWarningZoneControls(zones) {
   currentZones = Array.isArray(zones) ? zones : [];
-  currentZoneKey = selectedZoneKey;
 
   const picker = document.getElementById(PICKER_ID);
   // One zone is not worth a picker, matching the `<select>` next to it.

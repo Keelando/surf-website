@@ -40,8 +40,8 @@
   <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-1600.avif" media="(min-width: 769px)" fetchpriority="high" />
   <link rel="stylesheet" href="/assets/css/style-v4.css?v=45b78611f4" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=345437d067" />
-  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=f85378f9dd" />
-  <link rel="stylesheet" href="/assets/css/forecasts-v4.css?v=6d9c831f02" />
+  <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=25e64f5cd1" />
+  <link rel="stylesheet" href="/assets/css/forecasts-v4.css?v=01452e330c" />
 </head>
 
 <body>
@@ -72,36 +72,18 @@
          banner subscription. The sitewide banner is deliberately narrow; this
          is the page where you see the whole picture, and it closes the blind
          spot that zone filtering otherwise creates. Filled in by forecasts.js. -->
-    <nav id="warning-jump" class="warning-jump" aria-labelledby="warning-jump-heading" hidden>
+    <section id="warning-jump" class="warning-jump" aria-labelledby="warning-jump-heading" hidden>
       <h2 id="warning-jump-heading" class="warning-jump-heading">Warnings in effect</h2>
       <ul id="warning-jump-list" class="warning-jump-list"></ul>
-    </nav>
-
-    <!-- Two different kinds of forecast live on this page and they are not
-         interchangeable: a zone forecast is prose written by an EC forecaster
-         covering a whole body of water, while the point forecast below is raw
-         numerical model output at a single lat/lon. The headings and the rule
-         between them exist to keep that distinction obvious. -->
-    <section class="forecast-kind" id="zone-forecast-section" aria-labelledby="zone-forecast-heading">
-      <h2 id="zone-forecast-heading">Marine Forecast by Zone</h2>
-      <p class="forecast-kind-sub">
-        Written by a forecaster at Environment Canada, covering a whole body of
-        water: wind, visibility, and sea state where the zone is exposed.
-      </p>
-
-      <div id="forecast-zone-selector" class="forecast-zone-selector" hidden>
-        <label for="forecast-zone-select">Marine zone:</label>
-        <select id="forecast-zone-select">
-          <option value="">Loading zones...</option>
-        </select>
-      </div>
-
-      <!-- Which zones may interrupt every page with a banner. Collapsed by
-           default: a settings control on a page whose job is forecasts should
-           not compete with them. Filled in by warning-zone-picker.js. -->
-      <details id="warning-zone-picker" class="verification-help warning-zone-picker" hidden>
-        <summary>Customize alerts (storm warnings will always issue a warning banner)</summary>
+      <!-- Which zones may raise the banner on every page (user 2026-11-08:
+           one fold, here on the strip, instead of a fold under the zone
+           <select> plus a checkbox in every zone card). Its summary sits beside
+           the heading; the list opens below the warnings. Filled in by
+           warning-zone-picker.js. -->
+      <details id="warning-zone-picker" class="warning-zone-picker" hidden>
+        <summary><span aria-hidden="true">⚙</span> Banner settings</summary>
         <div class="warning-zone-picker-body">
+          <p class="warning-zone-intro">Choose the zones whose warnings show as a banner at the top of every page. Storm warnings always do.</p>
           <div id="warning-zone-picker-list"></div>
           <!-- Nine zones make a tall list, so by the time you have finished
                ticking, the summary you opened is well off the top of the
@@ -116,6 +98,26 @@
           </button>
         </div>
       </details>
+    </section>
+
+    <!-- Two different kinds of forecast live on this page and they are not
+         interchangeable: a zone forecast is prose written by an EC forecaster
+         covering a whole body of water, while the point forecast below is raw
+         numerical model output at a single lat/lon. The headings and the rule
+         between them exist to keep that distinction obvious. -->
+    <section class="forecast-kind" id="zone-forecast-section" aria-labelledby="zone-forecast-heading">
+      <h2 id="zone-forecast-heading">Marine Forecast by Zone</h2>
+      <p class="forecast-kind-sub">
+        Written by an Environment Canada forecaster for a whole body of water.
+      </p>
+
+      <div id="forecast-zone-selector" class="forecast-zone-selector" hidden>
+        <label for="forecast-zone-select">Marine zone:</label>
+        <select id="forecast-zone-select">
+          <option value="">Loading zones...</option>
+        </select>
+      </div>
+
 
       <div id="forecast-container">
         <div class="loading-state">
@@ -324,7 +326,7 @@
   <script defer src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
   <script defer src="/assets/js/sanitize-html.js?v=57084326c8"></script>
   <script defer src="/assets/js/chart-utils-v4.js?v=6cd395ae52"></script>
-  <script type="module" src="/assets/js/forecasts.js?v=45a76c1d54"></script>
+  <script type="module" src="/assets/js/forecasts.js?v=37ca0763f5"></script>
   <script type="module" src="/assets/js/wave-forecast.js?v=fd57323104"></script>
   <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
