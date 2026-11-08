@@ -257,7 +257,7 @@ test("a Wind Wave column appears only where the station reports wind waves", () 
 
 // --- backup wave sensor ----------------------------------------------------
 
-test("rows from a backup wave sensor are starred and explained", () => {
+test("rows from a backup wave sensor are daggered and explained", () => {
   const ts = {
     wave_height_sig: {
       data: [
@@ -267,8 +267,8 @@ test("rows from a backup wave sensor are starred and explained", () => {
     },
   };
   const html = buildHistoryTableHTML(ts, PILE, { now: NOW });
-  assert.match(html, /0\.30\*/);
-  assert.ok(!html.includes("0.40*"));
+  assert.match(html, /0\.30†/); // a dagger: the asterisk is the sitewide caveat mark
+  assert.ok(!html.includes("0.40†"));
   assert.match(html, /backup wave sensor \(radar\)/);
 
   const plain = buildHistoryTableHTML({ wave_height_sig: chan([[T(10), 0.4]]) }, PILE, { now: NOW });
@@ -289,4 +289,20 @@ test("backup spans run from the first backup point to the point after the last",
     { sensor: "radar", start: T(5), end: T(5) },
   ]);
   assert.deepEqual(backupSensorSpans([{ time: T(1) }]), []);
+});
+
+// --- caveats: the asterisk rule ---------------------------------------------
+
+test("a caveated air temperature is starred in the column, its values and a footnote", () => {
+  const meta = { ...PILE, caveat: "Reads high on sunny afternoons.", caveat_fields: ["air_temp"] };
+  const ts = { air_temp: chan([[T(10), 14.2]]), sea_temp: chan([[T(10), 10.1]]) };
+  const html = buildHistoryTableHTML(ts, meta, { now: NOW });
+  assert.match(html, /Air<span class="caveat-star"/);
+  assert.match(html, /14\.2<span class="caveat-star"/);
+  assert.ok(!/10\.1<span class="caveat-star"/.test(html), "sea temperature is not starred");
+  assert.match(html, /\* Air temperature: Reads high on sunny afternoons\./);
+
+  const plain = buildHistoryTableHTML(ts, PILE, { now: NOW });
+  assert.ok(!plain.includes("caveat-star"));
+  assert.ok(!plain.includes("caveat-footnote"));
 });

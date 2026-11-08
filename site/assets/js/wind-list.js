@@ -16,18 +16,10 @@
 import { countryName, flagIcon } from "./shared/flags.js";
 import { formatWeekdayDayTime } from "./shared/format-time.js";
 import { icon } from "./shared/icons.js";
-import { airTempIsProxy, airTempLabel } from "./shared/station-meta.js";
+import { escapeAttr } from "./shared/safe-html.js";
+import { airTempIsProxy, airTempLabel, caveatStar } from "./shared/station-meta.js";
 import { liveAgeMinutes, outOfServiceHTML } from "./shared/staleness.js";
 import { ageParts, compactAge, directionArrow, freshness } from "./station-list.js";
-
-/** Escape a registry string for an HTML attribute value (main's wind table had this). */
-function escapeAttr(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
 
 /**
  * Region headings in display order, north and inside first, then out to the
@@ -207,14 +199,24 @@ export function buildWindRow(e) {
             "wl-temp wl-temp--proxy",
             e.temp == null
               ? null
-              : `<span title="${escapeAttr(airTempLabel(e.meta))}, not the open air">${fixed(e.temp, 1)}${PROXY_STAR}</span>`,
+              : `<span title="${escapeAttr(airTempLabel(e.meta))}, not the open air">${fixed(e.temp, 1)}${caveatStar(e.meta, "air_temp")}</span>`,
             airTempLabel(e.meta)
               .toLowerCase()
               .replace(/\btemp\b/, "temperature"),
             "°C",
           )
-        : numCell("wl-temp", fixed(e.temp, 1), "air temperature", "°C")) +
-      numCell("wl-pressure", fixed(e.pressure, 1), "pressure", "hPa");
+        : numCell(
+            "wl-temp",
+            e.temp == null ? null : `${fixed(e.temp, 1)}${caveatStar(e.meta, "air_temp")}`,
+            "air temperature",
+            "°C",
+          )) +
+      numCell(
+        "wl-pressure",
+        e.pressure == null ? null : `${fixed(e.pressure, 1)}${caveatStar(e.meta, "pressure")}`,
+        "pressure",
+        "hPa",
+      );
   } else {
     const text = e.fresh.state === "out" ? "Out of service" : "No recent data";
     values = `<span class="wl-cell wl-empty sl-none">${text}</span>`;
@@ -242,13 +244,6 @@ export function buildWindRow(e) {
     </button>`;
 }
 
-/**
- * Marks a temperature that isn't the open air's (stations.json air_temp_label)
- * on the number itself, wherever it shows: it doesn't describe the weather
- * outside. Decoration for sighted readers; the label already says so aloud.
- */
-const PROXY_STAR = `<span class="wl-proxy-star" aria-hidden="true">*</span>`;
-
 /** The key to the row asterisks, when any listed station has one. */
 function caveatKey(entries) {
   return entries.some((e) => e.meta.caveat)
@@ -269,6 +264,9 @@ function statGroup(title, pairs) {
 
 const withUnit = (value, unit) =>
   value == null ? null : `${value}<span class="sl-unit"> ${unit}</span>`;
+
+/** A shown value plus the caveat asterisk when its reading is caveated (the asterisk rule). */
+const starred = (html, meta, field) => (html == null ? null : html + caveatStar(meta, field));
 
 /** The note that opens a panel whose station is late, down or out of service. */
 function stateNote(e) {
@@ -311,13 +309,8 @@ export function buildWindDetail(e) {
         ["From", bearing],
       ]) +
       statGroup("Weather", [
-        [
-          airTempLabel(meta),
-          e.temp != null && airTempIsProxy(meta)
-            ? withUnit(fixed(e.temp, 1), "°C") + PROXY_STAR
-            : withUnit(fixed(e.temp, 1), "°C"),
-        ],
-        ["Pressure", withUnit(fixed(e.pressure, 1), "hPa")],
+        [airTempLabel(meta), starred(withUnit(fixed(e.temp, 1), "°C"), meta, "air_temp")],
+        ["Pressure", starred(withUnit(fixed(e.pressure, 1), "hPa"), meta, "pressure")],
         [
           "Humidity",
           withUnit(s.humidity_percent != null ? Math.round(s.humidity_percent) : null, "%"),

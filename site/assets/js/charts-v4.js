@@ -7,12 +7,16 @@
    ----------------------------- */
 
 import { renderComparisonChart } from "./comparison-chart-v4.js";
+import { caveatFootnote } from "./shared/station-meta.js";
 import { renderTemperatureChart } from "./temperature-chart-v4.js";
 import { renderWaveChart } from "./wave-chart-v4.js";
 import { generateWaveHeightTable } from "./wave-table-v4.js";
 import { renderBuoyWindChart } from "./wind-chart-v4.js";
 
 let chartData = null;
+// stations.json `buoys`, from main.js (setStationMeta): the charts need it for
+// the asterisk rule, and main.js has already fetched it.
+let stationMeta = {};
 let waveChart, windChart, tempChart, waveComparisonChart;
 let currentTimeRange = 24; // Default to 24 hours
 let detachThemeListener = null;
@@ -174,6 +178,35 @@ function chartOrNote(chart, containerId, hasData, note) {
 }
 
 /**
+ * The caveat footnote under a chart (the asterisk rule), created on first use
+ * and hidden when the station's caveat doesn't concern what the chart plots.
+ */
+function caveatNoteUnder(containerId, footnote) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  let note = document.getElementById(`${containerId}-caveat`);
+  if (!note && !footnote) return;
+  if (!note) {
+    note = document.createElement("p");
+    note.id = `${containerId}-caveat`;
+    note.className = "caveat-footnote chart-caveat";
+    container.after(note);
+  }
+  note.textContent = footnote ?? "";
+  note.hidden = !footnote || container.hidden;
+}
+
+/**
+ * The buoys' registry entries, once main.js has them. Redraws the selected
+ * station's charts if they were drawn before it arrived.
+ */
+export function setStationMeta(meta) {
+  stationMeta = meta || {};
+  const selectedBuoy = document.getElementById("chart-buoy-select")?.value;
+  if (selectedBuoy && chartData?.[selectedBuoy]) updateCharts(selectedBuoy);
+}
+
+/**
  * Update all charts for the selected buoy
  */
 function updateCharts(buoyId) {
@@ -216,8 +249,9 @@ function updateCharts(buoyId) {
       `No temperature readings from ${buoy.name} ${since}.`,
     )
   ) {
-    renderTemperatureChart(tempChart, buoy);
+    renderTemperatureChart(tempChart, buoy, stationMeta[buoyId]);
   }
+  caveatNoteUnder("temp-chart", caveatFootnote(stationMeta[buoyId], "air_temp", "sea_temp"));
   renderComparisonChart(waveComparisonChart, filteredData);
 }
 function ensureChartThemeListener() {

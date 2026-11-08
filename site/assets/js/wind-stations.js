@@ -11,7 +11,7 @@
 import { formatMonthDayTime, formatTimeHM, formatTimeWithDate } from "./shared/format-time.js";
 import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
 import { setSafeHTML } from "./shared/safe-html.js";
-import { airTempFootnote, airTempIsProxy, airTempLabel } from "./shared/station-meta.js";
+import { airTempIsProxy, airTempLabel, caveatFootnote, caveatStar } from "./shared/station-meta.js";
 import { windData } from "./wind-data.js";
 import {
   buildWindDetail,
@@ -440,16 +440,18 @@ function renderWind24HourTable(stationId) {
     return date.getMinutes() === 0;
   });
 
-  // A temperature that isn't the open air's (Colebrook's enclosure) gets the
-  // registry's label, an asterisk on the column and its values, and the
-  // footnote under the table.
+  // The asterisk rule (shared/station-meta.js): a caveated reading gets an
+  // asterisk on its column and values and the caveat under the table; a
+  // temperature that isn't the open air's also takes the registry's label.
   const meta = windData.stations?.wind?.[stationId] || windData.stations?.buoys?.[stationId];
   const proxyTemp = airTempIsProxy(meta);
-  const star = proxyTemp ? `<span class="wl-proxy-star" aria-hidden="true">*</span>` : "";
+  const tempStar = caveatStar(meta, "air_temp");
+  const pressureStar = caveatStar(meta, "pressure");
   const note = document.getElementById("wind-hourly-note");
   if (note) {
-    note.textContent = airTempFootnote(meta) ?? "";
-    note.hidden = !proxyTemp;
+    const footnote = caveatFootnote(meta, "air_temp", "pressure");
+    note.textContent = footnote ?? "";
+    note.hidden = !footnote;
   }
 
   // Build table HTML
@@ -460,8 +462,8 @@ function renderWind24HourTable(stationId) {
         <th>Direction</th>
         <th>Wind Speed (kt)</th>
         <th>Gust (kt)</th>
-        <th class="hide-mobile">${proxyTemp ? airTempLabel(meta) : "Temp"} (°C)${star}</th>
-        <th class="hide-mobile">Pressure (hPa)</th>
+        <th class="hide-mobile">${proxyTemp ? airTempLabel(meta) : "Temp"} (°C)${tempStar}</th>
+        <th class="hide-mobile">Pressure (hPa)${pressureStar}</th>
       </tr>
     </thead>
     <tbody>
@@ -480,8 +482,8 @@ function renderWind24HourTable(stationId) {
       const mobileTime = formatTimeHM(time);
       const speed = data.speed != null ? Math.round(data.speed) : "—";
       const gust = data.gust != null ? Math.round(data.gust) : "—";
-      const temp = data.temp != null ? `${data.temp.toFixed(1)}${star}` : "—";
-      const pressure = data.pressure != null ? data.pressure.toFixed(1) : "—";
+      const temp = data.temp != null ? `${data.temp.toFixed(1)}${tempStar}` : "—";
+      const pressure = data.pressure != null ? `${data.pressure.toFixed(1)}${pressureStar}` : "—";
 
       let direction = "—";
       if (data.direction != null) {

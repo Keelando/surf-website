@@ -17,7 +17,12 @@ import { formatLightstationWind, silentStationText } from "./shared/lightstation
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { getPopupOptions } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
-import { isNoaaStation, isWaveStation, stationTypeLabel } from "./shared/station-meta.js";
+import {
+  caveatStar,
+  isNoaaStation,
+  isWaveStation,
+  stationTypeLabel,
+} from "./shared/station-meta.js";
 import { reportStatus, staleThresholdLabel, statusPopupTheme } from "./shared/staleness.js";
 
 let stationsMap = null;
@@ -781,10 +786,15 @@ function buoyPopupHTML(buoy) {
       (data.sea_temp !== null && data.sea_temp !== undefined) ||
       (data.air_temp !== null && data.air_temp !== undefined)
     ) {
+      // The asterisk rule: a caveated reading is starred (shared/station-meta.js).
       const seaTemp =
-        data.sea_temp !== null && data.sea_temp !== undefined ? data.sea_temp.toFixed(1) : "—";
+        data.sea_temp !== null && data.sea_temp !== undefined
+          ? `${data.sea_temp.toFixed(1)}${caveatStar(buoy, "sea_temp")}`
+          : "—";
       const airTemp =
-        data.air_temp !== null && data.air_temp !== undefined ? data.air_temp.toFixed(1) : "—";
+        data.air_temp !== null && data.air_temp !== undefined
+          ? `${data.air_temp.toFixed(1)}${caveatStar(buoy, "air_temp")}`
+          : "—";
       popupContent += `<div><strong>🌡️ Temp:</strong> Sea ${seaTemp}°C | Air ${airTemp}°C</div>`;
     }
 

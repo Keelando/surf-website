@@ -291,6 +291,22 @@ body {
 
 
 
+/* The caveat asterisk (shared/station-meta.js CAVEAT_STAR): on a station's
+   name and on every value its caveat concerns, sitewide. */
+.caveat-star {
+  margin-left: 0.1em;
+  color: var(--color-accent-orange);
+  font-style: normal;
+  font-weight: var(--weight-bold);
+}
+
+/* The footnote under a plot or table that shows a caveated reading. */
+.caveat-footnote {
+  margin: 0.5rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
 /* Keyboard-only shortcut past the nav: visually hidden until focused. */
 .skip-link {
   position: absolute;

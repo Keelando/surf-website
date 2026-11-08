@@ -8,13 +8,21 @@
    ----------------------------- */
 
 import { formatMonthDayTime } from "./shared/format-time.js";
+import { airTempIsProxy, airTempLabel, caveatCovers } from "./shared/station-meta.js";
 
 /**
  * Render temperature chart for the selected buoy
  * @param {Object} tempChart - ECharts instance for temperature chart
  * @param {Object} buoy - Buoy data including name and timeseries
+ * @param {Object} [meta] - The station's stations.json entry (asterisk rule)
  */
-export function renderTemperatureChart(tempChart, buoy) {
+export function renderTemperatureChart(tempChart, buoy, meta) {
+  // The asterisk rule: a caveated series is starred in the legend (and so the
+  // tooltip); charts-v4.js puts the caveat under the chart.
+  const airName =
+    (airTempIsProxy(meta) ? airTempLabel(meta) : "Air Temperature") +
+    (caveatCovers(meta, "air_temp") ? " *" : "");
+  const seaName = "Sea Temperature" + (caveatCovers(meta, "sea_temp") ? " *" : "");
   try {
     const ts = buoy.timeseries;
     const theme = getChartThemeColors();
@@ -64,7 +72,7 @@ export function renderTemperatureChart(tempChart, buoy) {
         },
       },
       legend: {
-        data: ["Air Temperature", "Sea Temperature"],
+        data: [airName, seaName],
         bottom: getResponsiveLegendBottom(),
         textStyle: { color: textColor },
       },
@@ -95,7 +103,7 @@ export function renderTemperatureChart(tempChart, buoy) {
       },
       series: [
         {
-          name: "Air Temperature",
+          name: airName,
           type: "line",
           data: sanitizeSeriesData(airTempData),
           smooth: true,
@@ -103,7 +111,7 @@ export function renderTemperatureChart(tempChart, buoy) {
           itemStyle: { color: colors.secondary },
         },
         {
-          name: "Sea Temperature",
+          name: seaName,
           type: "line",
           data: sanitizeSeriesData(seaTempData),
           smooth: true,

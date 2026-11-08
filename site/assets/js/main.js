@@ -11,6 +11,7 @@ import {
   applyWaveThreshold,
   clearWaveThreshold,
   getBuoyTimeseries,
+  setStationMeta,
   setTimeRange,
 } from "./charts-v4.js";
 import { setSafeHTML } from "./shared/safe-html.js";
@@ -178,7 +179,10 @@ async function fetchBuoyData() {
         return null;
       }),
     ]);
-    if (stationsData?.buoys) stationMeta = stationsData.buoys;
+    if (stationsData?.buoys) {
+      stationMeta = stationsData.buoys;
+      setStationMeta(stationMeta);
+    }
     latestSnapshot = data;
     const firstLoad = loadedAt === 0;
     loadedAt = Date.now();

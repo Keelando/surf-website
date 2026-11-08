@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  airTempIsProxy,
+  airTempLabel,
+  caveatCovers,
+  caveatFootnote,
+  caveatNameMark,
+  caveatStar,
   isNoaaStation,
   isPileStation,
   isSurreyStation,
@@ -154,4 +160,51 @@ test("pickWavePeriod reports nothing when the station has no period", () => {
     value: null,
     tag: null,
   });
+});
+
+// --- caveats: the asterisk rule ---------------------------------------------
+
+const crescentCaveat = {
+  caveat: "Air temperature reads high on sunny afternoons (unshielded sensor).",
+  caveat_fields: ["air_temp"],
+};
+const colebrook = {
+  caveat: "The temperature is the sensor enclosure's, not the open air.",
+  air_temp_label: "Enclosure temp",
+};
+const hilltop = { caveat: "Hilltop site: pressure reads ~8 hPa low.", caveat_fields: ["pressure"] };
+
+test("caveatCovers follows caveat_fields, and an air_temp_label counts as air_temp", () => {
+  assert.equal(caveatCovers(crescentCaveat, "air_temp"), true);
+  assert.equal(caveatCovers(crescentCaveat, "pressure"), false);
+  assert.equal(caveatCovers(hilltop, "pressure"), true);
+  assert.equal(caveatCovers(colebrook, "air_temp"), true, "label without caveat_fields");
+  assert.equal(caveatCovers(undefined, "air_temp"), false);
+  assert.equal(caveatCovers({ caveat: "A note." }, "air_temp"), false, "a caveat alone stars no value");
+});
+
+test("caveatStar is the asterisk or nothing", () => {
+  assert.match(caveatStar(hilltop, "pressure"), /class="caveat-star"/);
+  assert.equal(caveatStar(hilltop, "air_temp"), "");
+});
+
+test("airTempLabel / airTempIsProxy", () => {
+  assert.equal(airTempLabel(colebrook), "Enclosure temp");
+  assert.equal(airTempLabel(crescentCaveat), "Air");
+  assert.equal(airTempIsProxy(colebrook), true);
+  assert.equal(airTempIsProxy(crescentCaveat), false);
+});
+
+test("caveatFootnote names the reading once, and only for covered readings", () => {
+  assert.equal(caveatFootnote(crescentCaveat, "air_temp", "sea_temp"), `* ${crescentCaveat.caveat}`);
+  assert.equal(caveatFootnote(colebrook, "air_temp"), `* Enclosure temp: ${colebrook.caveat}`);
+  assert.equal(caveatFootnote(hilltop, "air_temp", "pressure"), `* Pressure: ${hilltop.caveat}`);
+  assert.equal(caveatFootnote(hilltop, "air_temp"), null);
+});
+
+test("caveatNameMark escapes the caveat into its title and speaks a note", () => {
+  const mark = caveatNameMark({ caveat: 'Reads "high" <in sun>' });
+  assert.match(mark, /title="Reads &quot;high&quot; &lt;in sun&gt;"/);
+  assert.match(mark, /has a note on its readings/);
+  assert.equal(caveatNameMark({}), "");
 });

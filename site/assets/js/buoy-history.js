@@ -17,6 +17,10 @@
 
 import { formatTimeHM, PACIFIC_TZ } from "./shared/format-time.js";
 import {
+  airTempIsProxy,
+  airTempLabel,
+  caveatFootnote,
+  caveatStar,
   reportsSubHourly,
   usesDominantPeriod,
   usesSwellDisplay,
@@ -190,8 +194,8 @@ export function formatHistoryWind(speed, direction, gust) {
  * six columns were sized by their label rather than their data ("Wave Ht [m]"
  * needed 90px to show 20px-wide values), pushing Air off the right edge.
  */
-function headerCell(label, unit) {
-  return `<th>${label}<span class="history-unit">[${unit}]</span></th>`;
+function headerCell(label, unit, star = "") {
+  return `<th>${label}${star}<span class="history-unit">[${unit}]</span></th>`;
 }
 
 /** One decimal, or the em-dash placeholder. */
@@ -202,6 +206,9 @@ function fixedOrDash(value, decimals) {
 /** `<tr>` rows for the given timestamps. */
 export function buildHistoryRows(times, selected, meta) {
   const heightDecimals = waveHeightPrecision(meta);
+  const seaStar = caveatStar(meta, "sea_temp");
+  const airStar = caveatStar(meta, "air_temp");
+  const withStar = (value, star) => (value != null ? `${value.toFixed(1)}${star}` : "—");
   const showWindWave = selected.windWaveHeight.length > 0;
   let previousDate = null;
 
@@ -221,11 +228,11 @@ export function buildHistoryRows(times, selected, meta) {
       <tr>
         <td>${timeCell}</td>
         <td>${wind}</td>
-        <td>${fixedOrDash(valueAt(selected.waveHeight, time), heightDecimals)}${sensorAt(selected.waveHeight, time) ? "*" : ""}</td>
+        <td>${fixedOrDash(valueAt(selected.waveHeight, time), heightDecimals)}${sensorAt(selected.waveHeight, time) ? BACKUP_MARK : ""}</td>
         ${showWindWave ? `<td>${fixedOrDash(valueAt(selected.windWaveHeight, time), heightDecimals)}</td>` : ""}
         <td>${fixedOrDash(firstValueAt(selected.wavePeriods, time), 1)}</td>
-        <td>${fixedOrDash(valueAt(selected.seaTemp, time), 1)}</td>
-        <td>${fixedOrDash(valueAt(selected.airTemp, time), 1)}</td>
+        <td>${withStar(valueAt(selected.seaTemp, time), seaStar)}</td>
+        <td>${withStar(valueAt(selected.airTemp, time), airStar)}</td>
       </tr>
     `;
     })
@@ -284,8 +291,8 @@ export function buildHistoryTableHTML(timeseries, meta, options = {}) {
             ${headerCell("Wave Ht", "m")}
             ${selected.windWaveHeight.length > 0 ? headerCell("Wind Wave", "m") : ""}
             ${headerCell("Period", "s")}
-            ${headerCell("Sea", "°C")}
-            ${headerCell("Air", "°C")}
+            ${headerCell("Sea", "°C", caveatStar(meta, "sea_temp"))}
+            ${headerCell(airTempIsProxy(meta) ? airTempLabel(meta) : "Air", "°C", caveatStar(meta, "air_temp"))}
           </tr>
         </thead>
         <tbody>
@@ -300,8 +307,25 @@ export function buildHistoryTableHTML(timeseries, meta, options = {}) {
       </button>
     </div>
   ${buildBackupSensorNote(backupSensors(times, selected))}
+  ${buildCaveatNote(meta)}
   ${buildHistoryNote(meta)}`;
 }
+
+/**
+ * The caveat footnote for a station whose sea or air temperature is starred
+ * (the asterisk rule, shared/station-meta.js). "" when neither is.
+ */
+export function buildCaveatNote(meta) {
+  const footnote = caveatFootnote(meta, "sea_temp", "air_temp");
+  return footnote ? `<div class="history-note caveat-footnote">${footnote}</div>` : "";
+}
+
+/**
+ * A wave height from the backup sensor is marked with a dagger, not an
+ * asterisk: the asterisk is the sitewide caveat mark, and Crescent Beach
+ * Ocean, which has both, shows them in the same table.
+ */
+const BACKUP_MARK = "†";
 
 /**
  * Note for rows whose waves came from a backup sensor, e.g. the radar at
@@ -311,7 +335,7 @@ export function buildBackupSensorNote(sensors) {
   if (sensors.length === 0) return "";
   return `
       <div class="history-note">
-        <strong>*</strong> From the station's backup wave sensor (${sensors.join(", ")}): its main sensor had no reading. Sensors read slightly differently, so a step where the source changes may not be the sea.
+        <strong>†</strong> From the station's backup wave sensor (${sensors.join(", ")}): its main sensor had no reading. Sensors read slightly differently, so a step where the source changes may not be the sea.
       </div>
     `;
 }

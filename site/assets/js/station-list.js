@@ -15,6 +15,10 @@ import { avgSpreadDescriptor, peakSpreadDescriptor } from "./buoy-card.js";
 import { formatWeekdayDayTime } from "./shared/format-time.js";
 import { icon } from "./shared/icons.js";
 import {
+  airTempIsProxy,
+  airTempLabel,
+  caveatNameMark,
+  caveatStar,
   isNoaaStation,
   isPileStation,
   pickWaveDirection,
@@ -358,7 +362,7 @@ export function buildStationRow(b, id, meta) {
     <button type="button" class="sl-row sl-row--${fresh.state}" aria-expanded="false" aria-controls="sl-detail-${id}">
       <span class="sl-lead">
         <span class="sl-name">
-          <span class="sl-title">${name}</span>
+          <span class="sl-title">${name}${caveatNameMark(meta)}</span>
           <span class="sl-age"><span class="sl-dot" aria-hidden="true"></span>${ageLine}</span>
         </span>
         ${swell}
@@ -447,6 +451,10 @@ function waveStats(b, meta) {
   return statGroup("Waves", pairs);
 }
 
+/** A shown value plus the caveat asterisk when its reading is caveated (the asterisk rule). */
+const starred = (html, meta, field) =>
+  html == null || html === "" ? html : html + caveatStar(meta, field);
+
 /** Wind, then the water/air group. Pile sensors over-report precision. */
 function windAndWeatherStats(b, meta) {
   const tempDecimals = isPileStation(meta) ? 1 : null;
@@ -457,9 +465,12 @@ function windAndWeatherStats(b, meta) {
       ["Direction", bearing(b.wind_direction_cardinal, b.wind_direction_deg ?? b.wind_direction)],
     ]) +
     statGroup("Water & air", [
-      ["Sea", withUnit(b.sea_temp, "°C", tempDecimals)],
-      ["Air", withUnit(b.air_temp, "°C", tempDecimals)],
-      ["Pressure", withUnit(b.pressure, "hPa")],
+      ["Sea", starred(withUnit(b.sea_temp, "°C", tempDecimals), meta, "sea_temp")],
+      [
+        airTempIsProxy(meta) ? airTempLabel(meta) : "Air",
+        starred(withUnit(b.air_temp, "°C", tempDecimals), meta, "air_temp"),
+      ],
+      ["Pressure", starred(withUnit(b.pressure, "hPa"), meta, "pressure")],
     ])
   );
 }
@@ -502,7 +513,9 @@ function detailNotes(b, meta) {
       `<p class="sl-note">Dominant period: the wave period carrying the most energy (NOAA's term for peak period).</p>`,
     );
   }
-  if (meta?.caveat) notes.push(`<p class="sl-note">${meta.caveat}</p>`);
+  if (meta?.caveat) {
+    notes.push(`<p class="sl-note"><span aria-hidden="true">* </span>${meta.caveat}</p>`);
+  }
   return notes.join("");
 }
 
@@ -573,8 +586,13 @@ export function buildStationList(data, stationMeta, regions = REGIONS) {
         <ul class="sl-rows">${rows}</ul>
       </section>`;
   }
-  return columns
-    .filter(Boolean)
-    .map((html) => `<div class="sl-column">${html}</div>`)
-    .join("");
+  // The key to the name asterisks, under the last column, when any listed
+  // station carries a caveat.
+  const shown = columns.filter(Boolean);
+  const caveated = Object.keys(data).some((id) => stationMeta[id]?.caveat);
+  if (caveated && shown.length) {
+    shown[shown.length - 1] +=
+      `<p class="sl-caveat-key caveat-footnote"><span class="caveat-star" aria-hidden="true">*</span> A note on that station's readings: open its row.</p>`;
+  }
+  return shown.map((html) => `<div class="sl-column">${html}</div>`).join("");
 }

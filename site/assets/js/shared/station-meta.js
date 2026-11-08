@@ -12,6 +12,8 @@
  * missing meta object (unknown station → EC-style defaults).
  */
 
+import { escapeAttr } from "./safe-html.js";
+
 /** NOAA NDBC station (badge, spectral details, dominant-period wording). */
 export function isNoaaStation(meta) {
   return meta?.source === "NOAA NDBC";
@@ -43,15 +45,66 @@ export function airTempIsProxy(meta) {
   return Boolean(meta?.air_temp_label);
 }
 
+// ── Caveats: the asterisk rule ────────────────────────────────────────────
+// A station whose readings need a warning carries `caveat` (the words) and
+// `caveat_fields` (which readings, e.g. ["air_temp"]) in stations.json. The
+// rule, sitewide: its name gets an asterisk, every value of a caveated
+// reading gets one wherever it shows (row, panel, popup, table, chart), and a
+// plot or table showing one carries the caveat as a footnote. A temperature
+// with an `air_temp_label` (not the open air at all) counts as caveated.
+
+/** The asterisk itself; aria-hidden, since labels and notes say it in words. */
+export const CAVEAT_STAR = `<span class="caveat-star" aria-hidden="true">*</span>`;
+
+const READING_NAMES = {
+  air_temp: "Air temperature",
+  pressure: "Pressure",
+  sea_temp: "Sea temperature",
+};
+
+/** True when the station's caveat concerns this reading ("air_temp", "pressure", …). */
+export function caveatCovers(meta, field) {
+  if (!meta) return false;
+  if (field === "air_temp" && airTempIsProxy(meta)) return true;
+  return Array.isArray(meta.caveat_fields) && meta.caveat_fields.includes(field);
+}
+
 /**
- * The footnote for any plot or table that shows such a temperature, or null:
- * the registry's caveat under the label, e.g. "* Enclosure temp: The
- * temperature is the sensor enclosure's, not the open air: …". Mark the
- * series or column with "*" to match.
+ * The asterisk after a caveated station's name, with the caveat as its hover
+ * text and a spoken "has a note on its readings" (the asterisk itself is
+ * aria-hidden). "" for a station without a caveat.
  */
-export function airTempFootnote(meta) {
-  if (!airTempIsProxy(meta)) return null;
-  return `* ${airTempLabel(meta)}: ${meta.caveat || "not the open air temperature."}`;
+export function caveatNameMark(meta) {
+  if (!meta?.caveat) return "";
+  return (
+    `<span class="caveat-star" title="${escapeAttr(meta.caveat)}" aria-hidden="true">*</span>` +
+    `<span class="visually-hidden">, has a note on its readings</span>`
+  );
+}
+
+/** The asterisk for a value of this reading, or "". */
+export function caveatStar(meta, field) {
+  return caveatCovers(meta, field) ? CAVEAT_STAR : "";
+}
+
+/**
+ * The footnote for a plot or table showing these readings, or null when the
+ * caveat covers none of them: "* Enclosure temp: The temperature is …". A
+ * station has one caveat, so several covered readings share one line.
+ */
+export function caveatFootnote(meta, ...fields) {
+  const covered = fields.filter((field) => caveatCovers(meta, field));
+  if (covered.length === 0) return null;
+  const names = covered.map((field) =>
+    field === "air_temp" && airTempIsProxy(meta)
+      ? airTempLabel(meta)
+      : READING_NAMES[field] || field,
+  );
+  const caveat = meta.caveat || "read with care.";
+  // Crescent's caveat already opens "Air temperature reads high…": don't say it twice.
+  if (names.length === 1 && caveat.toLowerCase().startsWith(names[0].toLowerCase()))
+    return `* ${caveat}`;
+  return `* ${names.join(" and ")}: ${caveat}`;
 }
 
 const WIND_STATION_LABELS = {

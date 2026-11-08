@@ -35,3 +35,12 @@ export function setSafeHTML(element, html) {
     element.innerHTML = html;
   }
 }
+
+/** Escape a string for an HTML attribute value (registry text in title/aria-label/href). */
+export function escapeAttr(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}

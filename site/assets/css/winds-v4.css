@@ -881,15 +881,6 @@
   font-style: italic;
 }
 
-/* The asterisk on an enclosure temperature's value (wind-list.js PROXY_STAR):
-   the same orange as the caveat mark on the station's name. */
-.wl-proxy-star {
-  margin-left: 0.1em;
-  color: var(--color-accent-orange);
-  font-style: normal;
-  font-weight: var(--weight-bold);
-}
-
 /* Footnote under the hourly table for a temperature that isn't the open
    air's (stations.json air_temp_label). */
 .wl-hourly-note {
