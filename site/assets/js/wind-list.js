@@ -207,7 +207,7 @@ export function buildWindRow(e) {
             "wl-temp wl-temp--proxy",
             e.temp == null
               ? null
-              : `<span title="${escapeAttr(airTempLabel(e.meta))}, not the open air">${fixed(e.temp, 1)}</span>`,
+              : `<span title="${escapeAttr(airTempLabel(e.meta))}, not the open air">${fixed(e.temp, 1)}${PROXY_STAR}</span>`,
             airTempLabel(e.meta)
               .toLowerCase()
               .replace(/\btemp\b/, "temperature"),
@@ -241,6 +241,13 @@ export function buildWindRow(e) {
       ${CHEVRON}
     </button>`;
 }
+
+/**
+ * Marks a temperature that isn't the open air's (stations.json air_temp_label)
+ * on the number itself, wherever it shows: it doesn't describe the weather
+ * outside. Decoration for sighted readers; the label already says so aloud.
+ */
+const PROXY_STAR = `<span class="wl-proxy-star" aria-hidden="true">*</span>`;
 
 /** The key to the row asterisks, when any listed station has one. */
 function caveatKey(entries) {
@@ -304,7 +311,12 @@ export function buildWindDetail(e) {
         ["From", bearing],
       ]) +
       statGroup("Weather", [
-        [airTempLabel(meta), withUnit(fixed(e.temp, 1), "°C")],
+        [
+          airTempLabel(meta),
+          e.temp != null && airTempIsProxy(meta)
+            ? withUnit(fixed(e.temp, 1), "°C") + PROXY_STAR
+            : withUnit(fixed(e.temp, 1), "°C"),
+        ],
         ["Pressure", withUnit(fixed(e.pressure, 1), "hPa")],
         [
           "Humidity",

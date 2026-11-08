@@ -188,7 +188,8 @@ function addWindMarker(station, currentData, isBuoy = false) {
     if (currentData.air_temp_c != null) {
       // "Temp" for air; the registry's own word when it isn't (Colebrook).
       const tempLabel = station.air_temp_label ? airTempLabel(station) : "Temp";
-      popupContent += `<div><strong>${tempLabel}:</strong> ${currentData.air_temp_c.toFixed(1)}°C</div>`;
+      const star = station.air_temp_label ? `<span aria-hidden="true">*</span>` : "";
+      popupContent += `<div><strong>${tempLabel}:</strong> ${currentData.air_temp_c.toFixed(1)}°C${star}</div>`;
     }
 
     // Timestamp (not for an out-of-service station: we stopped fetching it,

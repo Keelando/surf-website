@@ -880,3 +880,12 @@
   color: var(--color-text-muted);
   font-style: italic;
 }
+
+/* The asterisk on an enclosure temperature's value (wind-list.js PROXY_STAR):
+   the same orange as the caveat mark on the station's name. */
+.wl-proxy-star {
+  margin-left: 0.1em;
+  color: var(--color-accent-orange);
+  font-style: normal;
+  font-weight: var(--weight-bold);
+}
