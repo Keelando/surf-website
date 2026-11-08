@@ -450,7 +450,10 @@ function renderChart(rows) {
           yAxisIndex: 1,
           smooth: true,
           showSymbol: false,
-          lineStyle: { width: 2, color: colors.series.secondary, type: "dashed" },
+          // Solid (user 2026-11-08): on this page dashed means "a forecast"
+          // in Forecast Accuracy below, and a dashed period line above it
+          // read as the same thing. Thinner, so height stays the lead line.
+          lineStyle: { width: 1.75, color: colors.series.secondary },
           itemStyle: { color: colors.series.secondary },
         },
         {
