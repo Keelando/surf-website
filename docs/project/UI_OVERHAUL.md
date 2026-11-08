@@ -421,11 +421,18 @@ the 54rem the Time column needs (`winds-v4.css`).
   way (a min that isn't 0, a symmetric surge range), so each page gets the
   helper, extended as needed, when it is rolled out. Charts whose `max` is
   already a function of the extent rescale on their own.
-- **One table pattern (user: "not sure yet how to standardize or when"):**
-  the tables page their rows three ways today: the point forecast's
-  "+12 / All rows", winds' "Show More Rows" and home's 12-hour history,
-  which shows all twelve. Undecided; settle it before the forecasts page's
-  rollout, which has the most table.
+- **One table pattern — DECIDED 2026-11-08: time-window chips.** The
+  tables paged their rows three ways (the point forecast's "+12 / All
+  rows", winds' "Show More Rows", home's 12-hour history showing all
+  twelve). User: "I kind of like 12 hr / 24 hr chips, but first rows + a
+  toggle could work as well". Chips won because the site already speaks
+  them (`.time-range-btn`: winds chart 24 h / 48 h, home charts): one set
+  of chips drives a chart AND the table under it, so the two always cover
+  the same hours. Point forecast 12 / 24 / 48 h opening on 24 h; winds
+  hourly table follows its chart's existing 24 / 48 h chips (drop "Show
+  More Rows"); home history 12 / 24 / 48 h opening on 12 h, at that
+  panel's rollout. Fallback if a table feels wrong with chips: first rows +
+  one "Show all / Show fewer" toggle.
 
 ## After the overhaul: code review and refactor
 
