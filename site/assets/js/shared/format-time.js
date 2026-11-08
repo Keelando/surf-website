@@ -54,6 +54,20 @@ export function formatTimeHM(input) {
   return fmt(input, { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
+/** "Sun" — the Pacific weekday, short. */
+export function formatWeekdayShort(input) {
+  return fmt(input, { weekday: "short" });
+}
+
+/**
+ * "2026-11-08" — the Pacific calendar day, as a key to compare two times by.
+ * Tables over 24 h mark the row where it changes (a thicker line at midnight).
+ */
+export function pacificDayKey(input) {
+  const date = toDate(input);
+  return date.toLocaleDateString("en-CA", { timeZone: pacificTimeZone(date) });
+}
+
 /** "7/14" — the date alone, for chart axes that show the day boundary only. */
 export function formatDayMonthNumeric(input) {
   return fmt(input, { month: "numeric", day: "numeric" });

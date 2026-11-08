@@ -874,6 +874,24 @@ footer .github-link:hover {
   border-collapse: collapse;
 }
 
+/* A table over 24 h: a thicker line where the Pacific day changes
+   (user 2026-11-08). Set on the day's first row by the page's renderer. */
+.data-table tr.day-start > td,
+.data-table tr.day-start > th {
+  border-top: 2px solid var(--color-primary-dark);
+}
+
+/* The day a day-start row begins, where its time column has no date (a
+   phone): a small label above the time. */
+.table-day-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+}
+
 .data-table th {
   background: var(--color-primary-dark);
   color: var(--color-on-primary);

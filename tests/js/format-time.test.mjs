@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  pacificDayKey,
+  formatWeekdayShort,
   formatForecastTimestamp,
   formatFullTimestamp,
   formatModelRunTime,
@@ -143,4 +145,16 @@ test("getAgeString buckets ages", () => {
 test("getAgeString accepts ISO strings", () => {
   const now = new Date("2026-07-14T12:00:00Z");
   assert.equal(getAgeString("2026-07-14T11:30:00Z", now), "30 minutes ago");
+});
+
+test("pacificDayKey changes at Pacific midnight, not UTC midnight", () => {
+  // 06:59 UTC is 23:59 the day before at UTC-7; 07:00 UTC is 00:00.
+  assert.equal(pacificDayKey("2026-11-08T06:59:00Z"), "2026-11-07");
+  assert.equal(pacificDayKey("2026-11-08T07:00:00Z"), "2026-11-08");
+  assert.equal(pacificDayKey("2026-11-08T23:30:00Z"), "2026-11-08");
+});
+
+test("formatWeekdayShort names the Pacific weekday", () => {
+  assert.equal(formatWeekdayShort("2026-11-08T06:59:00Z"), "Sat");
+  assert.equal(formatWeekdayShort("2026-11-08T07:00:00Z"), "Sun");
 });

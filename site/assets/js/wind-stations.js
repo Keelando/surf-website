@@ -8,7 +8,13 @@
    come from classic scripts loaded before this one.
    ----------------------------- */
 
-import { formatMonthDayTime, formatTimeHM, formatTimeWithDate } from "./shared/format-time.js";
+import {
+  formatMonthDayTime,
+  formatTimeHM,
+  formatTimeWithDate,
+  formatWeekdayShort,
+  pacificDayKey,
+} from "./shared/format-time.js";
 import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
 import { setSafeHTML } from "./shared/safe-html.js";
 import { airTempIsProxy, airTempLabel, caveatFootnote, caveatStar } from "./shared/station-meta.js";
@@ -475,11 +481,19 @@ function renderWind24HourTable(stationId) {
     tableHTML += '<tr><td colspan="6" class="table-message-cell">No data available</td></tr>';
   } else {
     const DEFAULT_VISIBLE_ROWS = 12;
+    let previousDay = null;
 
     hourlyTimes.forEach((time, index) => {
       const data = dataByTime.get(time);
       const formattedTime = formatTimeWithDate(time);
-      const mobileTime = formatTimeHM(time);
+      // A thicker line where the Pacific day changes (user 2026-11-08), and
+      // on a phone, whose time column has no date, that row names its day.
+      const day = pacificDayKey(time);
+      const dayStart = previousDay !== null && day !== previousDay;
+      previousDay = day;
+      const mobileTime = dayStart
+        ? `<span class="table-day-label">${formatWeekdayShort(time)}</span> ${formatTimeHM(time)}`
+        : formatTimeHM(time);
       const speed = data.speed != null ? Math.round(data.speed) : "—";
       const gust = data.gust != null ? Math.round(data.gust) : "—";
       const temp = data.temp != null ? `${data.temp.toFixed(1)}${tempStar}` : "—";
@@ -494,8 +508,14 @@ function renderWind24HourTable(stationId) {
         direction = `${arrow} ${cardinal}<span class="hide-mobile"> (${Math.round(data.direction)}°)</span>`;
       }
 
-      // Add 'collapsed-row' class to rows beyond the default visible count
-      const rowClass = index >= DEFAULT_VISIBLE_ROWS ? ' class="collapsed-row"' : "";
+      // 'collapsed-row' for rows beyond the default visible count.
+      const classes = [
+        index >= DEFAULT_VISIBLE_ROWS ? "collapsed-row" : "",
+        dayStart ? "day-start" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const rowClass = classes ? ` class="${classes}"` : "";
 
       tableHTML += `
         <tr${rowClass}>
