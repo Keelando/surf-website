@@ -38,10 +38,10 @@
   <!-- Hero photo (the LCP element): same URLs and media split as style-v4.css -->
   <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-960.avif" media="(max-width: 768px)" fetchpriority="high" />
   <link rel="preload" as="image" type="image/avif" href="/assets/images/noaa-waves-1989-1600.avif" media="(min-width: 769px)" fetchpriority="high" />
-  <link rel="stylesheet" href="/assets/css/style-v4.css?v=93c2ba4d2b" />
+  <link rel="stylesheet" href="/assets/css/style-v4.css?v=38d4525609" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=345437d067" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=25e64f5cd1" />
-  <link rel="stylesheet" href="/assets/css/forecasts-v4.css?v=74b6d200f0" />
+  <link rel="stylesheet" href="/assets/css/forecasts-v4.css?v=559375930b" />
 </head>
 
 <body>
@@ -52,15 +52,15 @@
   <!-- Navigation -->
   <div class="nav-slot" hx-get="/components/nav.html?v=2" hx-trigger="load" hx-swap="outerHTML swap:0ms settle:0ms"></div>
 
-  <header>
-    <h1>Marine Weather Forecasts</h1>
+  <!-- A slim band, not the tall photo (user 2026-11-08: too much scrolling
+       before the forecasts on a phone). The tagline that sat under the photo
+       is its subtitle now. -->
+  <header class="page-band">
+    <h1>Marine Forecasts</h1>
+    <p class="page-band-sub">Environment Canada forecasts and model output for the Salish Sea</p>
   </header>
 
   <main id="main-content" tabindex="-1">
-
-  <div class="site-tagline">
-    Salish Sea - Environment Canada
-  </div>
 
   <!-- aria-busy until marine_forecast.json has rendered: the warning strip
        lands above both sections in that same render, so showing their empty
@@ -106,10 +106,12 @@
          numerical model output at a single lat/lon. The headings and the rule
          between them exist to keep that distinction obvious. -->
     <section class="forecast-kind" id="zone-forecast-section" aria-labelledby="zone-forecast-heading">
-      <h2 id="zone-forecast-heading">Marine Forecast by Zone</h2>
-      <p class="forecast-kind-sub">
-        Written by an Environment Canada forecaster for a whole body of water.
-      </p>
+      <div class="forecast-kind-head">
+        <h2 id="zone-forecast-heading">Marine Forecast by Zone</h2>
+        <p class="forecast-kind-sub">
+          Written by an Environment Canada forecaster for a whole body of water.
+        </p>
+      </div>
 
       <div id="forecast-zone-selector" class="forecast-zone-selector" hidden>
         <label for="forecast-zone-select">Marine zone:</label>
@@ -127,11 +129,13 @@
     </section>
 
     <section class="forecast-kind" id="point-forecast-section" aria-labelledby="point-forecast-heading">
-      <h2 id="point-forecast-heading">Point Forecast</h2>
-      <p class="forecast-kind-sub">
-        Model output at one spot, not a forecaster's words: Environment
-        Canada's RDWPS for waves and HRDPS for wind.
-      </p>
+      <div class="forecast-kind-head">
+        <h2 id="point-forecast-heading">Point Forecast</h2>
+        <p class="forecast-kind-sub">
+          Model output at one spot, not a forecaster's words: Environment
+          Canada's RDWPS for waves and HRDPS for wind.
+        </p>
+      </div>
 
     <div class="forecast-zone" id="wave-forecast-section">
       <!-- The section's name for assistive tech; visually it gives way to the
@@ -196,8 +200,10 @@
            until the fetch succeeds: a station whose archive is younger than
            the window has no file yet. -->
       <section class="forecast-verification" id="forecast-verification" aria-labelledby="forecast-verification-heading" hidden>
-        <h3 id="forecast-verification-heading" class="forecast-accuracy-heading">Forecast Accuracy</h3>
-        <p id="forecast-verification-sub" class="forecast-accuracy-sub">Forecast vs measured</p>
+        <div class="forecast-subband">
+          <h3 id="forecast-verification-heading" class="forecast-accuracy-heading">Forecast Accuracy</h3>
+          <p id="forecast-verification-sub" class="forecast-accuracy-sub">Forecast vs measured</p>
+        </div>
 
         <div class="forecast-panel" data-panel="waves">
           <div id="wave-verification-chart"></div>
@@ -316,7 +322,7 @@
   <script defer src="/assets/vendor/dompurify.min.js?v=ef5065ad5c"></script>
   <script defer src="/assets/js/sanitize-html.js?v=57084326c8"></script>
   <script defer src="/assets/js/chart-utils-v4.js?v=6cd395ae52"></script>
-  <script type="module" src="/assets/js/forecasts.js?v=37ca0763f5"></script>
+  <script type="module" src="/assets/js/forecasts.js?v=59bd9b39aa"></script>
   <script type="module" src="/assets/js/wave-forecast.js?v=b29dbadb87"></script>
   <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>

@@ -22,28 +22,41 @@ html {
   padding: 0 var(--page-gutter);
 }
 
-/* Two kinds of forecast share this page — prose for a whole zone, model
-   output for one point. The rule above each heading is the visual break
-   that stops the first reading as an untitled preamble to the second. */
+/* Each section opens with a heading band (user 2026-11-08: stronger
+   demarcation on a long phone scroll): the nav's navy, the header wave's
+   teal on its left edge, heading and subtitle inside it. Navy in both
+   themes, so the band reads the same on the light and dark backgrounds. */
 .forecast-kind + .forecast-kind {
-  margin-top: 3rem;
-  padding-top: 2rem;
-  border-top: 3px solid var(--color-border-light);
+  margin-top: 2.5rem;
 }
 
-/* These sit outside .forecast-zone, so they do not inherit the card
-   heading style — they are page-level section headings, deliberately
-   larger than the card headings nested beneath them. */
-.forecast-kind > h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1.55rem;
-  color: var(--color-primary-dark);
+.forecast-kind-head {
+  margin: 0 0 1rem;
+  padding: 0.7rem 1rem 0.75rem;
+  border-left: 5px solid #67d8e0;
+  border-radius: var(--radius);
+  background: var(--brand-navy);
+}
+
+.forecast-kind-head > h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: #ffffff;
 }
 
 .forecast-kind-sub {
-  margin: 0 0 1.5rem;
-  color: var(--color-text-muted);
-  font-size: 0.95rem;
+  margin: 0.15rem 0 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+}
+
+/* The same mark, lighter, for a section inside a card (Forecast Accuracy). */
+.forecast-subband {
+  margin: 0 0 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border-left: 4px solid #67d8e0;
+  border-radius: 8px;
+  background: var(--color-card-muted-bg);
 }
 
 /* The station name, under the "Point Forecast" heading. It is rewritten at
@@ -402,9 +415,7 @@ header {
    rule and its own heading keep the dashed model line inside from reading as
    more of the forecast above. */
 .forecast-verification {
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--color-border-light);
+  margin-top: 1.75rem;
 }
 
 .forecast-accuracy-heading {
@@ -414,7 +425,7 @@ header {
 }
 
 .forecast-accuracy-sub {
-  margin: 0.1rem 0 0.25rem;
+  margin: 0.1rem 0 0;
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
@@ -611,6 +622,31 @@ header {
   .warning-jump-group > [aria-hidden="true"] {
     display: none;
   }
+}
+
+/* "+ N more warned zones": the warnings outside the reader's banner zones,
+   folded (user 2026-11-08). A quiet link, opening onto the same rows. */
+.warning-jump-more > summary {
+  display: inline-block;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-accent-blue);
+  cursor: pointer;
+}
+
+.warning-jump-more > summary:hover {
+  background: var(--color-callout-info-bg);
+}
+
+.warning-jump-more > summary:focus-visible {
+  outline: 2px solid var(--color-accent-blue);
+  outline-offset: 1px;
+}
+
+.warning-jump-more[open] > .warning-jump-list {
+  margin-top: 0.5rem;
 }
 
 /* --- Warning-zone opt-in (docs/project/WARNING_ZONE_OPT_IN.md) --- */

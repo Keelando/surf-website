@@ -18,8 +18,10 @@ import {
 import { renderWarningZoneControls } from "./warning-zone-picker.js";
 import {
   collectActiveWarnings,
+  getBannerZones,
   getWarningSeverityClass as bannerSeverityClass,
 } from "./shared/warning-zones.js";
+import { readBannerZones } from "./shared/warning-preferences.js";
 
 let forecastData = null;
 let selectedZoneKey = null;
@@ -303,44 +305,78 @@ function renderWarningJumpStrip(zones) {
   const list = document.getElementById("warning-jump-list");
   if (!strip || !list) return;
 
-  const warnings = collectActiveWarnings(
+  const zoneKeys = zones.map((zone) => zone.zoneKey);
+  const all = collectActiveWarnings(forecastData, zoneKeys);
+  // In full: what the reader's banner shows, their banner zones plus the
+  // storm floor (user 2026-11-08), through the banner's own filter so the two
+  // can never disagree. Everything else folds into "+ N more warned zones".
+  const mine = collectActiveWarnings(
     forecastData,
-    zones.map((zone) => zone.zoneKey),
+    getBannerZones(readBannerZones(localStorage), zoneKeys),
   );
+  const key = (warning) => `${warning.zone_key}|${warning.type}`;
+  const mineKeys = new Set(mine.map(key));
+  const rest = all.filter((warning) => !mineKeys.has(key(warning)));
 
-  // Always shown: the banner settings live on this strip (user 2026-11-08),
-  // so it must be there on a quiet day too, saying so.
+  // Always shown: the banner settings live on this strip, so it must be
+  // there on a quiet day too, saying so.
   list.textContent = "";
   strip.hidden = false;
-  list.hidden = warnings.length === 0;
+  list.hidden = all.length === 0;
   const heading = document.getElementById("warning-jump-heading");
-  if (heading)
-    heading.textContent = warnings.length ? "Warnings in effect" : "No warnings in effect";
-  if (warnings.length === 0) return;
+  if (heading) {
+    heading.textContent =
+      all.length === 0
+        ? "No warnings in effect"
+        : mine.length === 0
+          ? "No warnings for your zones"
+          : "Warnings in effect";
+  }
+  if (all.length === 0) return;
 
-  groupWarningsByType(warnings).forEach((group) => {
+  groupWarningsByType(mine).forEach((group) => list.appendChild(warningJumpGroup(group)));
+
+  if (rest.length > 0) {
+    const zoneCount = new Set(rest.map((warning) => warning.zone_key)).size;
     const item = document.createElement("li");
-    item.className = `warning-jump-group ${bannerSeverityClass(group.type)}`;
-
-    const icon = document.createElement("span");
-    icon.className = "warning-jump-icon";
-    icon.setAttribute("aria-hidden", "true");
-    setSafeHTML(icon, lineIcon("warning"));
-
-    const type = document.createElement("span");
-    type.className = "warning-jump-type";
-    // Chips carry their meaning in colour, so they must not also depend on it:
-    // the type is spelled out on every row.
-    type.textContent = shortWarningType(group.type);
-
-    item.append(icon, type);
-
-    group.warnings.forEach((warning) => {
-      item.appendChild(warningJumpLink(warning));
-    });
-
+    item.className = "warning-jump-more-item";
+    const more = document.createElement("details");
+    more.className = "warning-jump-more";
+    const summary = document.createElement("summary");
+    summary.textContent = `${mine.length ? "+ " : ""}${zoneCount} ${mine.length ? "more " : ""}warned zone${zoneCount === 1 ? "" : "s"}`;
+    const inner = document.createElement("ul");
+    inner.className = "warning-jump-list";
+    groupWarningsByType(rest).forEach((group) => inner.appendChild(warningJumpGroup(group)));
+    more.append(summary, inner);
+    item.appendChild(more);
     list.appendChild(item);
-  });
+  }
+}
+
+/**
+ * One warning type's row: its icon and name, then the warned waters.
+ *
+ * @param {{type: string, warnings: Array<Object>}} group
+ * @returns {HTMLLIElement}
+ */
+function warningJumpGroup(group) {
+  const item = document.createElement("li");
+  item.className = `warning-jump-group ${bannerSeverityClass(group.type)}`;
+
+  const icon = document.createElement("span");
+  icon.className = "warning-jump-icon";
+  icon.setAttribute("aria-hidden", "true");
+  setSafeHTML(icon, lineIcon("warning"));
+
+  const type = document.createElement("span");
+  type.className = "warning-jump-type";
+  // Chips carry their meaning in colour, so they must not also depend on it:
+  // the type is spelled out on every row.
+  type.textContent = shortWarningType(group.type);
+
+  item.append(icon, type);
+  group.warnings.forEach((warning) => item.appendChild(warningJumpLink(warning)));
+  return item;
 }
 
 /**
@@ -531,6 +567,11 @@ function getWarningSeverityClass(type) {
 /**
  * Auto-refresh forecast data every 5 minutes
  */
+// Banner settings decide which warnings the strip shows in full.
+window.addEventListener("warning-zones:changed", () => {
+  if (forecastData) renderWarningJumpStrip(listZones());
+});
+
 function startAutoRefresh() {
   setInterval(
     () => {
