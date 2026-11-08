@@ -889,3 +889,11 @@
   font-style: normal;
   font-weight: var(--weight-bold);
 }
+
+/* Footnote under the hourly table for a temperature that isn't the open
+   air's (stations.json air_temp_label). */
+.wl-hourly-note {
+  margin: 0.5rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}

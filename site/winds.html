@@ -46,7 +46,7 @@
   <!-- The summary panel, region heads, status lights and row panels are the
        home page's (home.css); winds-v4.css lays out the winds rows. -->
   <link rel="stylesheet" href="/assets/css/home.css?v=56db6e4571" />
-  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=8b2d2a0521" />
+  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=849fd8b656" />
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
@@ -142,6 +142,10 @@
           </tbody>
         </table>
       </div>
+      <!-- Filled by wind-stations.js when the station's temperature isn't the
+           open air's (stations.json air_temp_label). The column it notes is
+           hidden on phones, so the note is too. -->
+      <p id="wind-hourly-note" class="wl-hourly-note hide-mobile" hidden></p>
     </div>
   </section>
 
@@ -164,7 +168,7 @@
   <script type="module" src="/assets/js/warning-banner.js?v=69920f4608"></script>
   <script defer src="/assets/js/chart-utils-v4.js?v=6cd395ae52"></script>
   <!-- wind-data.js is imported by both module entry points (no script tag needed) -->
-  <script type="module" src="/assets/js/wind-stations.js?v=4e9f4c8d3b"></script>
+  <script type="module" src="/assets/js/wind-stations.js?v=774b5c6842"></script>
   <script type="module" src="/assets/js/winds-map.js?v=351b8727d1"></script>
   <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>

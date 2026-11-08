@@ -43,6 +43,17 @@ export function airTempIsProxy(meta) {
   return Boolean(meta?.air_temp_label);
 }
 
+/**
+ * The footnote for any plot or table that shows such a temperature, or null:
+ * the registry's caveat under the label, e.g. "* Enclosure temp: The
+ * temperature is the sensor enclosure's, not the open air: …". Mark the
+ * series or column with "*" to match.
+ */
+export function airTempFootnote(meta) {
+  if (!airTempIsProxy(meta)) return null;
+  return `* ${airTempLabel(meta)}: ${meta.caveat || "not the open air temperature."}`;
+}
+
 const WIND_STATION_LABELS = {
   wind_monitoring_station: "Wind Monitoring Station",
   c_man_station: "C-MAN Station",
