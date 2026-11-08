@@ -1,9 +1,24 @@
 /* Developer API documentation page (/api.html) */
 
+/* The text on a solid panel (user 2026-11-08: it sat straight on the
+   sea-and-linen page background, too little contrast to read comfortably). */
 .api-wrap {
   max-width: 900px;
   margin: 2rem auto;
-  padding: 0 max(0.85rem, var(--page-gutter)) 3rem;
+  padding: 1.25rem max(0.85rem, var(--page-gutter)) 2.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+}
+
+@media (max-width: 940px) {
+  .api-wrap {
+    margin: 1rem var(--page-gutter);
+  }
+}
+
+.api-wrap h1 {
+  margin-top: 0;
 }
 
 .api-wrap h2 {
@@ -195,4 +210,48 @@
   .api-support-btn {
     justify-content: center;
   }
+}
+
+/* Copy buttons (shared/copy-code.js): in the block's top-right corner, on
+   the wrapper so they stay put while a long line scrolls sideways. */
+.copy-code,
+.copy-code-inline {
+  position: relative;
+}
+
+/* Code starts under the button, so a long line scrolling sideways never
+   runs beneath it. The base URL keeps its full width: its button sits
+   beside the short "Base URL" label above it. */
+.copy-code > pre {
+  padding-top: 2.6rem;
+}
+
+.copy-code-btn {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  min-height: 32px;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-accent-blue);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.copy-code-btn:hover {
+  background: var(--color-callout-info-bg);
+}
+
+.copy-code-btn:focus-visible {
+  outline: 2px solid var(--color-accent-blue);
+  outline-offset: 1px;
+}
+
+.copy-code-btn.is-copied {
+  color: var(--color-accent-green);
+  border-color: currentColor;
 }

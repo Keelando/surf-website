@@ -31,7 +31,7 @@
   <link rel="canonical" href="https://halibutbank.ca/api.html" />
   <link rel="stylesheet" href="/assets/css/style-v4.css?v=a2526f5ba5" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=345437d067" />
-  <link rel="stylesheet" href="/assets/css/api-v4.css?v=9b865af353" />
+  <link rel="stylesheet" href="/assets/css/api-v4.css?v=ad9a3243de" />
   <!-- Structured data: dataset description for Google Dataset Search -->
   <script type="application/ld+json">
   {
@@ -184,7 +184,7 @@
         The feeds are static files served from a CDN edge, so they are fast and cheap to read.
       </p>
 
-      <div class="api-base">
+      <div class="api-base" data-copy>
         <div>Base URL</div>
         <code>https://halibutbank.ca/api/v1</code>
       </div>
@@ -547,5 +547,6 @@ if (!halibutBank.stale) {
   <div hx-get="/components/footer.html?v=4" hx-trigger="load" hx-swap="outerHTML"></div>
 
   <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
+  <script type="module" src="/assets/js/api.js?v=f8d5065f8f"></script>
 </body>
 </html>
