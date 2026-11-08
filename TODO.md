@@ -94,11 +94,13 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       2026-11-03 08:01 UTC is stamped 1 h early (obs and predictions alike,
       so residuals are right) and ages out by ~2026-11-13.
 
-- [ ] **Page background: chart grid over a depth gradient** (user
-      2026-11-06, NEXT frontend session). The desktop page is plain since the
-      photo became a banner. Plan, options and checks:
-      `docs/project/PAGE_BACKGROUND.md` (try the options behind a `?bg=`
-      switch on dev first).
+- [x] **Page background** — BUILT on `dev` 2026-11-07/08 (sea + linen
+      textures over repeating depth bands, the user's pick from a `?bg=`
+      trial), ships with the rest of round 4 of the UI overhaul. Details:
+      `docs/project/PAGE_BACKGROUND.md` on `dev`.
+- [ ] **After the UI overhaul: code review and refactor** (user
+      2026-11-08: the UI moved fast to ship). Plan and the candidates found
+      so far: "After the overhaul" in `docs/project/UI_OVERHAUL.md`.
 - [ ] **Webcams: the oldest frame vanishes when scrolled to** (user
       2026-11-06, White Rock pier cam; fold into the webcams page overhaul).
       Likely cause, not yet confirmed: the page reads
