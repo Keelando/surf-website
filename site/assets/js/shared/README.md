@@ -42,7 +42,11 @@ node can import these files in tests; browsers ignore it.
   see `docs/project/BUOY_CARD_REFACTOR.md`. Also holds
   `LIGHTSTATION_REGION_ORDER`/`orderRegions()`, the one place the lightstation
   page and its chart dropdown agree on section order; the ordering appends
-  unknown regions rather than hiding them
+  unknown regions rather than hiding them. And the **asterisk rule** (2026-11-08):
+  `caveatCovers`/`caveatStar`/`caveatNameMark`/`caveatFootnote` and
+  `CAVEAT_STAR` read a station's `caveat` + `caveat_fields` (and
+  `airTempLabel`/`airTempIsProxy` its `air_temp_label`), so every page marks a
+  caveated name, value, chart series and table the same way
 - `warning-zones.js` — the pure half of the sitewide warning banner: which
   zones may raise one (`DEFAULT_BANNER_ZONES` + `getBannerZones(stored,
   available)`, deliberately narrower than the zones we carry),
@@ -72,7 +76,9 @@ node can import these files in tests; browsers ignore it.
   *renders* unsanitized markup rather than blanking the element when DOMPurify
   is absent; that is the copies' historical behaviour, kept because every
   caller passes markup built from this repo's own JSON exports. Anything
-  rendering third-party text must sanitize at its own call site.
+  rendering third-party text must sanitize at its own call site. Also
+  `escapeAttr(value)` for registry text in attribute values (title,
+  aria-label, href), shared since 2026-11-08.
   Tests: `tests/js/safe-html.test.mjs`
 
 - `marine-zones.js` — marine zone vocabulary and ordering: `listZones`,

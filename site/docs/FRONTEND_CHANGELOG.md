@@ -4,6 +4,43 @@ UI/UX enhancements and feature history for halibutbank.ca. Entries are newest-fi
 
 ---
 
+## 2026-11-08: Page Background, the Asterisk Rule, Charts That Refit
+
+Built on `dev` 2026-11-07/08 and shipped together.
+
+- **Page background, sitewide:** a wavy sea surface and a faint linen weave
+  over depth bands that repeat down the page. Picked by the user from a
+  `?bg=` trial on the preview. The textures are pre-rendered AVIF tiles
+  (`scripts/utils/make_page_background.py`); as SVG filters they doubled
+  raster work on a touch tablet. Light-mode bands are paler than the top
+  fade so muted text stays AA. `docs/project/PAGE_BACKGROUND.md`.
+- **The asterisk rule:** a station with a `caveat` gets an asterisk on its
+  name, and every reading its `caveat_fields` names gets one on the value,
+  wherever it shows; tables and charts showing one carry the caveat as a
+  footnote. Colebrook's temperature reads its enclosure, so it is labelled
+  "Enclosure temp" and left out of the Temp sort. The 12-hour history's
+  backup-sensor mark became a dagger (†) so the two never share a symbol.
+- **Legend toggles refit the y-axis on every chart**, and the wave
+  comparison chart's Halibut direction arrows follow it down.
+- **Storm banner pulse on the compositor:** it animated `box-shadow`, so
+  while a storm warning was up every page repainted and re-layerized each
+  frame (~1 s of Layerize per tablet scroll). Now an opacity animation on a
+  pseudo-element.
+- **Winds page review fixes:** an open tab re-downloaded ~1.8 MB every five
+  minutes (now the 48 h series every 30); refreshes no longer close "Show
+  More Rows" or rebuild a dropdown in use; a failed first map load recovers.
+
+### Measuring on a tablet
+
+A desktop browser sized like a tablet runs the wave animations that touch
+devices switch off, which made the reworked winds page look twice as slow as
+it was. Emulate with `isMobile` + `hasTouch`, scroll in-page (CDP's
+synthesized scroll gesture silently does nothing headless: check `scrollY`
+moved), and check the background on the raster threads, not just the main
+thread. The user's tablet, the slowest device, scrolled fine throughout.
+
+---
+
 ## 2026-10-29: Lighter on Phones and Tablets
 
 The new home page scrolled slowly and jumpily over the summary on a Lenovo

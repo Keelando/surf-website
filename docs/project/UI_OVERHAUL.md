@@ -377,8 +377,30 @@ it without moving the page. Drawn Canada / US flags replace the old emoji
 (shared/flags.js), from a registry `country` field (`main` `92470e6`; the
 `flag` emoji is sometimes a source, not a country).
 
+**Round 4 (user, 2026-11-07/08), on `dev`, awaiting "ship it":**
+- **Page background** (`docs/project/PAGE_BACKGROUND.md`): sea + linen
+  textures over depth bands repeating down the page, sitewide. Textures are
+  pre-rendered AVIF tiles (`scripts/utils/make_page_background.py --write`).
+- **The asterisk rule**, sitewide: a station whose readings need a warning
+  carries `caveat` + `caveat_fields` in stations.json; its name gets an
+  asterisk, every caveated value gets one wherever it shows (rows, panels,
+  popups, tables, chart legends), and a plot or table showing one carries the
+  caveat as a footnote. A temperature that isn't the open air
+  (`air_temp_label`, Colebrook's "Enclosure temp") is relabelled too and left
+  out of the Temp sort. Helpers: `shared/station-meta.js` (`caveat*`).
+  **Open:** CWLM's caveat also says its wind is "more exposed than marine
+  sites"; only its pressure is starred so far (user to decide on wind).
+- **Legend toggles refit the y-axis on every chart** (the item queued
+  below, done): `rescaleYAxisOnLegendToggle` gained `round` and a first-axis
+  filter; the wave comparison chart's Halibut arrows follow the axis; the
+  temperature chart's limits are functions of the shown extent.
+- **Pre-ship review fixes** on the winds rework (refresh cost, state kept
+  across refreshes, map error overlay, escaping) and the storm banner's pulse
+  moved to the compositor (it repainted every page each frame).
+
 **Queued from round 2:**
-- **Legend rescale on the other charts that pin their axis:**
+- ~~**Legend rescale on the other charts that pin their axis**~~ — done in
+  round 4 (above); notes kept for the reasoning:
   temperature-chart-v4.js (`yMin`/`yMax`), storm_surge_chart-v4.js and
   storm_surge_page.js, wave-forecast.js (`axisMax`, `periodMax`), and
   wave-chart-v4.js's 750 (`yAxisMax`). Each computes its limits its own
@@ -390,6 +412,23 @@ it without moving the page. Drawn Canada / US flags replace the old emoji
   "+12 / All rows", winds' "Show More Rows" and home's 12-hour history,
   which shows all twelve. Undecided; settle it before the forecasts page's
   rollout, which has the most table.
+
+## After the overhaul: code review and refactor
+
+User 2026-11-08: once every page has had its overhaul, plan a code review
+and refactor, because the UI work moved fast to ship. Known candidates so
+far, to fold into that plan:
+- Two age-refresh implementations: `wind-stations.js` `tick()` re-does
+  `station-list.js` `refreshAges()` (the pre-ship review's finding 9).
+- Caveat marks: the winds list still styles its name mark as
+  `.wl-caveat-mark` beside the shared `.caveat-star`; fold into one.
+- `wave-chart-v4.js` / `comparison-chart-v4.js` / `wind-chart-v4.js` each
+  build direction arrows their own way; `rescaleYAxisOnLegendToggle` assumes
+  1.05x placement for all of them.
+- `escapeAttr` now lives in `shared/safe-html.js`; other hand-rolled
+  attribute interpolations can move to it.
+- Classic scripts (`chart-utils-v4.js`, `nav.js`) vs ES modules: the globals
+  modules lean on (`fetchWithTimeout`, `rescaleYAxisOnLegendToggle`).
 
 ## Where the work happens
 

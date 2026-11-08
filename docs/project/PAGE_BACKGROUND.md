@@ -2,11 +2,15 @@
 
 **Status:** BUILT on `dev` 2026-11-07, awaiting "ship it". Trial on the preview
 (`?bg=` layers: gradient, chart, contours, fabric, sea, periodic); the user picked
-**sea + fabric over periodic depth bands**, now always on, switch removed. CSS is
-generated: `scripts/utils/make_page_background.py --write`. Chart grid and
-contours are parked in the generator for reuse. Light-mode band tint had to be
-paler than the top fade for AA (see the CSS comment). Tablet scroll at 4x CPU:
-no measurable cost from the background (A/B on dev, same long-frame count).
+**sea + fabric over periodic depth bands**, now always on, switch removed. Generated
+by `scripts/utils/make_page_background.py --write` (needs node + Playwright and
+Pillow): the textures are drawn as SVG there and rasterized by
+`render_page_background.mjs` into one 720x480 tile per theme, 2x AVIF q60
+(28/160 KB), content-hashed names. As SVG filter tiles they doubled raster work
+on a touch tablet; WebP was 431/643 KB (lossless alpha); 1x or q40 blurred the
+weave. Light-mode band tint must stay pale (#dae7f1) for AA; re-run the
+gradient-contrast probe after any tweak (axe cannot score text over images).
+Chart grid and contours are parked in the generator for reuse.
 **Why:** with the photo shrunk to a banner on desktop (UI_OVERHAUL.md,
 "Step 3: winds", round 2) the page around the panels is flat colour. User:
 "on desktop the page does look very plain now", "background still looks
