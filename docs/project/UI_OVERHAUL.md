@@ -434,6 +434,30 @@ the 54rem the Time column needs (`winds-v4.css`).
   panel's rollout. Fallback if a table feels wrong with chips: first rows +
   one "Show all / Show fewer" toggle.
 
+## Step 4: forecasts (2026-11-08, `dev`)
+
+**Audit (as shipped, 2026-11-08):** 6,873px on a 390px phone (~8 screens),
+5,455px at 1280. The point forecast starts 2,433px down (three screens):
+first come ~430px of photo and tagline, the warnings strip (337), and the
+zone forecast (1,597: prose, three tall extended-day cards, an "EC is the
+authoritative source" box with two full-width buttons). Two banner settings
+sit mid-forecast ("Customize alerts" fold + a per-zone-card checkbox). The
+station picker appears twice, Waves/Wind three times, and the station name
+twice (heading + dropdown). The point table is 488px wide in a 364px phone
+column (Wind wave column behind a sideways scroll). Related Resources is
+671px of links. Desktop: zone prose runs ~1,100px wide.
+
+**User's picks:**
+- **Order: zone first, condensed.** Forecaster's words stay first, shrunk
+  to about a screen: the current period, the next days one line each, the
+  source as a small link. Point forecast starts ~one screen down.
+- **Banner settings: one fold on the warnings strip** ("Banner settings"),
+  holding the zone checklist; the per-card checkbox goes.
+- **Verification folded:** "How did the forecast do? (last 48 h)", synced
+  to the picked station and Waves/Wind.
+- **Tables: time-window chips** (above), 12 / 24 / 48 h opening on 24 h,
+  driving the chart and the table together.
+
 ## After the overhaul: code review and refactor
 
 User 2026-11-08: once every page has had its overhaul, plan a code review
