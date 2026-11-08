@@ -63,18 +63,6 @@
   --map-placeholder-bg: #1c2a3a;
 }
 
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 /* -----------------------------
    Summary: the station list on the photo
    Built to scroll cheaply (dev, 2026-10-31): the photo scrolls with the page

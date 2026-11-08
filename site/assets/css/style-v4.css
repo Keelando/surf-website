@@ -2158,3 +2158,18 @@ header h2 {
      gutters. The extra 0.5rem a side was enough on its own to push the table
      into a scrollbar at 360 px. */
 }
+
+/* Read by assistive tech, not shown. Sitewide since 2026-11-08 (it lived in
+   home.css, so on a page without home.css the class silently did nothing:
+   the forecasts page showed its station name twice). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

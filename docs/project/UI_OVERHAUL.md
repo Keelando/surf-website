@@ -458,6 +458,23 @@ column (Wind wave column behind a sideways scroll). Related Resources is
 - **Tables: time-window chips** (above), 12 / 24 / 48 h opening on 24 h,
   driving the chart and the table together.
 
+**Built on dev 2026-11-08** (`675d314` + the point-forecast commit):
+6,873 -> 4,826px on a 390px phone (-30%), 5,455 -> 3,997px at 1280; the
+point forecast starts at 1,727px instead of 2,433. No sideways scroll at
+390px up to 150% text. What changed beyond the picks:
+- Windows start at the current hour, not the run's first step (a run is
+  5-11 h old on the page); "48 h" runs to the end of the run and the
+  caption says so. Chosen window survives a station switch.
+- One station picker (it is the visible heading; the <h3> stays for
+  assistive tech) and one Waves/Wind toggle, beside the chips.
+- Table fits a phone: day header rows ("SUNDAY") so each row shows only
+  "11:00", units on their own line under each head, cardinal-only
+  direction under 30rem, quieter heads. Waves 488 -> 364px at default
+  text, 733 -> 352px at 150%.
+- `.visually-hidden` moved to style-v4.css: it lived in home.css, so on
+  pages without home.css the class did nothing.
+- Related resources folded. Model intro shortened.
+
 ## After the overhaul: code review and refactor
 
 User 2026-11-08: once every page has had its overhaul, plan a code review

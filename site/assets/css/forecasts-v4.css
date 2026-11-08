@@ -310,6 +310,27 @@ header {
   margin-bottom: 0;
 }
 
+/* Related resources, folded: the <h2> sits inline in the summary. */
+.related-resources {
+  margin: 1.5rem 0 1.25rem;
+}
+
+.related-resources-title {
+  display: inline;
+  margin: 0;
+  font-size: 1rem;
+  color: inherit;
+}
+
+.related-resources-hint {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.related-resources-body {
+  padding: 0.25rem 0.9rem 0.9rem;
+}
+
 /* Resource links styling */
 .resource-links {
   display: flex;
@@ -377,23 +398,20 @@ header {
   }
 }
 
-/* The verification panel is a distinct claim from the forecast above it — a rule and
-   a heading keep a reader from mistaking the dashed model line for more
-   forecast. */
+/* Verification, folded (user 2026-11-08). Its own box, so the dashed model
+   line inside is never read as more of the forecast above. */
 .forecast-verification {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--color-border-light);
+  margin-top: 1rem;
 }
 
-.forecast-verification h3 {
-  margin: 0 0 0.75rem;
-  font-size: 1.1rem;
-  color: var(--color-text);
+.forecast-verification > .forecast-panel,
+.forecast-verification > #forecast-verification-metadata {
+  padding: 0 0.7rem;
 }
 
 #forecast-verification-metadata {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
+  padding-bottom: 0.7rem;
   font-size: 0.9rem;
   line-height: 1.7;
   color: var(--color-text-muted);
@@ -808,15 +826,62 @@ header {
 
 
 
+/* One row of controls: Waves/Wind on the left, the window chips on the
+   right; they wrap to two rows where both won't fit. */
+.forecast-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  margin: 0.25rem 0 0.25rem;
+}
+
+/* The window chips: the site's pill toggle (home.css .range-toggle), drawn
+   here because this page doesn't load home.css. */
+.forecast-window {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--color-card-muted-bg);
+  border: 1px solid var(--color-border-light);
+}
+
+.forecast-window-btn {
+  min-height: 32px;
+  margin: 0;
+  padding: 0.25rem 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.forecast-window-btn:hover {
+  color: var(--color-text);
+}
+
+.forecast-window-btn.active {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.forecast-window-btn:focus-visible {
+  outline: 2px solid var(--color-accent-blue);
+  outline-offset: 1px;
+}
+
 /* Segmented control: one row of joined buttons, exactly one active. */
 .forecast-mode-toggle {
   display: flex;
-  /* 40% of the viewport on desktop, 75% on phones (see the media query
-     below) — 40vw is only ~156 px at 390 px wide, too cramped for two
-     labels. max-width keeps it inside the card in every case. */
-  width: 40vw;
-  max-width: 100%;
-  margin: 0.5rem auto 0.25rem;
+  flex: 1 1 11rem;
+  max-width: 18rem;
+  margin: 0;
   padding: 2px;
   background: var(--color-card-muted-bg);
   border: 1px solid var(--color-border-light);
@@ -874,17 +939,14 @@ header {
   color: var(--color-text-muted);
 }
 
-/* Centred and given the same 40vw box as the segmented control below it,
-   so the two line up on both edges. Centring the label+select *pair*
-   instead would push the select's right edge past the control's by the
-   width of the label. */
+/* The station picker doubles as the section's visible heading (the <h3>
+   is kept for assistive tech only), so it leads, left-aligned. */
 .wave-forecast-station {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  width: 40vw;
-  max-width: 100%;
-  margin: 0 auto 1rem;
+  max-width: 26rem;
+  margin: 0 0 0.5rem;
 }
 
 .wave-forecast-station:empty {
@@ -899,11 +961,11 @@ header {
 }
 
 .wave-forecast-station select {
-  /* Takes whatever the label leaves of the 40vw row. */
   flex: 1;
   min-width: 0;
-  padding: 0.5rem 0.75rem;
-  font-size: 1rem;
+  padding: 0.45rem 0.7rem;
+  font-size: 1.05rem;
+  font-weight: 600;
   color: var(--color-text);
   background: var(--color-surface);
   border: 1px solid var(--color-border-light);
@@ -931,9 +993,31 @@ header {
    the table looks shorter than the 48 h chart above it. Only the
    horizontal overflow is handled, for narrow screens. */
 .wave-forecast-table-wrap {
-  margin-top: 1.5rem;
+  container-type: inline-size;
+  margin-top: 1rem;
   overflow-x: auto;
 }
+
+/* A head's unit on its own line, quieter than the name. */
+.wave-forecast-unit {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* A day's rows start with its name, across the table. */
+.wave-forecast-table .wave-forecast-day th {
+  padding-top: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+  background: var(--color-card-muted-bg);
+}
+
 
 .wave-forecast-table {
   width: 100%;
@@ -975,13 +1059,6 @@ header {
    view still overflows — five columns of numbers do not fit 356 px — and
    that is what the wrapper's horizontal scroll is for. */
 @media (max-width: 600px) {
-  /* Phones get proportionally wider controls: 40vw is a thumb-hostile
-     156 px at 390 px wide, where 75vw is a comfortable 292 px. */
-  .forecast-mode-toggle,
-  .wave-forecast-station {
-    width: 75vw;
-  }
-
   .wave-forecast-table {
     font-size: 0.8rem;
   }
@@ -992,51 +1069,32 @@ header {
   }
 }
 
-.wave-forecast-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 0.75rem;
+/* A phone-width table: the direction as a cardinal alone, tighter cells. */
+@container (width < 30rem) {
+  .wave-forecast-deg {
+    display: none;
+  }
+
+  .wave-forecast-table th,
+  .wave-forecast-table td {
+    padding-inline: 0.25rem;
+  }
+
+  /* Heads no wider than their numbers: in capitals and spaced out, at large
+     text, "WIND WAVE" was 151px over a 40px column. */
+  .wave-forecast-table thead th {
+    font-size: 0.72rem;
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: normal;
+    vertical-align: bottom;
+  }
 }
 
 .wave-forecast-extent {
-  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
-}
-
-.wave-forecast-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.wave-forecast-btn {
-  padding: 0.4rem 0.85rem;
-  border: 1px solid var(--color-accent-blue);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--color-accent-blue);
-  font-size: 0.85rem;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.wave-forecast-btn:hover {
-  background: var(--color-accent-blue);
-  color: var(--color-surface);
-}
-
-.wave-forecast-btn-quiet {
-  border-color: var(--color-border);
-  color: var(--color-text-muted);
-}
-
-.wave-forecast-btn-quiet:hover {
-  background: var(--color-border);
-  color: var(--color-text);
 }
 
 /* Both links leave the site; the arrow says so before the click. */

@@ -282,7 +282,9 @@ function createDirectionArrows(rows, axisMax, colors, field = "waveDirection") {
 function formatDirection(degrees) {
   if (degrees === null || degrees === undefined) return "—";
   const cardinal = typeof degreesToCardinal === "function" ? degreesToCardinal(degrees) : "";
-  return `${cardinal} (${Math.round(degrees)}°)`;
+  // The degrees go on a narrow table (forecasts-v4.css): the cardinal is what
+  // a phone reader needs, and "SE (145°)" alone was ~25% of the row's width.
+  return `${cardinal} <span class="wave-forecast-deg">(${Math.round(degrees)}°)</span>`;
 }
 
 /**
@@ -299,6 +301,25 @@ function formatStepLabel(date) {
     hour12: false,
     timeZone: PACIFIC_TZ,
   });
+}
+
+/**
+ * The table's day and time, apart: a day heads its group of rows, and each
+ * row shows only its time. "Sun 11:00" in every row set the width of the
+ * table's widest column on a phone.
+ *
+ * @param {Date} date
+ * @returns {{day: string, time: string}}
+ */
+function tableDayTime(date) {
+  const day = date.toLocaleDateString("en-US", { weekday: "long", timeZone: PACIFIC_TZ });
+  const time = date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: PACIFIC_TZ,
+  });
+  return { day, time };
 }
 
 /**
@@ -610,6 +631,31 @@ function rowsWithin(rows, hours) {
 }
 
 /**
+ * The rows a window chip asks for: from the latest step at or before now,
+ * `hours` ahead (user 2026-11-08: the window chips set the chart and the
+ * table together).
+ *
+ * Anchored on now, not on the run's first step: a run is 5-11 h old by the
+ * time it is on the page, so "12 h" from its start would show barely a few
+ * hours still to come. The hours already gone are what the verification
+ * fold is for. "48 h" runs to the end of the run, which is then less than
+ * 48 h away; the table's caption says how far it reaches.
+ *
+ * @param {Array<Object>} rows - Sorted by valid time
+ * @param {number} hours
+ * @returns {Array<Object>}
+ */
+function windowRows(rows, hours) {
+  if (rows.length === 0) return [];
+  const now = Date.now();
+  let start = 0;
+  rows.forEach((row, i) => {
+    if (row.time.getTime() <= now) start = i;
+  });
+  return rowsWithin(rows.slice(start), hours);
+}
+
+/**
  * Render the tabular forecast at 3-hourly spacing, showing `visibleHours` of it.
  *
  * Takes every step and thins it here rather than receiving a thinned set, so
@@ -634,17 +680,31 @@ function rowsWithin(rows, hours) {
  */
 const TABLE_COLUMNS = {
   [MODE_WAVES]: [
-    { header: "Height (m)", cell: (row) => row.waveHeight?.toFixed(2) ?? "—" },
-    { header: "Period (s)", cell: (row) => row.peakPeriod?.toFixed(1) ?? "—" },
+    { header: "Height", unit: "m", cell: (row) => row.waveHeight?.toFixed(2) ?? "—" },
+    { header: "Period", unit: "s", cell: (row) => row.peakPeriod?.toFixed(1) ?? "—" },
     { header: "From", cell: (row) => formatDirection(row.waveDirection) },
-    { header: "Wind wave (m)", cell: (row) => row.windWaveHeight?.toFixed(2) ?? "—" },
+    { header: "Wind wave", unit: "m", cell: (row) => row.windWaveHeight?.toFixed(2) ?? "—" },
   ],
   [MODE_WIND]: [
-    { header: "Wind (kt)", cell: (row) => row.windSpeed?.toFixed(0) ?? "—" },
-    { header: "Gust (kt)", cell: (row) => (row.windGust !== null ? row.windGust.toFixed(0) : "—") },
+    { header: "Wind", unit: "kt", cell: (row) => row.windSpeed?.toFixed(0) ?? "—" },
+    {
+      header: "Gust",
+      unit: "kt",
+      cell: (row) => (row.windGust !== null ? row.windGust.toFixed(0) : "—"),
+    },
     { header: "From", cell: (row) => formatDirection(row.windDirection) },
   ],
 };
+
+/**
+ * A column head: the name, and its unit on a line of its own, so a head is
+ * never wider than its numbers (one-line "WIND WAVE (M)" set the column's
+ * width on a phone).
+ */
+function columnHead(column) {
+  const unit = column.unit ? `<span class="wave-forecast-unit">${column.unit}</span>` : "";
+  return `<th scope="col">${column.header}${unit}</th>`;
+}
 
 /**
  * One swell partition per line, "W 1.8 m 10 s": compact enough for a phone,
@@ -680,20 +740,29 @@ function renderTable(allRows) {
   const container = document.getElementById("wave-forecast-table");
   if (!container) return;
 
-  const rows = toThreeHourly(allRows);
-  const total = spanHours(rows);
-  const shown = rowsWithin(rows, visibleHours);
-  const atFullExtent = shown.length >= rows.length;
+  // Thinned before windowing: the 3-hourly steps line up with the run's own
+  // lead times (and, past 24 h, they are the only steps there are).
+  const thinned = toThreeHourly(allRows);
+  const shown = windowRows(thinned, visibleHours);
+  const reach = spanHours(shown);
+  const toEnd = shown.length > 0 && shown[shown.length - 1] === thinned[thinned.length - 1];
 
   const columns = columnsFor(currentMode, allRows);
+  let lastDay = null;
   const body = shown
-    .map(
-      (row) => `
+    .map((row) => {
+      const { day, time } = tableDayTime(row.time);
+      const dayRow =
+        day !== lastDay
+          ? `<tr class="wave-forecast-day"><th scope="colgroup" colspan="${columns.length + 1}">${day}</th></tr>`
+          : "";
+      lastDay = day;
+      return `${dayRow}
         <tr>
-          <th scope="row">${formatStepLabel(row.time)}</th>
+          <th scope="row">${time}</th>
           ${columns.map((column) => `<td>${column.cell(row)}</td>`).join("")}
-        </tr>`,
-    )
+        </tr>`;
+    })
     .join("");
 
   setSafeHTML(
@@ -702,48 +771,16 @@ function renderTable(allRows) {
     <table class="wave-forecast-table">
       <thead>
         <tr>
-          <th scope="col">Time (PT)</th>
-          ${columns.map((column) => `<th scope="col">${column.header}</th>`).join("")}
+          <th scope="col">Time<span class="wave-forecast-unit">PT</span></th>
+          ${columns.map(columnHead).join("")}
         </tr>
       </thead>
       <tbody>${body}</tbody>
     </table>
-    <div class="wave-forecast-controls">
-      <span class="wave-forecast-extent">
-        Showing ${atFullExtent ? "all" : `the first ${Math.round(Math.min(visibleHours, total))} h`}
-        of ${Math.round(total)} h, ${shown.length} of ${rows.length} steps
-      </span>
-      <span class="wave-forecast-buttons">
-        ${
-          atFullExtent
-            ? ""
-            : `<button type="button" class="wave-forecast-btn" data-expand="12">+12 hours</button>
-               <button type="button" class="wave-forecast-btn" data-expand="all">Show all 48 h</button>`
-        }
-        ${
-          visibleHours > DEFAULT_VISIBLE_HOURS
-            ? '<button type="button" class="wave-forecast-btn wave-forecast-btn-quiet" data-collapse="1">Collapse</button>'
-            : ""
-        }
-      </span>
-    </div>`,
+    <p class="wave-forecast-extent">
+      Every 3 hours, ${Math.round(reach)} h ahead${toEnd ? " (to the end of this run)" : ""}.
+    </p>`,
   );
-
-  for (const button of container.querySelectorAll("[data-expand]")) {
-    button.addEventListener("click", () => {
-      const step = button.dataset.expand;
-      visibleHours = step === "all" ? total : visibleHours + Number(step);
-      renderTable(allRows);
-    });
-  }
-
-  const collapse = container.querySelector("[data-collapse]");
-  if (collapse) {
-    collapse.addEventListener("click", () => {
-      visibleHours = DEFAULT_VISIBLE_HOURS;
-      renderTable(allRows);
-    });
-  }
 }
 
 /**
@@ -761,11 +798,12 @@ function renderTable(allRows) {
  */
 function renderForecastMode(rows) {
   if (rows.length === 0) return;
+  const shown = windowRows(rows, visibleHours);
   if (currentMode === MODE_WIND) {
-    renderWindChart(rows);
+    renderWindChart(shown);
     windChart?.resize();
   } else {
-    renderChart(rows);
+    renderChart(shown);
     waveChart?.resize();
   }
 }
@@ -773,9 +811,8 @@ function renderForecastMode(rows) {
 /**
  * Switch the section between the waves and wind views.
  *
- * Every copy of the control is updated, not just the one that was clicked —
- * there are two on the page (above the chart, below the table) and they must
- * never disagree about what is being shown.
+ * The verification fold's panels carry the same data-panel values, so they
+ * switch with it.
  *
  * @param {string} mode - MODE_WAVES or MODE_WIND
  * @returns {void}
@@ -810,6 +847,42 @@ function initModeToggle() {
   for (const button of document.querySelectorAll(".forecast-mode-btn")) {
     button.addEventListener("click", () => setForecastMode(button.dataset.forecastMode));
   }
+}
+
+/**
+ * Wire the window chips (12 / 24 / 48 h): one choice for the chart and the
+ * table. Kept across station switches; the reader chose how far ahead to
+ * look, not for which station.
+ *
+ * @returns {void}
+ */
+function initWindowChips() {
+  const chips = document.querySelectorAll(".forecast-window-btn");
+  for (const chip of chips) {
+    chip.addEventListener("click", () => {
+      visibleHours = Number(chip.dataset.forecastHours);
+      for (const other of chips) {
+        const on = other === chip;
+        other.classList.toggle("active", on);
+        other.setAttribute("aria-pressed", String(on));
+      }
+      renderForecastMode(currentRows);
+      renderTable(currentRows);
+    });
+  }
+}
+
+/**
+ * Draw the verification chart when its fold opens: ECharts measures its
+ * container at init, and a closed <details> gives it nothing to measure.
+ *
+ * @returns {void}
+ */
+function initVerificationFold() {
+  const fold = document.getElementById("forecast-verification");
+  fold?.addEventListener("toggle", () => {
+    if (fold.open) renderVerificationMode();
+  });
 }
 
 /**
@@ -1256,6 +1329,8 @@ function verificationAxisMax(series, floor, step) {
  */
 function renderVerificationMode() {
   if (!currentVerification || typeof echarts === "undefined") return;
+  // Folded until asked for; drawn on open (initVerificationFold).
+  if (!document.getElementById("forecast-verification")?.open) return;
 
   if (currentMode === MODE_WIND) {
     const el = document.getElementById("wind-verification-chart");
@@ -1328,7 +1403,7 @@ function renderVerificationHeading() {
           return `${days} day${days === 1 ? "" : "s"}`;
         })();
 
-  heading.textContent = `Forecast Verification: Last ${span}`;
+  heading.textContent = `How did the forecast do? (last ${span})`;
 }
 
 /**
@@ -1402,13 +1477,10 @@ async function loadVerification() {
 /**
  * Build every copy of the station picker from the fetcher's index.
  *
- * There are two containers on the page — one above the forecast chart, one at
- * the head of the verification panel — for the same reason the mode toggle has
- * three: the verification panel is a long scroll below the forecast, and a
- * reader comparing two stations should not have to scroll back up. Every
- * `.wave-forecast-station` container is filled here, and a change to any one
- * of them updates the others, so they can never disagree about which station
- * is on screen.
+ * One container since 2026-11-08 (there was a second at the head of the
+ * verification panel, which is now a fold under the same picker). Filled
+ * for every `.wave-forecast-station` all the same, so a second copy would
+ * need no new code.
  *
  * Hidden when only one station has a forecast, so the control appears the
  * moment a second point is added and not before. The list comes from
@@ -1452,6 +1524,12 @@ function renderStationPicker(stations) {
       selectStation(event.target.value);
     });
   }
+
+  // The picker names the station, so the heading above it would say it
+  // twice; it stays for assistive tech as the section's heading.
+  document
+    .getElementById("wave-forecast-heading")
+    ?.classList.toggle("visually-hidden", stations.length >= 2);
 }
 
 /**
@@ -1474,10 +1552,6 @@ async function selectStation(stationId) {
   for (const select of document.querySelectorAll(".wave-forecast-station select")) {
     if (select.value !== stationId) select.value = stationId;
   }
-
-  // A fresh station starts collapsed: carrying an expanded table across a
-  // switch would show one station's window on another station's data.
-  visibleHours = DEFAULT_VISIBLE_HOURS;
 
   await loadWaveForecast();
   await loadVerification();
@@ -1621,6 +1695,8 @@ async function initWaveForecast() {
   if (requested) currentStationId = requested;
 
   initModeToggle();
+  initWindowChips();
+  initVerificationFold();
 
   const forecastLoad = loadWaveForecast();
   const stations = await loadStationIndex();
@@ -1649,7 +1725,6 @@ async function initWaveForecast() {
   // same-page hash change does not re-run any of the above.
   window.addEventListener("hashchange", async () => {
     if (!applyHashStation(stations)) return;
-    visibleHours = DEFAULT_VISIBLE_HOURS;
     renderStationPicker(stations);
     await loadWaveForecast();
     await loadVerification();
