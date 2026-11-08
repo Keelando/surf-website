@@ -16,6 +16,7 @@
 import { countryName, flagIcon } from "./shared/flags.js";
 import { formatWeekdayDayTime } from "./shared/format-time.js";
 import { icon } from "./shared/icons.js";
+import { airTempIsProxy, airTempLabel } from "./shared/station-meta.js";
 import { liveAgeMinutes, outOfServiceHTML } from "./shared/staleness.js";
 import { ageParts, compactAge, directionArrow, freshness } from "./station-list.js";
 
@@ -100,9 +101,10 @@ function sortValue(e, key) {
   if (key === "name") return e.name.toLowerCase();
   if (key === "age") return e.ageMinutes;
   if (!e.showValues) return null;
-  return { direction: e.degrees, speed: e.speed, gust: e.gust, temp: e.temp, pressure: e.pressure }[
-    key
-  ];
+  // An enclosure temperature is not the air's: left out of the Temp sort so
+  // a sun-baked pump house can't top the list as the warmest station.
+  const temp = airTempIsProxy(e.meta) ? null : e.temp;
+  return { direction: e.degrees, speed: e.speed, gust: e.gust, temp, pressure: e.pressure }[key];
 }
 
 /**
@@ -200,7 +202,18 @@ export function buildWindRow(e) {
           : null,
         "gust",
       ) +
-      numCell("wl-temp", fixed(e.temp, 1), "air temperature", "°C") +
+      (airTempIsProxy(e.meta)
+        ? numCell(
+            "wl-temp wl-temp--proxy",
+            e.temp == null
+              ? null
+              : `<span title="${escapeAttr(airTempLabel(e.meta))}, not the open air">${fixed(e.temp, 1)}</span>`,
+            airTempLabel(e.meta)
+              .toLowerCase()
+              .replace(/\btemp\b/, "temperature"),
+            "°C",
+          )
+        : numCell("wl-temp", fixed(e.temp, 1), "air temperature", "°C")) +
       numCell("wl-pressure", fixed(e.pressure, 1), "pressure", "hPa");
   } else {
     const text = e.fresh.state === "out" ? "Out of service" : "No recent data";
@@ -291,7 +304,7 @@ export function buildWindDetail(e) {
         ["From", bearing],
       ]) +
       statGroup("Weather", [
-        ["Air", withUnit(fixed(e.temp, 1), "°C")],
+        [airTempLabel(meta), withUnit(fixed(e.temp, 1), "°C")],
         ["Pressure", withUnit(fixed(e.pressure, 1), "hPa")],
         [
           "Humidity",

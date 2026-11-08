@@ -10,7 +10,7 @@ import { formatMonthDayTimeTZ, getShortAgeString } from "./shared/format-time.js
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { getPopupOptions } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
-import { stationTypeLabel } from "./shared/station-meta.js";
+import { airTempLabel, stationTypeLabel } from "./shared/station-meta.js";
 import { reportStatus, statusPopupTheme } from "./shared/staleness.js";
 import { windData } from "./wind-data.js";
 
@@ -186,7 +186,9 @@ function addWindMarker(station, currentData, isBuoy = false) {
 
     // Temperature
     if (currentData.air_temp_c != null) {
-      popupContent += `<div><strong>Temp:</strong> ${currentData.air_temp_c.toFixed(1)}°C</div>`;
+      // "Temp" for air; the registry's own word when it isn't (Colebrook).
+      const tempLabel = station.air_temp_label ? airTempLabel(station) : "Temp";
+      popupContent += `<div><strong>${tempLabel}:</strong> ${currentData.air_temp_c.toFixed(1)}°C</div>`;
     }
 
     // Timestamp (not for an out-of-service station: we stopped fetching it,

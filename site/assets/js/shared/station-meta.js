@@ -29,6 +29,20 @@ export function isWaveStation(meta) {
   return type == null || type === "wave_buoy" || type === "pile_mounted_wave_station";
 }
 
+/**
+ * What a station's temperature reading is, as a label: "Air", unless the
+ * registry says otherwise (`air_temp_label`: Colebrook's "Enclosure temp",
+ * a sensor that reads its sun-baked enclosure rather than the open air).
+ */
+export function airTempLabel(meta) {
+  return meta?.air_temp_label || "Air";
+}
+
+/** True when the temperature is not the open air, so it is not compared with others. */
+export function airTempIsProxy(meta) {
+  return Boolean(meta?.air_temp_label);
+}
+
 const WIND_STATION_LABELS = {
   wind_monitoring_station: "Wind Monitoring Station",
   c_man_station: "C-MAN Station",

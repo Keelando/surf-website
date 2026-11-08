@@ -873,3 +873,10 @@
   color: var(--color-accent-orange);
   font-weight: var(--weight-bold);
 }
+
+/* A temperature that isn't the open air (stations.json air_temp_label):
+   shown, but quieter than the real readings beside it. */
+.wl-temp--proxy {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
