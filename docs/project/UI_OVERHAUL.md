@@ -388,8 +388,11 @@ it without moving the page. Drawn Canada / US flags replace the old emoji
   caveat as a footnote. A temperature that isn't the open air
   (`air_temp_label`, Colebrook's "Enclosure temp") is relabelled too and left
   out of the Temp sort. Helpers: `shared/station-meta.js` (`caveat*`).
-  **Open:** CWLM's caveat also says its wind is "more exposed than marine
-  sites"; only its pressure is starred so far (user to decide on wind).
+  **Decided 2026-11-08:** CWLM's wind is NOT starred (the sensor is good;
+  hilltop exposure is context, carried by the name's asterisk and the note),
+  only its pressure. Crescent Beach/Channel temperatures keep the asterisk
+  rather than a relabel: they are the open air with a sunny-afternoon bias,
+  and a relabel is for a sensor measuring something else (Colebrook).
 - **Legend toggles refit the y-axis on every chart** (the item queued
   below, done): `rescaleYAxisOnLegendToggle` gained `round` and a first-axis
   filter; the wave comparison chart's Halibut arrows follow the axis; the
