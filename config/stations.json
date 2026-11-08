@@ -1183,7 +1183,9 @@
       "type": "lightstation",
       "update_frequency_hours": 3,
       "established": 1891,
-      "notes": "Marks southern entrance to Baynes Sound"
+      "notes": "Marks southern entrance to Baynes Sound",
+      "reporting": false,
+      "reporting_note": "Bulletin SXCN26 lists Chrome Island alongside Merry Island, Entrance Island and Trial Island, but the entry has read N/A (or a variant) in every bulletin received here since at least late August 2026, so no observation has reached this site. FPCN61 does not carry the station. Whether it reports through some other product is not known."
     },
     "CAPE_MUDGE": {
       "id": "CAPE_MUDGE",
@@ -1222,7 +1224,9 @@
       "type": "lightstation",
       "update_frequency_hours": 3,
       "established": 1875,
-      "notes": "Part of the BC Shore Station Oceanographic Program"
+      "notes": "Part of the BC Shore Station Oceanographic Program",
+      "reporting": false,
+      "reporting_note": "Bulletin SXCN26 lists Entrance Island alongside Chrome Island, Merry Island and Trial Island, but the entry has read N/A (or a variant) in every bulletin received here since at least late August 2026, so no observation has reached this site. FPCN61 does not carry the station. Whether it reports through some other product is not known."
     },
     "CAPE_BEALE": {
       "id": "CAPE_BEALE",
@@ -1288,7 +1292,9 @@
       "type": "lightstation",
       "update_frequency_hours": 3,
       "established": 1960,
-      "notes": "Northwest extremity of Vancouver Island"
+      "notes": "Northwest extremity of Vancouver Island",
+      "reporting": false,
+      "reporting_note": "Bulletin SXCN24 lists Cape Scott, but the entry has read N/A (or a variant) in every bulletin received here since this site began taking SXCN24 on 2026-09-07, so no observation has reached this site. FPCN61 does not carry the station. Whether it reports through some other product is not known."
     },
     "QUATSINO": {
       "id": "QUATSINO",
@@ -1386,7 +1392,7 @@
       "established": 1898,
       "notes": "Exposed to full force of Pacific Ocean, one of oldest lighthouses on BC's central coast",
       "reporting": false,
-      "reporting_note": "No observation for Egg Island has reached this site. FPCN61 does not carry it, and the SXCN bulletin that covers it is not one this site subscribes to, so its silence here says nothing about whether it reports."
+      "reporting_note": "Bulletin SXCN24 lists Egg Island, but the entry has read N/A (or a variant) in every bulletin received here since this site began taking SXCN24 on 2026-09-07, so no observation has reached this site. FPCN61 does not carry the station. Whether it reports through some other product is not known."
     },
     "GREEN_ISLAND": {
       "id": "GREEN_ISLAND",
@@ -1427,7 +1433,9 @@
       "type": "lightstation",
       "update_frequency_hours": 3,
       "established": 1913,
-      "notes": "Marks south side of Dixon Entrance, hexagonal reinforced concrete tower with six buttresses"
+      "notes": "Marks south side of Dixon Entrance, hexagonal reinforced concrete tower with six buttresses",
+      "reporting": false,
+      "reporting_note": "Bulletin SXCN23 lists Langara Island, but the entry has read N/A (or a variant) in every bulletin received here, so no observation has reached this site. FPCN61 does not carry the station. Whether it reports through some other product is not known."
     },
     "MCINNES_ISLAND": {
       "id": "MCINNES_ISLAND",
