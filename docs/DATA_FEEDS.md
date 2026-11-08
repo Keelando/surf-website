@@ -352,13 +352,6 @@ two open-Pacific points also both swell partitions (`RDWPS_2.5km_{First,Second}S
 (full inventory: `docs/project/RDWPS_PARAMETERS.md`)
 **Protocol:** WMS 1.3.0 GetFeatureInfo (JSON) via requests
 **Fetched by:** `scripts/fetch/fetch_wave_forecast.py`
-**Schedule:** 04:45, 10:45, 16:45, 22:45 UTC — run+4h45m (model runs 00/06/12/18Z, files land ~3h25m later). Moved from :35 on 2026-10-28: GeoMet answered the first minutes of the :35 runs with 429s and refused connections, which left gaps in Halibut Bank, the first station fetched. The
-60-day record shows failures on most days since at least 2026-08-29, nearly all
-in the 06Z and 12Z runs, in two windows: ~:35–:42 and ~:50–:05 (UTC). So :45
-dodges the first and may land a station in the second; the backoff and retry
-below are the actual fix — **confirmed 2026-11-08**: refusals per typical day
-unchanged (~5), burst days and page gaps nearly gone. History, numbers and the
-levers left: `docs/TROUBLESHOOTING.md` issue 15.
 **Stations:** six, as `STATIONS` in the fetcher, ids from
 `config/stations.json`. Halibut Bank (`4600146`), Crescent Beach Ocean
 (`CRPILE`), English Bay (`4600304`) and New Dungeness (`46088`) take waves and
@@ -369,14 +362,60 @@ Sea day on, and skipping it saves 1,584 requests/day. Those two take the
 groundswell arriving from different quarters. Every one has a
 co-located sensor to verify against; see the fetcher's comment for why the
 other candidate points do not qualify yet.
-**Sampling:** 33 of 49 hourly steps — hourly to 24 h, then 3-hourly. 231
-requests per station per run with wind, 330 for waves plus swell: 1,586/run,
-6,344/day, at 1.1 s spacing (0.65 req/s, ~41 min/run). The site's table thins this to
-3-hourly for display; the hourly steps are kept in the database and on the
-chart.
 **Stored in:** `wave_forecast.sqlite` + exported JSON to `site/data/wave_forecast/`
 **Note:** masked cells (absent wind-wave/swell partition, land) come back as sentinel `9999.0` — the fetcher drops values ≥ 9000.
-**When GeoMet pushes back:** the wait between requests doubles after each failure (to 30 s) and resets on the first success; 20 failures in a row stop the run (unreached stations keep their previous forecast). Failed points get one retry pass after the last station, accepted only from the same model run. Every failed request is a row in `wave_forecast.sqlite` → `fetch_error` (time, station, layer, valid time, kind such as `http_429` / `refused` / `timeout`, and `main` or `retry` pass), kept a year:
+
+#### Timeline: from model run to the page
+
+Both models (RDWPS waves, HRDPS wind) run four times a day, at 00, 06, 12
+and 18Z, and their output shows up on GeoMet about 3½ hours later. We fetch
+4 h 45 min after each run, which leaves over an hour of margin:
+
+| Model run (UTC) | On GeoMet, about | Our fetch starts (UTC) | Same, local (UTC-7) | Page fully updated |
+|---|---|---|---|---|
+| 00Z | 03:30 | 04:45 | 21:45 (day before) | ~05:25 |
+| 06Z | 09:30 | 10:45 | 03:45 | ~11:25 |
+| 12Z | 15:30 | 16:45 | 09:45 | ~17:25 |
+| 18Z | 21:30 | 22:45 | 15:45 | ~23:25 |
+
+One fetch, step by step:
+
+1. **Find the newest run.** One small `GetCapabilities` per model reports
+   which run GeoMet is serving and its time steps. We take whatever is
+   there. If the new run is late, that is the previous run, and the page
+   stays 6 h behind until the next fetch (3–4 times in 60 days so far).
+2. **Pick the time steps.** Of the 49 the run publishes (hourly, 0–48 h) we
+   take 33: hourly to 24 h, then every 3 h. The first five or so are already
+   in the past when we fetch them, but they still count: verification's
+   0–6 h lead scores come from them.
+3. **Fetch station by station.** GeoMet gives one value per request, so each
+   (variable, time step) is its own request, 1.1 s apart: 231 requests for a
+   station with waves and wind, 330 for one with waves and swell; 1,586 a
+   run, 6,344 a day. **Each station's forecast goes live as soon as that
+   station finishes**, so the page updates one station at a time. On a
+   typical run (2026-11-08, 10:45 start): Halibut Bank 10:50, Crescent Beach
+   10:56, English Bay 11:02, New Dungeness 11:08, Neah Bay 11:16, La Perouse
+   11:24.
+4. **Retry what failed.** A minute after the last station, every request that
+   failed is tried once more, and a station with recovered values is saved
+   again (~11:25 above). A retry is accepted only from the same model run.
+5. **Score it later.** Once a day at 03:40 UTC, `verify_wave_forecast.py`
+   compares past forecasts with what the buoys measured.
+
+The forecasts page's table shows every third hour; the chart and the
+database keep every hour fetched.
+
+**When GeoMet pushes back:** it sometimes answers with 429 Too Many Requests
+or refuses connections, typically ~5 requests a day. After each failure the
+wait between requests doubles (up to 30 s) and drops back on the first
+success; 20 failures in a row stop the run, and stations not reached keep
+their previous forecast. Between this and the retry in step 4, gaps on the
+page are now rare (judged 2026-11-08). Why the start is :45, not :35, and the
+numbers: `docs/TROUBLESHOOTING.md` issue 15.
+
+Every failed request is a row in `wave_forecast.sqlite` → `fetch_error`
+(time, station, layer, valid time, kind such as `http_429` / `refused` /
+`timeout`, and `main` or `retry` pass), kept a year:
 
 ```sql
 -- 429s and other failures by UTC hour of day, last 30 days
