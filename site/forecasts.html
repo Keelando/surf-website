@@ -41,7 +41,7 @@
   <link rel="stylesheet" href="/assets/css/style-v4.css?v=93c2ba4d2b" />
   <link rel="stylesheet" href="/assets/css/nav-tide-styles-v4.css?v=345437d067" />
   <link rel="stylesheet" href="/assets/css/warning-banner-v4.css?v=25e64f5cd1" />
-  <link rel="stylesheet" href="/assets/css/forecasts-v4.css?v=a9740a437e" />
+  <link rel="stylesheet" href="/assets/css/forecasts-v4.css?v=74b6d200f0" />
 </head>
 
 <body>
@@ -189,17 +189,15 @@
 
       <div class="wave-forecast-table-wrap" id="wave-forecast-table"></div>
 
-      <div id="wave-forecast-metadata"></div>
-
-      <!-- Verification: the same station, looking backward. Folded (user
-           2026-11-08: a check made sometimes, not every visit); the chart is
-           drawn when the fold opens, since ECharts can't size itself inside a
-           closed one. It follows the station picker and the Waves/Wind toggle
-           above, so there is no second copy of either. Hidden until the fetch
-           succeeds: a station whose archive is younger than the window has no
-           file yet. -->
-      <details class="verification-help forecast-verification" id="forecast-verification" hidden>
-        <summary id="forecast-verification-heading">How did the forecast do?</summary>
+      <!-- Forecast Accuracy: the same station, looking backward (user
+           2026-11-08: named for what it shows, and open, not folded). It
+           follows the station picker and the Waves/Wind toggle above through
+           its data-panel values, so there is no second copy of either. Hidden
+           until the fetch succeeds: a station whose archive is younger than
+           the window has no file yet. -->
+      <section class="forecast-verification" id="forecast-verification" aria-labelledby="forecast-verification-heading" hidden>
+        <h3 id="forecast-verification-heading" class="forecast-accuracy-heading">Forecast Accuracy</h3>
+        <p id="forecast-verification-sub" class="forecast-accuracy-sub">Forecast vs measured</p>
 
         <div class="forecast-panel" data-panel="waves">
           <div id="wave-verification-chart"></div>
@@ -210,7 +208,10 @@
         </div>
 
         <div id="forecast-verification-metadata"></div>
-      </details>
+      </section>
+
+      <div id="wave-forecast-metadata"></div>
+
 
       <!-- The one caveat a reader acts on stays in the open; the how-it-works
            is opt-in (it ran ~12 lines on a phone). -->
@@ -316,7 +317,7 @@
   <script defer src="/assets/js/sanitize-html.js?v=57084326c8"></script>
   <script defer src="/assets/js/chart-utils-v4.js?v=6cd395ae52"></script>
   <script type="module" src="/assets/js/forecasts.js?v=37ca0763f5"></script>
-  <script type="module" src="/assets/js/wave-forecast.js?v=be83abfce2"></script>
+  <script type="module" src="/assets/js/wave-forecast.js?v=ecafd43dd7"></script>
   <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>
 </html>

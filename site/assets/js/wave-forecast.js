@@ -680,21 +680,76 @@ function windowRows(rows, hours) {
  */
 const TABLE_COLUMNS = {
   [MODE_WAVES]: [
-    { header: "Height", unit: "m", cell: (row) => row.waveHeight?.toFixed(2) ?? "—" },
+    {
+      header: "Height",
+      unit: "m",
+      cell: (row) => row.waveHeight?.toFixed(2) ?? "—",
+      peak: (row) => row.waveHeight,
+      peakDecimals: 2,
+    },
     { header: "Period", unit: "s", cell: (row) => row.peakPeriod?.toFixed(1) ?? "—" },
     { header: "From", cell: (row) => formatDirection(row.waveDirection) },
     { header: "Wind wave", unit: "m", cell: (row) => row.windWaveHeight?.toFixed(2) ?? "—" },
   ],
   [MODE_WIND]: [
-    { header: "Wind", unit: "kt", cell: (row) => row.windSpeed?.toFixed(0) ?? "—" },
+    {
+      header: "Wind",
+      unit: "kt",
+      cell: (row) => row.windSpeed?.toFixed(0) ?? "—",
+      peak: (row) => row.windSpeed,
+      peakDecimals: 0,
+    },
     {
       header: "Gust",
       unit: "kt",
       cell: (row) => (row.windGust !== null ? row.windGust.toFixed(0) : "—"),
+      peak: (row) => row.windGust,
+      peakDecimals: 0,
     },
     { header: "From", cell: (row) => formatDirection(row.windDirection) },
   ],
 };
+
+/**
+ * Each day's highest value per bolded column (user 2026-11-08: "bold the
+ * highest daily value"). Only the headline magnitudes carry `peak`: height,
+ * wind and gust. Compared as displayed, so two cells that read the same are
+ * both bold, and a day means the rows of it the table shows.
+ *
+ * @param {Array<Object>} rows - The table's rows
+ * @param {Array<Object>} columns - Column definitions
+ * @returns {Map<string, Array<number|null>>} day -> per-column maximum
+ */
+function dailyPeaks(rows, columns) {
+  const peaks = new Map();
+  for (const row of rows) {
+    const { day } = tableDayTime(row.time);
+    const best = peaks.get(day) ?? columns.map(() => null);
+    columns.forEach((column, i) => {
+      if (!column.peak) return;
+      const raw = column.peak(row);
+      if (raw === null || raw === undefined) return;
+      const value = Number(raw.toFixed(column.peakDecimals));
+      if (best[i] === null || value > best[i]) best[i] = value;
+    });
+    peaks.set(day, best);
+  }
+  return peaks;
+}
+
+/**
+ * One cell, bold when it is its day's highest.
+ */
+function tableCell(column, i, row, dayPeaks) {
+  const text = column.cell(row);
+  const raw = column.peak?.(row);
+  const isPeak =
+    raw !== null &&
+    raw !== undefined &&
+    dayPeaks?.[i] !== null &&
+    Number(raw.toFixed(column.peakDecimals)) === dayPeaks?.[i];
+  return `<td>${isPeak ? `<strong class="wave-forecast-peak">${text}</strong>` : text}</td>`;
+}
 
 /**
  * A column head: the name, and its unit on a line of its own, so a head is
@@ -748,6 +803,7 @@ function renderTable(allRows) {
   const toEnd = shown.length > 0 && shown[shown.length - 1] === thinned[thinned.length - 1];
 
   const columns = columnsFor(currentMode, allRows);
+  const peaks = dailyPeaks(shown, columns);
   let lastDay = null;
   const body = shown
     .map((row) => {
@@ -760,7 +816,7 @@ function renderTable(allRows) {
       return `${dayRow}
         <tr>
           <th scope="row">${time}</th>
-          ${columns.map((column) => `<td>${column.cell(row)}</td>`).join("")}
+          ${columns.map((column, i) => tableCell(column, i, row, peaks.get(day))).join("")}
         </tr>`;
     })
     .join("");
@@ -779,6 +835,7 @@ function renderTable(allRows) {
     </table>
     <p class="wave-forecast-extent">
       Every 3 hours, ${Math.round(reach)} h ahead${toEnd ? " (to the end of this run)" : ""}.
+      Each day's highest ${currentMode === MODE_WIND ? "wind and gust are" : "wave height is"} in <strong>bold</strong>.
     </p>`,
   );
 }
@@ -870,19 +927,6 @@ function initWindowChips() {
       renderTable(currentRows);
     });
   }
-}
-
-/**
- * Draw the verification chart when its fold opens: ECharts measures its
- * container at init, and a closed <details> gives it nothing to measure.
- *
- * @returns {void}
- */
-function initVerificationFold() {
-  const fold = document.getElementById("forecast-verification");
-  fold?.addEventListener("toggle", () => {
-    if (fold.open) renderVerificationMode();
-  });
 }
 
 /**
@@ -1329,8 +1373,6 @@ function verificationAxisMax(series, floor, step) {
  */
 function renderVerificationMode() {
   if (!currentVerification || typeof echarts === "undefined") return;
-  // Folded until asked for; drawn on open (initVerificationFold).
-  if (!document.getElementById("forecast-verification")?.open) return;
 
   if (currentMode === MODE_WIND) {
     const el = document.getElementById("wind-verification-chart");
@@ -1380,10 +1422,10 @@ function renderVerificationMode() {
 }
 
 /**
- * Name the window the verification panel covers, in the heading itself.
+ * Name the window the Forecast Accuracy section covers, in its subtitle.
  *
- * The exporter owns the window length, so the heading reads it from the
- * payload rather than restating 48 h in the markup — a heading that had to be
+ * The exporter owns the window length, so the subtitle reads it from the
+ * payload rather than restating 48 h in the markup — a subtitle that had to be
  * hand-edited whenever the export changed is a heading that would eventually
  * be wrong. Hours up to three days, days beyond that, because "last 168 hours"
  * is not how anyone thinks about a week.
@@ -1391,9 +1433,9 @@ function renderVerificationMode() {
  * @returns {void}
  */
 function renderVerificationHeading() {
-  const heading = document.getElementById("forecast-verification-heading");
+  const sub = document.getElementById("forecast-verification-sub");
   const hours = currentVerification?.window_hours;
-  if (!heading || !hours) return;
+  if (!sub || !hours) return;
 
   const span =
     hours <= 72
@@ -1403,7 +1445,7 @@ function renderVerificationHeading() {
           return `${days} day${days === 1 ? "" : "s"}`;
         })();
 
-  heading.textContent = `How did the forecast do? (last ${span})`;
+  sub.textContent = `Last ${span}, forecast vs measured`;
 }
 
 /**
@@ -1696,7 +1738,6 @@ async function initWaveForecast() {
 
   initModeToggle();
   initWindowChips();
-  initVerificationFold();
 
   const forecastLoad = loadWaveForecast();
   const stations = await loadStationIndex();

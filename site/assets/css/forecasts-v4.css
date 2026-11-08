@@ -398,20 +398,29 @@ header {
   }
 }
 
-/* Verification, folded (user 2026-11-08). Its own box, so the dashed model
-   line inside is never read as more of the forecast above. */
+/* Forecast Accuracy (user 2026-11-08: open, named for what it shows). A
+   rule and its own heading keep the dashed model line inside from reading as
+   more of the forecast above. */
 .forecast-verification {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border-light);
 }
 
-.forecast-verification > .forecast-panel,
-.forecast-verification > #forecast-verification-metadata {
-  padding: 0 0.7rem;
+.forecast-accuracy-heading {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--color-primary-dark);
+}
+
+.forecast-accuracy-sub {
+  margin: 0.1rem 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }
 
 #forecast-verification-metadata {
   margin-top: 0.5rem;
-  padding-bottom: 0.7rem;
   font-size: 0.9rem;
   line-height: 1.7;
   color: var(--color-text-muted);
