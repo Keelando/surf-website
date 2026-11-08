@@ -63,6 +63,9 @@ PUBLIC_STATION_FIELDS = {
         # air ("Enclosure temp" at Colebrook): the label the site shows in
         # place of "Air". Absent = air temperature.
         "air_temp_label",
+        # Which readings the caveat is about (e.g. ["air_temp"]): the site
+        # stars those values wherever they show, with the caveat as a note.
+        "caveat_fields",
         # A display scale (see _metadata.notes.rough_wave_height_m), published
         # because the home page and header wave read it from this file.
         "rough_wave_height_m",
@@ -79,6 +82,7 @@ PUBLIC_STATION_FIELDS = {
         "caveat",
         "note",
         "air_temp_label",
+        "caveat_fields",
         # Grouping on the winds page; the vocabulary is the buoys' plus HOWE
         # SOUND and HARO STRAIT & SAN JUANS (EC marine areas, and NOAA
         # PZZ133 for the US side of the San Juans and Bellingham Bay).

@@ -289,6 +289,7 @@
       ],
       "note": "Water levels referenced to CGVD28 GVRD datum. Waves come from wave_sensors in priority order: Anderaa (Hs_Anderra, Hmax_Anderra, Tmean_Anderra, Tpeak_Anderra), then radar (Hm0_RADAR, Tp_RADAR), then Keller pressure sensor (Hs_KellerPT, Tp_Keller); each reading is taken whole from the first sensor with a nonzero Hs.",
       "caveat": "Air temperature reads high on sunny afternoons (unshielded sensor). Wave, wind and water level unaffected.",
+      "caveat_fields": ["air_temp"],
       "source_url": "https://developers.flowworks.com/",
       "short_name": "Crescent Bch.",
       "flag": "🏛️"
@@ -328,6 +329,7 @@
       },
       "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum",
       "caveat": "Air temperature reads high on sunny afternoons (unshielded sensor). Wave, wind and water level unaffected.",
+      "caveat_fields": ["air_temp"],
       "source_url": "https://developers.flowworks.com/",
       "short_name": "Crescent Ch.",
       "flag": "🏛️"
@@ -974,6 +976,7 @@
       "short_name": "Gonzales",
       "elevation_m": 65.3,
       "caveat": "Hilltop site, 65 m above sea level: pressure reads ~8 hPa low, wind more exposed than marine sites.",
+      "caveat_fields": ["pressure"],
       "flag": "🇨🇦"
     },
     "JERICHO": {
@@ -1121,6 +1124,7 @@
       },
       "note": "LAND-BASED wind monitoring station at pump house - NOT a buoy, NO wave data",
       "caveat": "The temperature is the sensor enclosure's, not the open air: sun-baked, it reads up to ~19 °C above air temperature in daylight. Wind unaffected.",
+      "caveat_fields": ["air_temp"],
       "air_temp_label": "Enclosure temp",
       "short_name": "Colebrook",
       "flag": "🏛️"
