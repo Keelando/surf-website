@@ -176,11 +176,13 @@
   display: none;
 }
 
+/* Tight on purpose (user 2026-11-08: fit more rows on a phone): 0.25rem
+   top and bottom, a 44px floor for the tap target. */
 .wl-row {
   width: 100%;
-  min-height: 48px;
+  min-height: 44px;
   margin: 0;
-  padding: 0.45rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   border: 0;
   border-radius: 8px;
   background: none;
@@ -525,8 +527,24 @@
     column-gap: 0.6rem;
   }
 
+  /* The age goes to the end of the name's line, as on the home list, so a
+     row is two lines rather than three (user 2026-11-08). */
   .wl-name {
     grid-area: name;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .wl-name .wl-title {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .wl-name .sl-age {
+    flex: none;
+    margin-left: auto;
+    white-space: nowrap;
   }
 
   .wl-speed {
