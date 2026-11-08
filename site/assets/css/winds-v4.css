@@ -547,8 +547,11 @@
     white-space: nowrap;
   }
 
+  /* The readings sit a little in from the name, so each row reads as one
+     station with its numbers under it (user 2026-11-08). */
   .wl-speed {
     grid-area: speed;
+    margin-left: 0.75rem;
     text-align: left;
   }
 
@@ -572,6 +575,7 @@
   .wl-empty {
     grid-column: 1 / -1;
     grid-row: 2;
+    margin-left: 0.75rem;
     text-align: left;
   }
 
