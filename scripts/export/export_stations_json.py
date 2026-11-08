@@ -59,6 +59,10 @@ PUBLIC_STATION_FIELDS = {
         "region",
         "country",
         "list_order",
+        # What the temperature sensor actually measures, when not the open
+        # air ("Enclosure temp" at Colebrook): the label the site shows in
+        # place of "Air". Absent = air temperature.
+        "air_temp_label",
         # A display scale (see _metadata.notes.rough_wave_height_m), published
         # because the home page and header wave read it from this file.
         "rough_wave_height_m",
@@ -74,6 +78,7 @@ PUBLIC_STATION_FIELDS = {
         "is_buoy",
         "caveat",
         "note",
+        "air_temp_label",
         # Grouping on the winds page; the vocabulary is the buoys' plus HOWE
         # SOUND and HARO STRAIT & SAN JUANS (EC marine areas, and NOAA
         # PZZ133 for the US side of the San Juans and Bellingham Bay).

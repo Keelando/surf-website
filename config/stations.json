@@ -1120,7 +1120,8 @@
         "air_temp": 1439
       },
       "note": "LAND-BASED wind monitoring station at pump house - NOT a buoy, NO wave data",
-      "caveat": "Air temperature unreliable in daylight (sun-baked sensor, up to ~19 °C high). Wind unaffected.",
+      "caveat": "The temperature is the sensor enclosure's, not the open air: sun-baked, it reads up to ~19 °C above air temperature in daylight. Wind unaffected.",
+      "air_temp_label": "Enclosure temp",
       "short_name": "Colebrook",
       "flag": "🏛️"
     },
