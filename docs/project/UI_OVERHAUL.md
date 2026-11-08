@@ -475,6 +475,18 @@ point forecast starts at 1,727px instead of 2,433. No sideways scroll at
   pages without home.css the class did nothing.
 - Related resources folded. Model intro shortened.
 
+**User's review, 2026-11-08:** desktop "pretty clean". Then:
+- Verification renamed **Forecast Accuracy** and OPEN (was folded; "kind of
+  tucked away in a toggle box"), right after the forecast table.
+- Each day's highest wave height / wind / gust **bold** in the table, the
+  caption says so (covers the table half of TODO "Point forecast: show the
+  peak wave height"; the chart marker is still open).
+- Wave period drawn **solid**: a dashed orange period line sat right above
+  Forecast Accuracy's dashed orange forecast line. On this page dashed means
+  only "forecast". (The home buoy charts still dash Total and Average
+  period; a sitewide line grammar is a candidate for the post-overhaul
+  review.)
+
 ## After the overhaul: code review and refactor
 
 User 2026-11-08: once every page has had its overhaul, plan a code review
