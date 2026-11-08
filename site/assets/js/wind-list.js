@@ -14,7 +14,7 @@
    ----------------------------- */
 
 import { countryName, flagIcon } from "./shared/flags.js";
-import { formatWeekdayDayTime } from "./shared/format-time.js";
+import { formatTimeHM, formatWeekdayDayTime } from "./shared/format-time.js";
 import { icon } from "./shared/icons.js";
 import { escapeAttr } from "./shared/safe-html.js";
 import { airTempIsProxy, airTempLabel, caveatStar } from "./shared/station-meta.js";
@@ -179,12 +179,19 @@ export function buildWindRow(e) {
 
   let values;
   if (e.showValues) {
+    // The report's clock time, on a wide list only (winds-v4.css). Hidden
+    // from screen readers: the age under the name already says when.
+    const time =
+      `<span class="wl-cell wl-time" aria-hidden="true">` +
+      (e.s.observation_time ? formatTimeHM(e.s.observation_time) : DASH) +
+      `</span>`;
     const cardinal = e.cardinal ? `<span class="wl-cardinal">${e.cardinal}</span>` : "";
     const dir =
       e.degrees != null || e.cardinal
         ? `<span class="wl-cell wl-dir"><span class="visually-hidden">from </span>${directionArrow(e.degrees)}${cardinal}</span>`
         : `<span class="wl-cell wl-dir"><span class="sl-none">${DASH}</span></span>`;
     values =
+      time +
       dir +
       numCell("wl-speed", e.speed != null ? Math.round(e.speed) : null, "wind", "kt") +
       numCell(
@@ -367,12 +374,14 @@ function sortButton(key, sort) {
 /**
  * The column heads. On their own row, in the rows' tracks, so each sits over
  * its numbers; Station and Age share the name column, as the name and its
- * age share the row's.
+ * age share the row's. Time is a label, not a sort: sorting by it would be
+ * the Age sort run backwards.
  */
 export function buildSortHead(sort = DEFAULT_SORT) {
   return `
     <div class="wl-head" role="group" aria-label="Sort the stations">
       <span class="wl-head-name">${sortButton("name", sort)}${sortButton("age", sort)}</span>
+      <span class="wl-head-time" aria-hidden="true">Time</span>
       ${["direction", "speed", "gust", "temp", "pressure"].map((key) => sortButton(key, sort)).join("")}
     </div>`;
 }

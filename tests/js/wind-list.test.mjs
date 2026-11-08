@@ -183,6 +183,24 @@ test("region view: each heading folds its rows, and a folded one keeps its count
   assert.match(html, /wl-region-count">1 station</);
 });
 
+test("a row's report time: Pacific HH:MM before the direction, hidden from screen readers", () => {
+  // 24 minutes before 20:30 UTC is 20:06 UTC: 13:06 on BC's fixed UTC-7.
+  const row = buildWindRow(entries[0]);
+  assert.match(row, /<span class="wl-cell wl-time" aria-hidden="true">13:06<\/span><span class="wl-cell wl-dir">/);
+  // A down row's last report may be days old: no bare clock time for it.
+  assert.doesNotMatch(buildWindRow(entries[3]), /wl-time/);
+  // Without a time, a dash, so the columns still line up.
+  const untimed = windEntry("CWAS", station("Pam Rocks", 12, { observation_time: null }), META.CWAS);
+  untimed.showValues = true;
+  assert.match(buildWindRow(untimed), /wl-time" aria-hidden="true">—</);
+});
+
+test("the Time head is a label before Direction, not a sort", () => {
+  const html = buildWindList(entries);
+  assert.match(html, /<span class="wl-head-time" aria-hidden="true">Time<\/span>\s*<button[^>]*data-sort="direction"/);
+  assert.doesNotMatch(html, /data-sort="time"/);
+});
+
 test("the direction head has a phone form and a wide form", () => {
   const html = buildWindList(entries);
   assert.match(html, /wl-label-short">Dir<\/span><span class="wl-label-wide">Direction</);

@@ -322,6 +322,27 @@
   display: none;
 }
 
+/* The report's clock time: the widest lists only (see below). */
+.wl-time,
+.wl-head-time {
+  display: none;
+}
+
+.wl-time {
+  font-size: 0.82rem;
+  color: var(--sl-muted);
+}
+
+/* A plain label, not a sort (wind-list.js), in the sort buttons' type. */
+.wl-head-time {
+  justify-self: end;
+  color: var(--sl-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 /* A row without numbers says so across their columns. */
 .wl-empty {
   grid-column: 2 / -2;
@@ -464,6 +485,31 @@
 
   .wl-row:hover .sl-chevron {
     background: var(--sl-action-border);
+  }
+}
+
+/* Room to spare: the report's clock time before the direction (user
+   2026-11-08). 54rem is where the longest names (Crescent Channel Ocean,
+   Southern Georgia Strait, with flag and tag) still fit on one line beside
+   it, measured at 100-150% text: the track costs them 3.5rem. A row without
+   numbers covers the time's track too (2 / -3, above): a down station's
+   last report may be days old, and a bare HH:MM would read as today. */
+@container wl (width >= 54rem) {
+  .wl-row,
+  .wl-head {
+    grid-template-columns: minmax(0, 1fr) 3rem 5rem 3.25rem 3rem 3.5rem 4.25rem 6rem 1.5rem;
+  }
+
+  .wl-time {
+    display: block;
+  }
+
+  /* As tall as the sort buttons, its text centred as theirs is, so it sits
+     on their line. */
+  .wl-head-time {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
   }
 }
 
