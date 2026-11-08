@@ -474,6 +474,11 @@ change ships together with the frontend that handles it.
    sitewide sweep: forecasts, winds, tides, storm surge, lightstations,
    webcams, guide, api. Land the shared helper together with the one page
    that needs it, and queue the rest.
+   - **Lightstations (user 2026-11-08):** stations that aren't reporting go
+     at the END of their region, breaking the alphabetical order; down
+     stations take up too much of the page. Both kinds: `reporting: false`
+     in the registry (Chrome, Entrance, Cape Scott, Egg, Langara, Estevan)
+     and stations merely down right now.
 4. **After the redesign:** re-measure Lighthouse, and only then revisit
    critical-CSS inlining (measured and deferred 2026-09-24; the redesign
    changes the nav and hero it would cover).
