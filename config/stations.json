@@ -288,7 +288,7 @@
         }
       ],
       "note": "Water levels referenced to CGVD28 GVRD datum. Waves come from wave_sensors in priority order: Anderaa (Hs_Anderra, Hmax_Anderra, Tmean_Anderra, Tpeak_Anderra), then radar (Hm0_RADAR, Tp_RADAR), then Keller pressure sensor (Hs_KellerPT, Tp_Keller); each reading is taken whole from the first sensor with a nonzero Hs.",
-      "caveat": "Air temperature reads high on sunny afternoons (unshielded sensor). Wave, wind and water level unaffected.",
+      "caveat": "Air temperature reads high at all hours, sun or not: about 2 °C above nearby stations overnight, 4–5 °C around midday. Wave, wind and water level unaffected.",
       "caveat_fields": ["air_temp"],
       "source_url": "https://developers.flowworks.com/",
       "short_name": "Crescent Bch.",
@@ -328,7 +328,7 @@
         "tidal_residual": 3660
       },
       "note": "Radar-based wave measurement. Water levels referenced to CGVD28 GVRD datum",
-      "caveat": "Air temperature reads high on sunny afternoons (unshielded sensor). Wave, wind and water level unaffected.",
+      "caveat": "Air temperature reads high at all hours, sun or not: about 1 °C above nearby stations overnight, 3–4 °C around midday. Wave, wind and water level unaffected.",
       "caveat_fields": ["air_temp"],
       "source_url": "https://developers.flowworks.com/",
       "short_name": "Crescent Ch.",
