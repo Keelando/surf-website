@@ -22,6 +22,7 @@ from lib.config import (
     LIGHTSTATION_RETENTION_DAYS,
     PROJECT_ROOT,
 )
+from lib.lightstation_readings import has_reading
 from lib.logging_config import setup_logging
 
 # Disable console logging (runs from cron, file logging only)
@@ -88,8 +89,11 @@ SXCN_STATION_NAMES = {
     "TRIAL IS": "TRIAL ISLAND",
 }
 
-# Entries that mean "no observation this cycle"
-SXCN_UNAVAILABLE = {"N/A", "NA", "UNAVAILABLE"}
+# Entries that mean "no observation this cycle". Not the only guard: a line
+# that parses to no reading at all is dropped too (end of
+# parse_sxcn_station_line), since the bulletins keep finding new spellings —
+# "NOT AVAILABLE" at Chrome and Entrance in the 11:40 SXCN26, 2026-11.
+SXCN_UNAVAILABLE = {"N/A", "NA", "UNAVAILABLE", "NOT AVAILABLE"}
 
 # SXCN bulletin number → region
 SXCN_REGIONS = {
@@ -509,6 +513,13 @@ def parse_sxcn_station_line(line, region):
         high = swell_match.group(2) and SXCN_SWELL_INTENSITIES[swell_match.group(2)]
         data["swell_intensity"] = f"{low} TO {high}" if high else low
         data["swell_direction"] = SXCN_SWELL_DIRS.get(swell_match.group(3))
+
+    # A line that yields nothing we store is not an observation: storing it
+    # makes an empty row, which reads as "reported" to anything that trusts
+    # row existence. Same test as lib/lightstation_readings.HAS_READING_SQL.
+    if not has_reading(data):
+        logger.debug(f"No reading in SXCN line for {station_name}: {obs_text!r}; skipping")
+        return None
 
     return data
 

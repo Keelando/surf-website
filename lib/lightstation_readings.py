@@ -23,3 +23,18 @@ HAS_READING_SQL = (
     " OR sea_height_ft IS NOT NULL OR sea_condition IS NOT NULL"
     " OR swell_intensity IS NOT NULL OR swell_direction IS NOT NULL)"
 )
+
+
+def has_reading(row):
+    """Python twin of HAS_READING_SQL, for a parsed row (dict) before it is
+    stored. Keep the two in step; tests/test_lightstation_readings.py checks
+    them against each other."""
+    return (
+        row.get("wind_speed_kt") is not None
+        or row.get("wind_calm") == 1
+        or row.get("wind_direction") is not None
+        or row.get("sea_height_ft") is not None
+        or row.get("sea_condition") is not None
+        or row.get("swell_intensity") is not None
+        or row.get("swell_direction") is not None
+    )

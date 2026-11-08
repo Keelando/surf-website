@@ -8,7 +8,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from lib.lightstation_readings import HAS_READING_SQL  # noqa: E402
+from lib.lightstation_readings import HAS_READING_SQL, has_reading  # noqa: E402
 from scripts.utils.create_lightstation_db import CREATE_TABLE_SQL  # noqa: E402
 
 EMPTY = dict(
@@ -30,6 +30,8 @@ EMPTY = dict(
         ({"wind_speed_kt": 0.0}, True),
         ({"sea_condition": "RIPPLED", "sea_height_ft": 0}, True),
         ({"swell_intensity": "LOW"}, True),
+        ({"wind_direction": "NORTH"}, True),
+        ({"swell_direction": "WEST"}, True),
     ],
 )
 def test_has_reading(fields, counts):
@@ -44,3 +46,4 @@ def test_has_reading(fields, counts):
     )
     (n,) = conn.execute(f"SELECT COUNT(*) FROM lightstation_observation WHERE {HAS_READING_SQL}").fetchone()
     assert bool(n) is counts
+    assert has_reading(row) is counts, "has_reading() and HAS_READING_SQL disagree"

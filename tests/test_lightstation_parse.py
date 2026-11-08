@@ -516,9 +516,14 @@ class TestSxcn24Names:
         assert data["wind_speed_kt"] == 18.0
         assert data["sea_height_ft"] == 5
 
-    @pytest.mark.parametrize("text", ["N/A", "NA", "UNAVAILABLE"])
+    @pytest.mark.parametrize("text", ["N/A", "NA", "UNAVAILABLE", "NOT AVAILABLE"])
     def test_egg_island_unavailable_spellings_store_nothing(self, text):
         assert parse_sxcn_station_line(f"EGG ISLAND    {text}", "CENTRAL COAST") is None
+
+    @pytest.mark.parametrize("text", ["OUT OF SERVICE", "NIL", "CLDY 15"])
+    def test_a_line_with_no_reading_stores_nothing(self, text):
+        """Not a spelling list: whatever the bulletin says, no reading, no row."""
+        assert parse_sxcn_station_line(f"CHROME        {text}", "STRAIT OF GEORGIA") is None
 
 
 # ── Parsing fixes of 2026-09-23 (all from real bulletin lines) ────────
