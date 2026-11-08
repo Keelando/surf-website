@@ -14,6 +14,14 @@ node can import these files in tests; browsers ignore it.
 ## Modules
 
 - `format-time.js` — Pacific-time formatters + `getAgeString`/`getShortAgeString`.
+  `pacificDayKey(t)` ("2026-11-08", the Pacific calendar day) and
+  `formatWeekdayShort(t)` ("Sun") mark where a day changes in tables over
+  24 h: give that row `day-start` (style-v4.css draws the 2px line; winds
+  hourly table first, 2026-11-08).
+- `copy-code.js` — `addCopyButtons(root)`: a "Copy" button on every
+  `pre > code` and `[data-copy]` element in `root`; wraps each block so the
+  button stays put while a long line scrolls; no button without a clipboard.
+  Styles are page-side (`api-v4.css`, the first user). Added 2026-11-08.
 - `lightstation-format.js` — `formatLightstationWind()`, the one wording of a
   lightkeeper's wind report for the cards and both map popups ("Calm",
   "SE 12 kt (gusting)", or null when the report states no wind — never

@@ -487,6 +487,32 @@ point forecast starts at 1,727px instead of 2,433. No sideways scroll at
   period; a sitewide line grammar is a candidate for the post-overhaul
   review.)
 
+### Review round 2 (user, 2026-11-08)
+
+Picks: warnings strip = **your zones + "N more"**, header = **slim title
+band**, sections = **heading bands**.
+- **Forecasts** (`513bdef`): `header.page-band` in style-v4.css (opt-in, for
+  the other subpages at their overhaul; the old tagline is its subtitle).
+  The warnings strip shows in full what the reader's banner shows (banner
+  zones + storm floor, through `collectActiveWarnings`), the rest folded as
+  "+ N more warned zones"; redraws on Banner settings changes. Navy heading
+  bands with the header wave's teal edge; Forecast Accuracy a lighter one.
+  Point forecast at 1,419px on a 390px phone (2,433 at the start of the day).
+- **Midnight lines** (`2886f29`): `.data-table tr.day-start` draws 2px at
+  the Pacific day change; winds hourly table first, with a day label on a
+  phone. **Queued for their overhauls:** lightstation 72 h table, tides
+  high/low list. (The forecast table already has day header rows.)
+- **Winds by region** (`8957873`): each region a small box.
+- **API page** (`57a0def`): copy buttons (`shared/copy-code.js`), text on a
+  solid surface panel. The other subpages' text sits on the page
+  background the same way: check each at its overhaul.
+- **Preload warning** the user saw in Firefox ("noaa-waves-1989-1600.avif
+  preloaded ... not used within a few seconds"): not reproduced on dev or
+  main, fresh loads or same-session navigation, 800 and 1280px. Likely a
+  tab opened in the background (Firefox doesn't lay it out, so the preload
+  sits unused past its 3 s check). Harmless; the image is fetched once.
+  Ask for page + width if it recurs.
+
 ## After the overhaul: code review and refactor
 
 User 2026-11-08: once every page has had its overhaul, plan a code review
