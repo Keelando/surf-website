@@ -391,8 +391,9 @@ it without moving the page. Drawn Canada / US flags replace the old emoji
   **Decided 2026-11-08:** CWLM's wind is NOT starred (the sensor is good;
   hilltop exposure is context, carried by the name's asterisk and the note),
   only its pressure. Crescent Beach/Channel temperatures keep the asterisk
-  rather than a relabel: they are the open air with a sunny-afternoon bias,
-  and a relabel is for a sensor measuring something else (Colebrook).
+  rather than a relabel: they read warm at all hours (~1–2 °C overnight,
+  3–5 °C midday vs Cherry Point, main's caveat text), but nothing shows they
+  measure something other than the air; a relabel is for that (Colebrook).
 - **Legend toggles refit the y-axis on every chart** (the item queued
   below, done): `rescaleYAxisOnLegendToggle` gained `round` and a first-axis
   filter; the wave comparison chart's Halibut arrows follow the axis; the
