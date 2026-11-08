@@ -429,6 +429,12 @@
     margin-right: calc(1.5rem + 0.5rem + 0.5rem);
   }
 
+  /* "No recent data" stops short of the icons' track, which it would
+     otherwise run under (its text is right-aligned). */
+  .wl-empty {
+    grid-column: 2 / -3;
+  }
+
   .wl-temp,
   .wl-pressure,
   .wl-sort--temp,
