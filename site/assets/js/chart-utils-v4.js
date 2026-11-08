@@ -226,12 +226,18 @@ async function fetchWithTimeout(url, options = {}) {
  * data's. Nothing shown leaves the axis alone. Call once per chart; a second
  * call replaces the first's handler, so a re-render may call it again.
  *
+ * Only series on the first y-axis count (a wave chart plots period on a
+ * second axis, which must not stretch the height axis), and only that axis
+ * is set. `round` turns the padded height into the axis max: whole units by
+ * default (knots), a 0.1 m step for wave heights.
+ *
  * @param {Object} chart - ECharts instance
  * @param {Object} [options]
  * @param {string[]} [options.topSeries] - Marker series pinned above the data
  * @param {number} [options.pad] - Headroom over the highest point (1.1 = 10%)
+ * @param {function(number): number} [options.round] - Padded max -> axis max
  */
-function rescaleYAxisOnLegendToggle(chart, { topSeries = [], pad = 1.1 } = {}) {
+function rescaleYAxisOnLegendToggle(chart, { topSeries = [], pad = 1.1, round = Math.ceil } = {}) {
   if (!chart) return;
   if (chart.__legendRescale) chart.off("legendselectchanged", chart.__legendRescale);
 
@@ -250,6 +256,7 @@ function rescaleYAxisOnLegendToggle(chart, { topSeries = [], pad = 1.1 } = {}) {
     let max = Number.NEGATIVE_INFINITY;
     for (const series of option.series || []) {
       if (topSeries.includes(series.name) || !shown(series.name)) continue;
+      if ((series.yAxisIndex ?? 0) !== 0) continue;
       for (const point of series.data || []) {
         const v = Number(valueOf(point));
         if (Number.isFinite(v) && v > max) max = v;
@@ -259,7 +266,7 @@ function rescaleYAxisOnLegendToggle(chart, { topSeries = [], pad = 1.1 } = {}) {
 
     const markersShown = topSeries.some(shown);
     const markerY = max * 1.05;
-    const axisMax = Math.ceil((markersShown ? markerY : max) * pad);
+    const axisMax = round((markersShown ? markerY : max) * pad);
     chart.setOption({
       yAxis: { max: axisMax },
       series: (option.series || []).map((series) =>

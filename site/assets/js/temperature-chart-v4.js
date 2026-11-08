@@ -31,13 +31,14 @@ export function renderTemperatureChart(tempChart, buoy) {
       .map((d) => d?.value)
       .filter((v) => v != null && !isNaN(v));
 
+    // Functions of the extent ECharts measures over the series still shown, so
+    // hiding Air or Sea refits the axis to the other (pinned numbers held it
+    // where both had put it).
     let yMin = "dataMin";
     let yMax = "dataMax";
     if (allTemps.length > 0) {
-      const minTemp = Math.min(...allTemps);
-      const maxTemp = Math.max(...allTemps);
-      yMin = Math.floor(minTemp - 1);
-      yMax = Math.ceil(maxTemp + 1);
+      yMin = (value) => Math.floor(value.min - 1);
+      yMax = (value) => Math.ceil(value.max + 1);
     }
 
     tempChart.setOption({

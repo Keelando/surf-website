@@ -768,6 +768,15 @@ function renderStandardWaveChart(waveChart, buoy, buoyId, ts, theme) {
     },
     true,
   );
+  // Hiding a series (or the arrows) refits the height axis; the arrows ride
+  // just above what is still shown, as createWaveDirectionArrowData places
+  // them. Period sits on the second axis and is left alone.
+  if (hasWaveDirection) {
+    rescaleYAxisOnLegendToggle(waveChart, {
+      topSeries: ["Wave Direction"],
+      round: (v) => Math.max(1, Math.ceil(v)),
+    });
+  }
 }
 
 // degreesToCompass removed — use degreesToCardinal from chart-utils-v4.js

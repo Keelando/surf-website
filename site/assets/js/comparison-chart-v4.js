@@ -286,6 +286,15 @@ export function renderComparisonChart(waveComparisonChart, chartData) {
       // buoy dropping out) must remove its series rather than leave it drawn.
       { replaceMerge: ["series"] },
     );
+    // Hiding a buoy refits the axis to those still shown, and the Halibut
+    // arrows drop to just above them (they sit at 1.05x the highest wave, so
+    // left alone they held the axis where it was). Same 0.1 m step and 1 m
+    // floor as the axis max above.
+    rescaleYAxisOnLegendToggle(waveComparisonChart, {
+      topSeries: ["Wave Dir (Halibut)"],
+      pad: 1.15,
+      round: (v) => Math.max(1, Math.ceil(v * 10) / 10),
+    });
   } catch (error) {
     showChartError("wave-comparison-chart", "Wave Comparison Chart", error);
   }
