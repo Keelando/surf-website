@@ -170,15 +170,27 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       - **Look**: inline SVG, no axes, the same `POPUP_OPTIONS` 280px width;
         mark the latest point, and keep it readable in both themes.
 
-- [ ] **Home station list at 150% text: line 2 collides** (found
-      2026-11-06 while restoring "ago"). At 390px with a 150% root font the
-      wave-direction arrow runs into the wind number ("14.8 s ↗31" at Neah
-      Bay, La Perouse). Pre-existing, not from "ago" (that is line 1). "ago"
-      itself costs names at 150% (New Dungeness, Angeles Point and La Perouse
-      Bank cut short at 390px; at 360px even Halibut Bank). If that matters,
-      the fix floated 2026-10-25 is a `compact_name` registry field (main +
-      API allowlist), or dropping "ago" only below a container width in `em`,
-      so it goes only when text is large.
+- [x] **Home station list at 150% text: line 2 collides** — FIXED
+      2026-11-08: a column under 17.5rem (and 504px) puts waves and wind on
+      lines of their own, every row together, so heights stay uniform.
+      Stacks at 125% text only at 360px, at 150% from 390px; never at
+      default text. Probed 360/390/412px x 100-200%, both engines: no
+      overlap. The cut names at large text ("Halibut Ba…") are the separate
+      "ago" trade-off, unchanged: `compact_name` or an em-based "ago" drop
+      if it matters.
+
+- [ ] **Wave forecast: fetch when the run is published, not at a fixed
+      time** (user 2026-11-08: "the data is nearly stale by the time we
+      present it", not urgent). The cron waits 4 h 45 min after each run,
+      but files were measured landing ~3 h 25 min after (August, once), so a
+      ready forecast sits ~1 h 20 min. Conventional fix: start ~+3:30, check
+      the run with the tiny single-layer GetCapabilities every 5 min, fetch
+      as soon as the new run shows, give up at ~+5:00 and take what's there
+      (~20 small requests a run). Also covers the late-run case (3-4 in 60
+      days). Mind GeoMet's busy windows (~:35-:42, ~:50-:05; TROUBLESHOOTING
+      issue 15): starting earlier moves the fetch through them, the retry
+      pass should cope. Measure publish times first (log when each run first
+      appears) before choosing the start.
 
 ### Queued 2026-11-04
 

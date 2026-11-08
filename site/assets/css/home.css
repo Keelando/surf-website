@@ -824,6 +824,40 @@
   }
 }
 
+/* Large text on a phone: waves and wind each get a line of their own.
+   Line 2's readings are sized in rem, so enlarged text grows them while the
+   phone stays the same width, and the two cells, sharing one grid area, ran
+   into each other (390px at 150% text: Neah Bay, La Perouse; 360px at 150%:
+   most rows). A rem threshold tracks that exactly: line 2 needs up to
+   ~13.7rem (widest realistic readings, measured), plus ~3rem of padding, dot
+   and gaps. At default text this never applies to a phone; at 125% it does
+   at 360px, at 150% at 390px. Every row goes to three lines together, so
+   rows stay one height. Only ever on top of the stacked row (at 200% text
+   17.5rem is wider than 504px). */
+@container sl-column (width < 504px) and (width < 17.5rem) {
+  .sl-row {
+    grid-template-rows: 1.25rem 1.25rem 1.25rem;
+    grid-template-areas:
+      "dot title age chev"
+      ". waves waves waves"
+      ". wind wind wind";
+  }
+
+  .sl-row[aria-expanded="true"] {
+    grid-template-rows: minmax(1.25rem, auto) 1.25rem 1.25rem;
+  }
+
+  .sl-row .sl-cell--waves,
+  .sl-row .sl-cell--empty {
+    grid-area: waves;
+  }
+
+  .sl-row .sl-cell--wind {
+    grid-area: wind;
+    justify-self: start;
+  }
+}
+
 /* -----------------------------
    A row's detail panel
 ----------------------------- */
