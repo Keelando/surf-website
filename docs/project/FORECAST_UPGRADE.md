@@ -68,6 +68,14 @@ and surge; RDWPS for wind-driven wave height/period/direction.
   code rather than cloning the duplication.
 - GDSPS need not be ripped out immediately — CIOPS can run alongside for
   comparison/hindcast continuity before switchover.
+- **Decide GRIB2-over-sr3 vs WMS points at CIOPS time, for RDWPS too**
+  (user 2026-11-08). If CIOPS comes in as GRIB2 over sr3, the decoder
+  (eccodes) and the subscription plumbing are paid for once, and moving the
+  RDWPS/HRDPS point fetch onto the same path may then be worth it: no WMS
+  requests, no 429s. Against it: national-domain files of ~2 MB per variable
+  per step, hundreds of MB a run. Today's WMS fetch is fine (retry judged
+  2026-11-08, `docs/TROUBLESHOOTING.md` issue 15), so this is an
+  opportunity, not a fix.
 
 ## RDWPS recon — verified live 2026-08-15
 
