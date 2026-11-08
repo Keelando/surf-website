@@ -655,12 +655,23 @@ failure. The start moved :35 → :45, but with Halibut Bank now fetched around
 window; the retry pass is the fix that counts. Details:
 `docs/DATA_FEEDS.md` → RDWPS Wave Forecast.
 
-**Judged 2026-11-08 (11 days of `fetch_error`): it works.** The ordinary
-failures (429, refused, disconnected; ~5–15 a day) still come, still mostly
-at ~:55–:05 and ~11:20, but the retry pass recovers them: station-runs left
-with a gap fell from 62 in the 30 days before (21 losing 10+ values) to 7,
-each 1–2 values, plus one bad night. Spreading the stations is not needed.
-What's left:
+**Judged 2026-11-08 (12 days of `fetch_error`): it works, but GeoMet did
+not get better; we cope with it better.**
+
+| | 30 days before | 12 days after |
+|---|---|---|
+| failed requests per day, median | 5 | 5 |
+| failed requests per day, mean | 14.1 | 6.8 |
+| days with 20+ failures | 7 of 31 | 0 of 12 |
+| station-runs left with gaps on the page | 62 (21 lost 10+ values) | 7 (1–2 values each) |
+
+("After" leaves out the 2026-11-06 late-run night below, a different
+failure.) So the :35 → :45 move changed little: a typical day still sees ~5
+refusals, still mostly at ~:55–:05 and ~11:20. The **backoff** is what ended
+the burst days (one short bad patch used to cascade into dozens of
+failures; 0 in 12 days against a 1-in-4.4 rate before is ~5% likely by
+luck), and the **retry pass** recovers what is left. Spreading the stations
+is not needed. Re-check in a month. What's left:
 - **`run_changed`**: the retry skips a point when the model published a new
   run during the fetch. Always the last HRDPS gust steps at English Bay
   (the last station), one value. Harmless.
@@ -671,7 +682,25 @@ What's left:
   at five stations, the retry couldn't recover them, but no future hour was
   missing on the page, and the 10:45 fetch replaced the lot. A late run
   also means the page shows a 6 h older forecast until the next fetch; not
-  worth a re-check job unless it starts happening often.
+  worth a re-check job unless it starts happening often (3–4 fetches in 60
+  days so far).
+
+**Levers left, if it ever gets worse** (none needed today; ~5 refusals in
+6,344 requests a day, all recovered):
+- **Batching is ruled out**: multi-layer `QUERY_LAYERS`, `TIME` ranges and
+  `TIME` lists are all rejected by GeoMet (tested,
+  `docs/project/RDWPS_PARAMETERS.md` "No batching exists").
+- **Skip the steps already past at fetch time** (00–04Z of a 00Z run fetched
+  at 04:45): ~15% fewer requests, but verification's 0–6 h lead bucket is
+  built from exactly those steps and would shrink to leads 5–6.
+- **Late-run guard**: before fetching, check the expected run is published
+  and wait ~15 min if not, instead of spending a whole run's requests on
+  the previous one. Cheap, but rare (above).
+- **GRIB2 over sr3** (AMQP push, the route MSC's usage policy names for
+  systematic retrieval): no WMS requests, no 429s. Cost: national-domain
+  files of ~2 MB per variable per step (hundreds of MB a run) and an eccodes
+  decoder in the pruned venv. Only worth it alongside a bigger change
+  (CIOPS, many more points).
 
 **Diagnosis:**
 ```bash

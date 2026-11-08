@@ -356,8 +356,9 @@ two open-Pacific points also both swell partitions (`RDWPS_2.5km_{First,Second}S
 60-day record shows failures on most days since at least 2026-08-29, nearly all
 in the 06Z and 12Z runs, in two windows: ~:35–:42 and ~:50–:05 (UTC). So :45
 dodges the first and may land a station in the second; the backoff and retry
-below are the actual fix. History and diagnosis: `docs/TROUBLESHOOTING.md`
-issue 15.
+below are the actual fix — **confirmed 2026-11-08**: refusals per typical day
+unchanged (~5), burst days and page gaps nearly gone. History, numbers and the
+levers left: `docs/TROUBLESHOOTING.md` issue 15.
 **Stations:** six, as `STATIONS` in the fetcher, ids from
 `config/stations.json`. Halibut Bank (`4600146`), Crescent Beach Ocean
 (`CRPILE`), English Bay (`4600304`) and New Dungeness (`46088`) take waves and
