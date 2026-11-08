@@ -655,6 +655,24 @@ failure. The start moved :35 → :45, but with Halibut Bank now fetched around
 window; the retry pass is the fix that counts. Details:
 `docs/DATA_FEEDS.md` → RDWPS Wave Forecast.
 
+**Judged 2026-11-08 (11 days of `fetch_error`): it works.** The ordinary
+failures (429, refused, disconnected; ~5–15 a day) still come, still mostly
+at ~:55–:05 and ~11:20, but the retry pass recovers them: station-runs left
+with a gap fell from 62 in the 30 days before (21 losing 10+ values) to 7,
+each 1–2 values, plus one bad night. Spreading the stations is not needed.
+What's left:
+- **`run_changed`**: the retry skips a point when the model published a new
+  run during the fetch. Always the last HRDPS gust steps at English Bay
+  (the last station), one value. Harmless.
+- **2026-11-06 ~04:50–06:20, `bad_response`** (empty body, "Expecting
+  value"): the 00Z run was late, so the 04:45 fetch fell back to the 18Z
+  run, and partway through GeoMet stopped serving that run's first six
+  steps (18–23Z, already 5–11 h in the past). 206 failures, 186 values lost
+  at five stations, the retry couldn't recover them, but no future hour was
+  missing on the page, and the 10:45 fetch replaced the lot. A late run
+  also means the page shows a 6 h older forecast until the next fetch; not
+  worth a re-check job unless it starts happening often.
+
 **Diagnosis:**
 ```bash
 # The run's summary and retry outcome

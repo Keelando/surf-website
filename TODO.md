@@ -65,7 +65,7 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 
 ### Queued 2026-11-07
 
-- [ ] **Many stations down at once** (user 2026-11-07 ~15:00 PDT, health
+- [x] **Many stations down at once** (user 2026-11-07 ~15:00 PDT, health
       bar: 57/74, 77%). Down: S. Georgia, WR East Beach, PtAtk Tide,
       Kitsilano, New West, Campbell R, Tofino Tide, Ucluelet, Port Renfrew,
       Victoria Hbr, Chrome Island, Entrance Light, Cape Scott, Langara
@@ -75,9 +75,22 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
         observations in the 6 h to 23:15 UTC. A DFO-wide outage, so the
         Point Atkinson gap is probably not the gale. Re-check IWLS before
         touching the tide pipeline.
-      - Still to look at: the six lightstations (schedule? SXCN?),
-        Southern Georgia Strait buoy, White Rock East Beach (out of service
-        since 2026-10-23), Ambleside cam (frozen upstream, TODO below).
+      - **Tides recovered** by 2026-11-08 (9 stale, from 17).
+      - **Lightstations, 2026-11-08:** Chrome, Entrance, Cape Scott and
+        Langara are listed N/A or NOT AVAILABLE in their own SXCN bulletin
+        every time and appear in no other bulletin we receive (Chrome and
+        Entrance since at least late August): flagged `reporting: false`
+        (`3521e2b`), health now 70 counted, 5 stale. Pine Island (since
+        2026-10-29) and McInnes (since 2026-11-06) are N/A at source too,
+        but reported recently, so they stay counted. "NOT AVAILABLE" had
+        brought 163 empty rows back; the parser now drops any line with no
+        reading (`2ce0b1f`); deleting the old rows is a command for the user.
+      - Left, all upstream or known: Southern Georgia Strait buoy (silent
+        since 2026-10-29), White Rock East Beach (out of service since
+        2026-10-23), Ambleside cam (frozen upstream, TODO below).
+      - **Lightstation page, for its overhaul** (user 2026-11-08): put
+        non-reporting stations at the END of each region, breaking the
+        alphabetical order; down stations take too much room.
 
 ### Queued 2026-11-06
 
@@ -199,13 +212,11 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 
 ### Queued 2026-10-28
 
-- [ ] **Judge the wave-forecast fetch changes on real data** (`2762998`,
-      after ~2 weeks of `fetch_error` rows). Did the :35 → :45 move help,
-      or did failures just move to whichever station lands in the ~:50–:05
-      busy window? How much does the retry pass recover? Queries and
-      background: `docs/TROUBLESHOOTING.md` issue 15. If the second window
-      still bites, consider spreading the 06Z/12Z runs' stations differently
-      rather than slowing every request.
+- [x] **Judge the wave-forecast fetch changes on real data** — DONE
+      2026-11-08: the retry pass works (station-runs left with gaps 62 in
+      the 30 days before → 7 single values in 11 days, plus one late-run
+      night on 2026-11-06 that lost only past hours). No respacing needed.
+      Write-up: `docs/TROUBLESHOOTING.md` issue 15, "Judged 2026-11-08".
 
 ### Queued 2026-10-24
 
