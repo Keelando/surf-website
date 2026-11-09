@@ -1223,13 +1223,28 @@ function verificationOption({ label, unit, series, decimals, axisMax, directions
     ? [observedName, forecastName, directionName]
     : [observedName, forecastName];
 
+  // On a phone the shared percentages leave empty bands: 15% above the plot
+  // is ~55 px where the axis name needs ~30, and the legend floats 10% clear
+  // of the canvas bottom (user 2026-11-09: "a little extra margin top/bottom").
+  // Fixed pixels here; the plot keeps the same height in a shorter canvas.
+  const grid = getResponsiveGridConfig(false, legendData, size);
+  let legendBottom = getResponsiveLegendBottom();
+  if (window.innerWidth < 600 && size?.height) {
+    const PHONE_TOP_PX = 32;
+    const PHONE_LEGEND_BOTTOM_PX = 8;
+    const sharedLegendBottomPx = (parseFloat(legendBottom) / 100) * size.height;
+    grid.top = PHONE_TOP_PX;
+    grid.bottom = Math.round(grid.bottom - sharedLegendBottomPx + PHONE_LEGEND_BOTTOM_PX);
+    legendBottom = PHONE_LEGEND_BOTTOM_PX;
+  }
+
   return {
     backgroundColor: "transparent",
     textStyle: { color: colors.text },
-    grid: getResponsiveGridConfig(false, legendData, size),
+    grid,
     legend: {
       data: legendData,
-      bottom: getResponsiveLegendBottom(),
+      bottom: legendBottom,
       textStyle: { color: colors.mutedText },
     },
     tooltip: {
