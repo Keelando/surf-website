@@ -377,6 +377,16 @@ it without moving the page. Drawn Canada / US flags replace the old emoji
 (shared/flags.js), from a registry `country` field (`main` `92470e6`; the
 `flag` emoji is sometimes a source, not a country).
 
+**Map beside the list: PULLED 2026-11-09, parked.** User: one column at
+every width for now, "the idea has promise", decide later, and if it comes
+back, as a sitewide layout rather than a winds-only one. What went wrong:
+the sticky map's parent was `<main>`, so it stayed pinned past the list and
+rode over Wind history; and Wind history below sat centred at 1200px, out of
+line with both columns. If revived: wrap list + map in their own box (a
+sticky element lets go where its parent ends), and give what follows the same
+outer edges. Mind the cost to the list: beside the map it was 51.4rem, under
+the 54rem the Time column needs (`winds-v4.css`).
+
 **Round 4 (user, 2026-11-07/08), on `dev`, awaiting "ship it":**
 - **Page background** (`docs/project/PAGE_BACKGROUND.md`): sea + linen
   textures over depth bands repeating down the page, sitewide. Textures are

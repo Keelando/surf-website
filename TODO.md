@@ -63,6 +63,15 @@ duplicated observations on 2026-09-06. Write-up:
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+### Queued 2026-11-09
+
+- [ ] **A wide-screen layout: map beside the list, sitewide** (user
+      2026-11-09: "it's a good idea", but one column everywhere until
+      decided). Winds had it alone from 1400px and it was pulled the same
+      day; decide it for every page with a list and a map, not one page.
+      Background, what went wrong and how to revive it:
+      `docs/project/UI_OVERHAUL.md` ("Map beside the list: PULLED").
+
 ### Queued 2026-11-07
 
 - [x] **Many stations down at once** (user 2026-11-07 ~15:00 PDT, health

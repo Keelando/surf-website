@@ -573,51 +573,6 @@
   }
 }
 
-/* --- Wide screens: the map beside the list --- */
-
-/* From 1400px the map sits beside the list and stays in view while the list
-   scrolls (user 2026-11-06), so a row's map icon pans it without moving the
-   page. Same DOM order as on a phone (list, map, chart), placed by grid. */
-@media (min-width: 1400px) {
-  .winds-main {
-    display: grid;
-    grid-template-columns: minmax(0, 54rem) minmax(0, 1fr);
-    align-items: start;
-    column-gap: 1.5rem;
-    max-width: 1760px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-  }
-
-  .winds-main > * {
-    grid-column: 1 / -1;
-  }
-
-  .winds-main > .summary {
-    grid-column: 1;
-    padding-inline: 0;
-  }
-
-  .winds-main > .summary .summary-panel {
-    max-width: none;
-  }
-
-  .winds-main > #map-section {
-    position: sticky;
-    top: 5.5rem;
-    grid-column: 2;
-    grid-row: 1;
-    max-width: none;
-    margin: 1.5rem 0 0;
-    padding: 0;
-  }
-
-  .winds-main .winds-map-container {
-    height: calc(100vh - 11rem);
-    min-height: 32rem;
-  }
-}
-
 /* --- Below the summary: the map and one station's history --- */
 
 /* The phone gutter matches #map-section's (0.5rem, style-v4.css's

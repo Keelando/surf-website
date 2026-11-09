@@ -372,7 +372,7 @@ function showStationOnMap(stationId) {
     document.dispatchEvent(new CustomEvent("winds:focus-station", { detail: { stationId } }));
   const map = document.getElementById("winds-map");
   const box = map?.getBoundingClientRect();
-  // Beside the list on a wide screen the map is already in view: pan it at once.
+  // Already on screen (a tall window, scrolled near it): pan it at once.
   if (box && box.top >= 0 && box.bottom <= window.innerHeight) {
     focus();
     return;
