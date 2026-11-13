@@ -74,20 +74,22 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       - **Wind summary table** (user's name, 2026-11-13): winds page, "Salish Sea wind conditions",
         `.wl-summary` / `#wind-list`, rows `wl-*` in `winds-v4.css`,
         All stations / By region views.
-      NOT the buoys page's "24-Hour Wave Height Summary" table
+      NOT the buoys page's **24-hour wave height summary table**
       (`#wave-height-table`) nor the winds hourly table. Start with a
       phone audit (375/390px, 100/150% text, both engines): wasted width,
       wrap, row height, then a couple of layout options for the user to
       pick from, before building on `dev`.
 
-      **Names (user 2026-11-13: "clear up the terminology").** "Summary
-      table" means only those two top lists (rows, not a `<table>` in the
-      markup). Proposed for the rest, to confirm:
+      **Names (user 2026-11-13: "clear up the terminology").** Always the
+      full name: *wave summary table* and *wind summary table* are the two
+      top lists (rows, not a `<table>` in the markup); the *24-hour wave
+      height summary table* is the separate table further down the buoys
+      page. Proposed for the rest, to confirm:
       *station panel* (what a summary row opens), *row history* (the table
       inside a buoy's panel), *buoy charts* ("24-Hour Trends", one buoy
-      picked), *wave height table* (the "24-Hour Wave Height Summary"
-      heading, whose word "summary" is what collides; rename it to match),
-      *wind history* (the winds chart) and *hourly wind table* under it.
+      picked), *wind history* (the winds chart) and *hourly wind table*
+      under it. Decided: the **24-hour wave height summary table** keeps
+      that name and its heading, because it matches the UI (user).
 
 ### Queued 2026-11-09
 
