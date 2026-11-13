@@ -46,7 +46,7 @@
   <!-- The summary panel, region heads, status lights and row panels are the
        home page's (home.css); winds-v4.css lays out the winds rows. -->
   <link rel="stylesheet" href="/assets/css/home.css?v=00836d3fa4" />
-  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=75f6726180" />
+  <link rel="stylesheet" href="/assets/css/winds-v4.css?v=7e7298babb" />
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="/assets/vendor/leaflet.css?v=ec929f1100"/>
@@ -124,8 +124,11 @@
          behind "Show More Rows". -->
     <button type="button" class="sl-action wl-hourly-toggle" aria-expanded="true" aria-controls="wind-hourly">Hide hourly table</button>
     <div id="wind-hourly" class="wl-hourly">
+      <!-- Names the table's station (wind-stations.js): on a phone the
+           chart and its picker have scrolled off by the time you read it. -->
+      <h3 id="wind-hourly-title" class="wl-hourly-title">Hourly wind data</h3>
       <div class="data-table">
-        <table id="wind-24hr-table">
+        <table id="wind-24hr-table" aria-labelledby="wind-hourly-title">
           <thead>
             <tr>
               <th>Time</th>
@@ -167,7 +170,7 @@
   <script type="module" src="/assets/js/warning-banner.js?v=69920f4608"></script>
   <script defer src="/assets/js/chart-utils-v4.js?v=6cd395ae52"></script>
   <!-- wind-data.js is imported by both module entry points (no script tag needed) -->
-  <script type="module" src="/assets/js/wind-stations.js?v=39e0b12d26"></script>
+  <script type="module" src="/assets/js/wind-stations.js?v=515d2a1323"></script>
   <script type="module" src="/assets/js/winds-map.js?v=1950762b41"></script>
   <script defer src="/assets/vendor/htmx.min.js?v=b452f93fd4"></script>
 </body>

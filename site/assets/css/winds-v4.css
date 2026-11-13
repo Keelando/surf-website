@@ -675,6 +675,35 @@
   margin-top: 0.75rem;
 }
 
+.wl-hourly-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* At large text on a phone the table runs wider than the screen (150% at
+   375px: ~23px) and scrolls sideways: the time column stays put. A sticky
+   cell needs an opaque fill, and the row tints (zebra, hover) are
+   translucent, so they are layered over the surface here. */
+#wind-24hr-table th:first-child,
+#wind-24hr-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: var(--color-surface);
+}
+#wind-24hr-table th:first-child {
+  z-index: 2;
+  background-color: var(--color-surface-alt);
+}
+#wind-24hr-table tbody tr:nth-child(even) td:first-child {
+  background-image: linear-gradient(var(--color-table-zebra), var(--color-table-zebra));
+}
+#wind-24hr-table tbody tr:hover td:first-child {
+  background-image: linear-gradient(var(--color-data-row-hover), var(--color-data-row-hover));
+}
+
 /* --- The hourly table: quiet heads, like the home panel's history --- */
 
 .data-table {

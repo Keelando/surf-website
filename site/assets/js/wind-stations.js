@@ -427,6 +427,12 @@ function renderWind24HourTable(stationId) {
   const table = document.getElementById("wind-24hr-table");
   if (!table) return;
 
+  const title = document.getElementById("wind-hourly-title");
+  if (title) {
+    const name = (windData.latestAll?.[stationId]?.name || station.name).replace(" 🌊", "");
+    title.textContent = `${name}: ${currentWindTimeRange}-hour wind data`;
+  }
+
   // Extract and merge timeseries data (all normalized to flat arrays by wind-data.js)
   const ts = station.timeseries;
   const dataByTime = mergeTimeseriesByTime([
