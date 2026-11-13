@@ -83,7 +83,12 @@ cd ~/envcan_wave-dev          # edit, commit here as usual
    on port 4173, running the suite in `~/envcan_wave-dev` tests **main's**
    files and passes. Before testing on dev, make sure nothing is listening
    (`ss -ltn | grep 4173` should print nothing), or give the run its own
-   port: `PW_PORT=4180 npm run test:frontend`.
+   port: `PW_PORT=4180 npm run test:frontend`. Not just any port:
+   browsers refuse the Fetch standard's "bad ports" (4190, 4045, 5060,
+   6000, 6665–6669, …). Firefox enforces them and Playwright's Chromium
+   doesn't, so a run on one fails only in Firefox, with "navigation is
+   interrupted by another navigation". `playwright.config.js` now refuses
+   those ports up front.
 2. **Rebases skip the pre-commit hook**, so `?v=` hashes can go stale on
    replayed commits. The `post-rewrite` hook runs
    `update_asset_versions.py` after every rebase and lists what it changed;

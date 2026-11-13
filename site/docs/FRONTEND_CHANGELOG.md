@@ -4,6 +4,41 @@ UI/UX enhancements and feature history for halibutbank.ca. Entries are newest-fi
 
 ---
 
+## 2026-11-13: Forecasts Rebuilt, Winds Tightened, Two Buttons on Every Popup
+
+Built on `dev` 2026-11-08/13, shipped together (`b74ba9e`). Write-ups:
+`docs/project/UI_OVERHAUL.md`, "Step 4: forecasts" and "Review round 2".
+
+- **Forecasts page rebuilt:** the zone forecast condensed to about a screen,
+  a slim title band, a warnings strip showing the reader's banner zones
+  (the rest folded as "+ N more"), banner settings folded onto that strip.
+  Point forecast with 12 / 24 / 48 h chips driving chart and table, one
+  station picker and one Waves/Wind toggle, a table that fits a phone (day
+  header rows, units under the heads), daily highs in bold, wave period
+  drawn solid so dashed means only "forecast", Forecast Accuracy open under
+  the table. Phone page ~6,900 -> ~4,800px.
+- **Winds page:** tighter wind summary table rows (two lines at large
+  text), "By region" as small boxes, a thicker line at midnight in the
+  hourly wind table (the day named on phones). The hourly wind table now
+  has a heading naming its station ("Crescent Beach Ocean: 24-hour wind
+  data"), and its time column stays put when the table scrolls sideways
+  (150% text on a 375px phone).
+- **Map popups: "Latest data" and "Chart"** on every station popup of all
+  three maps, replacing one "View Data" button that landed somewhere
+  different on each map. Both are hash deep links that work across pages,
+  on a cold load and when shared: `/#buoy-ID` and `/#chart-ID`,
+  `/winds.html#wind-ID` and `#chart-ID`, `/lightstations.html#lightstation-ID`
+  and `#chart-ID`, `/tides.html?station=KEY` and `…#chart`. Shared helpers
+  in `shared/map-popup.js`; a repeat click on the same hash still lands.
+  A lightstation `#chart-` link now waits for the charts' first load (the
+  Merry Island default used to replace it); "Latest data" lands on the
+  station's card, not the top of its region. Webcam popups keep "View
+  Webcam".
+- **API page:** copy buttons on the code samples, the text on a solid
+  panel.
+
+---
+
 ## 2026-11-08: Page Background, the Asterisk Rule, Charts That Refit
 
 Built on `dev` 2026-11-07/08 and shipped together.

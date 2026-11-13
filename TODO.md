@@ -349,7 +349,8 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       `<tr>`), now built with DOM calls.
 - [ ] **UI overhaul.** Steps 1–2 DONE (home page, nav, brand, tokens,
       header wave; shipped dev → main 2026-10-26/28/31, home summary settled
-      2026-11-06). Now step 3, page by page, starting 2026-11-06 with winds.
+      2026-11-06). Now step 3, page by page: winds and forecasts shipped
+      (2026-11-08, 2026-11-13), tides next.
       User: "I have to scroll a lot through some filler to get to the data."
       Plan, order, checks and shipping: `docs/project/UI_OVERHAUL.md`. Work
       on `dev`, previewed at dev.halibutbank.ca.

@@ -513,6 +513,32 @@ band**, sections = **heading bands**.
   sits unused past its 3 s check). Harmless; the image is fetched once.
   Ask for page + width if it recurs.
 
+### Shipped 2026-11-13
+
+Forecasts (step 4), the winds review rounds and the API copy buttons
+shipped as `b74ba9e`, with two additions from the user's 2026-11-13 list:
+the hourly wind table's station heading + sticky time column, and "Latest
+data" / "Chart" on every map popup (FRONTEND_CHANGELOG.md 2026-11-13).
+**Next page: tides.** Queued for the end of this round (TODO.md, Queued
+2026-11-13): a mobile glow-up of the wave summary table and the wind
+summary table.
+
+## Names for the parts of a page
+
+Settled with the user 2026-11-13, after "buoy summary table" was read as
+the wrong table. Use the full name in plans, commits and questions.
+
+| Name | Where | What |
+|------|-------|------|
+| **Buoys page** | `/` | The home page. |
+| **Wave summary table** | buoys page, top | "Salish Sea wave conditions": the station rows over the photo (`.summary`, `station-list.js`). A list of rows in the markup, not a `<table>`. |
+| **Wind summary table** | winds page, top | "Salish Sea wind conditions": every wind station, All stations / By region (`.wl-summary`, `#wind-list`). |
+| **24-hour wave height summary table** | buoys page, lower | `#wave-height-table` under its "24-Hour Wave Height Summary" heading. Keeps the name: it matches the UI. |
+
+Proposed, not yet confirmed: *station panel* (what a summary row opens),
+*row history* (the table inside a buoy's panel), *buoy charts* ("24-Hour
+Trends"), *wind history* (the winds chart), *hourly wind table* (under it).
+
 ## After the overhaul: code review and refactor
 
 User 2026-11-08: once every page has had its overhaul, plan a code review
@@ -569,7 +595,8 @@ change ships together with the frontend that handles it.
 3. **Roll out page by page**, one page per commit or small group, not a
    sitewide sweep: forecasts, winds, tides, storm surge, lightstations,
    webcams, guide, api. Land the shared helper together with the one page
-   that needs it, and queue the rest.
+   that needs it, and queue the rest. **Done: winds, forecasts (shipped
+   2026-11-08 and 2026-11-13). Next: tides.**
    - **Lightstations (user 2026-11-08):** stations that aren't reporting go
      at the END of their region, breaking the alphabetical order; down
      stations take up too much of the page. Both kinds: `reporting: false`
