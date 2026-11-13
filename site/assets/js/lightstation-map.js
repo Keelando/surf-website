@@ -7,9 +7,8 @@ import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js
 import { formatLightstationWind, silentStationText } from "./shared/lightstation-format.js";
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
 import { describeNextReport, describeSchedule } from "./shared/lightstation-schedule.js";
-import { getPopupOptions } from "./shared/map-popup.js";
+import { getPopupOptions, popupDataLinks } from "./shared/map-popup.js";
 import { reportStatus, staleThresholdLabel, statusPopupTheme } from "./shared/staleness.js";
-import { viewLightstationDataById } from "./lightstation-charts.js";
 
 let lightstationMap = null;
 let lightstationMarkersLayer = null;
@@ -252,7 +251,7 @@ function addLightstationMapMarker(lightstation) {
       ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${lightstation.notes}</div>` : ""}
     </div>
     <div class="popup-actions">
-      <a href="#lightstation-chart-section" class="view-data-btn" data-lightstation-id="${lightstation.id}">View Data →</a>
+      ${popupDataLinks(`#lightstation-${lightstation.id}`, `#chart-${lightstation.id}`)}
     </div>
   </div>`;
 
@@ -298,20 +297,6 @@ export function centerMapOnLightstation(lightstationId, retryCount = 0) {
     marker.openPopup();
   }, 1100);
 }
-
-// Event delegation for popup "View Data" buttons (CSP-safe)
-document.addEventListener("click", (event) => {
-  const link = event.target.closest(".view-data-btn[data-lightstation-id]");
-  if (!link) {
-    return;
-  }
-
-  event.preventDefault();
-  const stationId = link.getAttribute("data-lightstation-id");
-  if (stationId) {
-    viewLightstationDataById(stationId);
-  }
-});
 
 // Module scripts are deferred, so the DOM is already parsed.
 initLightstationMap();

@@ -875,8 +875,10 @@ function renderWaveHeightChart(stationName, station) {
 }
 
 // Initialize on page load (module scripts are deferred, so the DOM is
-// parsed; the "show on map" button listener lives in lightstation-page.js)
-loadLightstationTimeseries();
+// parsed; the "show on map" button listener lives in lightstation-page.js).
+// A #chart- deep link waits on this: picked any sooner, the default
+// selection above would replace it.
+export const lightstationChartsReady = loadLightstationTimeseries();
 
 // Handle window resize. The wave chart's title wraps at a pixel width taken
 // from the canvas, so a resize has to re-render it, not just resize it —

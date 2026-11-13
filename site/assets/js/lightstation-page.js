@@ -3,7 +3,12 @@
  * Region-grouped condition cards for all BC lightstations
  */
 
-import { viewLightstationChart, WINDOW_HOURS } from "./lightstation-charts.js";
+import {
+  lightstationChartsReady,
+  viewLightstationChart,
+  viewLightstationDataById,
+  WINDOW_HOURS,
+} from "./lightstation-charts.js";
 import { centerMapOnLightstation } from "./lightstation-map.js";
 import { formatWeekdayDayTime, getShortAgeString } from "./shared/format-time.js";
 import {
@@ -13,6 +18,7 @@ import {
   describeSlots,
 } from "./shared/lightstation-schedule.js";
 import { formatLightstationWind, silentStationText } from "./shared/lightstation-format.js";
+import { routeSamePagePopupLinks } from "./shared/map-popup.js";
 import { setSafeHTML } from "./shared/safe-html.js";
 import { staleThresholdLabel } from "./shared/staleness.js";
 import { orderRegions } from "./shared/station-meta.js";
@@ -149,38 +155,41 @@ async function loadLightstationData() {
   }
 }
 
-// Handle hash-based navigation to specific lightstation
-function handleLightstationHash() {
+// Deep links from a map popup: #lightstation-<ID> ("Latest data") opens the
+// station's region and lands on its card; #chart-<ID> ("Chart") picks it for
+// the charts and reports table.
+async function handleLightstationHash() {
   const hash = window.location.hash;
-  if (!hash || !hash.startsWith("#lightstation-")) return;
+  if (hash.startsWith("#chart-")) {
+    await lightstationChartsReady;
+    viewLightstationDataById(decodeURIComponent(hash.slice(7)));
+    return;
+  }
+  if (!hash.startsWith("#lightstation-")) return;
 
   // Extract station ID from hash (e.g., "#lightstation-CHROME_ISLAND" -> "CHROME_ISLAND")
-  const stationId = hash.replace("#lightstation-", "");
+  const stationId = decodeURIComponent(hash.replace("#lightstation-", ""));
 
   // Find the card with this station ID
-  const targetCard = document.querySelector(`[data-station-id="${stationId}"]`);
+  const targetCard = document.querySelector(`[data-station-id="${CSS.escape(stationId)}"]`);
   if (!targetCard) {
     console.warn("Station not found:", stationId);
     return;
   }
 
-  // Find the region section containing this card
-  const regionSection = targetCard.closest(".region-section");
-  if (!regionSection) return;
+  // Open the region holding the card, leaving the others as the reader set them
+  targetCard.closest(".region-section")?.classList.remove("collapsed");
 
-  // Collapse all region sections first
-  document.querySelectorAll(".region-section").forEach((section) => {
-    section.classList.add("collapsed");
-  });
-
-  // Expand the target region
-  regionSection.classList.remove("collapsed");
-
-  // Scroll to the region header with the card
+  // The card itself, not its region header: a region can hold a dozen cards
   setTimeout(() => {
-    regionSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    targetCard.classList.add("highlight-pulse");
+    setTimeout(() => targetCard.classList.remove("highlight-pulse"), 2000);
   }, 300);
 }
+
+window.addEventListener("hashchange", handleLightstationHash);
+routeSamePagePopupLinks(handleLightstationHash);
 
 /**
  * "View Data" link: opens the station's charts and reports table. Same

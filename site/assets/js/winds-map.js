@@ -8,7 +8,7 @@
 
 import { formatMonthDayTimeTZ, getShortAgeString } from "./shared/format-time.js";
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
-import { getPopupOptions } from "./shared/map-popup.js";
+import { getPopupOptions, popupDataLinks } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
 import { airTempLabel, caveatStar, stationTypeLabel } from "./shared/station-meta.js";
 import { reportStatus, statusPopupTheme } from "./shared/staleness.js";
@@ -210,7 +210,9 @@ function addWindMarker(station, currentData, isBuoy = false) {
       <div><strong>Source:</strong> ${station.source}</div>
       <div><strong>Type:</strong> ${typeLabel}</div>
     </div>
-    <a href="#" class="view-data-btn" data-wind-station-id="${station.id}">View Wind Chart →</a>
+    <div class="popup-actions">
+      ${popupDataLinks(`#wind-${encodeURIComponent(station.id)}`, `#chart-${encodeURIComponent(station.id)}`)}
+    </div>
   </div>`;
 
   marker.bindPopup(popupContent, getPopupOptions(windsMap));
@@ -247,20 +249,6 @@ function focusStation(stationId) {
 document.addEventListener("winds:focus-station", (e) => {
   const stationId = e.detail?.stationId;
   if (stationId) focusStation(stationId);
-});
-
-// Event delegation for popup "View Wind Chart" links (CSP-safe)
-document.addEventListener("click", (event) => {
-  const target = event.target.closest(".view-data-btn[data-wind-station-id]");
-  if (!target) {
-    return;
-  }
-
-  event.preventDefault();
-  const stationId = target.getAttribute("data-wind-station-id");
-  if (stationId) {
-    document.dispatchEvent(new CustomEvent("winds:select-station", { detail: { stationId } }));
-  }
 });
 
 // Module scripts are deferred, so the DOM is already parsed.

@@ -16,6 +16,7 @@ import {
   pacificDayKey,
 } from "./shared/format-time.js";
 import { DIRECTION_ARROW_PATH } from "./shared/markers.js";
+import { routeSamePagePopupLinks } from "./shared/map-popup.js";
 import { setSafeHTML } from "./shared/safe-html.js";
 import { airTempIsProxy, airTempLabel, caveatFootnote, caveatStar } from "./shared/station-meta.js";
 import { windData } from "./wind-data.js";
@@ -387,13 +388,6 @@ function showStationOnMap(stationId) {
   // Ask winds-map.js to center on the station once the scroll settles.
   setTimeout(focus, SCROLL_SETTLE_DELAY_MS);
 }
-
-// Make functions globally accessible
-// Listen for map popup requests to show a station chart (dispatched by winds-map.js)
-document.addEventListener("winds:select-station", (e) => {
-  const stationId = e.detail?.stationId;
-  if (stationId) selectStationAndShowChart(stationId);
-});
 
 /**
  * Merge multiple timeseries arrays into a single Map keyed by timestamp
@@ -811,12 +805,17 @@ function toggleWind24hrRows() {
 }
 
 /**
- * A #wind-<id> link (the home map's "View on Winds Page") opens that
- * station's row in the list and picks it for the chart below, as a #buoy-
- * link opens its row on the home page.
+ * A #wind-<id> link (a map popup's "Latest data") opens that station's row
+ * in the list and picks it for the chart below, as a #buoy- link opens its
+ * row on the home page. A #chart-<id> link (the popup's "Chart") picks it
+ * and lands on the wind history.
  */
 async function checkHashForWindStation() {
   const hash = window.location.hash;
+  if (hash.startsWith("#chart-")) {
+    await selectStationAndShowChart(decodeURIComponent(hash.slice(7)));
+    return;
+  }
   if (!hash.startsWith("#wind-")) return;
   const stationId = decodeURIComponent(hash.substring(6));
   await windData.ready;
@@ -907,6 +906,7 @@ hourlyToggle?.addEventListener("click", () => {
 // Check for wind station in URL hash, on load and when a link on the page changes it.
 checkHashForWindStation();
 window.addEventListener("hashchange", checkHashForWindStation);
+routeSamePagePopupLinks(checkHashForWindStation);
 
 // Handle window resize
 window.addEventListener("resize", () => {

@@ -171,6 +171,16 @@ function updateChartForDay() {
  */
 async function initializeTidePage() {
   await loadTideData();
+  // A map popup's "Chart" link (?station=<key>#chart): the station is picked
+  // by ?station=; land on its chart once the card holding it is shown.
+  if (window.location.hash === "#chart") {
+    requestAnimationFrame(() => {
+      document
+        .getElementById("tide-chart")
+        ?.closest(".tide-data-group")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 }
 
 /**

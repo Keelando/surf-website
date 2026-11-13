@@ -247,6 +247,21 @@
   margin-left: 0;
 }
 
+/* "Latest data" + "Chart" (popupDataLinks in shared/map-popup.js): half
+   the row each at every width, so the pair reads as one choice and the
+   optional wave forecast wraps onto a full line of its own below. */
+.popup-actions .view-data-btn.popup-data-link {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.popup-actions .view-data-btn.wave-forecast-link {
+  flex: 1 1 100%;
+  margin-left: 0;
+}
+
 /* Webcam popups use the darker primary to set them apart from data links. */
 .view-data-btn--alt {
   background: var(--color-primary-dark);

@@ -14,6 +14,7 @@ import {
   setStationMeta,
   setTimeRange,
 } from "./charts-v4.js";
+import { routeSamePagePopupLinks } from "./shared/map-popup.js";
 import { setSafeHTML } from "./shared/safe-html.js";
 import { buildStationDetail, buildStationList, refreshAges } from "./station-list.js";
 import {
@@ -327,11 +328,16 @@ function scrollToMap(buoyId) {
   centerMapOnBuoy(buoyId);
 }
 
-// A map popup's "View data" link lands on /#buoy-<id>: open that row.
+// A map popup's "Latest data" link lands on /#buoy-<id> (open that row), its
+// "Chart" link on /#chart-<id> (pick it in the 24-hour trends).
 function handleHashNavigation() {
   const hash = window.location.hash;
+  if (hash.startsWith("#chart-")) {
+    scrollToCharts(decodeURIComponent(hash.slice(7)));
+    return;
+  }
   if (!hash.startsWith("#buoy-")) return;
-  const id = hash.slice(6);
+  const id = decodeURIComponent(hash.slice(6));
   const item = document.getElementById(`buoy-${id}`);
   if (!item) return;
 
@@ -389,8 +395,10 @@ window.addEventListener("pageshow", (e) => {
   if (e.persisted) tick();
 });
 
-// Handle hash navigation when hash changes (clicking map links)
+// Handle hash navigation when hash changes (back/forward, a typed URL); a
+// popup's own links to this page are routed straight to it.
 window.addEventListener("hashchange", handleHashNavigation);
+routeSamePagePopupLinks(handleHashNavigation);
 
 // Event listeners replacing onclick= attributes (CSP compliance)
 document.addEventListener("click", function (e) {

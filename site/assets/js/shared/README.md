@@ -30,6 +30,9 @@ node can import these files in tests; browsers ignore it.
   (`describeSchedule`, `describeSlots`, `describeNextReport`, `nextReportTime`).
 - `map-popup.js` — `getPopupOptions()`, the single popup width for all three
   Leaflet maps; sizes against the wrapper's `88vw` mobile cap.
+  `popupDataLinks()` is every station popup's "Latest data" + "Chart" pair
+  (hash deep links), and `routeSamePagePopupLinks()` sends a popup link to
+  the page it is already on straight to that page's hash handler.
   Model runs have **two** formatters, deliberately: `formatModelRunTime`
   ("Jul 14 12Z", UTC — the storm-surge pages) and `formatModelRunTimeLocal`
   ("Jul 14, 05:00 PDT (12Z)", Pacific-first — the wave forecast page). Same

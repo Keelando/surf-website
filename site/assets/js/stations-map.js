@@ -15,7 +15,7 @@ import {
 } from "./shared/format-time.js";
 import { formatLightstationWind, silentStationText } from "./shared/lightstation-format.js";
 import { addFullscreenControl } from "./shared/map-fullscreen.js";
-import { getPopupOptions } from "./shared/map-popup.js";
+import { getPopupOptions, popupDataLinks } from "./shared/map-popup.js";
 import { createDirectionalMarker } from "./shared/markers.js";
 import {
   caveatStar,
@@ -826,17 +826,20 @@ function buoyPopupHTML(buoy) {
       </div>`;
   }
 
-  // Determine link based on station type
-  const linkHref = isWave ? `/#buoy-${buoy.id}` : `/winds.html#wind-${buoy.id}`;
-  const linkText = isWave ? "View Data →" : "View on Winds Page →";
+  // Wave stations live on this page (row + 24-hour trends), wind stations on
+  // the winds page (row + wind history).
+  const id = encodeURIComponent(buoy.id);
+  const links = isWave
+    ? popupDataLinks(`/#buoy-${id}`, `/#chart-${id}`)
+    : popupDataLinks(`/winds.html#wind-${id}`, `/winds.html#chart-${id}`);
 
   popupContent += `
     <div class="popup-actions">
-      <a href="${linkHref}" class="view-data-btn">${linkText}</a>`;
+      ${links}`;
 
   // Only where RDWPS is actually extracted for this station. Secondary styling
   // deliberately: the popup is showing measurements, and the forecast is a
-  // model's opinion — it should not compete with "View Data" for the eye.
+  // model's opinion — it should not compete with the data links for the eye.
   if (waveForecastStations.has(buoy.id)) {
     popupContent += `
       <a href="/forecasts.html#wave-${buoy.id}" class="view-data-btn wave-forecast-link">🌊 Wave Forecast →</a>`;
@@ -963,7 +966,7 @@ function tidePopupHTML(tide, stationKey) {
       ${tide.note ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${tide.note}</div>` : ""}
     </div>
     <div class="popup-actions">
-      <a href="/tides.html?station=${stationKey}" class="view-data-btn">View Data →</a>
+      ${popupDataLinks(`/tides.html?station=${stationKey}`, `/tides.html?station=${stationKey}#chart`)}
     </div>
   </div>`;
 
@@ -1068,7 +1071,7 @@ function lightstationPopupHTML(lightstation) {
       ${lightstation.notes ? `<div style="font-style: italic; margin-top: 4px; color: var(--color-text-muted);">${lightstation.notes}</div>` : ""}
     </div>
     <div class="popup-actions">
-      <a href="/lightstations.html#lightstation-${lightstation.id}" class="view-data-btn">View Data →</a>
+      ${popupDataLinks(`/lightstations.html#lightstation-${lightstation.id}`, `/lightstations.html#chart-${lightstation.id}`)}
     </div>
   </div>`;
 
@@ -1413,9 +1416,9 @@ export function showSelectedSurgeOnMap(event) {
   showSurgeStationOnMap(select.value, true);
 }
 
-// Check URL hash for station to show on map. #buoy-<id> is not handled here:
-// it opens that station's row in the list (main.js), which is what a popup's
-// "View data" link asks for.
+// Check URL hash for station to show on map. #buoy-<id> and #chart-<id> are
+// not handled here: main.js opens that station's row, or picks it in the
+// 24-hour trends, which is what a popup's "Latest data" / "Chart" asks for.
 function checkHashForStation() {
   const hash = window.location.hash;
 

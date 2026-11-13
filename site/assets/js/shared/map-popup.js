@@ -116,3 +116,49 @@ export function getPopupOptions(map) {
     autoPanPaddingTopLeft: [clearance, DEFAULT_PAN_PADDING_PX],
   };
 }
+
+/**
+ * The two data buttons every station popup ends with (user 2026-11-13):
+ * "Latest data" lands on the station's current reading (its row or card),
+ * "Chart" on its history chart with the station already picked. Plain links
+ * to hash deep links (`/#buoy-ID`, `/#chart-ID`, `/winds.html#chart-ID`, …),
+ * so they work across pages, on a cold load, and when shared.
+ *
+ * Callers wrap them in their `.popup-actions` row, after which an optional
+ * extra (the wave forecast) wraps onto a line of its own.
+ *
+ * @param {string} latestHref - deep link to the station's latest reading
+ * @param {string} chartHref - deep link to the station's chart
+ * @returns {string} two `<a>` elements
+ */
+export function popupDataLinks(latestHref, chartHref) {
+  return (
+    `<a href="${latestHref}" class="view-data-btn popup-data-link">Latest data →</a>` +
+    `<a href="${chartHref}" class="view-data-btn popup-data-link">Chart →</a>`
+  );
+}
+
+/**
+ * Route popup links that point at THIS page straight to the page's hash
+ * handler. A plain hash link fires no `hashchange` when the hash is already
+ * the one clicked (open a popup, use its link, scroll away, use it again),
+ * so the second click would do nothing. Links to other pages, and clicks
+ * with a modifier (new tab), go through untouched. Back/forward still
+ * arrive as `hashchange`, which each page also listens for.
+ *
+ * @param {() => void} handler - the page's deep-link handler; it reads
+ *   `location.hash`, which is updated before it runs
+ */
+export function routeSamePagePopupLinks(handler) {
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest(".leaflet-popup a.view-data-btn");
+    if (!link || e.defaultPrevented || e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const url = new URL(link.href, window.location.href);
+    if (!url.hash || url.pathname !== window.location.pathname) return;
+    if (url.search !== window.location.search) return;
+    e.preventDefault();
+    if (url.hash !== window.location.hash) history.pushState(null, "", url.hash);
+    handler();
+  });
+}
