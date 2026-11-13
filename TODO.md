@@ -65,17 +65,28 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 
 ### Queued 2026-11-13
 
-- [ ] **Mobile glow-up: the wind and buoy summary tables** (user
+- [ ] **Mobile glow-up: the wave summary and the wind summary** (user
       2026-11-13: "do not use space efficiently and could use a design
       glow-up. im not sure what exactly"; circle back at the end of the
-      current round). Taken to mean the home page's **24-Hour Wave Height
-      Summary** (`#wave-height-table`, `wave-table-v4.js`, nine stations
-      wide) and the winds page's **hourly table** (`#wind-24hr-table`,
-      heading + sticky time column added 2026-11-13); confirm the wind one
-      is not the all-stations list. Start with a phone audit (375/390px,
-      100/150% text, both engines): wasted width, wrap, sideways scroll,
-      then a couple of layout options for the user to pick from, before
-      building on `dev`.
+      current round). The two station lists at the top of the pages:
+      - **Wave summary**: buoys page (`/`), "Salish Sea wave conditions",
+        `.summary`, rows from `station-list.js` (`sl-*`, `home.css`).
+      - **Wind summary**: winds page, "Salish Sea wind conditions",
+        `.wl-summary` / `#wind-list`, rows `wl-*` in `winds-v4.css`,
+        All stations / By region views.
+      NOT the buoys page's "24-Hour Wave Height Summary" table
+      (`#wave-height-table`) nor the winds hourly table. Start with a
+      phone audit (375/390px, 100/150% text, both engines): wasted width,
+      wrap, row height, then a couple of layout options for the user to
+      pick from, before building on `dev`.
+
+      **Names (user 2026-11-13: "clear up the terminology").** "Summary"
+      means only those two top lists. Proposed for the rest, to confirm:
+      *station panel* (what a summary row opens), *row history* (the table
+      inside a buoy's panel), *buoy charts* ("24-Hour Trends", one buoy
+      picked), *wave height table* (the "24-Hour Wave Height Summary"
+      heading, whose word "summary" is what collides; rename it to match),
+      *wind history* (the winds chart) and *hourly wind table* under it.
 
 ### Queued 2026-11-09
 
