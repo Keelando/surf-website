@@ -65,13 +65,13 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 
 ### Queued 2026-11-13
 
-- [ ] **Mobile glow-up: the wave summary and the wind summary** (user
+- [ ] **Mobile glow-up: the wave and wind summary tables** (user
       2026-11-13: "do not use space efficiently and could use a design
       glow-up. im not sure what exactly"; circle back at the end of the
       current round). The two station lists at the top of the pages:
-      - **Wave summary**: buoys page (`/`), "Salish Sea wave conditions",
+      - **Wave summary table**: buoys page (`/`), "Salish Sea wave conditions",
         `.summary`, rows from `station-list.js` (`sl-*`, `home.css`).
-      - **Wind summary**: winds page, "Salish Sea wind conditions",
+      - **Wind summary table** (user's name, 2026-11-13): winds page, "Salish Sea wind conditions",
         `.wl-summary` / `#wind-list`, rows `wl-*` in `winds-v4.css`,
         All stations / By region views.
       NOT the buoys page's "24-Hour Wave Height Summary" table
@@ -80,8 +80,9 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       wrap, row height, then a couple of layout options for the user to
       pick from, before building on `dev`.
 
-      **Names (user 2026-11-13: "clear up the terminology").** "Summary"
-      means only those two top lists. Proposed for the rest, to confirm:
+      **Names (user 2026-11-13: "clear up the terminology").** "Summary
+      table" means only those two top lists (rows, not a `<table>` in the
+      markup). Proposed for the rest, to confirm:
       *station panel* (what a summary row opens), *row history* (the table
       inside a buoy's panel), *buoy charts* ("24-Hour Trends", one buoy
       picked), *wave height table* (the "24-Hour Wave Height Summary"
