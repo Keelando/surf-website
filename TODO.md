@@ -63,6 +63,20 @@ duplicated observations on 2026-09-06. Write-up:
 Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 `WORKLOG.md`, completed-work history only). Roughly by priority:
 
+### Queued 2026-11-13
+
+- [ ] **Mobile glow-up: the wind and buoy summary tables** (user
+      2026-11-13: "do not use space efficiently and could use a design
+      glow-up. im not sure what exactly"; circle back at the end of the
+      current round). Taken to mean the home page's **24-Hour Wave Height
+      Summary** (`#wave-height-table`, `wave-table-v4.js`, nine stations
+      wide) and the winds page's **hourly table** (`#wind-24hr-table`,
+      heading + sticky time column added 2026-11-13); confirm the wind one
+      is not the all-stations list. Start with a phone audit (375/390px,
+      100/150% text, both engines): wasted width, wrap, sideways scroll,
+      then a couple of layout options for the user to pick from, before
+      building on `dev`.
+
 ### Queued 2026-11-09
 
 - [ ] **A wide-screen layout: map beside the list, sitewide** (user
@@ -1325,7 +1339,10 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
 - [ ] **Mobile ECharts touch behavior** (open bug-ish): cursor/tooltip
       interaction is "funky" on mobile across chart pages; investigate
       ECharts touch/tooltip config, test on real devices.
-- [ ] **Map marker decluttering** (low): markers overlap at zoomed-out
+- [ ] **Map marker decluttering** (**raised 2026-11-13**: user, "a little
+      more urgent now"; go with the plan below, the per-zoom pixel offset
+      with a signposted true position, NOT a fixed `iconAnchor` nudge or
+      clustering): markers overlap at zoomed-out
       levels, and the station count keeps growing (55 plotted as of
       2026-08-13, 3 added that day). Options: offset/spiderfy colliding
       markers, or thin them by zoom level so only major stations show when
