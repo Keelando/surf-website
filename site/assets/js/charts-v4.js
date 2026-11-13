@@ -134,8 +134,8 @@ function initCharts() {
  */
 function updateActiveBuoyIndicator(buoyId) {
   const indicator = document.getElementById("active-buoy-indicator");
-  if (!indicator || !chartData || !chartData[buoyId]) return;
-  indicator.textContent = `📊 Viewing: ${chartData[buoyId].name}`;
+  if (!indicator || !chartData) return;
+  indicator.textContent = `📊 Viewing: ${stationName(buoyId)}`;
   indicator.classList.add("active");
 }
 
@@ -207,17 +207,28 @@ export function setStationMeta(meta) {
 }
 
 /**
+ * A station's display name: from the timeseries, else the registry, else the
+ * dropdown's own label.
+ */
+function stationName(buoyId) {
+  if (chartData?.[buoyId]?.name) return chartData[buoyId].name;
+  if (stationMeta[buoyId]?.name) return stationMeta[buoyId].name;
+  const option = document.querySelector(`#chart-buoy-select option[value="${buoyId}"]`);
+  return option?.textContent.trim() || buoyId;
+}
+
+/**
  * Update all charts for the selected buoy
  */
 function updateCharts(buoyId) {
-  if (!chartData || !chartData[buoyId]) {
-    logger.warn("Charts", `No data for buoy ${buoyId}`);
-    return;
-  }
+  if (!chartData) return;
 
   // Filter data based on current time range
   const filteredData = filterTimeseriesData(chartData, currentTimeRange);
-  const buoy = filteredData[buoyId];
+  // A station with nothing in the 48 h file (offline buoy) still gets its
+  // notes; bailing out here left the previous station's charts on screen
+  // under the new station's name (Southern Georgia Strait, 2026-11-13).
+  const buoy = filteredData[buoyId] ?? { name: stationName(buoyId), timeseries: {} };
   const since = `in the last ${currentTimeRange} hours`;
 
   // Render each chart using the dedicated modules

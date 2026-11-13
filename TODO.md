@@ -91,6 +91,21 @@ Consolidated 2026-07-19 from the former `docs/project/TODO.md` (now
       under it. Decided: the **24-hour wave height summary table** keeps
       that name and its heading, because it matches the UI (user).
 
+- [ ] **One empty-chart note sitewide** (agreed 2026-11-13, after the
+      Southern Georgia Strait fix). Three styles today: the buoys page hides
+      the chart and shows a `.chart-empty` line (`charts-v4.js`
+      `chartOrNote`); lightstations keep an empty ECharts frame with the
+      note as its subtitle (`lightstation-charts.js` `showNoDataMessage`);
+      storm surge and wave forecast swap in an inline-styled "⚠️ … data
+      unavailable" paragraph (`storm_surge_page.js` `showChartMessage`,
+      `storm_surge_chart-v4.js`, `wave-forecast.js`). Move `chartOrNote`
+      into a shared helper on `.chart-empty` and land it with
+      **lightstations first** (the empty frame wastes the most room), then
+      queue the rest. Keep the wording split: "No readings / No reports" =
+      the station is silent upstream, "unavailable" = our file didn't load.
+      Settle "in the last" vs "in the past", and the ⚠️ (on or off, the
+      same everywhere).
+
 ### Queued 2026-11-09
 
 - [ ] **A wide-screen layout: map beside the list, sitewide** (user

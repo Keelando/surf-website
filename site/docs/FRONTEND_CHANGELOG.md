@@ -4,6 +4,17 @@ UI/UX enhancements and feature history for halibutbank.ca. Entries are newest-fi
 
 ---
 
+## 2026-11-13: Buoy Charts for an Offline Station
+
+- **Buoy charts no longer show the wrong station.** Picking a buoy with
+  nothing in `buoy_timeseries_48h.json` (Southern Georgia Strait, offline)
+  left the previously picked station's charts on screen under the new
+  name: `updateCharts` returned early. It now shows the same "No wave /
+  wind / temperature readings from … in the last N hours" notes that a
+  quiet sensor gets. Guarded by `tests/playwright/chart-missing-station.spec.js`.
+
+---
+
 ## 2026-11-13: Forecasts Rebuilt, Winds Tightened, Two Buttons on Every Popup
 
 Built on `dev` 2026-11-08/13, shipped together (`b74ba9e`). Write-ups:
