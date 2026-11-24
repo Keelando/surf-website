@@ -163,7 +163,10 @@ function updateSurgeChart(stationId) {
   // Initialize chart if needed
   if (!surgeChart) {
     surgeChart = echarts.init(document.getElementById("surge-chart"));
-    window.addEventListener("resize", () => surgeChart.resize());
+    window.addEventListener("resize", () => {
+      surgeChart.resize();
+      applyDayAxisSpacing(surgeChart, window.innerWidth < 600, getChartThemeColors().gridLine);
+    });
   }
 
   // Calculate y-axis range for better visualization
@@ -218,9 +221,7 @@ function updateSurgeChart(stationId) {
       type: "time",
       min: times[0],
       max: times[times.length - 1],
-      // A label every day on desktop; a phone lets hideOverlap thin them.
-      minInterval: 24 * 3600 * 1000,
-      ...(window.innerWidth < 600 ? {} : { maxInterval: 24 * 3600 * 1000 }),
+      // Label spacing (every 1/2/4/7 days) is set below, from the width.
       axisLabel: {
         // A day label is centred on its tick, so one within ~8 h of the axis end
         // hangs off the canvas ("Thu 12-0"). ECharts 5.4 has no alignMaxLabel
@@ -294,6 +295,9 @@ function updateSurgeChart(stationId) {
       },
     ],
   });
+  applyDayAxisSpacing(surgeChart, window.innerWidth < 600, gridColor, [
+    { data: times.map((time) => [time]) },
+  ]);
 
   // Update metadata display
   updateMetadata(station, times, values, displayName);

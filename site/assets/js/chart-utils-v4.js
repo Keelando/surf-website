@@ -10,7 +10,8 @@
    getDirectionalArrow, createWindDirectionArrowData, fetchWithTimeout,
    sanitizeSeriesData, registerChartThemeListener, formatCompactTimeLabel,
    getResponsiveGridConfig, getResponsiveLegendBottom, getLegendRowCount, showChartError,
-   getMobileOptimizedTooltipConfig, rescaleYAxisOnLegendToggle */
+   getMobileOptimizedTooltipConfig, rescaleYAxisOnLegendToggle,
+   applyDayAxisSpacing */
 
 /* =============================================================================
    DIRECTION ARROW DEFINITIONS (CENTRALIZED)
@@ -394,6 +395,75 @@ function formatCompactTimeLabel(isoString) {
  */
 function getChartSideGutters() {
   return window.innerWidth < 600 ? { left: 4, right: 10 } : { left: 8, right: 16 };
+}
+
+/**
+ * Spacing for day labels ("Tue 11-24") on a multi-day time axis: a label
+ * every day when they fit, else every 2, 4 or 7 days — evenly, never with
+ * hideOverlap punching irregular holes. Spread the result into the xAxis.
+ *
+ * ECharts' time scale only steps 1, 2, 4, 7 days, so pinning min and max
+ * interval to one of those is what it draws. The width is the chart's, not
+ * the window's; callers re-run this on resize (setOption alone doesn't).
+ *
+ * When labels skip days, each unlabelled day still gets a minor tick and a
+ * faint dashed gridline, so the days can be counted (user, 2026-11-24).
+ * A chart that already draws its own midnight lines passes
+ * minorLines = false and keeps just the ticks.
+ *
+ * @param {number} chartWidth  px, e.g. chart.getWidth()
+ * @param {number} spanMs      axis span (last time − first time)
+ * @param {boolean} rotated    labels at 45° take less horizontal room
+ * @param {string} gridColor   theme.gridLine
+ * @param {boolean} [minorLines=true]
+ */
+function getDayAxisSpacing(chartWidth, spanMs, rotated, gridColor, minorLines = true) {
+  const DAY = 24 * 3600 * 1000;
+  const labelPx = rotated ? 36 : 72; // "Wed 11-25" at 10px, plus a gap
+  const plotPx = Math.max(1, chartWidth - 70); // y-axis labels + gutters
+  const pxPerDay = plotPx / Math.max(1, spanMs / DAY);
+  const step = [1, 2, 4, 7].find((d) => d * pxPerDay >= labelPx) ?? 7;
+  return {
+    minInterval: step * DAY,
+    maxInterval: step * DAY,
+    minorTick: { show: step > 1, splitNumber: step },
+    minorSplitLine: {
+      show: minorLines && step > 1,
+      lineStyle: { color: gridColor, type: "dashed" },
+    },
+  };
+}
+
+/**
+ * Apply getDayAxisSpacing() to a chart whose series hold [time, value]
+ * points: the time span comes from the data, the width from the chart.
+ * Call after setOption with the series just set, and again on resize
+ * without them. Pass them because the lazy echarts.init wrapper (bottom of
+ * this file) queues an off-screen chart's setOption, so getOption() is
+ * undefined until it draws; by the time a resize asks, it has drawn, or it
+ * hasn't and the queued spacing is still current.
+ */
+function applyDayAxisSpacing(
+  chart,
+  rotated,
+  gridColor,
+  seriesList = chart.getOption()?.series,
+  minorLines = true,
+) {
+  if (!seriesList) return;
+  let first = Infinity;
+  let last = -Infinity;
+  for (const series of seriesList) {
+    for (const point of series.data || []) {
+      const t = new Date(Array.isArray(point) ? point[0] : point?.value?.[0]).getTime();
+      if (t < first) first = t;
+      if (t > last) last = t;
+    }
+  }
+  if (!(last > first)) return;
+  chart.setOption({
+    xAxis: getDayAxisSpacing(chart.getWidth(), last - first, rotated, gridColor, minorLines),
+  });
 }
 
 /**

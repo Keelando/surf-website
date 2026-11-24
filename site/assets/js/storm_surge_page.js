@@ -165,9 +165,20 @@ function resolveStation(data, stationId, kind) {
 function ensureChart(key, elementId) {
   if (!charts[key]) {
     charts[key] = echarts.init(document.getElementById(elementId));
-    window.addEventListener("resize", () => charts[key].resize());
+    window.addEventListener("resize", () => {
+      charts[key].resize();
+      fitDayAxis(charts[key]);
+    });
   }
   return charts[key];
+}
+
+// Day-label spacing from the chart's own width (chart-utils-v4.js).
+// Pass the series on first render; a resize reads them back from the chart.
+// Minor ticks only: both charts draw their own Pacific-midnight lines.
+function fitDayAxis(chart, series) {
+  const gridLine = getChartThemeColors().gridLine;
+  applyDayAxisSpacing(chart, window.innerWidth < 600, gridLine, series, false);
 }
 
 function ensureThemeRefresh(key, selectorId, update) {
@@ -205,7 +216,6 @@ function initStationSelector({ selectorId, indicatorId, data, hasData, onChange 
   updateStationIndicator(indicatorId, selector.value, data);
 }
 
-const DAY_MS = 24 * 3600 * 1000;
 const LABEL_EDGE_MS = 8 * 3600 * 1000;
 
 function baseSurgeChartOption(theme, opts) {
@@ -246,8 +256,7 @@ function baseSurgeChartOption(theme, opts) {
     },
     xAxis: {
       type: "time",
-      // A label every day on desktop; a phone keeps ECharts' own spacing.
-      ...(mobile ? {} : { minInterval: DAY_MS, maxInterval: DAY_MS }),
+      // Label spacing (every 1/2/4/7 days) is set by fitDayAxis() after render.
       // A day label is centred on its tick, so one within ~8 h of the axis end
       // hangs off the canvas ("Thu 12-0"). ECharts 5.4 has no alignMaxLabel
       // and ignores showMaxLabel on a time axis, so the formatter skips it.
@@ -261,7 +270,11 @@ function baseSurgeChartOption(theme, opts) {
       },
       axisTick: { show: true },
       axisLine: { lineStyle: { color: theme.axisLine } },
-      splitLine: { show: true, lineStyle: { color: theme.gridLine } },
+      // No vertical gridlines of ECharts' own: both charts draw a line at each
+      // Pacific midnight (midnightLines). ECharts puts day ticks at the
+      // browser's midnight, which in a browser with stale tz data is an hour
+      // off, so the two drew as doubled lines.
+      splitLine: { show: false },
     },
     yAxis: {
       type: "value",
@@ -577,6 +590,7 @@ function updateForecastChart(stationId) {
     forecastData_series.map((d) => d[0]),
     values,
   );
+  fitDayAxis(charts.forecast, series);
   ensureThemeRefresh("forecast", "forecast-station-select", updateForecastChart);
 
   logger.info(
@@ -796,7 +810,7 @@ function updateVerificationChart(stationId) {
         tooltipTime: formatWeekdayMonthDayTime,
         gridBottom: "18%",
         mobileXRotate: 45,
-        xHideOverlap: false,
+        xHideOverlap: true,
         yDigits: 2,
       }),
       legend: {
@@ -833,6 +847,7 @@ function updateVerificationChart(stationId) {
 
   // Update metadata
   updateVerificationMetadata(displayStation);
+  fitDayAxis(charts.verification, series);
   ensureThemeRefresh("verification", "verification-station-select", updateVerificationChart);
 
   logger.info(
