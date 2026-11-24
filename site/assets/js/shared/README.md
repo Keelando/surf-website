@@ -17,7 +17,12 @@ node can import these files in tests; browsers ignore it.
   `pacificDayKey(t)` ("2026-11-08", the Pacific calendar day) and
   `formatWeekdayShort(t)` ("Sun") mark where a day changes in tables over
   24 h: give that row `day-start` (style-v4.css draws the 2px line; winds
-  hourly table first, 2026-11-08).
+  hourly table first, 2026-11-08). Labels say "PCT" (`PACIFIC_LABEL`, BC's
+  name for its year-round zone; PDT until 2026-11-24). Multi-day forecast
+  charts use `formatWeekdayMonthDay(t)` ("Tue 11-24") on the x-axis and
+  `formatWeekdayMonthDayTime(t, { tz })` ("Tue 11-24 14:00 PCT") in
+  tooltips (storm surge, 2026-11-24). Their label spacing comes from
+  `applyDayAxisSpacing` in the classic `chart-utils-v4.js`.
 - `copy-code.js` — `addCopyButtons(root)`: a "Copy" button on every
   `pre > code` and `[data-copy]` element in `root`; wraps each block so the
   button stays put while a long line scrolls; no button without a clipboard.

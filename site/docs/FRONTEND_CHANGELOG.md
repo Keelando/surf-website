@@ -4,6 +4,32 @@ UI/UX enhancements and feature history for halibutbank.ca. Entries are newest-fi
 
 ---
 
+## 2026-11-24: Chart Legibility, "PCT"
+
+Commits `f693cc4`, `c3d8fb3`.
+
+- **Times say "PCT".** BC's government calls the year-round zone Pacific
+  time (PCT), replacing PST/PDT. `PACIFIC_LABEL` in `shared/format-time.js`,
+  the nav clock, and the backend's `lib/pacific_time.py` (webcam stamps,
+  water-level peaks). Times before 2026-03-08 keep the PST/PDT they had.
+- **Storm surge charts show the weekday** (buoys page and storm surge
+  page): x-axis "Tue 11-24", tooltips "Tue 11-24 14:00 PCT".
+- **Day labels fit the chart, not a breakpoint.** `applyDayAxisSpacing`
+  (`chart-utils-v4.js`) picks every 1, 2, 4 or 7 days from the chart's own
+  width and re-runs on resize: daily from ~900px, every 2 days at 600–900px.
+  Skipped days get a minor tick (plus a faint dashed gridline on the buoys
+  page; the storm surge page already draws a line at each Pacific midnight
+  and drops ECharts' own x gridlines, which sat an hour off in browsers with
+  stale tz data). The axis-end label is skipped: centred on the edge it
+  clipped, and ECharts 5.4 has no `alignMaxLabel`.
+- **Sig Wave Height (All) legend:** no more `emphasis.focus: "series"`. On a
+  phone a legend tap left every other buoy dimmed; it now only toggles.
+- Trap: the lazy `echarts.init` wrapper queues `setOption` for off-screen
+  charts, so `getOption()` is undefined until the chart draws. Helpers that
+  read chart state must be handed it on first render.
+
+---
+
 ## 2026-11-13: Buoy Charts for an Offline Station
 
 - **Buoy charts no longer show the wrong station.** Picking a buoy with
