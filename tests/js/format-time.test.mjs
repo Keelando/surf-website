@@ -13,15 +13,17 @@ import {
   formatTimeHM,
   formatTimeWithDate,
   formatWeekdayDayTime,
+  formatWeekdayMonthDay,
+  formatWeekdayMonthDayTime,
   getAgeString,
   getShortAgeString,
   PACIFIC_TZ,
   pacificTimeZone,
 } from "../../site/assets/js/shared/format-time.js";
 
-// 2026-07-14T21:30:00Z = 14:30 PDT (summer); 2026-01-15T20:05:00Z = 12:05 PST
+// 2026-07-14T21:30:00Z = 14:30 PCT (summer); 2026-01-15T20:05:00Z = 12:05 PST
 // (the last winter BC changed its clocks for). From 2026-03-08 BC keeps UTC-7
-// all year, so 2026-12-01T20:00:00Z is 13:00 PDT, not 12:00 PST.
+// all year, so 2026-12-01T20:00:00Z is 13:00 PCT, not 12:00 PST.
 const SUMMER = "2026-07-14T21:30:00Z";
 const WINTER = "2026-01-15T20:05:00Z";
 const PERMANENT = "2026-12-01T20:00:00Z";
@@ -29,9 +31,9 @@ const PERMANENT = "2026-12-01T20:00:00Z";
 test("BC times are fixed UTC-7 from the 2026-03-08 spring-forward on", () => {
   // Independent of the runtime's tz data: an engine that predates BC's change
   // would put America/Vancouver on UTC-8 in December.
-  assert.equal(formatMonthDayTimeTZ(PERMANENT), "Dec 1, 13:00 PDT");
-  assert.equal(formatFullTimestamp(PERMANENT), "Dec 1, 2026, 13:00 PDT");
-  assert.equal(formatModelRunTimeLocal("2026-12-01T12:00:00Z"), "Dec 1, 05:00 PDT (12Z)");
+  assert.equal(formatMonthDayTimeTZ(PERMANENT), "Dec 1, 13:00 PCT");
+  assert.equal(formatFullTimestamp(PERMANENT), "Dec 1, 2026, 13:00 PCT");
+  assert.equal(formatModelRunTimeLocal("2026-12-01T12:00:00Z"), "Dec 1, 05:00 PCT (12Z)");
   assert.equal(formatTimeHM("2027-01-15T20:05:00Z"), "13:05");
   // The switch itself: 01:59 PST, then 03:00 PDT.
   assert.equal(formatTimeHM("2026-03-08T09:59:00Z"), "01:59");
@@ -67,7 +69,7 @@ test("formatMonthDayTime renders short month with time", () => {
 });
 
 test("formatMonthDayTimeTZ appends the zone abbreviation", () => {
-  assert.equal(formatMonthDayTimeTZ(SUMMER), "Jul 14, 14:30 PDT");
+  assert.equal(formatMonthDayTimeTZ(SUMMER), "Jul 14, 14:30 PCT");
   assert.equal(formatMonthDayTimeTZ(WINTER), "Jan 15, 12:05 PST");
 });
 
@@ -81,14 +83,14 @@ test("formatModelRunTime renders UTC Z-hours", () => {
 });
 
 test("formatModelRunTimeLocal leads with Pacific time, Z hour in brackets", () => {
-  // Same instant, two names for it: 12Z is 05:00 PDT in summer.
-  assert.equal(formatModelRunTimeLocal("2026-07-14T12:00:00Z"), "Jul 14, 05:00 PDT (12Z)");
+  // Same instant, two names for it: 12Z is 05:00 PCT in summer.
+  assert.equal(formatModelRunTimeLocal("2026-07-14T12:00:00Z"), "Jul 14, 05:00 PCT (12Z)");
   // Winter shifts the local hour but never the Z label.
   assert.equal(formatModelRunTimeLocal("2026-01-15T12:00:00Z"), "Jan 15, 04:00 PST (12Z)");
   // A 00Z run is the PREVIOUS local day — the case that looks wrong and is not.
-  assert.equal(formatModelRunTimeLocal("2026-07-14T00:00:00Z"), "Jul 13, 17:00 PDT (00Z)");
+  assert.equal(formatModelRunTimeLocal("2026-07-14T00:00:00Z"), "Jul 13, 17:00 PCT (00Z)");
   // Bare timestamp (no zone info) is treated as UTC, matching the backend.
-  assert.equal(formatModelRunTimeLocal("2026-07-14T12:00:00"), "Jul 14, 05:00 PDT (12Z)");
+  assert.equal(formatModelRunTimeLocal("2026-07-14T12:00:00"), "Jul 14, 05:00 PCT (12Z)");
   assert.equal(formatModelRunTimeLocal(""), "");
   assert.equal(formatModelRunTimeLocal(undefined), "");
 });
@@ -99,12 +101,12 @@ test("formatNumericDayTime strips the comma", () => {
 });
 
 test("formatFullTimestamp includes year and zone abbreviation", () => {
-  assert.equal(formatFullTimestamp(SUMMER), "Jul 14, 2026, 14:30 PDT");
+  assert.equal(formatFullTimestamp(SUMMER), "Jul 14, 2026, 14:30 PCT");
   assert.equal(formatFullTimestamp(WINTER), "Jan 15, 2026, 12:05 PST");
 });
 
 test("formatForecastTimestamp uses 12h clock, pinned to Pacific", () => {
-  assert.equal(formatForecastTimestamp(SUMMER), "Tue, Jul 14, 2026, 02:30 PM PDT");
+  assert.equal(formatForecastTimestamp(SUMMER), "Tue, Jul 14, 2026, 02:30 PM PCT");
   assert.equal(formatForecastTimestamp(WINTER), "Thu, Jan 15, 2026, 12:05 PM PST");
 });
 
@@ -117,6 +119,20 @@ test("date rolls over at the Pacific midnight boundary, not UTC", () => {
 test("formatWeekdayDayTime renders long weekday, first comma stripped", () => {
   assert.equal(formatWeekdayDayTime(SUMMER), "Tuesday Jul 14, 14:30");
   assert.equal(formatWeekdayDayTime(WINTER), "Thursday Jan 15, 12:05");
+});
+
+test("formatWeekdayMonthDay renders 'Tue 07-14'", () => {
+  assert.equal(formatWeekdayMonthDay(SUMMER), "Tue 07-14");
+  assert.equal(formatWeekdayMonthDay(WINTER), "Thu 01-15");
+  // 06:30 UTC on the 2nd is still the 1st in BC.
+  assert.equal(formatWeekdayMonthDay("2026-12-02T06:30:00Z"), "Tue 12-01");
+});
+
+test("formatWeekdayMonthDayTime adds the time, optional zone", () => {
+  assert.equal(formatWeekdayMonthDayTime(SUMMER), "Tue 07-14 14:30");
+  assert.equal(formatWeekdayMonthDayTime(WINTER), "Thu 01-15 12:05");
+  assert.equal(formatWeekdayMonthDayTime(SUMMER, { tz: true }), "Tue 07-14 14:30 PCT");
+  assert.equal(formatWeekdayMonthDayTime(WINTER, { tz: true }), "Thu 01-15 12:05 PST");
 });
 
 test("getShortAgeString buckets ages compactly", () => {

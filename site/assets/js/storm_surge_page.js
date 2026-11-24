@@ -11,6 +11,8 @@ import {
   formatModelRunTime,
   formatMonthDayTime,
   formatMonthDayTimeTZ,
+  formatWeekdayMonthDay,
+  formatWeekdayMonthDayTime,
   PACIFIC_TZ,
 } from "./shared/format-time.js";
 
@@ -203,8 +205,12 @@ function initStationSelector({ selectorId, indicatorId, data, hasData, onChange 
   updateStationIndicator(indicatorId, selector.value, data);
 }
 
+const DAY_MS = 24 * 3600 * 1000;
+const LABEL_EDGE_MS = 8 * 3600 * 1000;
+
 function baseSurgeChartOption(theme, opts) {
   const mobile = window.innerWidth < 600;
+  let axisMax = Infinity;
   return {
     backgroundColor: theme.background,
     textStyle: { color: theme.text },
@@ -240,13 +246,14 @@ function baseSurgeChartOption(theme, opts) {
     },
     xAxis: {
       type: "time",
+      // A label every day on desktop; a phone keeps ECharts' own spacing.
+      ...(mobile ? {} : { minInterval: DAY_MS, maxInterval: DAY_MS }),
+      // A day label is centred on its tick, so one within ~8 h of the axis end
+      // hangs off the canvas ("Thu 12-0"). ECharts 5.4 has no alignMaxLabel
+      // and ignores showMaxLabel on a time axis, so the formatter skips it.
+      max: (extent) => (axisMax = extent.max),
       axisLabel: {
-        formatter: (value) =>
-          new Date(value).toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            timeZone: PACIFIC_TZ,
-          }),
+        formatter: (value) => (axisMax - value < LABEL_EDGE_MS ? "" : formatWeekdayMonthDay(value)),
         rotate: mobile ? opts.mobileXRotate : 0,
         fontSize: 10,
         hideOverlap: opts.xHideOverlap,
@@ -535,7 +542,7 @@ function updateForecastChart(stationId) {
         mobileTitle: displayStation.station_name,
         subtext: "",
         mobileSubtext: "Surge Forecast",
-        tooltipTime: formatMonthDayTimeTZ,
+        tooltipTime: (t) => formatWeekdayMonthDayTime(t, { tz: true }),
         gridBottom: "15%",
         mobileXRotate: 30,
         xHideOverlap: true,
@@ -786,7 +793,7 @@ function updateVerificationChart(stationId) {
         mobileTitle: `${displayStation.station_name}: verification`,
         subtext: "Black line = Tide offset observations | Colored lines = Historical forecast runs",
         mobileSubtext: "Observed (black) vs Forecast runs (colored)",
-        tooltipTime: formatMonthDayTime,
+        tooltipTime: formatWeekdayMonthDayTime,
         gridBottom: "18%",
         mobileXRotate: 45,
         xHideOverlap: false,

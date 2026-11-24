@@ -11,7 +11,8 @@ import {
   formatModelRunTime,
   formatMonthDayTime,
   formatMonthDayTimeTZ,
-  PACIFIC_TZ,
+  formatWeekdayMonthDay,
+  formatWeekdayMonthDayTime,
 } from "./shared/format-time.js";
 
 let surgeChart = null;
@@ -195,7 +196,7 @@ function updateSurgeChart(stationId) {
       ...getMobileOptimizedTooltipConfig(),
       formatter: (params) => {
         const idx = params[0].dataIndex;
-        const time = formatMonthDayTime(times[idx]);
+        const time = formatWeekdayMonthDayTime(times[idx]);
         const value = values[idx];
         const sign = value >= 0 ? "+" : "";
         return `<b>${time}</b><br/>Storm Surge: ${sign}${value.toFixed(2)} m`;
@@ -217,17 +218,17 @@ function updateSurgeChart(stationId) {
       type: "time",
       min: times[0],
       max: times[times.length - 1],
+      // A label every day on desktop; a phone lets hideOverlap thin them.
       minInterval: 24 * 3600 * 1000,
+      ...(window.innerWidth < 600 ? {} : { maxInterval: 24 * 3600 * 1000 }),
       axisLabel: {
-        formatter: (value) => {
-          const d = new Date(value);
-          const weekday = d.toLocaleString("en-US", {
-            weekday: "short",
-            timeZone: PACIFIC_TZ,
-          });
-          const day = d.toLocaleString("en-US", { day: "numeric", timeZone: PACIFIC_TZ });
-          return `${weekday} ${day}`;
-        },
+        // A day label is centred on its tick, so one within ~8 h of the axis end
+        // hangs off the canvas ("Thu 12-0"). ECharts 5.4 has no alignMaxLabel
+        // and ignores showMaxLabel on a time axis, so the formatter skips it.
+        formatter: (value) =>
+          new Date(times[times.length - 1]).getTime() - value < 8 * 3600 * 1000
+            ? ""
+            : formatWeekdayMonthDay(value),
         rotate: window.innerWidth < 600 ? 45 : 0,
         fontSize: 10,
         hideOverlap: true,

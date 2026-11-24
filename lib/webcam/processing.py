@@ -8,7 +8,7 @@ from lib.pacific_time import PACIFIC, pacific_label
 
 
 def retrieval_label(timestamp):
-    """ "Retrieval time: 2026-11-06T15:21PDT" for a UTC datetime."""
+    """ "Retrieval time: 2026-11-06T15:21PCT" for a UTC datetime."""
     local = timestamp.astimezone(PACIFIC)
     return f"Retrieval time: {local.strftime('%Y-%m-%dT%H:%M')}{pacific_label(local)}"
 

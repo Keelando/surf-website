@@ -44,7 +44,7 @@
     if (window._navClockStarted) return;
     window._navClockStarted = true;
 
-    // Fixed UTC-7, labelled "PDT": BC keeps daylight time all year since
+    // Fixed UTC-7, labelled "PCT" (BC's name for it): BC keeps UTC-7 all year since
     // 2026, and browsers with older tz data would show PST, an hour off. The
     // rule and its reasons: PACIFIC_TZ in shared/format-time.js (a classic
     // script can't import it). hourCycle h23, not hour12: false, which
@@ -64,7 +64,7 @@
 
       const parts = formatter.formatToParts(new Date());
       const part = (type) => parts.find((p) => p.type === type)?.value;
-      const zone = part("timeZoneName") === "GMT-7" ? "PDT" : part("timeZoneName");
+      const zone = part("timeZoneName") === "GMT-7" ? "PCT" : part("timeZoneName");
       const label = `${zone} ${part("hour")}:${part("minute")}:${part("second")}`;
 
       clocks.forEach((clock) => {

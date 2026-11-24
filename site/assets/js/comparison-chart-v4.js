@@ -116,7 +116,9 @@ export function renderComparisonChart(waveComparisonChart, chartData) {
           smooth: true,
           connectNulls: false,
           itemStyle: { color: buoyColors[buoyId], borderColor: theme.symbolBorderColor },
-          emphasis: { focus: "series" },
+          // No emphasis focus: "series" dimmed every other buoy on hover. A
+          // phone has no hover, so tapping a legend entry to hide a buoy left
+          // the rest dimmed too. The legend click toggles; that is enough.
         };
       })
       .filter(Boolean);

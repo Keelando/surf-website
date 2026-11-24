@@ -331,7 +331,7 @@ function frameAgeMinutes(timestamp, webcam) {
   return (Date.now() - captured) / (1000 * 60) + (webcam?.streamDelay ?? 0);
 }
 
-/** "Captured: Oct 5, 2026 19:42 PDT · ~10 min ago" for any frame. */
+/** "Captured: Oct 5, 2026 19:42 PCT · ~10 min ago" for any frame. */
 function capturedLine(timestamp, webcam) {
   const age = frameAgeMinutes(timestamp, webcam);
   const ago = age == null ? "" : ` · ~${formatAge(age)}`;

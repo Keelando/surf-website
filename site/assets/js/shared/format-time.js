@@ -16,7 +16,8 @@
  * keeps UTC-7 all year. A browser whose time-zone data predates the change
  * still puts America/Vancouver back on UTC-8 after 2026-11-01, an hour off,
  * so the site formats Pacific times in a fixed UTC-7 zone and prints the
- * label up-to-date browsers do ("PDT"; user's pick, 2026-11-06).
+ * BC government's name for the year-round zone, "PCT" (Pacific time), which
+ * replaces PST/PDT (was "PDT" until 2026-11-24).
  * "Etc/GMT+7" is UTC-7: POSIX zone names invert the sign.
  *
  * Scripts that only ever show recent data (the exports keep 30 days at most)
@@ -25,7 +26,7 @@
  * from winter 2025–26 still reads as the PST it was.
  */
 export const PACIFIC_TZ = "Etc/GMT+7";
-export const PACIFIC_LABEL = "PDT";
+export const PACIFIC_LABEL = "PCT";
 const BC_FIXED_UTC7_FROM = Date.UTC(2026, 2, 8, 10); // 02:00 PST, 2026-03-08
 
 function toDate(input) {
@@ -104,7 +105,7 @@ export function formatNumericDayTime(input) {
 }
 
 /**
- * "Jul 14, 14:30 PDT" — replaces the metadata formatDate closures and the
+ * "Jul 14, 14:30 PCT" — replaces the metadata formatDate closures and the
  * forecast tooltip time in storm_surge_page.js (and, when the index page
  * migrates, the identical formatDate in storm_surge_chart-v4.js).
  */
@@ -117,6 +118,30 @@ export function formatMonthDayTimeTZ(input) {
     hour12: false,
     timeZoneName: "short",
   });
+}
+
+/**
+ * "Tue 07-14" — x-axis labels on multi-day forecast charts, where the date
+ * alone doesn't say how far off a day is (user's format, 2026-11-24).
+ */
+export function formatWeekdayMonthDay(input) {
+  const date = toDate(input);
+  const part = (options) => fmt(date, options);
+  return `${part({ weekday: "short" })} ${part({ month: "2-digit" })}-${part({ day: "2-digit" })}`;
+}
+
+/**
+ * "Tue 07-14 14:30" (or "Tue 07-14 14:30 PCT" with `{ tz: true }`) — the
+ * tooltip time on the same charts.
+ */
+export function formatWeekdayMonthDayTime(input, { tz = false } = {}) {
+  const time = fmt(input, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    ...(tz ? { timeZoneName: "short" } : {}),
+  });
+  return `${formatWeekdayMonthDay(input)} ${time}`;
 }
 
 /**
@@ -138,7 +163,7 @@ export function formatModelRunTime(runStr) {
 }
 
 /**
- * "Jul 14, 05:00 PDT (12Z)" from a model-run timestamp string, or "" when
+ * "Jul 14, 05:00 PCT (12Z)" from a model-run timestamp string, or "" when
  * absent.
  *
  * The Pacific-first sibling of formatModelRunTime(). A run labelled "12Z" is
@@ -169,7 +194,7 @@ export function formatModelRunTimeLocal(runStr) {
   return `${local} (${runTime.getUTCHours().toString().padStart(2, "0")}Z)`;
 }
 
-/** "Jul 14, 2026, 14:30 PDT" — replaces webcams-v4 formatTimestamp(). */
+/** "Jul 14, 2026, 14:30 PCT" — replaces webcams-v4 formatTimestamp(). */
 export function formatFullTimestamp(input) {
   return fmt(input, {
     year: "numeric",
@@ -183,7 +208,7 @@ export function formatFullTimestamp(input) {
 }
 
 /**
- * "Mon, Jul 14, 2026, 02:30 PM PDT" — replaces forecasts.js
+ * "Mon, Jul 14, 2026, 02:30 PM PCT" — replaces forecasts.js
  * formatTimestamp(). 12-hour clock, matching the forecasts page. Pinned to
  * Pacific time; the legacy copy used the browser's local zone — the only
  * formatter on the site that did.
